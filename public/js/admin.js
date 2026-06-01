@@ -116,7 +116,7 @@ async function loadStats() {
   document.getElementById('kpi-recomenda').textContent = d.pctRecomenda != null ? d.pctRecomenda + '%' : '—';
   const h = d.porOrigem.find(r => r.origem === 'hospede')?.t || 0;
   const c = d.porOrigem.find(r => r.origem === 'colaborador')?.t || 0;
-  document.getElementById('kpi-origem').innerHTML = `<span style="color:var(--gold)">${h}</span> / <span style="color:#818CF8">${c}</span>`;
+  document.getElementById('kpi-origem').innerHTML = `<span style="color:var(--gold)">${h}</span> / <span style="color:var(--indigo)">${c}</span>`;
   renderAnalysis(d);
 }
 
@@ -307,10 +307,8 @@ async function loadMassagistas() {
     <div class="mgmt-item ${m.ativo ? '' : 'mgmt-item-inativo'}">
       <span class="mgmt-item-nome">${m.nome}</span>
       ${m.ativo ? '' : '<span class="mgmt-item-meta">inativa</span>'}
-      <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})"
-        style="padding:.2rem .55rem;font-size:.65rem">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="delMassagista(${m.id})"
-        style="padding:.2rem .55rem;font-size:.65rem">✕</button>
+      <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="delMassagista(${m.id})">✕</button>
     </div>`).join('') + '</div>';
 }
 
@@ -353,10 +351,8 @@ async function loadTipos() {
       <span class="mgmt-item-nome">${t.nome}</span>
       <span class="mgmt-item-meta">${t.duracao_min ? t.duracao_min + 'min' : '—'}${t.preco ? ' · R$' + Number(t.preco).toFixed(2) : ''}</span>
       ${t.ativo ? '' : '<span class="mgmt-item-meta">inativo</span>'}
-      <button class="btn btn-outline btn-sm" onclick="editTipo(${t.id},'${t.nome.replace(/'/g,"\\'")}',${t.duracao_min||'null'},${t.preco||'null'},${t.ativo})"
-        style="padding:.2rem .55rem;font-size:.65rem">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="delTipo(${t.id})"
-        style="padding:.2rem .55rem;font-size:.65rem">✕</button>
+      <button class="btn btn-outline btn-sm" onclick="editTipo(${t.id},'${t.nome.replace(/'/g,"\\'")}',${t.duracao_min||'null'},${t.preco||'null'},${t.ativo})">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="delTipo(${t.id})">✕</button>
     </div>`).join('') + '</div>';
 }
 
