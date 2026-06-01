@@ -849,6 +849,18 @@
     .mgmt-tab:hover  { background: var(--bg); color: var(--muted2); }
     .mgmt-tab.active { background: var(--surface); color: var(--text); }
 
+    /* Search */
+    .mgmt-search {
+      padding: 0.625rem 1.25rem;
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--surface2);
+    }
+
+    .mgmt-search input {
+      background: var(--surface);
+      border-color: var(--border-soft);
+    }
+
     /* Itens da lista */
     .mgmt-list {
       display: flex;
@@ -1084,6 +1096,9 @@
               <button class="mgmt-tab active" data-tab="ativas">Ativas</button>
               <button class="mgmt-tab" data-tab="inativas">Inativas</button>
             </div>
+          </div>
+          <div class="mgmt-search">
+            <input type="text" id="search-massagistas" placeholder="Buscar por nome…">
           </div>
           <div id="list-massagistas">
             <div class="mgmt-empty">Nenhuma massagista cadastrada.</div>

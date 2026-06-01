@@ -300,32 +300,43 @@ document.getElementById('btn-back-tipos').addEventListener('click', () => showVi
 
 // ── Massagistas ──
 let _tabMassagistas = 'ativas';
+let _massagistas = [];
 
 document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(btn => {
   btn.addEventListener('click', () => {
     _tabMassagistas = btn.dataset.tab;
     document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(b => b.classList.toggle('active', b === btn));
-    loadMassagistas();
+    renderMassagistas();
   });
 });
+
+document.getElementById('search-massagistas').addEventListener('input', renderMassagistas);
 
 async function loadMassagistas() {
   const res = await api('/api/massagistas');
   if (!res) return;
   const d = await res.json();
-  const el = document.getElementById('list-massagistas');
+  _massagistas = d.items;
+  renderMassagistas();
+}
 
-  const ativas = d.items.filter(m => m.ativo);
-  const inativas = d.items.filter(m => !m.ativo);
+function renderMassagistas() {
+  const el = document.getElementById('list-massagistas');
+  const busca = (document.getElementById('search-massagistas').value || '').toLowerCase().trim();
+
+  const ativas = _massagistas.filter(m => m.ativo);
+  const inativas = _massagistas.filter(m => !m.ativo);
 
   const tabA = document.querySelector('#tabs-massagistas [data-tab="ativas"]');
   const tabI = document.querySelector('#tabs-massagistas [data-tab="inativas"]');
   if (tabA) tabA.textContent = `Ativas (${ativas.length})`;
   if (tabI) tabI.textContent = `Inativas (${inativas.length})`;
 
-  const filtered = _tabMassagistas === 'ativas' ? ativas : inativas;
+  let filtered = _tabMassagistas === 'ativas' ? ativas : inativas;
+  if (busca) filtered = filtered.filter(m => m.nome.toLowerCase().includes(busca));
+
   if (!filtered.length) {
-    el.innerHTML = `<div class="mgmt-empty">${_tabMassagistas === 'ativas' ? 'Nenhuma massagista ativa.' : 'Nenhuma massagista inativa.'}</div>`;
+    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : _tabMassagistas === 'ativas' ? 'Nenhuma massagista ativa.' : 'Nenhuma massagista inativa.'}</div>`;
     return;
   }
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => `
