@@ -274,7 +274,7 @@ function loadAll() { loadStats(); loadTable(); }
 
 // ── Navegação entre views ──
 function showView(id) {
-  ['view-main', 'view-massagistas', 'view-tipos'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico'].forEach(v => {
     document.getElementById(v).style.display = v === id ? 'block' : 'none';
   });
   window.scrollTo(0, 0);
@@ -294,6 +294,7 @@ function showView(id) {
 
 document.getElementById('btn-open-massagistas').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 document.getElementById('btn-back-massagistas').addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-back-historico').addEventListener('click', () => showView('view-massagistas'));
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
 document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
@@ -342,6 +343,7 @@ function renderMassagistas() {
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => `
     <div class="mgmt-item">
       <span class="mgmt-item-nome">${m.nome}</span>
+      <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Histórico</button>
       <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
       <button class="btn ${m.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">${m.ativo ? 'Desativar' : 'Ativar'}</button>
     </div>`).join('') + '</div>';
@@ -427,4 +429,88 @@ window.delTipo = async (id) => {
   if (!confirm('Excluir este tipo?')) return;
   const res = await api(`/api/tipos-massagem/${id}`, { method: 'DELETE' });
   if (res) loadTipos();
+};
+
+// ── Histórico de Massagista ──
+window.showHistoricoMassagista = async (id, nome) => {
+  showView('view-historico');
+  document.getElementById('hist-title').textContent = nome;
+  document.getElementById('hist-kpi-row').innerHTML = '<div class="hist-kpi"><div class="hist-kpi-label">Carregando…</div></div>';
+  document.getElementById('hist-list').innerHTML = '';
+
+  const res = await api(`/api/massagistas/${id}/historico`);
+  if (!res) return;
+  const d = await res.json();
+  if (!d.ok) return;
+
+  const items = d.items;
+  const total = items.length;
+  const avgs = items.map(avgRow).filter(v => v !== null).map(Number);
+  const mediaGeral = avgs.length ? (avgs.reduce((a, b) => a + b, 0) / avgs.length).toFixed(2) : null;
+  const recSim = items.filter(r => r.recomenda === 'sim').length;
+  const pctRec = total > 0 ? (recSim / total * 100).toFixed(0) : null;
+
+  document.getElementById('hist-kpi-row').innerHTML = `
+    <div class="hist-kpi">
+      <div class="hist-kpi-label">Total de pesquisas</div>
+      <div class="hist-kpi-val">${total}</div>
+    </div>
+    <div class="hist-kpi">
+      <div class="hist-kpi-label">Média de serviços</div>
+      <div class="hist-kpi-val" style="color:var(--gold)">${mediaGeral ?? '—'}</div>
+    </div>
+    <div class="hist-kpi">
+      <div class="hist-kpi-label">Recomendariam</div>
+      <div class="hist-kpi-val">${pctRec != null ? pctRec + '%' : '—'}</div>
+    </div>`;
+
+  if (!total) {
+    document.getElementById('hist-list').innerHTML = '<div class="table-wrap"><div class="empty">Nenhuma pesquisa vinculada a esta profissional.</div></div>';
+    return;
+  }
+
+  function notaPill(v) {
+    if (!v) return '<span style="color:var(--muted)">—</span>';
+    const cls = { otimo: 'nota-otimo', bom: 'nota-bom', regular: 'nota-regular', ruim: 'nota-ruim' }[v] || '';
+    const lbl = { otimo: 'Ótimo', bom: 'Bom', regular: 'Regular', ruim: 'Ruim' }[v] || v;
+    return `<span class="nota-pill ${cls}">${lbl}</span>`;
+  }
+
+  document.getElementById('hist-list').innerHTML = `
+    <div class="table-wrap">
+      <div class="table-head">
+        <h2>Pesquisas vinculadas</h2>
+        <span>${total} resultado${total !== 1 ? 's' : ''}</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Cliente</th><th>Tratamento</th>
+            <th>Expectativa</th><th>Atitude</th><th>Técnica</th>
+            <th>Média</th><th>Recomenda</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(r => {
+            const avg = avgRow(r);
+            const recBadge = r.recomenda === 'sim'
+              ? '<span class="badge badge-hospede">Sim</span>'
+              : r.recomenda === 'nao'
+                ? '<span class="badge" style="background:var(--danger-dim);color:var(--danger)">Não</span>'
+                : '—';
+            return `<tr>
+              <td>${fmtDate(r.submitted_at)}</td>
+              <td style="font-weight:500">${r.nome}</td>
+              <td style="color:var(--muted)">${r.tratamento_realizado || '—'}</td>
+              <td>${notaPill(r.servicos_expectativa)}</td>
+              <td>${notaPill(r.servicos_atitude)}</td>
+              <td>${notaPill(r.servicos_tecnica)}</td>
+              <td class="${scoreClass(avg)}">${avg ?? '—'}</td>
+              <td>${recBadge}</td>
+              <td><button class="btn btn-outline btn-sm" onclick="openDrawer(${r.id})">Ver</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 };

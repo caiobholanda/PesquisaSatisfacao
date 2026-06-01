@@ -425,6 +425,14 @@
       const [fills, setFills] = useState([0, 0, 0, 0]);
       const [submitting, setSubmitting] = useState(false);
       const [submitError, setSubmitError] = useState('');
+      const [massagistasOpts, setMassagistasOpts] = useState([]);
+
+      useEffect(() => {
+        fetch('/api/massagistas-ativas')
+          .then(r => r.json())
+          .then(d => { if (d.nomes) setMassagistasOpts(d.nomes); })
+          .catch(() => {});
+      }, []);
 
       const set = (k, v) => setFields((f) => ({ ...f, [k]: v }));
       const pick = (id, v) => setRatings((r) => ({ ...r, [id]: v }));
@@ -569,7 +577,14 @@
                 </div>
                 <div className="field field-full">
                   <FieldLabel pt="Nome da massoterapeuta" en="Massage therapist's name" />
-                  <input value={fields.massoterapeuta} onChange={(e) => set('massoterapeuta', e.target.value)} />
+                  <input
+                    list="massagistas-list"
+                    value={fields.massoterapeuta}
+                    onChange={(e) => set('massoterapeuta', e.target.value)}
+                  />
+                  <datalist id="massagistas-list">
+                    {massagistasOpts.map(n => <option key={n} value={n} />)}
+                  </datalist>
                   <span className="fill"></span>
                 </div>
               </div>

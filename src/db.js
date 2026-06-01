@@ -222,6 +222,12 @@ export function deletarTipoMassagem(id) {
   return getDb().prepare('DELETE FROM tipos_massagem WHERE id=?').run(id).changes;
 }
 
+export function historicoMassagista(nome) {
+  return getDb()
+    .prepare(`SELECT * FROM feedback WHERE LOWER(nome_massoterapeuta) = LOWER(?) ORDER BY submitted_at DESC`)
+    .all(nome);
+}
+
 export function buscarAdmin(username) {
   return getDb().prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
 }

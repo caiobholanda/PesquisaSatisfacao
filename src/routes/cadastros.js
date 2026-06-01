@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   listarMassagistas, inserirMassagista, atualizarMassagista, deletarMassagista,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
+  historicoMassagista,
 } from '../db.js';
 
 const router = Router();
@@ -24,6 +25,13 @@ router.put('/massagistas/:id', (req, res) => {
   const changes = atualizarMassagista(parseInt(req.params.id), nome, ativo ? 1 : 0);
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   res.json({ ok: true });
+});
+
+router.get('/massagistas/:id/historico', (req, res) => {
+  const m = listarMassagistas().find(m => m.id === parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  const items = historicoMassagista(m.nome);
+  res.json({ ok: true, massagista: m, items });
 });
 
 router.delete('/massagistas/:id', (req, res) => {
