@@ -674,6 +674,12 @@
                   <span className="fill"></span>
                 </div>
                 <div className="field">
+                  <FieldLabel pt="Data" en="Date" />
+                  <div style={{ padding: '8px 2px', fontSize: 16, color: '#9B9B9B', borderBottom: '1px solid #E4DAC6', userSelect: 'none' }}>
+                    {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </div>
+                </div>
+                <div className="field">
                   <FieldLabel pt="Tratamento realizado" en="Spa treatment provided" />
                   <input value={fields.tratamento} onChange={(e) => set('tratamento', e.target.value)} />
                   <span className="fill"></span>
