@@ -23,13 +23,13 @@ app.use(express.json({ limit: '100kb' }));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-app.use('/api/feedback', feedbackRouter);
-app.use('/api/auth', authRouter);
-app.use('/api', cadastrosRouter);
-
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime(), version: pkg.version });
 });
+
+app.use('/api/feedback', feedbackRouter);
+app.use('/api/auth', authRouter);
+app.use('/api', cadastrosRouter);
 
 // Fallback SPA: admin.html para /admin
 app.get('/admin', (_req, res) => {
