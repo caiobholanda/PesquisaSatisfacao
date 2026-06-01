@@ -299,20 +299,40 @@ document.getElementById('btn-open-tipos').addEventListener('click', () => { show
 document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
 
 // ── Massagistas ──
+let _tabMassagistas = 'ativas';
+
+document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    _tabMassagistas = btn.dataset.tab;
+    document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(b => b.classList.toggle('active', b === btn));
+    loadMassagistas();
+  });
+});
+
 async function loadMassagistas() {
   const res = await api('/api/massagistas');
   if (!res) return;
   const d = await res.json();
   const el = document.getElementById('list-massagistas');
-  const cnt = document.getElementById('count-massagistas');
-  if (cnt) cnt.textContent = d.items.length ? d.items.length + (d.items.length === 1 ? ' registro' : ' registros') : '';
-  if (!d.items.length) { el.innerHTML = '<div class="mgmt-empty">Nenhuma massagista cadastrada.</div>'; return; }
-  el.innerHTML = '<div class="mgmt-list">' + d.items.map(m => `
-    <div class="mgmt-item ${m.ativo ? '' : 'mgmt-item-inativo'}">
+
+  const ativas = d.items.filter(m => m.ativo);
+  const inativas = d.items.filter(m => !m.ativo);
+
+  const tabA = document.querySelector('#tabs-massagistas [data-tab="ativas"]');
+  const tabI = document.querySelector('#tabs-massagistas [data-tab="inativas"]');
+  if (tabA) tabA.textContent = `Ativas (${ativas.length})`;
+  if (tabI) tabI.textContent = `Inativas (${inativas.length})`;
+
+  const filtered = _tabMassagistas === 'ativas' ? ativas : inativas;
+  if (!filtered.length) {
+    el.innerHTML = `<div class="mgmt-empty">${_tabMassagistas === 'ativas' ? 'Nenhuma massagista ativa.' : 'Nenhuma massagista inativa.'}</div>`;
+    return;
+  }
+  el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => `
+    <div class="mgmt-item">
       <span class="mgmt-item-nome">${m.nome}</span>
-      ${m.ativo ? '' : '<span class="mgmt-item-meta">inativa</span>'}
       <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="delMassagista(${m.id})">✕</button>
+      <button class="btn ${m.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">${m.ativo ? 'Desativar' : 'Ativar'}</button>
     </div>`).join('') + '</div>';
 }
 
@@ -331,15 +351,15 @@ document.getElementById('btn-add-massagista').addEventListener('click', async ()
 
 window.editMassagista = async (id, nomeAtual, ativoAtual) => {
   const nome = prompt('Nome:', nomeAtual);
-  if (nome === null) return;
-  const ativo = confirm('Massagista ativa?') ? 1 : 0;
-  const res = await api(`/api/massagistas/${id}`, { method: 'PUT', body: JSON.stringify({ nome, ativo }) });
+  if (nome === null || !nome.trim()) return;
+  const res = await api(`/api/massagistas/${id}`, { method: 'PUT', body: JSON.stringify({ nome, ativo: ativoAtual }) });
   if (res) loadMassagistas();
 };
 
-window.delMassagista = async (id) => {
-  if (!confirm('Excluir esta massagista?')) return;
-  const res = await api(`/api/massagistas/${id}`, { method: 'DELETE' });
+window.toggleMassagista = async (id, nome, ativoAtual) => {
+  const novoAtivo = ativoAtual ? 0 : 1;
+  if (!confirm(`${novoAtivo ? 'Ativar' : 'Desativar'} "${nome}"?`)) return;
+  const res = await api(`/api/massagistas/${id}`, { method: 'PUT', body: JSON.stringify({ nome, ativo: novoAtivo }) });
   if (res) loadMassagistas();
 };
 
