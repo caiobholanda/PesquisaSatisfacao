@@ -685,9 +685,9 @@ window.showHistoricoMassagista = async (id, nome) => {
 // ── Reservas de Salas ────────────────────────────────────────
 
 const CAL_ROOMS = [
-  { id: 1, nome: 'Serenity',    tipo: 'Individual', cap: 1, cls: 's1' },
-  { id: 2, nome: 'Tranquility', tipo: 'Individual', cap: 1, cls: 's2' },
-  { id: 3, nome: 'Harmony',     tipo: 'Casal',      cap: 2, cls: 's3' },
+  { id: 1, nome: 'Sala 1', tipo: 'Individual', cap: 1, cls: 's1' },
+  { id: 2, nome: 'Sala 2', tipo: 'Individual', cap: 1, cls: 's2' },
+  { id: 3, nome: 'Casal',  tipo: 'Casal',      cap: 2, cls: 's3' },
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
