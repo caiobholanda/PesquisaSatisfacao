@@ -337,7 +337,7 @@ function renderMassagistas() {
   if (busca) filtered = filtered.filter(m => m.nome.toLowerCase().includes(busca));
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : _tabMassagistas === 'ativas' ? 'Nenhuma massagista ativa.' : 'Nenhuma massagista inativa.'}</div>`;
+    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : _tabMassagistas === 'ativas' ? 'Nenhuma massoterapeuta ativa.' : 'Nenhuma massoterapeuta inativa.'}</div>`;
     return;
   }
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => `
