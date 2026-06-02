@@ -27,6 +27,7 @@ function showLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
+  loadAll(); // sempre carrega dados do painel principal em background
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
   const view = st.view || 'view-main';
   showView(view);
@@ -37,7 +38,7 @@ function showApp() {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
     loadReservas();
-  } else { loadAll(); }
+  }
 }
 
 // ── Login ──
