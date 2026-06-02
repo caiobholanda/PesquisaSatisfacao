@@ -18,7 +18,7 @@ async function api(url, opts = {}) {
   return res;
 }
 
-function logout() { clearToken(); showLogin(); }
+function logout() { clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
 
 function showLogin() {
   document.getElementById('login-screen').style.display = 'flex';
@@ -27,7 +27,17 @@ function showLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  showView('view-main');
+  const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
+  const view = st.view || 'view-main';
+  showView(view);
+  if (view === 'view-massagistas') { loadMassagistas(); }
+  else if (view === 'view-tipos') { loadTipos(); }
+  else if (view === 'view-historico' && st.histId) { showHistoricoMassagista(st.histId, st.histNome); }
+  else if (view === 'view-reservas') {
+    if (st.calOff != null) _calWeekOffset = st.calOff;
+    if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
+    loadReservas();
+  } else { loadAll(); }
 }
 
 // ── Login ──
@@ -286,6 +296,8 @@ function showView(id) {
     document.getElementById(v).style.display = v === id ? 'block' : 'none';
   });
   window.scrollTo(0, 0);
+  const cur = JSON.parse(sessionStorage.getItem('_vst') || '{}');
+  sessionStorage.setItem('_vst', JSON.stringify({ ...cur, view: id }));
 }
 
 // ── Init ──
@@ -539,6 +551,8 @@ window.delTipo = async (id) => {
 // ── Histórico de Massagista ──
 window.showHistoricoMassagista = async (id, nome) => {
   showView('view-historico');
+  const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
+  sessionStorage.setItem('_vst', JSON.stringify({ ...st, view: 'view-historico', histId: id, histNome: nome }));
   document.getElementById('hist-title').textContent = nome;
   document.getElementById('hist-kpi-row').innerHTML = '<div class="hist-kpi"><div class="hist-kpi-label">Carregando…</div></div>';
   document.getElementById('hist-list').innerHTML = '';
@@ -719,7 +733,11 @@ async function loadReservas() {
   const res=await api(`/api/reservas?from=${calDateStr(days[0])}&to=${calDateStr(days[6])}`);
   if(!res)return;
   const d=await res.json();
-  if(d.ok){ _reservas=d.items; renderCalWeekPills(); renderCalDia(); }
+  if(d.ok){
+    _reservas=d.items; renderCalWeekPills(); renderCalDia();
+    const st=JSON.parse(sessionStorage.getItem('_vst')||'{}');
+    sessionStorage.setItem('_vst',JSON.stringify({...st,calOff:_calWeekOffset,calDay:_calDiaSel?calDateStr(_calDiaSel):null}));
+  }
 }
 
 function renderCalWeekPills() {
