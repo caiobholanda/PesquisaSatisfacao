@@ -81,10 +81,14 @@ export function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sala INTEGER NOT NULL CHECK(sala IN (1,2,3)),
       cliente TEXT NOT NULL,
+      tipo_cliente TEXT,
+      apto TEXT,
+      email TEXT,
+      telefone TEXT,
+      tratamento TEXT,
       data TEXT NOT NULL,
       hora_inicio TEXT NOT NULL,
       hora_fim TEXT NOT NULL,
-      observacao TEXT,
       criado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_reservas_data ON reservas(data);
@@ -92,6 +96,10 @@ export function initDb() {
 
   // Migration: add descricao column to tipos_massagem if absent
   try { db.exec(`ALTER TABLE tipos_massagem ADD COLUMN descricao TEXT`); } catch {}
+  // Migration: add enriched fields to reservas if absent
+  for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT']) {
+    try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
+  }
 
   const adminUser = process.env.ADMIN_USER || 'admin';
   const adminPass = process.env.ADMIN_PASS || 'TrocarEmProducao!';
@@ -262,7 +270,7 @@ export function listarReservasSemana(from, to) {
   ).all(from, to);
 }
 
-export function inserirReserva(sala, cliente, data, horaInicio, horaFim, observacao) {
+export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim) {
   const conflito = getDb().prepare(`
     SELECT id FROM reservas
     WHERE sala = ? AND data = ?
@@ -270,8 +278,9 @@ export function inserirReserva(sala, cliente, data, horaInicio, horaFim, observa
   `).get(sala, data, horaInicio, horaFim);
   if (conflito) { const e = new Error('CONFLITO'); e.code = 'CONFLITO'; throw e; }
   return getDb().prepare(
-    `INSERT INTO reservas (sala, cliente, data, hora_inicio, hora_fim, observacao) VALUES (?,?,?,?,?,?)`
-  ).run(sala, cliente, data, horaInicio, horaFim, observacao || null).lastInsertRowid;
+    `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`
+  ).run(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim).lastInsertRowid;
 }
 
 export function cancelarReserva(id) {

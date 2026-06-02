@@ -1516,6 +1516,27 @@
       color: var(--muted);
     }
 
+    .res-tipo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .res-tipo-btn {
+      padding: 0.625rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface2);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all .15s;
+      text-align: center;
+    }
+    .res-tipo-btn:hover { border-color: var(--gold); color: var(--text); }
+    .res-tipo-btn.active { border-color: var(--gold); background: var(--gold-dim); color: var(--gold-dark); }
+
     .res-frow {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1944,12 +1965,39 @@
         </div>
       </div>
       <div class="res-fg">
-        <label>Cliente</label>
-        <input type="text" id="res-inp-cliente" placeholder="Nome do cliente">
+        <label>Tipo de cliente <span style="color:var(--danger)">*</span></label>
+        <div class="res-tipo-grid">
+          <button class="res-tipo-btn" id="res-tipo-hospede" data-tipo="hospede">Hóspede</button>
+          <button class="res-tipo-btn" id="res-tipo-passante" data-tipo="passante">Passante</button>
+        </div>
       </div>
       <div class="res-frow">
         <div class="res-fg">
-          <label>Data</label>
+          <label>Nome <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="res-inp-nome" placeholder="Nome completo">
+        </div>
+        <div class="res-fg" id="res-fg-apto" style="display:none">
+          <label>Nº do Apto</label>
+          <input type="text" id="res-inp-apto" placeholder="Ex: 301">
+        </div>
+      </div>
+      <div class="res-frow">
+        <div class="res-fg">
+          <label>E-mail <span style="color:var(--danger)">*</span></label>
+          <input type="email" id="res-inp-email" placeholder="email@exemplo.com">
+        </div>
+        <div class="res-fg">
+          <label>Telefone</label>
+          <input type="text" id="res-inp-tel" placeholder="(85) 99999-9999">
+        </div>
+      </div>
+      <div class="res-fg">
+        <label>Tratamento realizado</label>
+        <input type="text" id="res-inp-tratamento" placeholder="Ex: Massagem relaxante">
+      </div>
+      <div class="res-frow">
+        <div class="res-fg">
+          <label>Data <span style="color:var(--danger)">*</span></label>
           <input type="date" id="res-inp-data">
         </div>
         <div class="res-fg"></div>

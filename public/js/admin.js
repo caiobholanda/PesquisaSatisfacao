@@ -712,6 +712,7 @@ let _calWeekOffset = 0;
 let _calDiaSel = null;
 let _reservas  = [];
 let _resSala   = null;
+let _resTipo   = null;
 
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -824,11 +825,23 @@ window.calCancelar=async(id)=>{
 };
 
 // ── Modal Reserva ──
+function calSetTipo(tipo) {
+  _resTipo = tipo;
+  document.querySelectorAll('.res-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+  document.getElementById('res-fg-apto').style.display = tipo === 'hospede' ? '' : 'none';
+  if (tipo !== 'hospede') document.getElementById('res-inp-apto').value = '';
+}
+
 function calOpenModal(salaId, data, hora) {
   _resSala=salaId||1;
+  _resTipo=null;
   document.getElementById('res-modal-overlay').style.display='flex';
   document.getElementById('res-modal-err').textContent='';
-  document.getElementById('res-inp-cliente').value='';
+  document.querySelectorAll('.res-tipo-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('res-fg-apto').style.display='none';
+  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-tratamento'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
   if(data) document.getElementById('res-inp-data').value=data;
   if(hora){
     document.getElementById('res-inp-inicio').value=hora;
@@ -859,16 +872,27 @@ document.querySelectorAll('.res-room-btn').forEach(btn=>{
   });
 });
 
+document.querySelectorAll('.res-tipo-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>calSetTipo(btn.dataset.tipo));
+});
+
 document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const err=document.getElementById('res-modal-err');
   err.textContent='';
   const sala=_resSala;
-  const cliente=document.getElementById('res-inp-cliente').value.trim();
+  const tipo=_resTipo;
+  const nome=document.getElementById('res-inp-nome').value.trim();
+  const apto=document.getElementById('res-inp-apto').value.trim();
+  const email=document.getElementById('res-inp-email').value.trim();
+  const telefone=document.getElementById('res-inp-tel').value.trim();
+  const tratamento=document.getElementById('res-inp-tratamento').value.trim();
   const data=document.getElementById('res-inp-data').value;
   const h_ini=document.getElementById('res-inp-inicio').value;
   const h_fim=document.getElementById('res-inp-fim').value;
   if(!sala){err.textContent='Selecione uma sala.';return;}
-  if(!cliente){err.textContent='Informe o nome do cliente.';return;}
+  if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
+  if(!nome){err.textContent='Informe o nome do cliente.';return;}
+  if(!email){err.textContent='Informe o e-mail.';return;}
   if(!data){err.textContent='Informe a data.';return;}
   if(!h_ini||!h_fim){err.textContent='Informe o horário.';return;}
   if(calTimeMin(h_fim)<=calTimeMin(h_ini)){err.textContent='Fim deve ser após o início.';return;}
@@ -878,7 +902,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const btn=document.getElementById('btn-res-salvar');
   btn.disabled=true;
   try{
-    const res=await api('/api/reservas',{method:'POST',body:JSON.stringify({sala,cliente,data,hora_inicio:h_ini,hora_fim:h_fim})});
+    const res=await api('/api/reservas',{method:'POST',body:JSON.stringify({
+      sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data, hora_inicio: h_ini, hora_fim: h_fim
+    })});
     if(!res)return;
     const d=await res.json();
     if(!d.ok){err.textContent=d.error||'Erro ao salvar.';return;}
