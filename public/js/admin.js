@@ -53,6 +53,14 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   finally { btn.innerHTML = 'Entrar'; btn.disabled = false; }
 });
 document.getElementById('inp-pass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-login').click(); });
+
+document.getElementById('btn-toggle-pass').addEventListener('click', () => {
+  const inp = document.getElementById('inp-pass');
+  const showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  document.getElementById('icon-eye-off').style.display = showing ? '' : 'none';
+  document.getElementById('icon-eye-on').style.display = showing ? 'none' : '';
+});
 document.getElementById('btn-sair').addEventListener('click', logout);
 
 // ── Stats + Análise ──
