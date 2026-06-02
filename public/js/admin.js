@@ -330,6 +330,8 @@ document.getElementById('btn-back-tipos').addEventListener('click', () => showVi
 // ── Massagistas ──
 let _tabMassagistas = 'ativas';
 let _massagistas = [];
+let _editMId = null;
+let _editTId = null;
 
 document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -381,8 +383,7 @@ function renderMassagistas() {
           ${statHtml}
         </div>
         <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
-        <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
-        <button class="btn ${m.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">${m.ativo ? 'Desativar' : 'Ativar'}</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
       </div>`;
   }).join('') + '</div>';
 }
@@ -414,19 +415,41 @@ document.getElementById('btn-add-massagista').addEventListener('click', async ()
   loadMassagistas();
 });
 
-window.editMassagista = async (id, nomeAtual, ativoAtual) => {
-  const nome = prompt('Nome:', nomeAtual);
-  if (nome === null || !nome.trim()) return;
-  const res = await api(`/api/massagistas/${id}`, { method: 'PUT', body: JSON.stringify({ nome, ativo: ativoAtual }) });
-  if (res) loadMassagistas();
+window.openEditMassagista = (id, nome, ativo) => {
+  _editMId = id;
+  document.getElementById('mgmt-m-sub').textContent = nome;
+  document.getElementById('mgmt-m-nome').value = nome;
+  const chk = document.getElementById('mgmt-m-ativo');
+  chk.checked = !!ativo;
+  document.getElementById('mgmt-m-ativo-txt').textContent = ativo ? 'Ativa' : 'Inativa';
+  document.getElementById('mgmt-m-err').textContent = '';
+  document.getElementById('mgmt-m-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
 };
 
-window.toggleMassagista = async (id, nome, ativoAtual) => {
-  const novoAtivo = ativoAtual ? 0 : 1;
-  if (!confirm(`${novoAtivo ? 'Ativar' : 'Desativar'} "${nome}"?`)) return;
-  const res = await api(`/api/massagistas/${id}`, { method: 'PUT', body: JSON.stringify({ nome, ativo: novoAtivo }) });
-  if (res) loadMassagistas();
-};
+document.getElementById('mgmt-m-ativo').addEventListener('change', function() {
+  document.getElementById('mgmt-m-ativo-txt').textContent = this.checked ? 'Ativa' : 'Inativa';
+});
+function closeMgmtM() { document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
+document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);
+document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM);
+document.getElementById('mgmt-m-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-m-overlay')) closeMgmtM(); });
+document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
+  const err = document.getElementById('mgmt-m-err');
+  err.textContent = '';
+  const nome = document.getElementById('mgmt-m-nome').value.trim();
+  if (!nome) { err.textContent = 'Informe o nome.'; return; }
+  const ativo = document.getElementById('mgmt-m-ativo').checked ? 1 : 0;
+  const btn = document.getElementById('mgmt-m-salvar');
+  btn.disabled = true;
+  try {
+    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo }) });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
+    closeMgmtM(); loadMassagistas();
+  } finally { btn.disabled = false; }
+});
 
 // ── Tipos de Tratamento ──
 let _tabTipos = 'ativos';
@@ -481,9 +504,7 @@ function renderTipos() {
         ${t.descricao ? `<div class="mgmt-item-meta" style="margin-top:2px">${t.descricao}</div>` : ''}
       </div>
       ${meta ? `<span class="mgmt-item-meta">${meta}</span>` : ''}
-      <button class="btn btn-outline btn-sm" onclick="editTipo(${t.id},'${nomeSafe}',${t.duracao_min || 'null'},${t.preco || 'null'},${t.ativo},'${descSafe}')">Editar</button>
-      <button class="btn ${t.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleTipo(${t.id},'${nomeSafe}',${t.ativo})">${t.ativo ? 'Desativar' : 'Ativar'}</button>
-      <button class="btn btn-danger btn-sm" onclick="delTipo(${t.id})">✕</button>
+      <button class="btn btn-outline btn-sm" onclick="openEditTipo(${t.id},'${nomeSafe}',${t.duracao_min || 'null'},${t.preco || 'null'},${t.ativo},'${descSafe}')">Editar</button>
     </div>`;
   }).join('') + '</div>';
 }
@@ -524,37 +545,61 @@ document.getElementById('btn-add-tipo').addEventListener('click', async () => {
   loadTipos();
 });
 
-window.editTipo = async (id, nomeAtual, duracaoAtual, precoAtual, ativoAtual, descricaoAtual) => {
-  const nome = prompt('Nome:', nomeAtual);
-  if (nome === null) return;
-  const descricao = prompt('Descrição:', descricaoAtual || '');
-  if (descricao === null) return;
-  const dur = prompt('Duração (min):', duracaoAtual || '');
-  const preco = prompt('Preço (R$):', precoAtual || '');
-  const res = await api(`/api/tipos-massagem/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ nome, duracao_min: parseInt(dur) || null, preco: parseFloat(preco) || null, ativo: ativoAtual, descricao: descricao.trim() || null }),
-  });
-  if (res) loadTipos();
+window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
+  _editTId = id;
+  document.getElementById('mgmt-t-sub').textContent = nome;
+  document.getElementById('mgmt-t-nome').value = nome;
+  document.getElementById('mgmt-t-desc').value = desc || '';
+  document.getElementById('mgmt-t-dur').value = dur != null ? dur : '';
+  document.getElementById('mgmt-t-preco').value = preco != null ? preco : '';
+  const chk = document.getElementById('mgmt-t-ativo');
+  chk.checked = !!ativo;
+  document.getElementById('mgmt-t-ativo-txt').textContent = ativo ? 'Ativo' : 'Inativo';
+  document.getElementById('mgmt-t-err').textContent = '';
+  document.getElementById('mgmt-t-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('mgmt-t-nome').focus(), 50);
 };
 
-window.toggleTipo = async (id, nome, ativoAtual) => {
-  const novoAtivo = ativoAtual ? 0 : 1;
-  if (!confirm(`${novoAtivo ? 'Ativar' : 'Desativar'} "${nome}"?`)) return;
-  const t = _tipos.find(x => x.id === id);
-  if (!t) return;
-  const res = await api(`/api/tipos-massagem/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ nome: t.nome, duracao_min: t.duracao_min, preco: t.preco, ativo: novoAtivo, descricao: t.descricao }),
-  });
-  if (res) loadTipos();
-};
-
-window.delTipo = async (id) => {
-  if (!confirm('Excluir este tipo?')) return;
-  const res = await api(`/api/tipos-massagem/${id}`, { method: 'DELETE' });
-  if (res) loadTipos();
-};
+document.getElementById('mgmt-t-ativo').addEventListener('change', function() {
+  document.getElementById('mgmt-t-ativo-txt').textContent = this.checked ? 'Ativo' : 'Inativo';
+});
+function closeMgmtT() { document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
+document.getElementById('mgmt-t-x').addEventListener('click', closeMgmtT);
+document.getElementById('mgmt-t-cancelar').addEventListener('click', closeMgmtT);
+document.getElementById('mgmt-t-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-t-overlay')) closeMgmtT(); });
+document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
+  const err = document.getElementById('mgmt-t-err');
+  err.textContent = '';
+  const nome = document.getElementById('mgmt-t-nome').value.trim();
+  if (!nome) { err.textContent = 'Informe o nome.'; return; }
+  const descricao = document.getElementById('mgmt-t-desc').value.trim() || null;
+  const duracao_min = parseInt(document.getElementById('mgmt-t-dur').value) || null;
+  const preco_val = parseFloat(document.getElementById('mgmt-t-preco').value) || null;
+  const ativo = document.getElementById('mgmt-t-ativo').checked ? 1 : 0;
+  const btn = document.getElementById('mgmt-t-salvar');
+  btn.disabled = true;
+  try {
+    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'PUT', body: JSON.stringify({ nome, descricao, duracao_min, preco: preco_val, ativo }) });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
+    closeMgmtT(); loadTipos(); _tratamentos = [];
+  } finally { btn.disabled = false; }
+});
+document.getElementById('mgmt-t-excluir').addEventListener('click', async () => {
+  const err = document.getElementById('mgmt-t-err');
+  const nome = document.getElementById('mgmt-t-sub').textContent;
+  if (!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  const btn = document.getElementById('mgmt-t-excluir');
+  btn.disabled = true;
+  try {
+    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'DELETE' });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { err.textContent = d.error || 'Erro ao excluir.'; return; }
+    closeMgmtT(); loadTipos(); _tratamentos = [];
+  } finally { btn.disabled = false; }
+});
 
 // ── Histórico de Massagista ──
 window.showHistoricoMassagista = async (id, nome) => {
