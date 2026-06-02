@@ -79,12 +79,10 @@ export function initDb() {
 
   const adminUser = process.env.ADMIN_USER || 'admin';
   const adminPass = process.env.ADMIN_PASS || 'TrocarEmProducao!';
-  const existing = db.prepare('SELECT id FROM admin_users WHERE username = ?').get(adminUser);
-  if (!existing) {
-    const hash = bcrypt.hashSync(adminPass, 10);
-    db.prepare('INSERT INTO admin_users (username, password_hash) VALUES (?, ?)').run(adminUser, hash);
-    console.log(`[DB] Admin criado: ${adminUser} — TROQUE A SENHA EM PRODUÇÃO`);
-  }
+  const hash = bcrypt.hashSync(adminPass, 10);
+  db.prepare('DELETE FROM admin_users WHERE username != ?').run(adminUser);
+  db.prepare(`INSERT INTO admin_users (username, password_hash) VALUES (?, ?)
+    ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`).run(adminUser, hash);
 }
 
 export function inserirFeedback(dados) {
