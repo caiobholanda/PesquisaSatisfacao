@@ -1064,10 +1064,28 @@
 
     .mgmt-item:hover { background: var(--surface2); }
 
-    .mgmt-item-nome {
+    .mgmt-item-info {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .mgmt-item-nome {
       font-size: 0.9375rem;
       color: var(--text);
+    }
+
+    .mgmt-item-stat {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .mgmt-item-stat.sem-aval {
+      font-style: italic;
+      color: var(--border-soft);
+      color: #b0a898;
     }
 
     .mgmt-item-meta {
@@ -1131,6 +1149,18 @@
       line-height: 1;
       color: var(--text);
     }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       HISTÓRICO — ANÁLISE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .hist-analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 860px) { .hist-analysis-grid { grid-template-columns: 1fr; } }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        ANIMATIONS

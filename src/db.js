@@ -200,6 +200,19 @@ export function statsFeedback({ from, to } = {}) {
 export function listarMassagistas() {
   return getDb().prepare('SELECT * FROM massagistas ORDER BY nome ASC').all();
 }
+
+export function listarMassagistasComStats() {
+  return getDb().prepare(`
+    SELECT
+      m.id, m.nome, m.ativo, m.created_at,
+      COUNT(f.id) AS total_avaliacoes,
+      SUM(CASE WHEN f.recomenda = 'sim' THEN 1 ELSE 0 END) AS rec_sim
+    FROM massagistas m
+    LEFT JOIN feedback f ON LOWER(f.nome_massoterapeuta) = LOWER(m.nome)
+    GROUP BY m.id
+    ORDER BY m.nome ASC
+  `).all();
+}
 export function inserirMassagista(nome) {
   return getDb().prepare('INSERT INTO massagistas (nome) VALUES (?)').run(nome.trim()).lastInsertRowid;
 }

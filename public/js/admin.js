@@ -348,13 +348,23 @@ function renderMassagistas() {
     el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : _tabMassagistas === 'ativas' ? 'Nenhuma massoterapeuta ativa.' : 'Nenhuma massoterapeuta inativa.'}</div>`;
     return;
   }
-  el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => `
-    <div class="mgmt-item">
-      <span class="mgmt-item-nome">${m.nome}</span>
-      <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Histórico</button>
-      <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
-      <button class="btn ${m.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">${m.ativo ? 'Desativar' : 'Ativar'}</button>
-    </div>`).join('') + '</div>';
+  el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => {
+    const tot = m.total_avaliacoes || 0;
+    const pctRec = tot > 0 ? Math.round((m.rec_sim || 0) / tot * 100) : null;
+    const statHtml = tot > 0
+      ? `<span class="mgmt-item-stat">${tot} avaliação${tot !== 1 ? 'ões' : ''}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
+      : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
+    return `
+      <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
+        <div class="mgmt-item-info">
+          <span class="mgmt-item-nome">${m.nome}</span>
+          ${statHtml}
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
+        <button class="btn btn-outline btn-sm" onclick="editMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
+        <button class="btn ${m.ativo ? 'btn-outline' : 'btn-gold'} btn-sm" onclick="toggleMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">${m.ativo ? 'Desativar' : 'Ativar'}</button>
+      </div>`;
+  }).join('') + '</div>';
 }
 
 function toggleFormMassagista(show) {
@@ -551,7 +561,7 @@ window.showHistoricoMassagista = async (id, nome) => {
       <div class="hist-kpi-val">${total}</div>
     </div>
     <div class="hist-kpi">
-      <div class="hist-kpi-label">Média de serviços</div>
+      <div class="hist-kpi-label">Média geral</div>
       <div class="hist-kpi-val" style="color:var(--gold)">${mediaGeral ?? '—'}</div>
     </div>
     <div class="hist-kpi">
@@ -564,6 +574,15 @@ window.showHistoricoMassagista = async (id, nome) => {
     return;
   }
 
+  function computeDist(campo) {
+    const dist = { otimo: 0, bom: 0, regular: 0, ruim: 0, total: 0 };
+    for (const r of items) {
+      const v = r[campo];
+      if (v && v in dist) { dist[v]++; dist.total++; }
+    }
+    return dist;
+  }
+
   function notaPill(v) {
     if (!v) return '<span style="color:var(--muted)">—</span>';
     const cls = { otimo: 'nota-otimo', bom: 'nota-bom', regular: 'nota-regular', ruim: 'nota-ruim' }[v] || '';
@@ -571,8 +590,61 @@ window.showHistoricoMassagista = async (id, nome) => {
     return `<span class="nota-pill ${cls}">${lbl}</span>`;
   }
 
+  const HIST_SERVICOS = [
+    { campo: 'servicos_expectativa', label: 'Expectativa do tratamento' },
+    { campo: 'servicos_explicacao', label: 'Explicação sobre benefícios e procedimentos' },
+    { campo: 'servicos_atitude', label: 'Atitude e qualidade dos serviços' },
+    { campo: 'servicos_tecnica', label: 'Técnica e habilidade' },
+  ];
+  const HIST_INSTALACOES = [
+    { campo: 'instalacoes_conforto', label: 'Conforto e conservação da estrutura' },
+    { campo: 'instalacoes_organizacao', label: 'Organização da sala e atmosfera' },
+    { campo: 'instalacoes_conveniencia', label: 'Itens de conveniência' },
+  ];
+
+  const servicosHtml = HIST_SERVICOS.map(({ campo, label }) =>
+    `<div class="q-row"><div class="q-label">${label}</div>${renderDistBar(computeDist(campo))}</div>`
+  ).join('');
+  const instalacoesHtml = HIST_INSTALACOES.map(({ campo, label }) =>
+    `<div class="q-row"><div class="q-label">${label}</div>${renderDistBar(computeDist(campo))}</div>`
+  ).join('');
+
+  const comentariosServicos = items
+    .filter(r => r.servicos_comentario)
+    .map(r => ({ texto: r.servicos_comentario, nome: r.nome, data: r.submitted_at }));
+  const comentariosInst = items
+    .filter(r => r.instalacoes_comentario)
+    .map(r => ({ texto: r.instalacoes_comentario, nome: r.nome, data: r.submitted_at }));
+  const temComentarios = comentariosServicos.length > 0 || comentariosInst.length > 0;
+
   document.getElementById('hist-list').innerHTML = `
-    <div class="table-wrap">
+    <div class="hist-analysis-grid">
+      <div class="analysis-block">
+        <div class="block-head">
+          <span class="block-num">01</span>
+          <h3 class="block-title">Serviços</h3>
+        </div>
+        ${servicosHtml}
+      </div>
+      <div class="analysis-block">
+        <div class="block-head">
+          <span class="block-num">02</span>
+          <h3 class="block-title">Instalações</h3>
+        </div>
+        ${instalacoesHtml}
+      </div>
+      ${temComentarios ? `
+      <div class="analysis-block full">
+        <div class="block-head">
+          <span class="block-num">03</span>
+          <h3 class="block-title">Comentários</h3>
+        </div>
+        ${renderTextoGroup('Sobre serviços', comentariosServicos)}
+        ${renderTextoGroup('Sobre instalações', comentariosInst)}
+      </div>` : ''}
+    </div>
+
+    <div class="table-wrap" style="margin-top:1.5rem">
       <div class="table-head">
         <h2>Pesquisas vinculadas</h2>
         <span>${total} resultado${total !== 1 ? 's' : ''}</span>

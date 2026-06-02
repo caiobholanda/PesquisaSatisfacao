@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  listarMassagistas, inserirMassagista, atualizarMassagista, deletarMassagista,
+  listarMassagistas, listarMassagistasComStats,
+  inserirMassagista, atualizarMassagista, deletarMassagista,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista,
 } from '../db.js';
@@ -10,7 +11,7 @@ const router = Router();
 router.use(requireAuth);
 
 // ── Massagistas ──
-router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistas() }));
+router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
 
 router.post('/massagistas', (req, res) => {
   const { nome } = req.body || {};
