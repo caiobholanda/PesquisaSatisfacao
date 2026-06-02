@@ -282,7 +282,7 @@ function loadAll() { loadStats(); loadTable(); }
 
 // ── Navegação entre views ──
 function showView(id) {
-  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas'].forEach(v => {
     document.getElementById(v).style.display = v === id ? 'block' : 'none';
   });
   window.scrollTo(0, 0);
@@ -681,3 +681,195 @@ window.showHistoricoMassagista = async (id, nome) => {
       </table>
     </div>`;
 };
+
+// ── Reservas de Salas ────────────────────────────────────────
+
+const CAL_ROOMS = [
+  { id: 1, nome: 'Serenity',    tipo: 'Individual', cap: 1, cls: 's1' },
+  { id: 2, nome: 'Tranquility', tipo: 'Individual', cap: 1, cls: 's2' },
+  { id: 3, nome: 'Harmony',     tipo: 'Casal',      cap: 2, cls: 's3' },
+];
+const CAL_H_START = 8;
+const CAL_H_END   = 22;
+const CAL_SLOT_PX = 60;
+
+let _calWeekOffset = 0;
+let _calDiaSel = null;
+let _reservas  = [];
+let _resSala   = null;
+
+const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+function calDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function calTimeMin(t) { const [h,m]=(t||'0:0').split(':').map(Number); return h*60+(m||0); }
+function calMinTime(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+
+function calGetWeek(off=0) {
+  const t=new Date(); t.setHours(0,0,0,0);
+  const dow=t.getDay(); const diff=dow===0?-6:1-dow;
+  const mon=new Date(t); mon.setDate(t.getDate()+diff+off*7);
+  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+}
+
+async function loadReservas() {
+  const days=calGetWeek(_calWeekOffset);
+  const res=await api(`/api/reservas?from=${calDateStr(days[0])}&to=${calDateStr(days[6])}`);
+  if(!res)return;
+  const d=await res.json();
+  if(d.ok){ _reservas=d.items; renderCalWeekPills(); renderCalDia(); }
+}
+
+function renderCalWeekPills() {
+  const days=calGetWeek(_calWeekOffset);
+  const todayStr=calDateStr(new Date());
+  if(!_calDiaSel || !days.some(d=>calDateStr(d)===calDateStr(_calDiaSel))) {
+    _calDiaSel=days.find(d=>calDateStr(d)===todayStr)||days[0];
+  }
+  const selStr=calDateStr(_calDiaSel);
+  document.getElementById('cal-week-days').innerHTML=days.map(d=>{
+    const ds=calDateStr(d);
+    const isToday=ds===todayStr;
+    const isSel=ds===selStr;
+    const cnt=_reservas.filter(r=>r.data===ds).length;
+    return `<button class="cal-day-pill${isToday?' today':''}${isSel?' selected':''}"
+      onclick="calSelectDay('${ds}')">
+      <span class="cdp-abbr">${DIAS_PT[d.getDay()]}</span>
+      <span class="cdp-num">${d.getDate()}</span>
+      ${cnt>0?'<span class="cdp-dot"></span>':''}
+    </button>`;
+  }).join('');
+}
+
+window.calSelectDay=(ds)=>{
+  const [y,m,day]=ds.split('-').map(Number);
+  _calDiaSel=new Date(y,m-1,day);
+  renderCalWeekPills();
+  renderCalDia();
+};
+
+function renderCalDia() {
+  if(!_calDiaSel)return;
+  const ds=calDateStr(_calDiaSel);
+  const dayRes=_reservas.filter(r=>r.data===ds);
+
+  document.getElementById('cal-rooms-header').innerHTML=
+    `<div></div>`+
+    CAL_ROOMS.map(r=>`
+      <div class="cal-room-col-head ${r.cls}">
+        <div class="cal-room-col-name ${r.cls}">${r.nome}</div>
+        <div class="cal-room-col-sub">${r.tipo} · ${r.cap} pessoa${r.cap>1?'s':''}</div>
+      </div>`).join('');
+
+  let html='';
+  for(let h=CAL_H_START;h<CAL_H_END;h++){
+    const slotS=h*60, slotE=slotS+60;
+    const timeStr=String(h).padStart(2,'0')+':00';
+    html+=`<div class="cal-time-cell">${timeStr}</div>`;
+    CAL_ROOMS.forEach(room=>{
+      const res=dayRes.find(r=>r.sala===room.id&&calTimeMin(r.hora_inicio)<slotE&&calTimeMin(r.hora_fim)>slotS);
+      if(res){
+        const rs=calTimeMin(res.hora_inicio), re=calTimeMin(res.hora_fim);
+        const isFirst=rs>=slotS&&rs<slotE;
+        if(isFirst){
+          const topPx=((rs-slotS)/60)*CAL_SLOT_PX+2;
+          const ht=((re-rs)/60)*CAL_SLOT_PX-4;
+          html+=`<div class="cal-slot occupied" style="overflow:visible;position:relative">
+            <div class="cal-res-block ${room.cls}" style="top:${topPx}px;height:${ht}px">
+              <div>
+                <div class="cal-res-name">${res.cliente}</div>
+                <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
+              </div>
+              <button class="cal-res-cancel" onclick="calCancelar(${res.id})" title="Cancelar reserva">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>`;
+        } else {
+          html+=`<div class="cal-slot occupied-cont"></div>`;
+        }
+      } else {
+        html+=`<div class="cal-slot" onclick="calOpenModal(${room.id},'${ds}','${timeStr}')"></div>`;
+      }
+    });
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+window.calCancelar=async(id)=>{
+  if(!confirm('Cancelar esta reserva?'))return;
+  const res=await api(`/api/reservas/${id}`,{method:'DELETE'});
+  if(res)loadReservas();
+};
+
+// ── Modal Reserva ──
+function calOpenModal(salaId, data, hora) {
+  _resSala=salaId||1;
+  document.getElementById('res-modal-overlay').style.display='flex';
+  document.getElementById('res-modal-err').textContent='';
+  document.getElementById('res-inp-cliente').value='';
+  if(data) document.getElementById('res-inp-data').value=data;
+  if(hora){
+    document.getElementById('res-inp-inicio').value=hora;
+    const sm=calTimeMin(hora);
+    document.getElementById('res-inp-fim').value=calMinTime(Math.min(sm+60, CAL_H_END*60));
+  }
+  document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
+  setTimeout(()=>document.getElementById('res-inp-cliente').focus(),50);
+}
+window.calOpenModal=calOpenModal;
+
+function calCloseModal(){
+  document.getElementById('res-modal-overlay').style.display='none';
+  _resSala=null;
+}
+
+document.getElementById('btn-nova-reserva').addEventListener('click',()=>calOpenModal(1,_calDiaSel?calDateStr(_calDiaSel):null,'09:00'));
+document.getElementById('btn-res-x').addEventListener('click',calCloseModal);
+document.getElementById('btn-res-cancelar').addEventListener('click',calCloseModal);
+document.getElementById('res-modal-overlay').addEventListener('click',e=>{
+  if(e.target===document.getElementById('res-modal-overlay'))calCloseModal();
+});
+
+document.querySelectorAll('.res-room-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    _resSala=+btn.dataset.sala;
+    document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  });
+});
+
+document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
+  const err=document.getElementById('res-modal-err');
+  err.textContent='';
+  const sala=_resSala;
+  const cliente=document.getElementById('res-inp-cliente').value.trim();
+  const data=document.getElementById('res-inp-data').value;
+  const h_ini=document.getElementById('res-inp-inicio').value;
+  const h_fim=document.getElementById('res-inp-fim').value;
+  if(!sala){err.textContent='Selecione uma sala.';return;}
+  if(!cliente){err.textContent='Informe o nome do cliente.';return;}
+  if(!data){err.textContent='Informe a data.';return;}
+  if(!h_ini||!h_fim){err.textContent='Informe o horário.';return;}
+  if(calTimeMin(h_fim)<=calTimeMin(h_ini)){err.textContent='Fim deve ser após o início.';return;}
+  if(calTimeMin(h_ini)<CAL_H_START*60||calTimeMin(h_fim)>CAL_H_END*60){
+    err.textContent=`Horário fora do período (${CAL_H_START}:00–${CAL_H_END}:00).`;return;
+  }
+  const btn=document.getElementById('btn-res-salvar');
+  btn.disabled=true;
+  try{
+    const res=await api('/api/reservas',{method:'POST',body:JSON.stringify({sala,cliente,data,hora_inicio:h_ini,hora_fim:h_fim})});
+    if(!res)return;
+    const d=await res.json();
+    if(!d.ok){err.textContent=d.error||'Erro ao salvar.';return;}
+    calCloseModal();
+    loadReservas();
+  }finally{btn.disabled=false;}
+});
+
+document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});
+document.getElementById('btn-week-next').addEventListener('click',()=>{_calWeekOffset++;_calDiaSel=null;loadReservas();});
+document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekOffset=0;_calDiaSel=null;loadReservas();});
+document.getElementById('btn-open-reservas').addEventListener('click',()=>{showView('view-reservas');loadReservas();});
+document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-main'));

@@ -1151,6 +1151,428 @@
     }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       RESERVAS — CALENDAR
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    :root {
+      --sala-s1: #C9893A;
+      --sala-s1-dim: rgba(201,137,58,.13);
+      --sala-s1-text: #7a4e1a;
+      --sala-s2: #5B6796;
+      --sala-s2-dim: rgba(91,103,150,.13);
+      --sala-s2-text: #2d3559;
+      --sala-s3: #2D7A4F;
+      --sala-s3-dim: rgba(45,122,79,.13);
+      --sala-s3-text: #144228;
+    }
+
+    /* Toolbar */
+    .cal-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .cal-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: border-color .15s, color .15s;
+    }
+    .cal-nav-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Week day pills */
+    .cal-week-days {
+      display: flex;
+      gap: 4px;
+    }
+
+    .cal-day-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1.5px solid transparent;
+      background: var(--surface);
+      cursor: pointer;
+      transition: all .13s;
+      font-family: var(--font);
+      position: relative;
+    }
+    .cal-day-pill:hover { background: var(--surface2); border-color: var(--border); }
+    .cal-day-pill.today { border-color: var(--gold-dark); }
+    .cal-day-pill.selected {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+    }
+
+    .cdp-abbr {
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .cal-day-pill.selected .cdp-abbr,
+    .cal-day-pill.today .cdp-abbr { color: var(--gold-dark); }
+
+    .cdp-num {
+      font-family: var(--serif);
+      font-size: 1.125rem;
+      line-height: 1;
+      color: var(--text);
+    }
+    .cal-day-pill.today .cdp-num {
+      font-weight: 600;
+      color: var(--gold-dark);
+    }
+
+    .cdp-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      position: absolute;
+      bottom: 4px;
+    }
+
+    /* Calendar container */
+    .cal-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .cal-rooms-header {
+      display: grid;
+      grid-template-columns: 56px 1fr 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--surface);
+    }
+
+    .cal-room-col-head {
+      padding: 0.875rem 1rem;
+      border-left: 1px solid var(--border-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cal-room-col-head.s1 { border-top: 3px solid var(--sala-s1); }
+    .cal-room-col-head.s2 { border-top: 3px solid var(--sala-s2); }
+    .cal-room-col-head.s3 { border-top: 3px solid var(--sala-s3); }
+    .cal-time-col-head { border-top: 3px solid transparent; }
+
+    .cal-room-col-name {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .cal-room-col-name.s1 { color: var(--sala-s1); }
+    .cal-room-col-name.s2 { color: var(--sala-s2); }
+    .cal-room-col-name.s3 { color: var(--sala-s3); }
+
+    .cal-room-col-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Calendar grid: time axis + 3 room columns */
+    .cal-scroll {
+      overflow-y: auto;
+      max-height: 560px;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: 56px 1fr 1fr 1fr;
+    }
+
+    .cal-time-cell {
+      padding: 0 0.625rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding-top: 6px;
+      font-size: 0.6875rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      height: 60px;
+      border-bottom: 1px solid var(--border-soft);
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      left: 0;
+    }
+
+    .cal-slot {
+      height: 60px;
+      border-right: 1px solid var(--border-soft);
+      border-bottom: 1px solid var(--border-soft);
+      cursor: pointer;
+      transition: background .1s;
+      position: relative;
+      overflow: visible;
+    }
+    .cal-slot:hover { background: var(--gold-dim); }
+    .cal-slot.occupied { cursor: default; background: transparent; }
+    .cal-slot.occupied:hover { background: transparent; }
+    .cal-slot.occupied-cont { cursor: default; pointer-events: none; background: transparent; }
+    .cal-slot.occupied-cont:hover { background: transparent; }
+
+    /* Reservation blocks */
+    .cal-res-block {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      top: 2px;
+      border-radius: 6px;
+      padding: 5px 8px;
+      overflow: hidden;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cal-res-block.s1 { background: var(--sala-s1-dim); border-left: 3px solid var(--sala-s1); }
+    .cal-res-block.s2 { background: var(--sala-s2-dim); border-left: 3px solid var(--sala-s2); }
+    .cal-res-block.s3 { background: var(--sala-s3-dim); border-left: 3px solid var(--sala-s3); }
+
+    .cal-res-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cal-res-block.s1 .cal-res-name { color: var(--sala-s1-text); }
+    .cal-res-block.s2 .cal-res-name { color: var(--sala-s2-text); }
+    .cal-res-block.s3 .cal-res-name { color: var(--sala-s3-text); }
+
+    .cal-res-time {
+      font-family: var(--mono);
+      font-size: 0.625rem;
+      opacity: 0.75;
+    }
+    .cal-res-block.s1 .cal-res-time { color: var(--sala-s1-text); }
+    .cal-res-block.s2 .cal-res-time { color: var(--sala-s2-text); }
+    .cal-res-block.s3 .cal-res-time { color: var(--sala-s3-text); }
+
+    .cal-res-cancel {
+      position: absolute;
+      top: 4px;
+      right: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .15s;
+      display: flex;
+      align-items: center;
+    }
+    .cal-res-block:hover .cal-res-cancel { opacity: 0.65; }
+    .cal-res-cancel:hover { opacity: 1 !important; }
+    .cal-res-block.s1 .cal-res-cancel svg { stroke: var(--sala-s1-text); }
+    .cal-res-block.s2 .cal-res-cancel svg { stroke: var(--sala-s2-text); }
+    .cal-res-block.s3 .cal-res-cancel svg { stroke: var(--sala-s3-text); }
+
+    /* Legend */
+    .cal-legend {
+      display: flex;
+      gap: 1.125rem;
+      margin-left: auto;
+    }
+    .cal-leg {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .cal-leg-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .cal-leg-dot.s1 { background: var(--sala-s1); }
+    .cal-leg-dot.s2 { background: var(--sala-s2); }
+    .cal-leg-dot.s3 { background: var(--sala-s3); }
+
+    /* Reservation modal */
+    .res-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,20,12,.5);
+      z-index: 4000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      backdrop-filter: blur(3px);
+    }
+
+    .res-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.07);
+      animation: fadeUp .18s ease;
+    }
+
+    .res-modal-hd {
+      padding: 1.5rem 1.75rem 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .res-modal-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .res-modal-sub {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .res-modal-x {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1.125rem;
+      padding: 0;
+      line-height: 1;
+      margin-top: 2px;
+      transition: color .15s;
+    }
+    .res-modal-x:hover { color: var(--text); }
+
+    .res-modal-body {
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .res-room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .res-room-btn {
+      padding: 0.75rem 0.5rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      text-align: center;
+      transition: all .13s;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-family: var(--font);
+    }
+    .res-room-btn:hover { border-color: var(--border-soft); background: var(--surface2); }
+    .res-room-btn[data-sala="1"].active { border-color: var(--sala-s1); background: var(--sala-s1-dim); }
+    .res-room-btn[data-sala="2"].active { border-color: var(--sala-s2); background: var(--sala-s2-dim); }
+    .res-room-btn[data-sala="3"].active { border-color: var(--sala-s3); background: var(--sala-s3-dim); }
+
+    .res-room-btn-name {
+      font-family: var(--serif);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .res-room-btn[data-sala="1"].active .res-room-btn-name { color: var(--sala-s1-text); }
+    .res-room-btn[data-sala="2"].active .res-room-btn-name { color: var(--sala-s2-text); }
+    .res-room-btn[data-sala="3"].active .res-room-btn-name { color: var(--sala-s3-text); }
+
+    .res-room-btn-sub {
+      font-size: 0.6875rem;
+      color: var(--muted);
+    }
+
+    .res-frow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .res-fg {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .res-fg label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .res-fg input,
+    .res-fg select {
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.575rem 0.8rem;
+      outline: none;
+      width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .res-fg input:focus,
+    .res-fg select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+
+    .res-modal-err {
+      font-size: 0.8125rem;
+      color: var(--danger);
+      min-height: 1em;
+      padding: 0 1.75rem;
+    }
+
+    .res-modal-ft {
+      padding: 0.875rem 1.75rem 1.5rem;
+      display: flex;
+      gap: 0.625rem;
+      justify-content: flex-end;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        HISTÓRICO — ANÁLISE
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     .hist-analysis-grid {
@@ -1228,6 +1650,7 @@
     <div class="header-actions">
       <button class="btn btn-outline btn-sm" id="btn-open-massagistas">Massoterapeutas</button>
       <button class="btn btn-outline btn-sm" id="btn-open-tipos">Tipos de Tratamento</button>
+      <button class="btn btn-outline btn-sm" id="btn-open-reservas">Reservas</button>
       <button class="btn btn-outline btn-sm" id="btn-sair">Sair</button>
     </div>
   </header>
@@ -1453,7 +1876,103 @@
       <div id="hist-list"></div>
     </div>
 
+    <!-- ── VIEW: Reservas de Salas ── -->
+    <div id="view-reservas" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-reservas">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Spa</span>
+            <h1 class="page-title">Reservas de Salas</h1>
+          </div>
+          <p class="page-sub">Disponibilidade e agenda das salas de massagem</p>
+        </div>
+        <button class="btn btn-gold" id="btn-nova-reserva" style="margin-left:auto">+ Nova Reserva</button>
+      </div>
+
+      <div class="cal-toolbar">
+        <button class="cal-nav-btn" id="btn-week-prev">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="cal-week-days" id="cal-week-days"></div>
+        <button class="cal-nav-btn" id="btn-week-next">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button class="btn btn-outline btn-sm" id="btn-week-hoje">Hoje</button>
+        <div class="cal-legend">
+          <span class="cal-leg"><span class="cal-leg-dot s1"></span>Serenity</span>
+          <span class="cal-leg"><span class="cal-leg-dot s2"></span>Tranquility</span>
+          <span class="cal-leg"><span class="cal-leg-dot s3"></span>Harmony</span>
+        </div>
+      </div>
+
+      <div class="cal-container">
+        <div class="cal-rooms-header" id="cal-rooms-header"></div>
+        <div class="cal-scroll">
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- MODAL RESERVA -->
+<div class="res-modal-overlay" id="res-modal-overlay" style="display:none">
+  <div class="res-modal">
+    <div class="res-modal-hd">
+      <div>
+        <div class="res-modal-title">Nova Reserva</div>
+        <div class="res-modal-sub">Preencha os dados para confirmar a reserva</div>
+      </div>
+      <button class="res-modal-x" id="btn-res-x">✕</button>
+    </div>
+    <div class="res-modal-body">
+      <div class="res-fg">
+        <label>Sala</label>
+        <div class="res-room-grid" id="res-room-grid">
+          <button class="res-room-btn" data-sala="1">
+            <span class="res-room-btn-name">Serenity</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="2">
+            <span class="res-room-btn-name">Tranquility</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="3">
+            <span class="res-room-btn-name">Harmony</span>
+            <span class="res-room-btn-sub">Casal · 2 pessoas</span>
+          </button>
+        </div>
+      </div>
+      <div class="res-fg">
+        <label>Cliente</label>
+        <input type="text" id="res-inp-cliente" placeholder="Nome do cliente">
+      </div>
+      <div class="res-frow">
+        <div class="res-fg">
+          <label>Data</label>
+          <input type="date" id="res-inp-data">
+        </div>
+        <div class="res-fg"></div>
+      </div>
+      <div class="res-frow">
+        <div class="res-fg">
+          <label>Início</label>
+          <input type="time" id="res-inp-inicio" min="08:00" max="21:00" step="1800">
+        </div>
+        <div class="res-fg">
+          <label>Fim</label>
+          <input type="time" id="res-inp-fim" min="08:30" max="22:00" step="1800">
+        </div>
+      </div>
+    </div>
+    <div class="res-modal-err" id="res-modal-err"></div>
+    <div class="res-modal-ft">
+      <button class="btn btn-outline" id="btn-res-cancelar">Cancelar</button>
+      <button class="btn btn-gold" id="btn-res-salvar">Confirmar Reserva</button>
+    </div>
+  </div>
 </div>
 
 <!-- DRAWER -->

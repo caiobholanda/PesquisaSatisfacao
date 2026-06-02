@@ -9,6 +9,7 @@ import { initDb, listarMassagistas, listarTiposMassagem } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
+import reservasRouter from './routes/reservas.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -37,6 +38,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/reservas', reservasRouter);
 app.use('/api', cadastrosRouter);
 
 // Fallback SPA: admin.html para /admin

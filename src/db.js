@@ -76,6 +76,18 @@ export function initDb() {
       password_hash TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS reservas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sala INTEGER NOT NULL CHECK(sala IN (1,2,3)),
+      cliente TEXT NOT NULL,
+      data TEXT NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      hora_fim TEXT NOT NULL,
+      observacao TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_reservas_data ON reservas(data);
   `);
 
   // Migration: add descricao column to tipos_massagem if absent
@@ -241,6 +253,29 @@ export function historicoMassagista(nome) {
   return getDb()
     .prepare(`SELECT * FROM feedback WHERE LOWER(nome_massoterapeuta) = LOWER(?) ORDER BY submitted_at DESC`)
     .all(nome);
+}
+
+// ── Reservas ──
+export function listarReservasSemana(from, to) {
+  return getDb().prepare(
+    `SELECT * FROM reservas WHERE data >= ? AND data <= ? ORDER BY data, hora_inicio`
+  ).all(from, to);
+}
+
+export function inserirReserva(sala, cliente, data, horaInicio, horaFim, observacao) {
+  const conflito = getDb().prepare(`
+    SELECT id FROM reservas
+    WHERE sala = ? AND data = ?
+    AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+  `).get(sala, data, horaInicio, horaFim);
+  if (conflito) { const e = new Error('CONFLITO'); e.code = 'CONFLITO'; throw e; }
+  return getDb().prepare(
+    `INSERT INTO reservas (sala, cliente, data, hora_inicio, hora_fim, observacao) VALUES (?,?,?,?,?,?)`
+  ).run(sala, cliente, data, horaInicio, horaFim, observacao || null).lastInsertRowid;
+}
+
+export function cancelarReserva(id) {
+  return getDb().prepare(`DELETE FROM reservas WHERE id = ?`).run(id).changes;
 }
 
 export function buscarAdmin(username) {
