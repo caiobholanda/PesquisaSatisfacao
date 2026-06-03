@@ -19,13 +19,23 @@ function tokenValido() {
   } catch { return false; }
 }
 
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 async function api(url, opts = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
-    ...opts,
-  });
-  if (res.status === 401) { logout(); return null; }
-  return res;
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+      ...opts,
+    });
+    if (res.status === 401) { logout(); return null; }
+    return res;
+  } catch (e) {
+    if (e.name === 'AbortError') return null;
+    throw e;
+  }
 }
 
 function logout() { pararPollingStats?.(); clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
