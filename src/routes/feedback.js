@@ -80,6 +80,13 @@ router.post('/', rateLimit, (req, res) => {
   return res.status(201).json({ ok: true, id });
 });
 
+// GET /api/feedback/:id — protegido
+router.get('/:id(\\d+)', requireAuth, (req, res) => {
+  const item = getFeedbackById(parseInt(req.params.id));
+  if (!item) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  res.json({ ok: true, item });
+});
+
 // GET /api/feedback — protegido
 router.get('/', requireAuth, (req, res) => {
   const { origem, tipo_cliente, from, to, limit = '50', offset = '0', format } = req.query;
