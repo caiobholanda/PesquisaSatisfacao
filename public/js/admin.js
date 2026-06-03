@@ -1361,9 +1361,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   if (!massagistaId) { err.textContent = 'Selecione a massoterapeuta que vai atender.'; return; }
 
   // Verificação local de conflito antes de bater no servidor
-  const conflito = calDetectarConflito(sala, data, horaInicio, _resHoraFim);
-  if (conflito) {
-    calMostrarConflito(conflito);
+  const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim);
+  if (conflitoLocal) {
+    calMostrarConflito(conflitoLocal);
     return;
   }
 
