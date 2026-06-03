@@ -96,10 +96,21 @@ export function initDb() {
 
   // Migration: add descricao column to tipos_massagem if absent
   try { db.exec(`ALTER TABLE tipos_massagem ADD COLUMN descricao TEXT`); } catch {}
+  // Migration: add combo/categoria/linhas columns to tipos_massagem
+  for (const col of [
+    `tipo TEXT NOT NULL DEFAULT 'individual'`,
+    'categoria TEXT',
+    'componentes TEXT',
+    'linhas TEXT',
+  ]) {
+    try { db.exec(`ALTER TABLE tipos_massagem ADD COLUMN ${col}`); } catch {}
+  }
   // Migration: add enriched fields to reservas if absent
-  for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT']) {
+  for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
   }
+
+  seedTratamentosGranSpa();
 
   const adminUser = process.env.ADMIN_USER || 'admin';
   const adminPass = process.env.ADMIN_PASS || 'TrocarEmProducao!';
