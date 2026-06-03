@@ -1373,15 +1373,20 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify({
       sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data,
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
-      linha, tipo_massagem_id: tipoMassagemId
+      linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId
     })});
     if(!res)return;
     const d=await res.json();
     if(!d.ok){
-      // Conflito detectado pelo servidor (fallback caso _reservas esteja desatualizado)
+      // Conflito detectado pelo servidor
+      if (res.status === 409 && d.conflito) {
+        calMostrarConflito({ tipo: d.tipo, reserva: { ...d.conflito, data, sala, massagista_id: massagistaId } });
+        await loadReservas();
+        return;
+      }
       if (res.status === 409) {
         await loadReservas();
-        const c = calDetectarConflito(sala, data, horaInicio, _resHoraFim);
+        const c = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim);
         if (c) { calMostrarConflito(c); return; }
       }
       err.textContent = d.error || 'Erro ao salvar.';
