@@ -399,17 +399,41 @@ export function listarReservasSemana(from, to) {
 }
 
 export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, opts = {}) {
-  const { linha = null, tipo_massagem_id = null } = opts;
-  const conflito = getDb().prepare(`
-    SELECT id FROM reservas
+  const { linha = null, tipo_massagem_id = null, massagista_id = null } = opts;
+  const db = getDb();
+
+  // Conflito de sala
+  const conflitoSala = db.prepare(`
+    SELECT id, cliente, hora_inicio, hora_fim FROM reservas
     WHERE sala = ? AND data = ?
     AND NOT (hora_fim <= ? OR hora_inicio >= ?)
   `).get(sala, data, horaInicio, horaFim);
-  if (conflito) { const e = new Error('CONFLITO'); e.code = 'CONFLITO'; throw e; }
-  return getDb().prepare(
-    `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
-  ).run(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, linha, tipo_massagem_id).lastInsertRowid;
+  if (conflitoSala) {
+    const e = new Error('CONFLITO_SALA');
+    e.code = 'CONFLITO_SALA';
+    e.conflito = conflitoSala;
+    throw e;
+  }
+
+  // Conflito de massoterapeuta
+  if (massagista_id) {
+    const conflitoProf = db.prepare(`
+      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+      WHERE massagista_id = ? AND data = ?
+      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+    `).get(massagista_id, data, horaInicio, horaFim);
+    if (conflitoProf) {
+      const e = new Error('CONFLITO_PROF');
+      e.code = 'CONFLITO_PROF';
+      e.conflito = conflitoProf;
+      throw e;
+    }
+  }
+
+  return db.prepare(
+    `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
+  ).run(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, linha, tipo_massagem_id, massagista_id).lastInsertRowid;
 }
 
 export function cancelarReserva(id) {
