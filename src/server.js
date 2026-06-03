@@ -72,6 +72,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/reservas', reservasRouter);
+app.use('/api/dev', devRouter);
 app.use('/api', cadastrosRouter);
 
 // Fallback SPA: admin.html para /admin
