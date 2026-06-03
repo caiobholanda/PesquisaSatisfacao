@@ -81,8 +81,10 @@ router.post('/', rateLimit, (req, res) => {
 });
 
 // GET /api/feedback/:id — protegido
-router.get('/:id(\\d+)', requireAuth, (req, res) => {
-  const item = getFeedbackById(parseInt(req.params.id));
+router.get('/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: 'ID inválido' });
+  const item = getFeedbackById(id);
   if (!item) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   res.json({ ok: true, item });
 });
