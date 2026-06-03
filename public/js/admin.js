@@ -744,10 +744,10 @@ window.showHistoricoMassagista = async (id, nome) => {
   ];
 
   const servicosHtml = HIST_SERVICOS.map(({ campo, label }) =>
-    `<div class="q-row"><div class="q-label">${label}</div>${renderDistBar(computeDist(campo))}</div>`
+    `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(items, campo))}</div>${renderDistBar(computeDist(campo))}</div>`
   ).join('');
   const instalacoesHtml = HIST_INSTALACOES.map(({ campo, label }) =>
-    `<div class="q-row"><div class="q-label">${label}</div>${renderDistBar(computeDist(campo))}</div>`
+    `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(items, campo))}</div>${renderDistBar(computeDist(campo))}</div>`
   ).join('');
 
   const comentariosServicos = items
