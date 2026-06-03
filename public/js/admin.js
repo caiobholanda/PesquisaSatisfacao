@@ -864,12 +864,12 @@ function renderCalDia() {
           const topPx=((rs-slotS)/60)*CAL_SLOT_PX+2;
           const ht=((re-rs)/60)*CAL_SLOT_PX-4;
           html+=`<div class="cal-slot occupied" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}" style="top:${topPx}px;height:${ht}px">
+            <div class="cal-res-block ${room.cls}" style="top:${topPx}px;height:${ht}px;cursor:pointer" onclick="calVerDetalhes(${res.id})" title="Clique para ver detalhes">
               <div>
                 <div class="cal-res-name">${res.cliente}</div>
                 <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
               </div>
-              <button class="cal-res-cancel" onclick="calCancelar(${res.id})" title="Cancelar reserva">
+              <button class="cal-res-cancel" onclick="event.stopPropagation();calCancelar(${res.id})" title="Cancelar reserva">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -911,13 +911,131 @@ function calOpenModal(salaId, data, hora) {
   });
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
-  document.getElementById('res-tempo-val').textContent = _resHoraInicio;
+  document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
+  document.getElementById('res-tempo-val').textContent = 'selecione um tratamento';
   if(data) document.getElementById('res-inp-data').value=data;
   document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
   loadTratamentosModal();
   setTimeout(()=>document.getElementById('res-inp-nome').focus(),50);
 }
 window.calOpenModal=calOpenModal;
+
+// Recalcula hora_fim sempre que hora_inicio ou tratamento mudam
+function calAtualizarHoraFim() {
+  const inicio = document.getElementById('res-inp-hora-inicio').value;
+  const trat = document.getElementById('res-inp-tratamento');
+  const opt = trat.options[trat.selectedIndex];
+  const dur = parseInt(opt?.dataset?.dur || '0', 10);
+  if (!inicio) { _resHoraInicio = null; _resHoraFim = null; document.getElementById('res-tempo-val').textContent = '—'; return; }
+  _resHoraInicio = inicio;
+  if (!trat.value || !dur) {
+    _resHoraFim = null;
+    document.getElementById('res-tempo-val').textContent = trat.value ? `${inicio} (tratamento sem duração)` : `início ${inicio} · selecione um tratamento`;
+    return;
+  }
+  _resHoraFim = calMinTime(Math.min(calTimeMin(inicio) + dur, CAL_H_END * 60));
+  document.getElementById('res-tempo-val').textContent = `${inicio} – ${_resHoraFim} · ${dur} min`;
+}
+
+// Detecta conflito local antes de bater no servidor
+function calDetectarConflito(sala, data, horaInicio, horaFim, excluirId) {
+  return _reservas.find(r =>
+    r.sala === sala &&
+    r.data === data &&
+    r.id !== excluirId &&
+    !(r.hora_fim <= horaInicio || r.hora_inicio >= horaFim)
+  );
+}
+
+function calMostrarConflito(conflito) {
+  const sala = CAL_ROOMS.find(r => r.id === conflito.sala);
+  document.getElementById('conflito-info').innerHTML = `
+    <div class="conflito-card-row"><span class="conflito-card-label">Sala</span><span class="conflito-card-val">${sala ? sala.nome : 'Sala ' + conflito.sala}</span></div>
+    <div class="conflito-card-row"><span class="conflito-card-label">Data</span><span class="conflito-card-val">${calFmtData(conflito.data)}</span></div>
+    <div class="conflito-card-row"><span class="conflito-card-label">Horário ocupado</span><span class="conflito-card-val">${conflito.hora_inicio} – ${conflito.hora_fim}</span></div>
+    <div class="conflito-card-row"><span class="conflito-card-label">Cliente</span><span class="conflito-card-val" style="font-family:inherit">${conflito.cliente}</span></div>
+  `;
+  document.getElementById('conflito-overlay').classList.add('aberto');
+}
+
+function calFmtData(ymd) {
+  if (!ymd) return '—';
+  const [y,m,d] = ymd.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+document.getElementById('conflito-ok').addEventListener('click', () => {
+  document.getElementById('conflito-overlay').classList.remove('aberto');
+});
+document.getElementById('conflito-overlay').addEventListener('click', e => {
+  if (e.target.id === 'conflito-overlay') e.target.classList.remove('aberto');
+});
+
+document.getElementById('res-inp-hora-inicio').addEventListener('input', calAtualizarHoraFim);
+document.getElementById('res-inp-hora-inicio').addEventListener('change', calAtualizarHoraFim);
+
+// Modal de detalhes da reserva
+function calVerDetalhes(id) {
+  const r = _reservas.find(x => x.id === id);
+  if (!r) return;
+  const sala = CAL_ROOMS.find(s => s.id === r.sala);
+  const salaName = sala ? sala.nome : `Sala ${r.sala}`;
+  const salaCls = sala ? sala.cls : 's1';
+  const salaTipo = sala ? `${sala.tipo} · ${sala.cap} pessoa${sala.cap>1?'s':''}` : '';
+  const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
+  const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
+  const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
+  const empty = v => v && v.toString().trim() ? `<span class="resdet-value">${v}</span>` : '<span class="resdet-value empty">não informado</span>';
+  const emptyMono = v => v && v.toString().trim() ? `<span class="resdet-value mono">${v}</span>` : '<span class="resdet-value empty">não informado</span>';
+
+  document.getElementById('resdet-sub').innerHTML =
+    `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span> <span style="margin-left:.4rem;color:var(--muted);font-size:.78rem">${salaTipo}</span>`;
+
+  document.getElementById('resdet-body').innerHTML = `
+    <div class="resdet-tempo-strip">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <div>
+        <div class="resdet-tempo-strip-val">${r.hora_inicio} – ${r.hora_fim}</div>
+        <div style="font-size:.74rem;color:var(--muted)">duração ${dur} min</div>
+      </div>
+      <div class="resdet-tempo-strip-data">${calFmtData(r.data)}</div>
+    </div>
+
+    <div class="resdet-section">
+      <div class="resdet-section-title">Cliente</div>
+      <div class="resdet-row"><span class="resdet-label">Nome</span>${empty(r.cliente)}</div>
+      <div class="resdet-row"><span class="resdet-label">Tipo</span><span class="resdet-pill-tipo ${tipoCliCls}">${tipoCli}</span></div>
+      ${r.tipo_cliente === 'hospede' ? `<div class="resdet-row"><span class="resdet-label">Apartamento</span>${emptyMono(r.apto)}</div>` : ''}
+      <div class="resdet-row"><span class="resdet-label">E-mail</span>${empty(r.email)}</div>
+      <div class="resdet-row"><span class="resdet-label">Telefone</span>${emptyMono(r.telefone)}</div>
+    </div>
+
+    <div class="resdet-section">
+      <div class="resdet-section-title">Tratamento</div>
+      <div class="resdet-row"><span class="resdet-label">Serviço</span>${r.tratamento ? `<span class="resdet-value gold">${r.tratamento}</span>` : '<span class="resdet-value empty">não informado</span>'}</div>
+      <div class="resdet-row"><span class="resdet-label">Duração</span><span class="resdet-value mono">${dur} min</span></div>
+    </div>
+
+    <div class="resdet-section">
+      <div class="resdet-section-title">Registro</div>
+      <div class="resdet-row"><span class="resdet-label">Reserva #</span><span class="resdet-value mono">${r.id}</span></div>
+      <div class="resdet-row"><span class="resdet-label">Criado em</span>${emptyMono(r.criado_em)}</div>
+    </div>
+  `;
+
+  document.getElementById('resdet-cancelar-res').onclick = () => {
+    document.getElementById('resdet-overlay').style.display = 'none';
+    calCancelar(r.id);
+  };
+  document.getElementById('resdet-overlay').style.display = 'flex';
+}
+window.calVerDetalhes = calVerDetalhes;
+
+document.getElementById('resdet-x').addEventListener('click', () => document.getElementById('resdet-overlay').style.display = 'none');
+document.getElementById('resdet-fechar').addEventListener('click', () => document.getElementById('resdet-overlay').style.display = 'none');
+document.getElementById('resdet-overlay').addEventListener('click', e => {
+  if (e.target.id === 'resdet-overlay') e.target.style.display = 'none';
+});
 
 function calCloseModal(){
   document.getElementById('res-modal-overlay').style.display='none';
@@ -942,15 +1060,7 @@ document.querySelectorAll('.res-tipo-btn').forEach(btn=>{
   btn.addEventListener('click',()=>calSetTipo(btn.dataset.tipo));
 });
 
-document.getElementById('res-inp-tratamento').addEventListener('change', function() {
-  const opt = this.options[this.selectedIndex];
-  const rawDur = parseInt(opt?.dataset?.dur || '0', 10);
-  const dur = rawDur || 60;
-  if (!this.value) { _resHoraFim = null; document.getElementById('res-tempo-val').textContent = _resHoraInicio || '—'; return; }
-  _resHoraFim = calMinTime(Math.min(calTimeMin(_resHoraInicio) + dur, CAL_H_END * 60));
-  const durLabel = rawDur ? ` (${rawDur} min)` : '';
-  document.getElementById('res-tempo-val').textContent = `${_resHoraInicio} – ${_resHoraFim}${durLabel}`;
-});
+document.getElementById('res-inp-tratamento').addEventListener('change', calAtualizarHoraFim);
 
 document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const err=document.getElementById('res-modal-err');
@@ -963,22 +1073,41 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const telefone=document.getElementById('res-inp-tel').value.trim();
   const tratamento=document.getElementById('res-inp-tratamento').value.trim();
   const data=document.getElementById('res-inp-data').value;
+  const horaInicio=document.getElementById('res-inp-hora-inicio').value;
   if(!sala){err.textContent='Selecione uma sala.';return;}
   if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
   if(!nome){err.textContent='Informe o nome do cliente.';return;}
   if(!email){err.textContent='Informe o e-mail.';return;}
+  if(!horaInicio){err.textContent='Informe a hora de início.';return;}
   if(!tratamento){err.textContent='Selecione o tratamento.';return;}
   if(!_resHoraFim){err.textContent='Tratamento sem duração definida, contate o administrador.';return;}
   if(!data){err.textContent='Informe a data.';return;}
+
+  // Verificação local de conflito antes de bater no servidor
+  const conflito = calDetectarConflito(sala, data, horaInicio, _resHoraFim);
+  if (conflito) {
+    calMostrarConflito(conflito);
+    return;
+  }
+
   const btn=document.getElementById('btn-res-salvar');
   btn.disabled=true;
   try{
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify({
-      sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data, hora_inicio: _resHoraInicio, hora_fim: _resHoraFim
+      sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data, hora_inicio: horaInicio, hora_fim: _resHoraFim
     })});
     if(!res)return;
     const d=await res.json();
-    if(!d.ok){err.textContent=d.error||'Erro ao salvar.';return;}
+    if(!d.ok){
+      // Conflito detectado pelo servidor (fallback caso _reservas esteja desatualizado)
+      if (res.status === 409) {
+        await loadReservas();
+        const c = calDetectarConflito(sala, data, horaInicio, _resHoraFim);
+        if (c) { calMostrarConflito(c); return; }
+      }
+      err.textContent = d.error || 'Erro ao salvar.';
+      return;
+    }
     calCloseModal();
     loadReservas();
   }finally{btn.disabled=false;}

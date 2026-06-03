@@ -1667,6 +1667,204 @@
       border-top: 1px solid var(--border-soft);
     }
 
+    .res-fg-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 480px) { .res-fg-row { grid-template-columns: 1fr; } }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       MODAL DE CONFLITO
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .conflito-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,26,.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      padding: 1rem;
+    }
+    .conflito-overlay.aberto { display: flex; animation: confFade .2s ease; }
+    @keyframes confFade { from { opacity: 0 } to { opacity: 1 } }
+    .conflito-modal {
+      background: var(--surface);
+      border-radius: 14px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 24px 56px rgba(184,84,80,.18), 0 0 0 1px var(--border);
+      overflow: hidden;
+      animation: confPop .25s cubic-bezier(.34,1.56,.64,1);
+      border-top: 4px solid var(--danger);
+    }
+    @keyframes confPop { from { transform: translateY(20px) scale(.96); opacity: 0 } to { transform: none; opacity: 1 } }
+    .conflito-hd {
+      padding: 1.5rem 1.5rem 0.5rem;
+      text-align: center;
+    }
+    .conflito-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 0.85rem;
+      border-radius: 50%;
+      background: var(--danger-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--danger);
+    }
+    .conflito-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.01em;
+    }
+    .conflito-msg {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .conflito-body {
+      padding: 1rem 1.5rem 0;
+    }
+    .conflito-card {
+      background: var(--danger-dim);
+      border: 1px solid rgba(184,84,80,.25);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+    }
+    .conflito-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.2rem 0;
+      font-size: 0.87rem;
+    }
+    .conflito-card-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .conflito-card-val {
+      color: var(--text);
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+    .conflito-ft {
+      padding: 1.25rem 1.5rem 1.5rem;
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       DETALHES DA RESERVA
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .resdet-sala-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .resdet-sala-badge.s1 { background: var(--sala-s1-dim); color: var(--sala-s1-text); }
+    .resdet-sala-badge.s2 { background: var(--sala-s2-dim); color: var(--sala-s2-text); }
+    .resdet-sala-badge.s3 { background: var(--sala-s3-dim); color: var(--sala-s3-text); }
+    .resdet-sala-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .resdet-sala-dot.s1 { background: var(--sala-s1); }
+    .resdet-sala-dot.s2 { background: var(--sala-s2); }
+    .resdet-sala-dot.s3 { background: var(--sala-s3); }
+    .resdet-section {
+      padding: 0.5rem 0 0.85rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .resdet-section:last-child { border-bottom: none; padding-bottom: 0; }
+    .resdet-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.65rem;
+      font-weight: 500;
+    }
+    .resdet-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 0.6rem 1rem;
+      align-items: baseline;
+      padding: 0.32rem 0;
+    }
+    .resdet-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .resdet-value {
+      font-size: 0.93rem;
+      color: var(--text);
+      font-weight: 500;
+      word-break: break-word;
+    }
+    .resdet-value.empty {
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .resdet-value.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+    }
+    .resdet-value.gold {
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+    .resdet-pill-tipo {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .resdet-pill-tipo.hospede {
+      background: rgba(91,103,150,.12);
+      color: var(--indigo);
+    }
+    .resdet-pill-tipo.passante {
+      background: var(--gold-dim);
+      color: var(--gold-dark);
+    }
+    .resdet-tempo-strip {
+      background: var(--surface2);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 0.7rem 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.4rem;
+    }
+    .resdet-tempo-strip svg { flex-shrink: 0; color: var(--gold); }
+    .resdet-tempo-strip-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .resdet-tempo-strip-data {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        HISTÓRICO — ANÁLISE
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -2072,12 +2270,18 @@
           <option value="">— Selecione —</option>
         </select>
       </div>
-      <div class="res-fg">
-        <label>Data <span style="color:var(--danger)">*</span></label>
-        <input type="date" id="res-inp-data">
+      <div class="res-fg-row">
+        <div class="res-fg">
+          <label>Data <span style="color:var(--danger)">*</span></label>
+          <input type="date" id="res-inp-data">
+        </div>
+        <div class="res-fg">
+          <label>Hora de início <span style="color:var(--danger)">*</span></label>
+          <input type="time" id="res-inp-hora-inicio" min="08:00" max="22:00" step="900">
+        </div>
       </div>
       <div class="res-tempo-info" id="res-tempo-info">
-        <span class="res-tempo-label">Horário</span>
+        <span class="res-tempo-label">Horário final</span>
         <span id="res-tempo-val">—</span>
       </div>
     </div>
@@ -2085,6 +2289,49 @@
     <div class="res-modal-ft">
       <button class="btn btn-outline" id="btn-res-cancelar">Cancelar</button>
       <button class="btn btn-gold" id="btn-res-salvar">Confirmar Reserva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE CONFLITO DE HORÁRIO -->
+<div class="conflito-overlay" id="conflito-overlay">
+  <div class="conflito-modal">
+    <div class="conflito-hd">
+      <div class="conflito-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="conflito-title">Horário indisponível</div>
+      <div class="conflito-msg">Já existe uma reserva nesta sala que se sobrepõe ao horário escolhido. Não é possível ter duas sessões ao mesmo tempo.</div>
+    </div>
+    <div class="conflito-body">
+      <div class="conflito-card" id="conflito-info"></div>
+    </div>
+    <div class="conflito-ft">
+      <button class="btn btn-gold" id="conflito-ok">Escolher outro horário</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES DA RESERVA -->
+<div class="res-modal-overlay" id="resdet-overlay" style="display:none">
+  <div class="res-modal">
+    <div class="res-modal-hd">
+      <div>
+        <div class="res-modal-title">Detalhes da Reserva</div>
+        <div class="res-modal-sub" id="resdet-sub">—</div>
+      </div>
+      <button class="res-modal-x" id="resdet-x">✕</button>
+    </div>
+    <div class="res-modal-body" id="resdet-body">
+      <!-- preenchido por JS -->
+    </div>
+    <div class="res-modal-ft" style="justify-content:space-between">
+      <button class="btn btn-outline" id="resdet-cancelar-res" style="color:var(--danger);border-color:var(--danger)">Cancelar Reserva</button>
+      <button class="btn btn-gold" id="resdet-fechar">Fechar</button>
     </div>
   </div>
 </div>
