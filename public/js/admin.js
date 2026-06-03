@@ -1127,6 +1127,25 @@ function calMostrarConflito(conflito) {
   document.getElementById('conflito-overlay').classList.add('aberto');
 }
 
+function _renderResDetComboPreco(r) {
+  // Localiza o tipo_massagem (cache _tratamentos pode não ter sido carregado nesta sessão)
+  const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id || t.nome === r.tratamento);
+  let out = '';
+  if (tm?.tipo === 'combo' && tm.componentes_nomes?.length) {
+    out += `<div class="resdet-row"><span class="resdet-label">Inclusos</span><span class="resdet-value">${tm.componentes_nomes.map(n => `<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.15rem .55rem;border-radius:999px;font-size:.78rem;font-weight:500;margin-right:.3rem;margin-bottom:.2rem">${n}</span>`).join('')}</span></div>`;
+  }
+  if (tm?.preco) {
+    const sub = Number(tm.preco);
+    const taxa = sub * 0.15;
+    const total = sub + taxa;
+    const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    out += `<div class="resdet-row" style="border-top:1px dashed var(--border-soft);padding-top:.5rem;margin-top:.4rem"><span class="resdet-label">Subtotal</span><span class="resdet-value mono">R$ ${fmt(sub)}</span></div>`;
+    out += `<div class="resdet-row"><span class="resdet-label">Taxa serviço 15%</span><span class="resdet-value mono">R$ ${fmt(taxa)}</span></div>`;
+    out += `<div class="resdet-row"><span class="resdet-label" style="font-weight:600;color:var(--text)">Total</span><span class="resdet-value gold mono" style="font-size:1rem">R$ ${fmt(total)}</span></div>`;
+  }
+  return out;
+}
+
 function calFmtData(ymd) {
   if (!ymd) return '—';
   const [y,m,d] = ymd.split('-');
