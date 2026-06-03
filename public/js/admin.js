@@ -197,9 +197,14 @@ const NOTA_MAP = { otimo: 9, bom: 3, regular: 1, ruim: 0 };
 const NOTA_MAX = 9;
 function avgRow(r) {
   const campos = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica','instalacoes_conforto','instalacoes_organizacao','instalacoes_conveniencia'];
-  const vals = campos.map(c => NOTA_MAP[r[c]]).filter(Boolean);
+  const vals = campos.map(c => NOTA_MAP[r[c]]).filter(v => v !== undefined && v !== null);
   if (!vals.length) return null;
   return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+}
+function avgCampo(items, campo) {
+  const vals = items.map(r => NOTA_MAP[r[campo]]).filter(v => v !== undefined && v !== null);
+  if (!vals.length) return null;
+  return +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
 }
 function scoreClass(v) { if (v == null) return ''; return v >= 3.5 ? 'score-green' : v >= 2.5 ? 'score-yellow' : 'score-red'; }
 function fmtDate(s) { if (!s) return '—'; return s.slice(0,10).split('-').reverse().join('/'); }
