@@ -21,7 +21,7 @@ function _hhmmToMin(s) {
 }
 
 router.post('/', (req, res) => {
-  const { sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim } = req.body || {};
+  const { sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id } = req.body || {};
   if (!sala || !tipo_cliente || !cliente?.trim() || !email?.trim() || !data || !hora_inicio || !hora_fim)
     return res.status(400).json({ ok: false, error: 'Campos obrigatórios ausentes' });
   if (!['hospede', 'passante'].includes(tipo_cliente))
@@ -37,7 +37,11 @@ router.post('/', (req, res) => {
     return res.status(400).json({ ok: false, error: 'O tratamento terminaria após o fechamento do spa às 22:00' });
 
   try {
-    const id = inserirReserva(+sala, cliente.trim(), tipo_cliente, apto?.trim() || null, email.trim(), telefone?.trim() || null, tratamento?.trim() || null, data, hora_inicio, hora_fim);
+    const id = inserirReserva(
+      +sala, cliente.trim(), tipo_cliente, apto?.trim() || null, email.trim(),
+      telefone?.trim() || null, tratamento?.trim() || null, data, hora_inicio, hora_fim,
+      { linha: linha?.trim() || null, tipo_massagem_id: tipo_massagem_id ? +tipo_massagem_id : null }
+    );
     res.status(201).json({ ok: true, id });
   } catch (e) {
     if (e.code === 'CONFLITO') return res.status(409).json({ ok: false, error: 'Horário já reservado para esta sala' });
