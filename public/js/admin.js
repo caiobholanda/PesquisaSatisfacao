@@ -427,10 +427,16 @@ function renderMassagistas() {
     const statHtml = tot > 0
       ? `<span class="mgmt-item-stat">${tot} avaliação${tot !== 1 ? 'ões' : ''}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
       : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
+    const badges = [];
+    if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${m.matricula}</span>`);
+    if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${m.vinculo}</span>`);
+    if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">🌍 Bilíngue</span>`);
     return `
       <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
         <div class="mgmt-item-info">
           <span class="mgmt-item-nome">${m.nome}</span>
+          ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
+          ${m.especialidade_original ? `<span class="mgmt-item-esp">${m.especialidade_original}</span>` : ''}
           ${statHtml}
         </div>
         <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
