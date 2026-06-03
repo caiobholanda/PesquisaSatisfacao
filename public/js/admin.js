@@ -820,10 +820,44 @@ async function loadTratamentosModal() {
     const d = await r.json();
     _tratamentos = d.items || [];
     const sel = document.getElementById('res-inp-tratamento');
-    sel.innerHTML = '<option value="">— Selecione —</option>' +
-      _tratamentos.map(t => `<option value="${t.nome}" data-dur="${t.duracao_min||''}">${t.nome}${t.duracao_min?' ('+t.duracao_min+' min)':''}</option>`).join('');
+
+    // Agrupa por categoria com optgroups, combos primeiro
+    const ordem = ['Combo', 'Massagem', 'Tratamento', 'Facial', 'Complementar'];
+    const porCat = {};
+    for (const t of _tratamentos) {
+      const cat = t.categoria || 'Outros';
+      (porCat[cat] = porCat[cat] || []).push(t);
+    }
+    const cats = ordem.filter(c => porCat[c]).concat(Object.keys(porCat).filter(c => !ordem.includes(c)));
+
+    let html = '<option value="">— Selecione —</option>';
+    for (const cat of cats) {
+      html += `<optgroup label="${cat}">`;
+      for (const t of porCat[cat]) {
+        const precoLbl = t.preco ? ` · R$ ${Number(t.preco).toFixed(0)}` : '';
+        const durLbl = t.duracao_min ? ` (${t.duracao_min} min)` : '';
+        html += `<option value="${t.nome}" data-id="${t.id}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-tipo="${t.tipo||'individual'}">${t.nome}${durLbl}${precoLbl}</option>`;
+      }
+      html += '</optgroup>';
+    }
+    sel.innerHTML = html;
   } catch {}
 }
+
+// Localiza o tratamento selecionado no modal
+function _tratSelecionado() {
+  const sel = document.getElementById('res-inp-tratamento');
+  if (!sel.value) return null;
+  return _tratamentos.find(t => t.nome === sel.value) || null;
+}
+
+// Slots de 30min: bloco = ceil(duracao/30) * 30
+function _blocoMinutos(durTratamento) {
+  if (!durTratamento) return 0;
+  return Math.ceil(durTratamento / 30) * 30;
+}
+
+const TAXA_SERVICO = 0.15;
 
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
