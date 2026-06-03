@@ -208,6 +208,21 @@ function avgCampo(items, campo) {
 }
 function scoreClass(v) { if (v == null) return ''; return v >= 3.5 ? 'score-green' : v >= 2.5 ? 'score-yellow' : 'score-red'; }
 function fmtDate(s) { if (!s) return '—'; return s.slice(0,10).split('-').reverse().join('/'); }
+function fmtDataHoraBR(s) {
+  if (!s) return null;
+  // SQLite armazena em UTC: '2026-06-03 16:44:29' → trata como UTC
+  const iso = s.includes('T') ? s : s.replace(' ', 'T') + 'Z';
+  const d = new Date(iso);
+  if (isNaN(d)) return s;
+  const partes = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Fortaleza',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const get = t => partes.find(p => p.type === t)?.value || '';
+  return `${get('day')}/${get('month')}/${get('year')} às ${get('hour')}:${get('minute')}`;
+}
 
 async function loadTable() {
   const params = new URLSearchParams({ limit: LIMIT, offset: _offset });
