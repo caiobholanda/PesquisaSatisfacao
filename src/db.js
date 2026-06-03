@@ -240,6 +240,32 @@ export function statsFeedback({ from, to } = {}) {
   return { total, periodo: { from: dfrom, to: dto }, porOrigem, porTipo, recomenda, medias, mediaGeral, pctRecomenda, distribuicoes, textos };
 }
 
+// ── Seed: 6 massoterapeutas do Gran Spa ──
+function seedMassoterapeutasGranSpa() {
+  const db = getDb();
+  // Idempotente: só roda se ainda não há massagistas com matrícula
+  const jaSeed = db.prepare('SELECT COUNT(*) AS c FROM massagistas WHERE matricula IS NOT NULL AND matricula != ""').get().c;
+  if (jaSeed > 0) return;
+
+  // Apaga as antigas (sem matrícula) — apagamento permanente conforme decisão do admin
+  db.prepare('DELETE FROM massagistas').run();
+
+  const DISP_DEFAULT = JSON.stringify({ seg: '08:00-22:00', ter: '08:00-22:00', qua: '08:00-22:00', qui: '08:00-22:00', sex: '08:00-22:00', sab: '08:00-22:00', dom: '08:00-22:00' });
+  const profs = [
+    { mat: '0010001573', nome: 'GERMANA LIMA DA SILVA',                     esp: 'MASSOTERAPEUTA BILINGUE PL',   vinc: 'Pleno',     bil: 1 },
+    { mat: '0010002052', nome: 'ISADORA MARIA SOUSA BEZERRA DE MENEZES',    esp: 'MASSOTERAPEUTA PART TIME',     vinc: 'Part Time', bil: 0 },
+    { mat: '0010001711', nome: 'KAROLINE COSTA DE FREITAS',                 esp: 'MASSOTERAPEUTA PART TIME',     vinc: 'Part Time', bil: 0 },
+    { mat: '0010001614', nome: 'ANTONIA ANA CRISTINA SAMPAIO DE SOUSA',     esp: 'MASSOTERAPEUTA PL',            vinc: 'Pleno',     bil: 0 },
+    { mat: '0010001981', nome: 'VALDERLANIA ALEXANDRE BEZERRA',             esp: 'MASSOTERAPEUTA PL',            vinc: 'Pleno',     bil: 0 },
+    { mat: '0010001881', nome: 'MAYARA DOS SANTOS DIAS',                    esp: 'MASSOTERAPEUTA PL',            vinc: 'Pleno',     bil: 0 },
+  ];
+  const stmt = db.prepare(
+    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade, ativo)
+     VALUES (?, ?, ?, 'Massoterapeuta', ?, ?, ?, 1)`
+  );
+  for (const p of profs) stmt.run(p.nome, p.mat, p.esp, p.vinc, p.bil, DISP_DEFAULT);
+}
+
 // ── Massagistas ──
 export function listarMassagistas() {
   return getDb().prepare('SELECT * FROM massagistas ORDER BY nome ASC').all();
