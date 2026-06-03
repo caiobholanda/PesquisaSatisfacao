@@ -1761,6 +1761,72 @@
     }
     @media (max-width: 480px) { .res-fg-row { grid-template-columns: 1fr; } }
 
+    /* Combo info box */
+    .res-combo-box {
+      margin-top: 0.6rem;
+      padding: 0.7rem 0.85rem;
+      background: var(--gold-pale, var(--gold-dim));
+      border: 1px solid var(--gold);
+      border-left: 3px solid var(--gold-dark);
+      border-radius: 6px;
+    }
+    .res-combo-title {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gold-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.4rem;
+    }
+    .res-combo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .res-combo-list li {
+      padding: 0.18rem 0 0.18rem 1rem;
+      position: relative;
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .res-combo-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--gold-dark);
+      font-weight: 700;
+    }
+
+    /* Preview de preço (subtotal + taxa + total) */
+    .res-preco-box {
+      margin-top: 0.6rem;
+      padding: 0.6rem 0.85rem;
+      background: var(--surface2);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+    }
+    .res-preco-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.22rem 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .res-preco-row.total {
+      border-top: 1px dashed var(--border);
+      padding-top: 0.5rem;
+      margin-top: 0.3rem;
+      font-weight: 700;
+      color: var(--gold-dark);
+      font-size: 0.95rem;
+    }
+
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        MODAL DE CONFLITO
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
