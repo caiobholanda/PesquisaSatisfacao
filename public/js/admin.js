@@ -1152,8 +1152,7 @@ function calAtualizarHoraFim() {
   }
 
   _resHoraFim = calMinTime(fimMin);
-  const slots = bloco / 30;
-  tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· tratamento ${dur} min · ${slots} slot${slots>1?'s':''} de 30 min</span>`;
+  tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· tratamento ${dur} min</span>`;
 }
 
 // Atualiza UI auxiliar: combo (componentes), linha facial, preview de preço
