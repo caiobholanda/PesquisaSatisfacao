@@ -366,7 +366,7 @@ function loadAll() { loadStats(); loadTable(); }
 
 // ── Navegação entre views ──
 function showView(id) {
-  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes'].forEach(v => {
     document.getElementById(v).style.display = v === id ? 'block' : 'none';
   });
   window.scrollTo(0, 0);
