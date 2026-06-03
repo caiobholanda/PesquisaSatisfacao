@@ -49,7 +49,7 @@ function showApp() {
   document.getElementById('app-screen').style.display = 'block';
   loadAll(); // sempre carrega dados do painel principal em background
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
-  const view = st.view || 'view-main';
+  const view = st.view || 'view-reservas';
   showView(view);
   if (view === 'view-massagistas') { loadMassagistas(); }
   else if (view === 'view-tipos') { loadTipos(); }
@@ -394,7 +394,7 @@ function showView(id) {
   if (id === 'view-main') iniciarPollingStats(); else pararPollingStats();
   // Mostra/esconde botão "Início" no header
   const homeBtn = document.getElementById('btn-header-home');
-  if (homeBtn) homeBtn.style.display = (id === 'view-main') ? 'none' : '';
+  if (homeBtn) homeBtn.style.display = (id === 'view-reservas') ? 'none' : '';
 }
 
 // ── Init ──
@@ -1497,8 +1497,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-next').addEventListener('click',()=>{_calWeekOffset++;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekOffset=0;_calDiaSel=null;loadReservas();});
-document.getElementById('btn-open-reservas').addEventListener('click',()=>{showView('view-reservas');loadReservas();});
-document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-main'));
+document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
+document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-reservas'));
 
 document.getElementById('btn-open-historico-clientes').addEventListener('click',()=>{showView('view-historico-clientes');loadHistoricoClientes();});
 document.getElementById('btn-back-historico-clientes').addEventListener('click',()=>showView('view-main'));
