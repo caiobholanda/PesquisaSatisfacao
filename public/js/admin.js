@@ -4,6 +4,8 @@ let _token = null;
 let _offset = 0;
 let _total = 0;
 let _filters = {};
+let _calWeekOffset = 0;
+let _calDiaSel = null;
 
 function token() { return _token || sessionStorage.getItem(TOKEN_KEY); }
 function setToken(t) { _token = t; sessionStorage.setItem(TOKEN_KEY, t); }
@@ -760,8 +762,6 @@ const CAL_H_START = 8;
 const CAL_H_END   = 22;
 const CAL_SLOT_PX = 60;
 
-let _calWeekOffset = 0;
-let _calDiaSel = null;
 let _reservas  = [];
 let _resSala       = null;
 let _resTipo       = null;
