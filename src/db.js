@@ -348,7 +348,8 @@ export function listarReservasSemana(from, to) {
   ).all(from, to);
 }
 
-export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim) {
+export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, opts = {}) {
+  const { linha = null, tipo_massagem_id = null } = opts;
   const conflito = getDb().prepare(`
     SELECT id FROM reservas
     WHERE sala = ? AND data = ?
@@ -356,9 +357,9 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
   `).get(sala, data, horaInicio, horaFim);
   if (conflito) { const e = new Error('CONFLITO'); e.code = 'CONFLITO'; throw e; }
   return getDb().prepare(
-    `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim)
-     VALUES (?,?,?,?,?,?,?,?,?,?)`
-  ).run(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim).lastInsertRowid;
+    `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+  ).run(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, linha, tipo_massagem_id).lastInsertRowid;
 }
 
 export function cancelarReserva(id) {
