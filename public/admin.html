@@ -833,6 +833,12 @@
     .dropdown-item:hover { background: var(--surface2); color: var(--gold-dark); }
     .dropdown-caret { font-size: .65rem; margin-left: .3rem; opacity: .7; }
 
+    /* ── Badges de role ── */
+    .role-badge { display:inline-block; padding:.2rem .6rem; border-radius:20px; font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+    .role-master { background:var(--gold-dim); color:var(--gold-dark); border:1px solid var(--gold); }
+    .role-admin  { background:var(--indigo-dim); color:var(--indigo); border:1px solid rgba(91,103,150,.3); }
+    .role-normal { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+
     #msg-login {
       font-size: 0.8125rem;
       color: var(--danger);
@@ -2594,23 +2600,78 @@
           </div>
           <p class="page-sub">Gerenciamento de usuários administrativos</p>
         </div>
-        <button class="btn btn-gold btn-sm" id="btn-toggle-form-usuario" style="margin-left:auto">+ Novo Usuário</button>
+        <button class="btn btn-gold btn-sm" id="btn-novo-usuario" style="margin-left:auto">+ Novo Usuário</button>
       </div>
+
+      <!-- Card: usuário logado -->
+      <div id="meu-usuario-card" class="card" style="margin-bottom:1.25rem;display:flex;align-items:center;gap:1.25rem;padding:1rem 1.25rem">
+        <div style="width:2.5rem;height:2.5rem;border-radius:50%;background:var(--gold-dim);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--gold-dark);font-weight:700;flex-shrink:0" id="meu-avatar">—</div>
+        <div style="flex:1">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.15rem">Você está logado como</div>
+          <div style="font-weight:600;font-size:.95rem" id="meu-nome-display">—</div>
+          <div style="font-size:.78rem;color:var(--muted)" id="meu-username-display">—</div>
+        </div>
+        <span id="meu-role-badge" class="role-badge role-admin">admin</span>
+      </div>
+
+      <!-- Formulário criar / editar -->
       <div class="card" id="form-usuario" style="display:none;margin-bottom:1.5rem">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:end">
-          <div><label class="field-label">Usuário</label><input class="field-input" id="usuario-username" placeholder="login"></div>
-          <div><label class="field-label">Senha</label><input class="field-input" type="password" id="usuario-senha" placeholder="nova senha"></div>
-          <div style="display:flex;gap:.5rem">
-            <button class="btn btn-gold" id="btn-add-usuario">Salvar</button>
-            <button class="btn btn-outline" id="btn-cancel-form-usuario">Cancelar</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <h3 style="font-family:var(--serif);font-size:1.1rem;font-weight:500;margin:0" id="form-usuario-titulo">Novo Usuário</h3>
+          <button class="btn btn-outline btn-sm" id="btn-cancel-form-usuario">✕ Cancelar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label class="field-label">Nome completo</label>
+            <input class="field-input" id="usuario-nome" placeholder="Ex: João Silva">
+          </div>
+          <div>
+            <label class="field-label">Usuário (@)</label>
+            <input class="field-input" id="usuario-username" placeholder="Ex: joao.silva">
           </div>
         </div>
-        <div id="usuario-msg" style="margin-top:.75rem;font-size:.82rem;color:var(--danger);display:none"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label class="field-label" id="senha-label">Senha <span style="color:var(--muted);font-weight:400">(obrigatória)</span></label>
+            <div style="position:relative">
+              <input class="field-input" type="password" id="usuario-senha" placeholder="Senha forte" style="padding-right:2.5rem">
+              <button type="button" id="btn-toggle-senha" style="position:absolute;right:.625rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem">👁</button>
+            </div>
+            <div id="senha-strength-bar" style="margin-top:.4rem;height:4px;border-radius:2px;background:var(--border);overflow:hidden">
+              <div id="senha-strength-fill" style="height:100%;width:0%;transition:width .25s,background .25s;border-radius:2px"></div>
+            </div>
+            <div id="senha-strength-label" style="font-size:.7rem;color:var(--muted);margin-top:.2rem"></div>
+            <div id="senha-rules" style="margin-top:.4rem;display:grid;grid-template-columns:1fr 1fr;gap:.15rem .75rem"></div>
+          </div>
+          <div>
+            <label class="field-label">Perfil</label>
+            <select class="field-input" id="usuario-role">
+              <option value="master">Master — acesso total</option>
+              <option value="admin" selected>Admin — acesso padrão</option>
+              <option value="normal">Normal — acesso limitado</option>
+            </select>
+          </div>
+        </div>
+        <div id="usuario-msg" style="margin-bottom:.75rem;font-size:.82rem;color:var(--danger);display:none"></div>
+        <button class="btn btn-gold" id="btn-salvar-usuario">Salvar Usuário</button>
+        <input type="hidden" id="usuario-edit-id" value="">
       </div>
+
+      <!-- Tabela de usuários -->
       <div class="card">
         <table class="data-table">
-          <thead><tr><th>Usuário</th><th>Criado em</th><th></th></tr></thead>
-          <tbody id="usuarios-body"><tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Usuário (@)</th>
+              <th>Perfil</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="usuarios-body">
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr>
+          </tbody>
         </table>
       </div>
     </div>

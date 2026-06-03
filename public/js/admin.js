@@ -1518,49 +1518,152 @@ document.getElementById('btn-back-reservas').addEventListener('click',()=>showVi
 })();
 
 // Usuários
-document.getElementById('btn-open-usuarios').addEventListener('click',()=>{showView('view-usuarios');loadUsuarios();});
-document.getElementById('btn-back-usuarios').addEventListener('click',()=>showView('view-main'));
-document.getElementById('btn-toggle-form-usuario').addEventListener('click',()=>{
-  const f=document.getElementById('form-usuario');
-  f.style.display = f.style.display==='none' ? 'block' : 'none';
-});
-document.getElementById('btn-cancel-form-usuario').addEventListener('click',()=>{
-  document.getElementById('form-usuario').style.display='none';
-  document.getElementById('usuario-username').value='';
-  document.getElementById('usuario-senha').value='';
+// ── Usuários ──
+function currentUserPayload() {
+  try { return JSON.parse(atob(token().split('.')[1])); } catch { return null; }
+}
+
+const ROLE_LABEL = { master: 'Master', admin: 'Admin', normal: 'Normal' };
+const SENHA_RULES = [
+  { test: s => s.length >= 8,           label: '8+ caracteres' },
+  { test: s => /[A-Z]/.test(s),         label: 'Maiúscula' },
+  { test: s => /[0-9]/.test(s),         label: 'Número' },
+  { test: s => /[^a-zA-Z0-9]/.test(s),  label: 'Caractere especial (!@#…)' },
+];
+
+function atualizarSenhaUI(senha) {
+  const passed = SENHA_RULES.filter(r => r.test(senha)).length;
+  const fill   = document.getElementById('senha-strength-fill');
+  const lbl    = document.getElementById('senha-strength-label');
+  const rules  = document.getElementById('senha-rules');
+  const cores  = ['','#B85450','#D4953D','#5B9BD5','#2D7A4F'];
+  const labels = ['','Fraca','Razoável','Boa','Forte'];
+  fill.style.width = (passed * 25) + '%';
+  fill.style.background = cores[passed] || 'transparent';
+  lbl.textContent = senha ? labels[passed] || '' : '';
+  lbl.style.color = cores[passed] || 'var(--muted)';
+  rules.innerHTML = SENHA_RULES.map(r => {
+    const ok = r.test(senha);
+    return `<span style="font-size:.68rem;color:${ok?'var(--success)':'var(--muted)'}">${ok?'✓':'○'} ${r.label}</span>`;
+  }).join('');
+}
+
+document.getElementById('usuario-senha').addEventListener('input', function() { atualizarSenhaUI(this.value); });
+document.getElementById('btn-toggle-senha').addEventListener('click', () => {
+  const inp = document.getElementById('usuario-senha');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 });
 
+function fecharFormUsuario() {
+  document.getElementById('form-usuario').style.display = 'none';
+  ['usuario-nome','usuario-username','usuario-senha','usuario-edit-id'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('usuario-role').value = 'admin';
+  document.getElementById('usuario-msg').style.display = 'none';
+  atualizarSenhaUI('');
+  document.getElementById('senha-label').innerHTML = 'Senha <span style="color:var(--muted);font-weight:400">(obrigatória)</span>';
+}
+
+document.getElementById('btn-novo-usuario').addEventListener('click', () => {
+  fecharFormUsuario();
+  document.getElementById('form-usuario-titulo').textContent = 'Novo Usuário';
+  document.getElementById('form-usuario').style.display = 'block';
+  document.getElementById('form-usuario').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('btn-cancel-form-usuario').addEventListener('click', fecharFormUsuario);
+
+document.getElementById('btn-open-usuarios').addEventListener('click',()=>{ showView('view-usuarios'); loadUsuarios(); });
+document.getElementById('btn-back-usuarios').addEventListener('click',()=>showView('view-main'));
+
 async function loadUsuarios() {
+  // Preenche card "você está logado como"
+  const me = currentUserPayload();
+  if (me) {
+    document.getElementById('meu-avatar').textContent = (me.username || '?')[0].toUpperCase();
+    document.getElementById('meu-username-display').textContent = '@' + me.username;
+  }
+
   const tbody = document.getElementById('usuarios-body');
-  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr>';
   const r = await api('/api/auth/usuarios');
   if (!r) return;
   const d = await r.json();
+
+  // Atualiza card com dados completos do usuário logado
+  if (me && d.ok) {
+    const eu = d.items.find(u => u.id === me.sub);
+    if (eu) {
+      document.getElementById('meu-nome-display').textContent = eu.nome || eu.username;
+      document.getElementById('meu-username-display').textContent = '@' + eu.username;
+      const rb = document.getElementById('meu-role-badge');
+      rb.textContent = ROLE_LABEL[eu.role] || eu.role || 'admin';
+      rb.className = 'role-badge role-' + (eu.role || 'admin');
+    }
+  }
+
   if (!d.ok || !d.items?.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted)">Nenhum usuário.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Nenhum usuário.</td></tr>';
     return;
   }
   const fmt = iso => iso ? iso.slice(0,10).split('-').reverse().join('/') : '—';
+  const meId = me?.sub;
   tbody.innerHTML = d.items.map(u => `<tr>
-    <td style="font-weight:500">${escHtml(u.username)}</td>
-    <td style="font-size:.82rem;color:var(--muted)">${fmt(u.created_at)}</td>
-    <td style="text-align:right"><button class="btn btn-outline btn-sm" style="border-color:var(--danger);color:var(--danger)" onclick="deletarUsuario(${u.id},'${escHtml(u.username)}')">Remover</button></td>
+    <td>
+      <div style="font-weight:500">${escHtml(u.nome || u.username)}</div>
+      ${u.nome ? `<div style="font-size:.75rem;color:var(--muted)">@${escHtml(u.username)}</div>` : ''}
+    </td>
+    <td style="font-size:.82rem;color:var(--muted)">@${escHtml(u.username)}</td>
+    <td><span class="role-badge role-${u.role||'admin'}">${ROLE_LABEL[u.role]||u.role||'admin'}</span></td>
+    <td style="font-size:.78rem;color:var(--muted)">${fmt(u.created_at)}</td>
+    <td style="text-align:right;white-space:nowrap">
+      <button class="btn btn-outline btn-sm" style="margin-right:.4rem" onclick="editarUsuario(${u.id})">Editar</button>
+      ${u.id !== meId ? `<button class="btn btn-outline btn-sm" style="border-color:var(--danger);color:var(--danger)" onclick="deletarUsuario(${u.id},'${escHtml(u.nome||u.username)}')">Remover</button>` : '<span style="font-size:.72rem;color:var(--muted)">você</span>'}
+    </td>
   </tr>`).join('');
 }
 
-document.getElementById('btn-add-usuario').addEventListener('click', async () => {
-  const username = document.getElementById('usuario-username').value.trim();
-  const senha    = document.getElementById('usuario-senha').value;
-  const msg      = document.getElementById('usuario-msg');
+window.editarUsuario = async (id) => {
+  const r = await api('/api/auth/usuarios');
+  if (!r) return;
+  const d = await r.json();
+  const u = d.items?.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('form-usuario-titulo').textContent = 'Editar Usuário';
+  document.getElementById('usuario-nome').value = u.nome || '';
+  document.getElementById('usuario-username').value = u.username;
+  document.getElementById('usuario-senha').value = '';
+  document.getElementById('usuario-role').value = u.role || 'admin';
+  document.getElementById('usuario-edit-id').value = id;
+  document.getElementById('senha-label').innerHTML = 'Nova senha <span style="color:var(--muted);font-weight:400">(deixe em branco para não alterar)</span>';
+  atualizarSenhaUI('');
+  document.getElementById('usuario-msg').style.display = 'none';
+  document.getElementById('form-usuario').style.display = 'block';
+  document.getElementById('form-usuario').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+document.getElementById('btn-salvar-usuario').addEventListener('click', async () => {
+  const editId  = document.getElementById('usuario-edit-id').value;
+  const nome    = document.getElementById('usuario-nome').value.trim();
+  const username= document.getElementById('usuario-username').value.trim();
+  const senha   = document.getElementById('usuario-senha').value;
+  const role    = document.getElementById('usuario-role').value;
+  const msg     = document.getElementById('usuario-msg');
   msg.style.display = 'none';
-  if (!username || !senha) { msg.textContent='Preencha usuário e senha.'; msg.style.display='block'; return; }
-  const r = await api('/api/auth/usuarios', { method:'POST', body: JSON.stringify({ username, senha }) });
+
+  if (!username) { msg.textContent='Usuário obrigatório.'; msg.style.display='block'; return; }
+  if (!editId && !senha) { msg.textContent='Senha obrigatória para novo usuário.'; msg.style.display='block'; return; }
+
+  const body = JSON.stringify({ nome, username, senha: senha || undefined, role });
+  const isEdit = !!editId;
+  const r = await api(
+    isEdit ? `/api/auth/usuarios/${editId}` : '/api/auth/usuarios',
+    { method: isEdit ? 'PUT' : 'POST', body }
+  );
   if (!r) return;
   const d = await r.json();
   if (!d.ok) { msg.textContent = d.error || 'Erro ao salvar.'; msg.style.display='block'; return; }
-  document.getElementById('form-usuario').style.display='none';
-  document.getElementById('usuario-username').value='';
-  document.getElementById('usuario-senha').value='';
+  fecharFormUsuario();
   loadUsuarios();
 });
 
@@ -1568,6 +1671,8 @@ window.deletarUsuario = async (id, nome) => {
   if (!confirm(`Remover usuário "${nome}"?`)) return;
   const r = await api(`/api/auth/usuarios/${id}`, { method:'DELETE' });
   if (!r) return;
+  const d = await r.json();
+  if (!d.ok) { alert(d.error || 'Erro ao remover.'); return; }
   loadUsuarios();
 };
 

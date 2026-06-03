@@ -108,6 +108,10 @@ export function initDb() {
   ]) {
     try { db.exec(`ALTER TABLE tipos_massagem ADD COLUMN ${col}`); } catch {}
   }
+  // Migration: add nome e role a admin_users
+  for (const col of ['nome TEXT', `role TEXT NOT NULL DEFAULT 'admin'`]) {
+    try { db.exec(`ALTER TABLE admin_users ADD COLUMN ${col}`); } catch {}
+  }
   // Migration: add enriched fields to massagistas
   for (const col of [
     'matricula TEXT',
@@ -476,13 +480,28 @@ export function buscarAdmin(username) {
 }
 
 export function listarAdmins() {
-  return getDb().prepare('SELECT id, username, created_at FROM admin_users ORDER BY created_at ASC').all();
+  return getDb().prepare('SELECT id, nome, username, role, created_at FROM admin_users ORDER BY created_at ASC').all();
 }
 
-export function inserirAdmin(username, passwordHash) {
+export function buscarAdminById(id) {
+  return getDb().prepare('SELECT * FROM admin_users WHERE id = ?').get(id) || null;
+}
+
+export function inserirAdmin(username, passwordHash, nome = null, role = 'admin') {
   return getDb().prepare(
-    'INSERT INTO admin_users (username, password_hash) VALUES (?, ?)'
-  ).run(username, passwordHash).lastInsertRowid;
+    'INSERT INTO admin_users (username, password_hash, nome, role) VALUES (?, ?, ?, ?)'
+  ).run(username, passwordHash, nome, role).lastInsertRowid;
+}
+
+export function atualizarAdmin(id, { nome, username, passwordHash, role }) {
+  const db = getDb();
+  if (passwordHash) {
+    db.prepare('UPDATE admin_users SET nome=?, username=?, password_hash=?, role=? WHERE id=?')
+      .run(nome ?? null, username, passwordHash, role, id);
+  } else {
+    db.prepare('UPDATE admin_users SET nome=?, username=?, role=? WHERE id=?')
+      .run(nome ?? null, username, role, id);
+  }
 }
 
 export function deletarAdmin(id) {
