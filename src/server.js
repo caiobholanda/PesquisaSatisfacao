@@ -10,6 +10,7 @@ import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
 import reservasRouter from './routes/reservas.js';
+import devRouter from './routes/dev.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
