@@ -171,56 +171,9 @@ router.post('/seed-demo', (req, res) => {
       feedbacksInseridos++;
     });
 
-    // 4. Insere 5 reservas para hoje com tratamentos diferentes
-    // Pega 5 tipos distintos: 1 combo, 1 facial, 1 massagem, 1 tratamento corporal, 1 complementar
-    function tipoPorCategoria(cat) { return tipos.filter(t => t.categoria === cat); }
-    const escolhidos = [];
-    for (const cat of ['Combo','Massagem','Tratamento','Facial','Complementar']) {
-      const lista = tipoPorCategoria(cat);
-      if (lista.length) escolhidos.push(pick(lista));
-    }
-    while (escolhidos.length < 5 && tipos.length > escolhidos.length) {
-      const restante = tipos.filter(t => !escolhidos.includes(t));
-      if (!restante.length) break;
-      escolhidos.push(pick(restante));
-    }
-
-    const horarios = ['09:00','11:00','13:30','16:00','18:30'];
-    const salas = [1, 2, 3, 1, 2];
-    const tipoCli = ['hospede','passante','hospede','hospede','passante'];
-
-    const stmtRes = db.prepare(`
-      INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, tipo_massagem_id, massagista_id)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-    `);
-
-    escolhidos.slice(0, 5).forEach((tipo, i) => {
-      const massagista = pick(massagistas);
-      const cliente = NOMES[i];
-      const apto = tipoCli[i] === 'hospede' ? APTOS[i] : null;
-      const horaIni = horarios[i];
-      const [h, m] = horaIni.split(':').map(Number);
-      const iniMin = h * 60 + m;
-      const dur = tipo.duracao_min || 60;
-      const bloco = Math.ceil(dur / 30) * 30;
-      const fimMin = iniMin + bloco;
-      const horaFim = String(Math.floor(fimMin / 60)).padStart(2, '0') + ':' + String(fimMin % 60).padStart(2, '0');
-
-      try {
-        stmtRes.run(
-          salas[i], cliente, tipoCli[i], apto,
-          nomeToEmail(cliente),
-          '(85) 9' + Math.floor(1000 + Math.random() * 9000) + '-' + Math.floor(1000 + Math.random() * 9000),
-          tipo.nome, hoje, horaIni, horaFim, tipo.id, massagista.id
-        );
-        reservasInseridas++;
-      } catch (e) {
-        // skip conflict silently
-      }
-    });
   })();
 
-  res.json({ ok: true, feedbacks: feedbacksInseridos, reservas: reservasInseridas });
+  res.json({ ok: true, feedbacks: feedbacksInseridos });
 });
 
 export default router;
