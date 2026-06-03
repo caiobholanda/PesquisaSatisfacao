@@ -2453,6 +2453,73 @@
       </div>
     </div>
 
+    <!-- ── VIEW: Histórico de Clientes ── -->
+    <div id="view-historico-clientes" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-historico-clientes">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Spa</span>
+            <h1 class="page-title">Histórico de Atendimentos</h1>
+          </div>
+          <p class="page-sub">Todos os clientes que realizaram tratamentos</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-exportar-historico" style="margin-left:auto">↓ CSV</button>
+      </div>
+
+      <div class="filters" style="flex-wrap:wrap;gap:.6rem">
+        <div class="filter-group">
+          <label>De</label>
+          <input type="date" id="hc-from">
+        </div>
+        <div class="filter-group">
+          <label>Até</label>
+          <input type="date" id="hc-to">
+        </div>
+        <div class="filter-group">
+          <label>Sala</label>
+          <select id="hc-sala">
+            <option value="">Todas</option>
+            <option value="1">Sala 1 · Serenity</option>
+            <option value="2">Sala 2 · Tranquility</option>
+            <option value="3">Sala 3 · Harmony (Casal)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Busca</label>
+          <input type="text" id="hc-busca" placeholder="Nome ou e-mail…" style="width:200px">
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-gold" id="btn-hc-filtrar">Filtrar</button>
+          <button class="btn btn-outline" id="btn-hc-limpar">Limpar</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2>Atendimentos</h2>
+          <span id="hc-count"></span>
+        </div>
+        <table id="hc-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Apto / Contato</th>
+              <th>Sala</th>
+              <th>Tratamento</th>
+              <th>Massoterapeuta</th>
+            </tr>
+          </thead>
+          <tbody id="hc-body"></tbody>
+        </table>
+        <div id="hc-empty" class="empty" style="display:none">Nenhum atendimento encontrado.</div>
+        <div class="pagination" id="hc-pagination"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
