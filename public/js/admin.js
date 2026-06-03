@@ -237,12 +237,17 @@ function fmtDataHoraBR(s) {
 }
 
 async function loadTable() {
+  if (_tableAbort) _tableAbort.abort();
+  _tableAbort = new AbortController();
+  const signal = _tableAbort.signal;
+
   const params = new URLSearchParams({ limit: LIMIT, offset: _offset });
   if (_filters.from) params.set('from', _filters.from);
   if (_filters.to) params.set('to', _filters.to);
   if (_filters.origem) params.set('origem', _filters.origem);
   if (_filters.tipo) params.set('tipo_cliente', _filters.tipo);
-  const res = await api(`/api/feedback?${params}`);
+  const res = await api(`/api/feedback?${params}`, { signal });
+  if (signal.aborted) return;
   if (!res) return;
   const d = await res.json();
   if (!d.ok) return;
