@@ -1015,6 +1015,9 @@ function calAtualizarHoraFim() {
   stripEl.style.borderColor = '';
   stripEl.style.background = '';
 
+  // Renderiza box de combo + linha + preço
+  _atualizarComboLinhaPreco();
+
   if (!inicio) { _resHoraInicio = null; _resHoraFim = null; tempoEl.textContent = '—'; return; }
 
   const iniMin = calTimeMin(inicio);
@@ -1034,7 +1037,8 @@ function calAtualizarHoraFim() {
     return;
   }
 
-  const fimMin = iniMin + dur;
+  const bloco = _blocoMinutos(dur);
+  const fimMin = iniMin + bloco;
   if (fimMin > CAL_H_END * 60) {
     _resHoraFim = null;
     const horaFimExced = calMinTime(fimMin);
@@ -1045,7 +1049,56 @@ function calAtualizarHoraFim() {
   }
 
   _resHoraFim = calMinTime(fimMin);
-  tempoEl.textContent = `${inicio} – ${_resHoraFim} · ${dur} min`;
+  const slots = bloco / 30;
+  tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· tratamento ${dur} min · ${slots} slot${slots>1?'s':''} de 30 min</span>`;
+}
+
+// Atualiza UI auxiliar: combo (componentes), linha facial, preview de preço
+function _atualizarComboLinhaPreco() {
+  const t = _tratSelecionado();
+  const wrap = document.getElementById('res-extra-info');
+  if (!t) { wrap.innerHTML = ''; return; }
+
+  let html = '';
+
+  // Combo: exibir componentes inclusos
+  if (t.tipo === 'combo' && t.componentes_nomes?.length) {
+    html += `<div class="res-combo-box">
+      <div class="res-combo-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Combo · inclui automaticamente
+      </div>
+      <ul class="res-combo-list">
+        ${t.componentes_nomes.map(n => `<li>${n}</li>`).join('')}
+      </ul>
+    </div>`;
+  }
+
+  // Linha facial: seletor
+  if (t.linhas?.length) {
+    html += `<div class="res-fg" style="margin-top:.6rem">
+      <label>Linha do tratamento facial <span style="color:var(--danger)">*</span></label>
+      <select id="res-inp-linha">
+        <option value="">— Selecione a linha —</option>
+        ${t.linhas.map(l => `<option value="${l}">${l}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
+  // Preço: subtotal + taxa 15% + total
+  if (t.preco) {
+    const sub = Number(t.preco);
+    const taxa = sub * TAXA_SERVICO;
+    const total = sub + taxa;
+    const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    html += `<div class="res-preco-box">
+      <div class="res-preco-row"><span>Subtotal</span><span>R$ ${fmt(sub)}</span></div>
+      <div class="res-preco-row"><span>Taxa de serviço (15%)</span><span>R$ ${fmt(taxa)}</span></div>
+      <div class="res-preco-row total"><span>Total</span><span>R$ ${fmt(total)}</span></div>
+    </div>`;
+  }
+
+  wrap.innerHTML = html;
 }
 
 // Detecta conflito local antes de bater no servidor
