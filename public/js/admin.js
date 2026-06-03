@@ -419,13 +419,12 @@ document.getElementById('btn-back-tipos').addEventListener('click', () => showVi
 document.getElementById('btn-header-home')?.addEventListener('click', () => { showView('view-reservas'); loadReservas(); });
 
 // Botão de gerar dados de demonstração — só pesquisas (reservas continuam manuais)
-document.getElementById('btn-seed-demo')?.addEventListener('click', async () => {
+async function seedDemo(btnEl) {
   const ok = confirm('⚠ Isso vai APAGAR todas as pesquisas atuais e gerar 15 respostas fictícias com variação de notas.\n\nAs reservas NÃO são afetadas — continuam criadas só pelos admins.\n\nContinuar?');
   if (!ok) return;
-  const btn = document.getElementById('btn-seed-demo');
-  btn.disabled = true;
-  const txt = btn.textContent;
-  btn.textContent = '⏳ Gerando...';
+  btnEl.disabled = true;
+  const txt = btnEl.textContent;
+  btnEl.textContent = '⏳ Gerando...';
   try {
     const res = await api('/api/dev/seed-demo', { method: 'POST', body: '{}' });
     if (!res) return;
@@ -437,10 +436,12 @@ document.getElementById('btn-seed-demo')?.addEventListener('click', async () => 
   } catch (e) {
     alert('Erro de conexão: ' + e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = txt;
+    btnEl.disabled = false;
+    btnEl.textContent = txt;
   }
-});
+}
+document.getElementById('btn-seed-demo-res')?.addEventListener('click', function() { seedDemo(this); });
+document.getElementById('btn-seed-demo')?.addEventListener('click', function() { seedDemo(this); });
 
 // ── Massagistas ──
 let _tabMassagistas = 'ativas';
