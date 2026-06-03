@@ -25,7 +25,20 @@ app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/massagistas-ativas', (_req, res) => {
-  res.json({ nomes: listarMassagistas().filter(m => m.ativo).map(m => m.nome) });
+  const ativas = listarMassagistas().filter(m => m.ativo);
+  res.json({
+    nomes: ativas.map(m => m.nome),
+    items: ativas.map(m => ({
+      id: m.id,
+      nome: m.nome,
+      matricula: m.matricula,
+      funcao: m.funcao,
+      vinculo: m.vinculo,
+      bilingue: !!m.bilingue,
+      especialidade_original: m.especialidade_original,
+      disponibilidade: m.disponibilidade ? (() => { try { return JSON.parse(m.disponibilidade); } catch { return null; } })() : null,
+    })),
+  });
 });
 
 app.get('/api/tipos-massagem-ativos', (_req, res) => {
