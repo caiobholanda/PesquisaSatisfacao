@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { inserirFeedback, listarFeedback, statsFeedback, exportarCsv } from '../db.js';
+import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, exportarCsv } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
