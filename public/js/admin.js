@@ -1263,6 +1263,16 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     return;
   }
 
+  // Tratamento selecionado: pega ID + linha (se for facial) + valida
+  const tratObj = _tratSelecionado();
+  const tipoMassagemId = tratObj?.id || null;
+  let linha = null;
+  if (tratObj?.linhas?.length) {
+    const linhaSel = document.getElementById('res-inp-linha');
+    linha = linhaSel?.value || '';
+    if (!linha) { err.textContent='Selecione a linha do tratamento facial (Immortelle ou Source Réotier).'; return; }
+  }
+
   // Verificação local de conflito antes de bater no servidor
   const conflito = calDetectarConflito(sala, data, horaInicio, _resHoraFim);
   if (conflito) {
