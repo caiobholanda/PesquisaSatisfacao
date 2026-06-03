@@ -10,7 +10,7 @@ const NOMES = ['Maria Silva','Pedro Santos','Ana Costa','João Oliveira','Carla 
 const APTOS = ['1203','805','1402','617','1015','2208','310','1718','909','504','2105','1601','407','1820','1306'];
 const RATINGS = ['otimo','bom','regular','ruim'];
 const TIPOS_CLIENTE = ['lazer','negocios','evento'];
-const ORIGENS = ['hospede','passante'];
+const ORIGENS = ['hospede']; // apenas hóspedes geram pesquisas nos dados de demo
 
 const COMENTARIOS_POS = [
   'Atendimento impecável, profissional super atenciosa e técnica excelente!',
