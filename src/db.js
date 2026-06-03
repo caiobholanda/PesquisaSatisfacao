@@ -244,7 +244,7 @@ export function statsFeedback({ from, to } = {}) {
 function seedMassoterapeutasGranSpa() {
   const db = getDb();
   // Idempotente: só roda se ainda não há massagistas com matrícula
-  const jaSeed = db.prepare('SELECT COUNT(*) AS c FROM massagistas WHERE matricula IS NOT NULL AND matricula != ""').get().c;
+  const jaSeed = db.prepare("SELECT COUNT(*) AS c FROM massagistas WHERE matricula IS NOT NULL AND matricula != ''").get().c;
   if (jaSeed > 0) return;
 
   // Apaga as antigas (sem matrícula) — apagamento permanente conforme decisão do admin
