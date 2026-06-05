@@ -1113,7 +1113,8 @@ const CAL_ROOMS = [
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
-const CAL_SLOT_PX = 60;
+const CAL_SLOT_PX = 64;
+const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 let _reservas  = [];
 let _resSala       = null;
@@ -1227,6 +1228,9 @@ function renderCalWeekPills() {
     _calDiaSel=days.find(d=>calDateStr(d)===todayStr)||days[0];
   }
   const selStr=calDateStr(_calDiaSel);
+  const refDay=_calDiaSel||days[0];
+  const ml=document.getElementById('cal-month-label');
+  if(ml) ml.innerHTML=`${MESES_FULL[refDay.getMonth()]} <span>${refDay.getFullYear()}</span>`;
   document.getElementById('cal-week-days').innerHTML=days.map(d=>{
     const ds=calDateStr(d);
     const isToday=ds===todayStr;
@@ -1256,13 +1260,21 @@ function renderCalDia() {
   const ds=calDateStr(_calDiaSel);
   const dayRes=_reservas.filter(r=>r.data===ds);
 
+  const MAX_SLOTS = Math.round(((CAL_H_END - CAL_H_START) * 60) / 30);
   document.getElementById('cal-rooms-header').innerHTML=
-    `<div></div>`+
-    CAL_ROOMS.map(r=>`
-      <div class="cal-room-col-head ${r.cls}">
-        <div class="cal-room-col-name ${r.cls}">${r.nome}</div>
-        <div class="cal-room-col-sub">${r.tipo} · ${r.cap} pessoa${r.cap>1?'s':''}</div>
-      </div>`).join('');
+    `<div class="cal-time-col-head"><span class="cal-time-col-head-lbl">hora</span></div>`+
+    CAL_ROOMS.map(room=>{
+      const occ=dayRes.filter(r=>r.sala===room.id).length;
+      const pct=Math.min(100, Math.round((occ/Math.max(1,Math.floor((CAL_H_END-CAL_H_START)*60/90)))*100));
+      return `<div class="cal-room-col-head ${room.cls}">
+        <div class="cal-room-col-name ${room.cls}">${room.nome}</div>
+        <div class="cal-room-col-sub">${room.tipo} · ${room.cap} pessoa${room.cap>1?'s':''}</div>
+        <div class="cal-room-occ">
+          <div class="cal-room-occ-bar"><div class="cal-room-occ-fill" style="width:${pct}%"></div></div>
+          <span class="cal-room-occ-lbl">${occ} reserva${occ!==1?'s':''}</span>
+        </div>
+      </div>`;
+    }).join('');
 
   const SLOT_MIN = 30;
   let html='';
@@ -1270,10 +1282,9 @@ function renderCalDia() {
     const slotS=m, slotE=slotS+SLOT_MIN;
     const hh=Math.floor(m/60), mm=m%60;
     const timeStr=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
-    const mostraHora = (mm === 0);
-    const ultimo = (m + SLOT_MIN >= CAL_H_END * 60);
-    const halfClass = mm === 0 ? '' : ' half';
-    html+=`<div class="cal-time-cell${halfClass}"${ultimo?' style="border-bottom-color:var(--gold)"':''}>${mostraHora ? timeStr : ''}</div>`;
+    const isHour = mm === 0;
+    const halfClass = isHour ? ' hour' : ' half';
+    html+=`<div class="cal-time-cell${halfClass}">${isHour ? timeStr : ''}</div>`;
     CAL_ROOMS.forEach(room=>{
       const res=dayRes.find(r=>r.sala===room.id&&calTimeMin(r.hora_inicio)<slotE&&calTimeMin(r.hora_fim)>slotS);
       if(res){
@@ -1283,12 +1294,10 @@ function renderCalDia() {
           const topPx=((rs-slotS)/SLOT_MIN)*CAL_SLOT_PX+2;
           const ht=((re-rs)/SLOT_MIN)*CAL_SLOT_PX-4;
           html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;cursor:pointer" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''} · ${res.hora_inicio} – ${res.hora_fim}">
-              <div>
-                <div class="cal-res-name">${escHtml(res.cliente)}</div>
-                ${res.tratamento ? `<div class="cal-res-trat">${escHtml(res.tratamento)}</div>` : ''}
-                <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
-              </div>
+            <div class="cal-res-block ${room.cls}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento?' · '+escHtml(res.tratamento):''} · ${res.hora_inicio}–${res.hora_fim}">
+              <div class="cal-res-name">${escHtml(res.cliente)}</div>
+              ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
+              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
               <button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -1302,12 +1311,14 @@ function renderCalDia() {
       }
     });
   }
-  // Linha visual de fim de expediente (22:00)
   html += `<div class="cal-close-row">
     <div class="cal-close-time">${String(CAL_H_END).padStart(2,'0')}:00</div>
-    <div class="cal-close-label">Fim do expediente · spa fecha</div>
+    <div class="cal-close-label">Fechamento do spa</div>
   </div>`;
   document.getElementById('cal-grid').innerHTML=html;
+
+  // Linha de horário atual (somente se dia selecionado = hoje)
+  calUpdateNowLine(ds);
 }
 
 window.calCancelar=async(id)=>{
@@ -1315,6 +1326,33 @@ window.calCancelar=async(id)=>{
   const res=await api(`/api/reservas/${id}`,{method:'DELETE'});
   if(res)loadReservas();
 };
+
+let _nowLineInterval = null;
+function calUpdateNowLine(ds) {
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+  const existing = grid.querySelector('.cal-now-line');
+  if (existing) existing.remove();
+  const todayStr = calDateStr(new Date());
+  if (ds !== todayStr) return;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (nowMin < CAL_H_START * 60 || nowMin > CAL_H_END * 60) return;
+  const topPx = ((nowMin - CAL_H_START * 60) / 30) * CAL_SLOT_PX;
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const line = document.createElement('div');
+  line.className = 'cal-now-line';
+  line.style.top = topPx + 'px';
+  line.innerHTML = `<span class="cal-now-lbl">${timeStr}</span>`;
+  grid.appendChild(line);
+}
+function _startNowLineInterval() {
+  if (_nowLineInterval) clearInterval(_nowLineInterval);
+  _nowLineInterval = setInterval(() => {
+    if (_calDiaSel) calUpdateNowLine(calDateStr(_calDiaSel));
+  }, 60000);
+}
+_startNowLineInterval();
 
 // ── Modal Reserva ──
 function calSetTipo(tipo) {
