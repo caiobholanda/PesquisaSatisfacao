@@ -6,6 +6,7 @@ let _total = 0;
 let _filters = {};
 let _calWeekOffset = 0;
 let _calDiaSel = null;
+let _modalOpen = false;
 
 function token() { return _token || sessionStorage.getItem(TOKEN_KEY); }
 function setToken(t) { _token = t; sessionStorage.setItem(TOKEN_KEY, t); }
@@ -111,7 +112,7 @@ const INSTALACOES_LABELS = [
 function renderDistBar(dist) {
   if (!dist || dist.total === 0) return '<div class="dist-empty">Sem respostas no período</div>';
   const pct = (k) => dist.total ? +(dist[k] / dist.total * 100).toFixed(1) : 0;
-  const seg = (k) => { const p = pct(k); return p > 0 ? `<div class="dist-seg seg-${k}" style="width:${p}%">${p >= 9 ? p + '%' : ''}</div>` : ''; };
+  const seg = (k) => { const p = pct(k); return p > 0 ? `<div class="dist-seg seg-${k}" style="width:${p}%;min-width:4px">${p >= 9 ? p + '%' : ''}</div>` : ''; };
   const leg = (k, lbl) => `<span class="dist-leg"><span class="dist-leg-dot ${k}"></span><strong>${pct(k)}%</strong> ${lbl} (${dist[k]})</span>`;
   return `<div class="dist-bar">${seg('otimo')}${seg('bom')}${seg('regular')}${seg('ruim')}</div>
     <div class="dist-legend">${leg('otimo','Ótimo')}${leg('bom','Bom')}${leg('regular','Regular')}${leg('ruim','À Melhorar')}<span class="dist-leg" style="margin-left:auto">${dist.total} resp.</span></div>`;
@@ -134,7 +135,7 @@ function renderMediaBadge(media) {
 function renderTextoGroup(titulo, items) {
   if (!items || !items.length) return '';
   return `<div class="textos-sub">${titulo}</div><div class="texto-list">${items.map(t =>
-    `<div class="texto-item"><div class="ti-text">"${t.texto}"</div><div class="ti-meta">${t.nome} · ${fmtDate(t.data)}</div></div>`
+    `<div class="texto-item"><div class="ti-text">"${escHtml(t.texto)}"</div><div class="ti-meta">${escHtml(t.nome)} · ${fmtDate(t.data)}</div></div>`
   ).join('')}</div>`;
 }
 
@@ -168,7 +169,7 @@ async function loadStats() {
   const d = await res.json();
   if (!d.ok) return;
   document.getElementById('kpi-total').textContent = d.total;
-  document.getElementById('kpi-media').textContent = d.mediaGeral != null ? d.mediaGeral.toFixed(2) : '—';
+  document.getElementById('kpi-media').textContent = d.mediaGeral != null ? d.mediaGeral.toFixed(2) + ' / 9' : '—';
   document.getElementById('kpi-recomenda').textContent = d.pctRecomenda != null ? d.pctRecomenda + '%' : '—';
   const h = d.porOrigem.find(r => r.origem === 'hospede')?.t || 0;
   const c = d.porOrigem.find(r => r.origem === 'colaborador')?.t || 0;
@@ -188,7 +189,7 @@ function _atualizarUltimoSync() {
 function iniciarPollingStats() {
   pararPollingStats();
   _statsPoller = setInterval(() => {
-    if (document.getElementById('view-main')?.style.display !== 'none' && !document.hidden) {
+    if (document.getElementById('view-main')?.style.display !== 'none' && !document.hidden && !_modalOpen) {
       loadStats();
       loadAll();
     }
@@ -270,12 +271,12 @@ async function loadTable() {
       const avg = avgRow(r);
       return `<tr>
         <td>${fmtDate(r.submitted_at)}</td>
-        <td style="font-weight:500">${r.nome}</td>
-        <td style="color:var(--muted)">${r.email}</td>
-        <td style="color:var(--muted)">${r.tipo_cliente || '—'}</td>
+        <td style="font-weight:500">${escHtml(r.nome)}</td>
+        <td style="color:var(--muted)">${escHtml(r.email)}</td>
+        <td style="color:var(--muted)">${escHtml(r.tipo_cliente || '—')}</td>
         <td><span class="badge ${r.origem === 'hospede' ? 'badge-hospede' : 'badge-colab'}">${r.origem === 'hospede' ? 'Hóspede' : 'Colaborador'}</span></td>
         <td class="${scoreClass(avg)}">${avg ?? '—'}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="openDrawer(${r.id})">Ver</button></td>
+        <td><button class="btn btn-outline btn-sm" data-action="open-drawer" data-id="${r.id}">Ver</button></td>
       </tr>`;
     }).join('');
   }
@@ -286,9 +287,9 @@ async function loadTable() {
   const pag = document.getElementById('pagination');
   if (pages <= 1) { pag.innerHTML = ''; return; }
   pag.innerHTML = `
-    <button class="btn btn-outline btn-sm" ${_offset === 0 ? 'disabled' : ''} onclick="goPage(${_offset - LIMIT})">←</button>
+    <button class="btn btn-outline btn-sm" ${_offset === 0 ? 'disabled' : ''} data-action="page" data-off="${_offset - LIMIT}">←</button>
     <span>Página ${cur} de ${pages}</span>
-    <button class="btn btn-outline btn-sm" ${_offset + LIMIT >= _total ? 'disabled' : ''} onclick="goPage(${_offset + LIMIT})">→</button>`;
+    <button class="btn btn-outline btn-sm" ${_offset + LIMIT >= _total ? 'disabled' : ''} data-action="page" data-off="${_offset + LIMIT}">→</button>`;
 }
 
 window.goPage = (o) => { _offset = o; loadTable(); };
@@ -300,6 +301,7 @@ async function openDrawer(id) {
   content.innerHTML = '<div class="detail-section"><div class="skeleton-line" style="width:60%"></div><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:75%"></div></div>';
   drawerEl.classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
+  _modalOpen = true;
 
   const res = await api(`/api/feedback/item/${id}`);
   if (!res) return;
@@ -354,6 +356,7 @@ document.getElementById('drawer-overlay').addEventListener('click', closeDrawer)
 function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
+  _modalOpen = false;
 }
 
 // ── Filtros ──
@@ -397,8 +400,33 @@ function showView(id) {
   if (homeBtn) homeBtn.style.display = (id === 'view-reservas') ? 'none' : '';
 }
 
+// ── Event delegation ──
+function setupDelegation() {
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const action = el.dataset.action;
+    if (action === 'open-drawer')   { openDrawer(+el.dataset.id); }
+    else if (action === 'ver-hist') { showHistoricoMassagista(+el.dataset.id, el.dataset.nome); }
+    else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome, +el.dataset.ativo); }
+    else if (action === 'edit-tipo') {
+      const { id, nome, dur, preco, ativo, desc } = el.dataset;
+      openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc);
+    }
+    else if (action === 'cal-day')     { calSelectDay(el.dataset.ds); }
+    else if (action === 'cal-ver')     { calVerDetalhes(+el.dataset.id); }
+    else if (action === 'cal-cancelar'){ e.stopPropagation(); calCancelar(+el.dataset.id); }
+    else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
+    else if (action === 'page')        { goPage(+el.dataset.off); }
+    else if (action === 'hc-page')     { loadHistoricoClientes(+el.dataset.p); }
+    else if (action === 'edit-user')   { editarUsuario(+el.dataset.id); }
+    else if (action === 'del-user')    { deletarUsuario(+el.dataset.id, el.dataset.nome); }
+  });
+}
+
 // ── Init ──
 (function init() {
+  setupDelegation();
   if (tokenValido()) { showApp(); }
   else { clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
 
@@ -490,22 +518,22 @@ function renderMassagistas() {
     const tot = m.total_avaliacoes || 0;
     const pctRec = tot > 0 ? Math.round((m.rec_sim || 0) / tot * 100) : null;
     const statHtml = tot > 0
-      ? `<span class="mgmt-item-stat">${tot} avaliação${tot !== 1 ? 'ões' : ''}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
+      ? `<span class="mgmt-item-stat">${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
       : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
     const badges = [];
-    if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${m.matricula}</span>`);
-    if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${m.vinculo}</span>`);
+    if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${escHtml(m.matricula)}</span>`);
+    if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
     if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">🌍 Bilíngue</span>`);
     return `
       <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
         <div class="mgmt-item-info">
-          <span class="mgmt-item-nome">${m.nome}</span>
+          <span class="mgmt-item-nome">${escHtml(m.nome)}</span>
           ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
-          ${m.especialidade_original ? `<span class="mgmt-item-esp">${m.especialidade_original}</span>` : ''}
+          ${m.especialidade_original ? `<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>` : ''}
           ${statHtml}
         </div>
-        <button class="btn btn-outline btn-sm" onclick="showHistoricoMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditMassagista(${m.id},'${m.nome.replace(/'/g,"\\'")}',${m.ativo})">Editar</button>
+        <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Ver histórico</button>
+        <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}" data-ativo="${m.ativo?1:0}">Editar</button>
       </div>`;
   }).join('') + '</div>';
 }
@@ -545,6 +573,7 @@ window.openEditMassagista = (id, nome, ativo) => {
   chk.checked = !!ativo;
   document.getElementById('mgmt-m-ativo-txt').textContent = ativo ? 'Ativa' : 'Inativa';
   document.getElementById('mgmt-m-err').textContent = '';
+  _modalOpen = true;
   document.getElementById('mgmt-m-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
 };
@@ -552,7 +581,7 @@ window.openEditMassagista = (id, nome, ativo) => {
 document.getElementById('mgmt-m-ativo').addEventListener('change', function() {
   document.getElementById('mgmt-m-ativo-txt').textContent = this.checked ? 'Ativa' : 'Inativa';
 });
-function closeMgmtM() { document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
+function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
 document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);
 document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM);
 document.getElementById('mgmt-m-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-m-overlay')) closeMgmtM(); });
@@ -615,18 +644,17 @@ function renderTipos() {
     return;
   }
 
+  const fmtPreco = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v));
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(t => {
-    const meta = [t.duracao_min ? t.duracao_min + 'min' : null, t.preco ? 'R$' + Number(t.preco).toFixed(2) : null].filter(Boolean).join(' · ');
-    const nomeSafe = t.nome.replace(/'/g, "\\'");
-    const descSafe = (t.descricao || '').replace(/'/g, "\\'");
+    const meta = [t.duracao_min ? t.duracao_min + 'min' : null, t.preco ? fmtPreco(t.preco) : null].filter(Boolean).join(' · ');
     return `
     <div class="mgmt-item ${t.ativo ? '' : 'mgmt-item-inativo'}">
       <div style="flex:1;min-width:0">
-        <div class="mgmt-item-nome">${t.nome}</div>
-        ${t.descricao ? `<div class="mgmt-item-meta" style="margin-top:2px">${t.descricao}</div>` : ''}
+        <div class="mgmt-item-nome">${escHtml(t.nome)}</div>
+        ${t.descricao ? `<div class="mgmt-item-meta" style="margin-top:2px">${escHtml(t.descricao)}</div>` : ''}
       </div>
-      ${meta ? `<span class="mgmt-item-meta">${meta}</span>` : ''}
-      <button class="btn btn-outline btn-sm" onclick="openEditTipo(${t.id},'${nomeSafe}',${t.duracao_min || 'null'},${t.preco || 'null'},${t.ativo},'${descSafe}')">Editar</button>
+      ${meta ? `<span class="mgmt-item-meta">${escHtml(meta)}</span>` : ''}
+      <button class="btn btn-outline btn-sm" data-action="edit-tipo" data-id="${t.id}" data-nome="${escHtml(t.nome)}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-ativo="${t.ativo?1:0}" data-desc="${escHtml(t.descricao||'')}">Editar</button>
     </div>`;
   }).join('') + '</div>';
 }
@@ -678,6 +706,7 @@ window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
   chk.checked = !!ativo;
   document.getElementById('mgmt-t-ativo-txt').textContent = ativo ? 'Ativo' : 'Inativo';
   document.getElementById('mgmt-t-err').textContent = '';
+  _modalOpen = true;
   document.getElementById('mgmt-t-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mgmt-t-nome').focus(), 50);
 };
@@ -685,7 +714,7 @@ window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
 document.getElementById('mgmt-t-ativo').addEventListener('change', function() {
   document.getElementById('mgmt-t-ativo-txt').textContent = this.checked ? 'Ativo' : 'Inativo';
 });
-function closeMgmtT() { document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
+function closeMgmtT() { _modalOpen = false; document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
 document.getElementById('mgmt-t-x').addEventListener('click', closeMgmtT);
 document.getElementById('mgmt-t-cancelar').addEventListener('click', closeMgmtT);
 document.getElementById('mgmt-t-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-t-overlay')) closeMgmtT(); });
@@ -763,7 +792,7 @@ window.showHistoricoMassagista = async (id, nome) => {
     </div>
     <div class="hist-kpi">
       <div class="hist-kpi-label">Média geral</div>
-      <div class="hist-kpi-val" style="color:var(--gold)">${mediaGeral ?? '—'}</div>
+      <div class="hist-kpi-val" style="color:var(--gold)">${mediaGeral != null ? mediaGeral + ' / 9' : '—'}</div>
     </div>
     <div class="hist-kpi">
       <div class="hist-kpi-label">Recomendariam</div>
@@ -868,14 +897,14 @@ window.showHistoricoMassagista = async (id, nome) => {
                 : '—';
             return `<tr>
               <td>${fmtDate(r.submitted_at)}</td>
-              <td style="font-weight:500">${r.nome}</td>
-              <td style="color:var(--muted)">${r.tratamento_realizado || '—'}</td>
+              <td style="font-weight:500">${escHtml(r.nome)}</td>
+              <td style="color:var(--muted)">${escHtml(r.tratamento_realizado || '—')}</td>
               <td>${notaPill(r.servicos_expectativa)}</td>
               <td>${notaPill(r.servicos_atitude)}</td>
               <td>${notaPill(r.servicos_tecnica)}</td>
               <td class="${scoreClass(avg)}">${avg ?? '—'}</td>
               <td>${recBadge}</td>
-              <td><button class="btn btn-outline btn-sm" onclick="openDrawer(${r.id})">Ver</button></td>
+              <td><button class="btn btn-outline btn-sm" data-action="open-drawer" data-id="${r.id}">Ver</button></td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -904,12 +933,11 @@ let _massagistasModal = []; // cache p/ modal de reserva — [{id, nome, bilingu
 
 async function loadMassagistasModal() {
   if (_massagistasModal.length) return;
-  try {
-    const r = await fetch('/api/massagistas-ativas');
-    const d = await r.json();
-    _massagistasModal = d.items || [];
-    _renderMassagistasModal();
-  } catch {}
+  const r = await api('/api/massagistas-ativas');
+  if (!r) return;
+  const d = await r.json();
+  _massagistasModal = d.items || [];
+  _renderMassagistasModal();
 }
 
 function _renderMassagistasModal() {
@@ -928,7 +956,8 @@ function _renderMassagistasModal() {
 async function loadTratamentosModal() {
   if (_tratamentos.length) return;
   try {
-    const r = await fetch('/api/tipos-massagem-ativos');
+    const r = await api('/api/tipos-massagem-ativos');
+    if (!r) return;
     const d = await r.json();
     _tratamentos = d.items || [];
     const sel = document.getElementById('res-inp-tratamento');
@@ -1012,7 +1041,7 @@ function renderCalWeekPills() {
     const isSel=ds===selStr;
     const cnt=_reservas.filter(r=>r.data===ds).length;
     return `<button class="cal-day-pill${isToday?' today':''}${isSel?' selected':''}"
-      onclick="calSelectDay('${ds}')">
+      data-action="cal-day" data-ds="${ds}">
       <span class="cdp-abbr">${DIAS_PT[d.getDay()]}</span>
       <span class="cdp-num">${d.getDate()}</span>
       ${cnt>0?'<span class="cdp-dot"></span>':''}
@@ -1062,13 +1091,13 @@ function renderCalDia() {
           const topPx=((rs-slotS)/SLOT_MIN)*CAL_SLOT_PX+2;
           const ht=((re-rs)/SLOT_MIN)*CAL_SLOT_PX-4;
           html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}" style="top:${topPx}px;height:${ht}px;cursor:pointer" onclick="calVerDetalhes(${res.id})" title="${res.cliente}${res.tratamento ? ' · ' + res.tratamento : ''} · ${res.hora_inicio} – ${res.hora_fim}">
+            <div class="cal-res-block ${room.cls}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;cursor:pointer" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''} · ${res.hora_inicio} – ${res.hora_fim}">
               <div>
-                <div class="cal-res-name">${res.cliente}</div>
-                ${res.tratamento ? `<div class="cal-res-trat">${res.tratamento}</div>` : ''}
+                <div class="cal-res-name">${escHtml(res.cliente)}</div>
+                ${res.tratamento ? `<div class="cal-res-trat">${escHtml(res.tratamento)}</div>` : ''}
                 <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
               </div>
-              <button class="cal-res-cancel" onclick="event.stopPropagation();calCancelar(${res.id})" title="Cancelar reserva">
+              <button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -1077,7 +1106,7 @@ function renderCalDia() {
           html+=`<div class="cal-slot occupied-cont${halfClass}"></div>`;
         }
       } else {
-        html+=`<div class="cal-slot${halfClass}" onclick="calOpenModal(${room.id},'${ds}','${timeStr}')"></div>`;
+        html+=`<div class="cal-slot${halfClass}" data-action="cal-open" data-sala="${room.id}" data-ds="${ds}" data-hora="${timeStr}"></div>`;
       }
     });
   }
@@ -1106,6 +1135,7 @@ function calSetTipo(tipo) {
 function calOpenModal(salaId, data, hora) {
   _resSala=salaId||1;
   _resTipo=null;
+  _modalOpen = true;
   document.getElementById('res-modal-overlay').style.display='flex';
   document.getElementById('res-modal-err').textContent='';
   document.querySelectorAll('.res-tipo-btn').forEach(b=>b.classList.remove('active'));
@@ -1264,12 +1294,13 @@ function calMostrarConflito(info) {
     msgEl.textContent = 'Esta sala já está reservada neste horário. Não é possível ter duas sessões na mesma sala ao mesmo tempo.';
   }
   document.getElementById('conflito-info').innerHTML = `
-    ${tipo === 'massagista' && prof ? `<div class="conflito-card-row"><span class="conflito-card-label">Profissional</span><span class="conflito-card-val" style="font-family:inherit">${prof.nome}</span></div>` : ''}
-    <div class="conflito-card-row"><span class="conflito-card-label">Sala</span><span class="conflito-card-val">${sala ? sala.nome : 'Sala ' + c.sala}</span></div>
+    ${tipo === 'massagista' && prof ? `<div class="conflito-card-row"><span class="conflito-card-label">Profissional</span><span class="conflito-card-val" style="font-family:inherit">${escHtml(prof.nome)}</span></div>` : ''}
+    <div class="conflito-card-row"><span class="conflito-card-label">Sala</span><span class="conflito-card-val">${sala ? escHtml(sala.nome) : 'Sala ' + c.sala}</span></div>
     <div class="conflito-card-row"><span class="conflito-card-label">Data</span><span class="conflito-card-val">${calFmtData(c.data)}</span></div>
     <div class="conflito-card-row"><span class="conflito-card-label">Horário ocupado</span><span class="conflito-card-val">${c.hora_inicio} – ${c.hora_fim}</span></div>
-    <div class="conflito-card-row"><span class="conflito-card-label">Cliente</span><span class="conflito-card-val" style="font-family:inherit">${c.cliente}</span></div>
+    <div class="conflito-card-row"><span class="conflito-card-label">Cliente</span><span class="conflito-card-val" style="font-family:inherit">${escHtml(c.cliente)}</span></div>
   `;
+  _modalOpen = true;
   document.getElementById('conflito-overlay').classList.add('aberto');
 }
 
@@ -1279,8 +1310,8 @@ function _renderResDetMassagista(r) {
   if (!m) return `<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value mono">#${r.massagista_id}</span></div>`;
   const badges = [];
   if (m.bilingue) badges.push('<span style="display:inline-block;background:rgba(91,103,150,.12);color:var(--indigo);padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;margin-left:.4rem">🌍 Bilíngue</span>');
-  if (m.vinculo) badges.push(`<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;margin-left:.3rem">${m.vinculo}</span>`);
-  return `<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value">${m.nome}${badges.join('')}</span></div>`;
+  if (m.vinculo) badges.push(`<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;margin-left:.3rem">${escHtml(m.vinculo)}</span>`);
+  return `<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value">${escHtml(m.nome)}${badges.join('')}</span></div>`;
 }
 
 function _renderResDetComboPreco(r) {
@@ -1309,10 +1340,11 @@ function calFmtData(ymd) {
 }
 
 document.getElementById('conflito-ok').addEventListener('click', () => {
+  _modalOpen = false;
   document.getElementById('conflito-overlay').classList.remove('aberto');
 });
 document.getElementById('conflito-overlay').addEventListener('click', e => {
-  if (e.target.id === 'conflito-overlay') e.target.classList.remove('aberto');
+  if (e.target.id === 'conflito-overlay') { _modalOpen = false; e.target.classList.remove('aberto'); }
 });
 
 document.getElementById('res-inp-hora-inicio').addEventListener('input', calAtualizarHoraFim);
@@ -1330,8 +1362,8 @@ function calVerDetalhes(id) {
   const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
   const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
   const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
-  const empty = v => v && v.toString().trim() ? `<span class="resdet-value">${v}</span>` : '<span class="resdet-value empty">não informado</span>';
-  const emptyMono = v => v && v.toString().trim() ? `<span class="resdet-value mono">${v}</span>` : '<span class="resdet-value empty">não informado</span>';
+  const empty = v => v && v.toString().trim() ? `<span class="resdet-value">${escHtml(v)}</span>` : '<span class="resdet-value empty">não informado</span>';
+  const emptyMono = v => v && v.toString().trim() ? `<span class="resdet-value mono">${escHtml(v)}</span>` : '<span class="resdet-value empty">não informado</span>';
 
   document.getElementById('resdet-sub').innerHTML =
     `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span> <span style="margin-left:.4rem;color:var(--muted);font-size:.78rem">${salaTipo}</span>`;
@@ -1375,17 +1407,19 @@ function calVerDetalhes(id) {
     document.getElementById('resdet-overlay').style.display = 'none';
     calCancelar(r.id);
   };
+  _modalOpen = true;
   document.getElementById('resdet-overlay').style.display = 'flex';
 }
 window.calVerDetalhes = calVerDetalhes;
 
-document.getElementById('resdet-x').addEventListener('click', () => document.getElementById('resdet-overlay').style.display = 'none');
-document.getElementById('resdet-fechar').addEventListener('click', () => document.getElementById('resdet-overlay').style.display = 'none');
+document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
+document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-overlay').addEventListener('click', e => {
-  if (e.target.id === 'resdet-overlay') e.target.style.display = 'none';
+  if (e.target.id === 'resdet-overlay') { _modalOpen = false; e.target.style.display = 'none'; }
 });
 
 function calCloseModal(){
+  _modalOpen = false;
   document.getElementById('res-modal-overlay').style.display='none';
   _resSala=null;
 }
@@ -1617,8 +1651,8 @@ async function loadUsuarios() {
     <td><span class="role-badge role-${u.role||'admin'}">${ROLE_LABEL[u.role]||u.role||'admin'}</span></td>
     <td style="font-size:.78rem;color:var(--muted)">${fmt(u.created_at)}</td>
     <td style="text-align:right;white-space:nowrap">
-      <button class="btn btn-outline btn-sm" style="margin-right:.4rem" onclick="editarUsuario(${u.id})">Editar</button>
-      ${u.id !== meId ? `<button class="btn btn-outline btn-sm" style="border-color:var(--danger);color:var(--danger)" onclick="deletarUsuario(${u.id},'${escHtml(u.nome||u.username)}')">Remover</button>` : '<span style="font-size:.72rem;color:var(--muted)">você</span>'}
+      <button class="btn btn-outline btn-sm" style="margin-right:.4rem" data-action="edit-user" data-id="${u.id}">Editar</button>
+      ${u.id !== meId ? `<button class="btn btn-outline btn-sm" style="border-color:var(--danger);color:var(--danger)" data-action="del-user" data-id="${u.id}" data-nome="${escHtml(u.nome||u.username)}">Remover</button>` : '<span style="font-size:.72rem;color:var(--muted)">você</span>'}
     </td>
   </tr>`).join('');
 }
@@ -1652,7 +1686,10 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
   msg.style.display = 'none';
 
   if (!username) { msg.textContent='Usuário obrigatório.'; msg.style.display='block'; return; }
-  if (!editId && !senha) { msg.textContent='Senha obrigatória para novo usuário.'; msg.style.display='block'; return; }
+  if (!editId) {
+    if (!senha) { msg.textContent='Senha obrigatória para novo usuário.'; msg.style.display='block'; return; }
+    if (SENHA_RULES.some(r => !r.test(senha))) { msg.textContent='A senha não atende todos os requisitos de segurança.'; msg.style.display='block'; return; }
+  }
 
   const body = JSON.stringify({ nome, username, senha: senha || undefined, role });
   const isEdit = !!editId;
@@ -1749,23 +1786,23 @@ async function loadHistoricoClientes(page=0) {
       <td>${fmt(it.data)}</td>
       <td style="font-family:var(--mono);font-size:.82rem">${it.hora_inicio} – ${it.hora_fim}</td>
       <td>
-        <div style="font-weight:500">${it.cliente}</div>
-        <div style="font-size:.78rem;color:var(--muted)">${it.email || ''}</div>
+        <div style="font-weight:500">${escHtml(it.cliente)}</div>
+        <div style="font-size:.78rem;color:var(--muted)">${escHtml(it.email || '')}</div>
       </td>
-      <td><span class="badge-tipo-${it.tipo_cliente || 'outro'}">${tipoLabel}</span></td>
-      <td style="font-size:.82rem;color:var(--muted2)">${contato}</td>
-      <td style="font-size:.82rem">${salaLabel}</td>
-      <td style="font-size:.82rem">${tratamento}</td>
-      <td style="font-size:.82rem">${massoterapeuta}</td>
+      <td><span class="badge-tipo-${it.tipo_cliente || 'outro'}">${escHtml(tipoLabel)}</span></td>
+      <td style="font-size:.82rem;color:var(--muted2)">${escHtml(contato)}</td>
+      <td style="font-size:.82rem">${escHtml(salaLabel)}</td>
+      <td style="font-size:.82rem">${escHtml(tratamento)}</td>
+      <td style="font-size:.82rem">${escHtml(massoterapeuta)}</td>
     </tr>`;
   }).join('');
 
   const totalPages = Math.ceil(total / _hcLimit);
   if (totalPages > 1) {
     let html = '';
-    if (page > 0) html += `<button class="page-btn" onclick="loadHistoricoClientes(${page-1})">‹ Anterior</button>`;
+    if (page > 0) html += `<button class="page-btn" data-action="hc-page" data-p="${page-1}">‹ Anterior</button>`;
     html += `<span style="padding:0 .75rem;font-size:.82rem;color:var(--muted)">Página ${page+1} de ${totalPages}</span>`;
-    if (page < totalPages-1) html += `<button class="page-btn" onclick="loadHistoricoClientes(${page+1})">Próxima ›</button>`;
+    if (page < totalPages-1) html += `<button class="page-btn" data-action="hc-page" data-p="${page+1}">Próxima ›</button>`;
     pag.innerHTML = html;
   }
 }
