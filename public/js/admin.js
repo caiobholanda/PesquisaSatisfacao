@@ -1667,7 +1667,14 @@ function calVerDetalhes(id) {
     </div>
   `;
 
-  document.getElementById('resdet-cancelar-res').onclick = () => {
+  const btnCancel = document.getElementById('resdet-cancelar-res');
+  const inicioMs = new Date(`${r.data}T${r.hora_inicio}:00`).getTime();
+  const cancelBloqueado = Date.now() > inicioMs + 30 * 60 * 1000;
+  btnCancel.disabled = cancelBloqueado;
+  btnCancel.title = cancelBloqueado ? 'Cancelamento não permitido após 30 min do início' : '';
+  btnCancel.style.opacity = cancelBloqueado ? '0.4' : '';
+  btnCancel.style.cursor = cancelBloqueado ? 'default' : '';
+  btnCancel.onclick = cancelBloqueado ? null : () => {
     document.getElementById('resdet-overlay').style.display = 'none';
     calCancelar(r.id);
   };
