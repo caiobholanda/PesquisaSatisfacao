@@ -2101,84 +2101,150 @@
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        DETALHES DA RESERVA
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    /* ── Modal Detalhes Reserva — premium ── */
+    #resdet-overlay .res-modal { max-width: 740px; }
+
     .resdet-sala-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.35rem 0.8rem;
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .3rem .75rem; border-radius: 999px;
+      font-size: .78rem; font-weight: 600; letter-spacing: .02em;
     }
     .resdet-sala-badge.s1 { background: var(--sala-s1-dim); color: var(--sala-s1-text); }
     .resdet-sala-badge.s2 { background: var(--sala-s2-dim); color: var(--sala-s2-text); }
     .resdet-sala-badge.s3 { background: var(--sala-s3-dim); color: var(--sala-s3-text); }
-    .resdet-sala-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .resdet-sala-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .resdet-sala-dot.s1 { background: var(--sala-s1); }
     .resdet-sala-dot.s2 { background: var(--sala-s2); }
     .resdet-sala-dot.s3 { background: var(--sala-s3); }
-    .resdet-section {
-      padding: 0.5rem 0 0.85rem;
+
+    /* Hero banner de horário */
+    .resdet-hero {
+      background: linear-gradient(135deg, var(--surface2) 0%, rgba(212,149,61,.06) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.5rem;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 1rem;
+      margin-bottom: .85rem;
+    }
+    .resdet-hero-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem; font-weight: 700; color: var(--text);
+      letter-spacing: -.03em; line-height: 1;
+    }
+    .resdet-hero-sub {
+      font-size: .67rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em; margin-top: .28rem;
+    }
+    .resdet-hero-mid {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: .45rem;
+    }
+    .resdet-hero-dash {
+      width: 100%; height: 1.5px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .resdet-hero-dur {
+      background: var(--gold-dim); border: 1px solid var(--gold);
+      color: var(--gold-dark);
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      font-weight: 700; padding: .22rem .75rem;
+      border-radius: 999px; letter-spacing: .05em; white-space: nowrap;
+    }
+    .resdet-hero-right { text-align: right; }
+
+    /* Grade 2 colunas */
+    .resdet-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .85rem; margin-bottom: .85rem;
+    }
+    .resdet-card {
+      background: var(--surface); border: 1px solid var(--border-soft);
+      border-radius: 10px; padding: 1rem 1.1rem;
+    }
+    .resdet-card-title {
+      font-family: 'JetBrains Mono', monospace; font-size: .63rem;
+      text-transform: uppercase; letter-spacing: .14em;
+      color: var(--muted); margin-bottom: .8rem;
+      display: flex; align-items: center; gap: .55rem;
+    }
+    .resdet-card-title::after { content: ''; flex: 1; height: 1px; background: var(--border-soft); }
+
+    /* Avatar + cabeçalho do cliente */
+    .resdet-client-hd {
+      display: flex; align-items: center; gap: .75rem;
+      padding-bottom: .7rem; margin-bottom: .7rem;
       border-bottom: 1px solid var(--border-soft);
     }
-    .resdet-section:last-child { border-bottom: none; padding-bottom: 0; }
-    .resdet-section-title {
+    .resdet-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--gold-dim); border: 1.5px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--serif); font-size: 1.05rem;
+      color: var(--gold-dark); font-weight: 500;
+      flex-shrink: 0; line-height: 1; user-select: none;
+    }
+    .resdet-client-name {
+      font-size: .96rem; font-weight: 600; color: var(--text); line-height: 1.25;
+    }
+    .resdet-client-sub {
+      font-size: .73rem; color: var(--muted); margin-top: .18rem;
+      display: flex; align-items: center; gap: .3rem; flex-wrap: wrap;
+    }
+
+    /* Linhas chave-valor nos cards */
+    .resdet-kv {
+      padding: .36rem 0; border-bottom: 1px solid var(--border-soft);
+    }
+    .resdet-kv:last-child { border-bottom: none; padding-bottom: 0; }
+    .resdet-kv-label {
+      font-size: .62rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em; font-weight: 500;
+      margin-bottom: .08rem;
+    }
+    .resdet-kv-val {
+      font-size: .88rem; color: var(--text); font-weight: 500;
+      word-break: break-word; line-height: 1.35;
+    }
+    .resdet-kv-val.empty { color: var(--muted); font-style: italic; font-weight: 400; font-size: .82rem; }
+    .resdet-kv-val.mono { font-family: 'JetBrains Mono', monospace; }
+    .resdet-kv-val.gold { color: var(--gold-dark); font-weight: 600; }
+
+    /* Nome do tratamento */
+    .resdet-tratamento-name {
+      font-family: var(--serif); font-size: 1.1rem; font-weight: 500;
+      color: var(--gold-dark); line-height: 1.3;
+      padding-bottom: .7rem; margin-bottom: .7rem;
+      border-bottom: 1px solid var(--gold-dim);
+    }
+
+    /* Strip de registro */
+    .resdet-registro {
+      display: flex; border: 1px solid var(--border-soft);
+      border-radius: 8px; overflow: hidden;
+      background: var(--surface2);
+    }
+    .resdet-registro-item {
+      flex: 1; padding: .55rem .95rem;
+      border-right: 1px solid var(--border-soft);
+    }
+    .resdet-registro-item:last-child { border-right: none; }
+    .resdet-registro-label {
+      font-size: .61rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em; font-weight: 500; margin-bottom: .1rem;
+    }
+    .resdet-registro-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      margin-bottom: 0.65rem;
-      font-weight: 500;
+      font-size: .82rem; color: var(--text); font-weight: 600;
     }
-    .resdet-row {
-      display: grid;
-      grid-template-columns: 110px 1fr;
-      gap: 0.6rem 1rem;
-      align-items: baseline;
-      padding: 0.32rem 0;
-    }
-    .resdet-label {
-      font-size: 0.78rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-    .resdet-value {
-      font-size: 0.93rem;
-      color: var(--text);
-      font-weight: 500;
-      word-break: break-word;
-    }
-    .resdet-value.empty {
-      color: var(--muted);
-      font-style: italic;
-      font-weight: 400;
-    }
-    .resdet-value.mono {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.88rem;
-    }
-    .resdet-value.gold {
-      color: var(--gold-dark);
-      font-weight: 600;
-    }
+
+    /* Pills */
     .resdet-pill-tipo {
-      display: inline-block;
-      padding: 0.2rem 0.7rem;
-      border-radius: 999px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      display: inline-block; padding: .18rem .6rem;
+      border-radius: 999px; font-size: .7rem; font-weight: 600; letter-spacing: .02em;
     }
-    .resdet-pill-tipo.hospede {
-      background: rgba(91,103,150,.12);
-      color: var(--indigo);
-    }
-    .resdet-pill-tipo.passante {
-      background: var(--gold-dim);
-      color: var(--gold-dark);
-    }
+    .resdet-pill-tipo.hospede  { background: rgba(91,103,150,.12); color: var(--indigo); }
+    .resdet-pill-tipo.passante { background: var(--gold-dim); color: var(--gold-dark); }
 
     /* Toast */
     #_admin-toast {
@@ -2214,28 +2280,6 @@
     .badge-tipo-hospede  { background: rgba(91,103,150,.12); color: var(--indigo); }
     .badge-tipo-passante { background: var(--gold-dim);      color: var(--gold-dark); }
     .badge-tipo-outro    { background: var(--border);        color: var(--muted); }
-    .resdet-tempo-strip {
-      background: var(--surface2);
-      border: 1px solid var(--border-soft);
-      border-radius: 8px;
-      padding: 0.7rem 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-top: 0.4rem;
-    }
-    .resdet-tempo-strip svg { flex-shrink: 0; color: var(--gold); }
-    .resdet-tempo-strip-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1rem;
-      color: var(--text);
-      font-weight: 600;
-    }
-    .resdet-tempo-strip-data {
-      font-size: 0.78rem;
-      color: var(--muted);
-      margin-left: auto;
-    }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        HISTÓRICO — ANÁLISE
@@ -2893,12 +2937,12 @@
       </div>
       <button class="res-modal-x" id="resdet-x">✕</button>
     </div>
-    <div class="res-modal-body" id="resdet-body">
+    <div class="res-modal-body" id="resdet-body" style="max-height:75vh">
       <!-- preenchido por JS -->
     </div>
-    <div class="res-modal-ft" style="justify-content:space-between">
+    <div class="res-modal-ft" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
       <button class="btn btn-outline" id="resdet-cancelar-res" style="color:var(--danger);border-color:var(--danger)">Cancelar Reserva</button>
-      <div style="display:flex;gap:.6rem;align-items:center">
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
         <button class="btn btn-outline" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="" style="border-color:var(--gold);color:var(--gold)">Enviar Ficha</button>
         <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
         <button class="btn btn-gold" id="resdet-fechar">Fechar</button>

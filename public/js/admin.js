@@ -1496,31 +1496,38 @@ function calMostrarConflito(info) {
   document.getElementById('conflito-overlay').classList.add('aberto');
 }
 
-function _renderResDetMassagista(r) {
-  if (!r.massagista_id) return '<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value empty">não informada</span></div>';
-  const m = _massagistasModal.find(x => x.id === r.massagista_id);
-  if (!m) return `<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value mono">#${r.massagista_id}</span></div>`;
-  const badges = [];
-  if (m.bilingue) badges.push('<span style="display:inline-block;background:rgba(91,103,150,.12);color:var(--indigo);padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;margin-left:.4rem">Bilíngue</span>');
-  if (m.vinculo) badges.push(`<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;margin-left:.3rem">${escHtml(m.vinculo)}</span>`);
-  return `<div class="resdet-row"><span class="resdet-label">Profissional</span><span class="resdet-value">${escHtml(m.nome)}${badges.join('')}</span></div>`;
+function _iniciais(nome) {
+  if (!nome?.trim()) return '?';
+  const p = nome.trim().split(/\s+/);
+  return (p[0][0] + (p[1]?.[0] || '')).toUpperCase();
 }
 
-function _renderResDetComboPreco(r) {
-  // Localiza o tipo_massagem (cache _tratamentos pode não ter sido carregado nesta sessão)
+function _massagistaDetHtml(r) {
+  if (!r.massagista_id) return '<span class="resdet-kv-val empty">não informada</span>';
+  const m = _massagistasModal.find(x => x.id === r.massagista_id);
+  if (!m) return `<span class="resdet-kv-val mono">#${r.massagista_id}</span>`;
+  const badges = [];
+  if (m.bilingue) badges.push('<span style="background:rgba(91,103,150,.12);color:var(--indigo);padding:.1rem .45rem;border-radius:999px;font-size:.67rem;font-weight:600;margin-left:.35rem">Bilíngue</span>');
+  if (m.vinculo)  badges.push(`<span style="background:var(--gold-dim);color:var(--gold-dark);padding:.1rem .45rem;border-radius:999px;font-size:.67rem;font-weight:600;margin-left:.3rem">${escHtml(m.vinculo)}</span>`);
+  return `<span class="resdet-kv-val">${escHtml(m.nome)}${badges.join('')}</span>`;
+}
+
+function _precoDetHtml(r) {
   const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id || t.nome === r.tratamento);
   let out = '';
   if (tm?.tipo === 'combo' && tm.componentes_nomes?.length) {
-    out += `<div class="resdet-row"><span class="resdet-label">Inclusos</span><span class="resdet-value">${tm.componentes_nomes.map(n => `<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.15rem .55rem;border-radius:999px;font-size:.78rem;font-weight:500;margin-right:.3rem;margin-bottom:.2rem">${n}</span>`).join('')}</span></div>`;
+    out += `<div class="resdet-kv"><div class="resdet-kv-label">Inclusos</div><div class="resdet-kv-val">${tm.componentes_nomes.map(n => `<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.75rem;font-weight:500;margin:.1rem .2rem .1rem 0">${n}</span>`).join('')}</div></div>`;
   }
   if (tm?.preco) {
     const sub = Number(tm.preco);
     const taxa = sub * 0.15;
     const total = sub + taxa;
     const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    out += `<div class="resdet-row" style="border-top:1px dashed var(--border-soft);padding-top:.5rem;margin-top:.4rem"><span class="resdet-label">Subtotal</span><span class="resdet-value mono">R$ ${fmt(sub)}</span></div>`;
-    out += `<div class="resdet-row"><span class="resdet-label">Taxa serviço 15%</span><span class="resdet-value mono">R$ ${fmt(taxa)}</span></div>`;
-    out += `<div class="resdet-row"><span class="resdet-label" style="font-weight:600;color:var(--text)">Total</span><span class="resdet-value gold mono" style="font-size:1rem">R$ ${fmt(total)}</span></div>`;
+    out += `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
+    out += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
+    out += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
+    out += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
+    out += `</div>`;
   }
   return out;
 }
@@ -1559,44 +1566,66 @@ function calVerDetalhes(id) {
   const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
   const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
   const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
-  const empty = v => v && v.toString().trim() ? `<span class="resdet-value">${escHtml(v)}</span>` : '<span class="resdet-value empty">não informado</span>';
-  const emptyMono = v => v && v.toString().trim() ? `<span class="resdet-value mono">${escHtml(v)}</span>` : '<span class="resdet-value empty">não informado</span>';
-
   document.getElementById('resdet-sub').innerHTML =
-    `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span> <span style="margin-left:.4rem;color:var(--muted);font-size:.78rem">${salaTipo}</span>`;
+    `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span><span style="margin-left:.5rem;color:var(--muted);font-size:.76rem">${salaTipo}</span>`;
 
   document.getElementById('resdet-body').innerHTML = `
-    <div class="resdet-tempo-strip">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div class="resdet-hero">
       <div>
-        <div class="resdet-tempo-strip-val">${r.hora_inicio} – ${r.hora_fim}</div>
-        <div style="font-size:.74rem;color:var(--muted)">duração ${dur} min</div>
+        <div class="resdet-hero-time">${r.hora_inicio}</div>
+        <div class="resdet-hero-sub">início</div>
       </div>
-      <div class="resdet-tempo-strip-data">${calFmtData(r.data)}</div>
+      <div class="resdet-hero-mid">
+        <div class="resdet-hero-dash"></div>
+        <div class="resdet-hero-dur">${dur} min</div>
+      </div>
+      <div class="resdet-hero-right">
+        <div class="resdet-hero-time">${r.hora_fim}</div>
+        <div class="resdet-hero-sub" style="text-align:right">${calFmtData(r.data)}</div>
+      </div>
     </div>
 
-    <div class="resdet-section">
-      <div class="resdet-section-title">Cliente</div>
-      <div class="resdet-row"><span class="resdet-label">Nome</span>${empty(r.cliente)}</div>
-      <div class="resdet-row"><span class="resdet-label">Tipo</span><span class="resdet-pill-tipo ${tipoCliCls}">${tipoCli}</span></div>
-      ${r.tipo_cliente === 'hospede' ? `<div class="resdet-row"><span class="resdet-label">Apartamento</span>${emptyMono(r.apto)}</div>` : ''}
-      <div class="resdet-row"><span class="resdet-label">E-mail</span>${empty(r.email)}</div>
-      <div class="resdet-row"><span class="resdet-label">Telefone</span>${emptyMono(r.telefone)}</div>
+    <div class="resdet-grid">
+      <div class="resdet-card">
+        <div class="resdet-card-title">Cliente</div>
+        <div class="resdet-client-hd">
+          <div class="resdet-avatar">${_iniciais(r.cliente)}</div>
+          <div>
+            <div class="resdet-client-name">${escHtml(r.cliente || '—')}</div>
+            <div class="resdet-client-sub">
+              <span class="resdet-pill-tipo ${tipoCliCls}">${tipoCli}</span>
+              ${r.apto ? `<span>· Apto ${escHtml(r.apto)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        ${r.email ? `<div class="resdet-kv"><div class="resdet-kv-label">E-mail</div><div class="resdet-kv-val">${escHtml(r.email)}</div></div>` : ''}
+        ${r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-label">Telefone</div><div class="resdet-kv-val mono">${escHtml(r.telefone)}</div></div>` : ''}
+        ${!r.email && !r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-val empty">Sem contato informado</div></div>` : ''}
+      </div>
+
+      <div class="resdet-card">
+        <div class="resdet-card-title">Tratamento</div>
+        <div class="resdet-tratamento-name">${r.tratamento ? escHtml(r.tratamento) : '<span style="font-style:italic;color:var(--muted);font-family:var(--font);font-size:.9rem">não informado</span>'}</div>
+        ${r.linha ? `<div class="resdet-kv"><div class="resdet-kv-label">Linha</div><div class="resdet-kv-val">${escHtml(r.linha)}</div></div>` : ''}
+        <div class="resdet-kv"><div class="resdet-kv-label">Profissional</div>${_massagistaDetHtml(r)}</div>
+        <div class="resdet-kv"><div class="resdet-kv-label">Duração</div><div class="resdet-kv-val mono">${dur} min</div></div>
+        ${_precoDetHtml(r)}
+      </div>
     </div>
 
-    <div class="resdet-section">
-      <div class="resdet-section-title">Tratamento</div>
-      <div class="resdet-row"><span class="resdet-label">Serviço</span>${r.tratamento ? `<span class="resdet-value gold">${r.tratamento}</span>` : '<span class="resdet-value empty">não informado</span>'}</div>
-      ${r.linha ? `<div class="resdet-row"><span class="resdet-label">Linha</span><span class="resdet-value">${r.linha}</span></div>` : ''}
-      ${_renderResDetMassagista(r)}
-      <div class="resdet-row"><span class="resdet-label">Duração</span><span class="resdet-value mono">${dur} min</span></div>
-      ${_renderResDetComboPreco(r)}
-    </div>
-
-    <div class="resdet-section">
-      <div class="resdet-section-title">Registro</div>
-      <div class="resdet-row"><span class="resdet-label">Reserva #</span><span class="resdet-value mono">${r.id}</span></div>
-      <div class="resdet-row"><span class="resdet-label">Criado em</span>${r.criado_em ? `<span class="resdet-value">${fmtDataHoraBR(r.criado_em)}</span>` : '<span class="resdet-value empty">não informado</span>'}</div>
+    <div class="resdet-registro">
+      <div class="resdet-registro-item">
+        <div class="resdet-registro-label">Reserva</div>
+        <div class="resdet-registro-val">#${r.id}</div>
+      </div>
+      <div class="resdet-registro-item">
+        <div class="resdet-registro-label">Criado em</div>
+        <div class="resdet-registro-val">${r.criado_em ? fmtDataHoraBR(r.criado_em) : '—'}</div>
+      </div>
+      <div class="resdet-registro-item">
+        <div class="resdet-registro-label">Sala</div>
+        <div class="resdet-registro-val">${salaName}</div>
+      </div>
     </div>
   `;
 
