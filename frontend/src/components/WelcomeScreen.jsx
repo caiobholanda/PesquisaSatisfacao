@@ -1,6 +1,6 @@
 import { SunLogo, GranSpaWordmark, LinenBackground } from './shared.jsx';
 
-export default function WelcomeScreen({ visible, onStart, tokenData, submitted }) {
+export default function WelcomeScreen({ visible, onStart, tokenData }) {
   return (
     <div className="screen min-h-screen w-full grid md:grid-cols-2" style={{ opacity: visible ? 1 : 0 }}>
       <div className="relative bg-[#F5F0E6] flex flex-col justify-end p-10 md:p-16 min-h-[42vh] md:min-h-screen order-2 md:order-1">
@@ -31,11 +31,7 @@ export default function WelcomeScreen({ visible, onStart, tokenData, submitted }
             </div>
           </div>
           <div className="w-full max-w-sm">
-            {submitted ? (
-              <div style={{ textAlign: 'center', color: '#B0A090', fontSize: 12.5, letterSpacing: '0.08em', lineHeight: 1.8, paddingTop: 8 }}>
-                Pesquisa respondida com sucesso.<br />Obrigado pela sua avaliação.
-              </div>
-            ) : tokenData ? (
+            {tokenData ? (
               <button className="band-cta" onClick={onStart} aria-label="Iniciar avaliação da experiência no Gran SPA">
                 <div className="flex items-center justify-center" style={{ background: '#D4953D', minHeight: 70 }}>
                   <div className="flex flex-col items-center" style={{ color: '#FFFFFF', padding: '0 22px', letterSpacing: '0.22em', fontWeight: 500, fontSize: 16, lineHeight: 1.45, textAlign: 'center' }}>
