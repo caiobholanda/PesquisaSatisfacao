@@ -815,6 +815,25 @@
     .btn-danger         { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
     .btn-sm             { padding: 0.3125rem 0.75rem; font-size: 0.7rem; }
 
+    /* Disabled state — transparente mas legível */
+    .btn:disabled, .btn[disabled] {
+      cursor: default !important; pointer-events: none; opacity: 1 !important;
+    }
+    .btn-outline:disabled, .btn-outline[disabled] {
+      background: transparent !important;
+      border-color: var(--border-soft) !important;
+      color: var(--muted) !important;
+    }
+    .resdet-btn-danger:disabled {
+      border-color: rgba(184,84,80,.5) !important;
+      color: rgba(184,84,80,.65) !important;
+    }
+    .resdet-btn-gold:disabled {
+      border-color: rgba(212,149,61,.4) !important;
+      color: rgba(212,149,61,.6) !important;
+    }
+    .btn-gold:disabled { background: rgba(212,149,61,.35) !important; color: rgba(255,255,255,.7) !important; }
+
     /* ── Dropdown Administrativo ── */
     .admin-dropdown { position: relative; }
     .admin-dropdown-menu {

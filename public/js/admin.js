@@ -520,20 +520,14 @@ function _aplicarEstadoLiberada(btn, estado) {
   btn.dataset.estado = estado;
   if (estado === 'liberada') {
     btn.textContent = 'PESQUISA JÁ LIBERADA';
-    btn.style.opacity = '0.55';
-    btn.style.cursor = 'default';
-    btn.style.fontSize = '';
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
-    btn.style.opacity = '0.45';
-    btn.style.cursor = 'default';
-    btn.style.fontSize = '';
   } else {
     btn.textContent = 'Liberar Pesquisa';
-    btn.style.opacity = '';
-    btn.style.cursor = '';
-    btn.style.fontSize = '';
   }
+  btn.style.opacity = '';
+  btn.style.cursor = '';
+  btn.style.fontSize = '';
 }
 
 function _estadoBtnLiberar(r) {
@@ -1680,8 +1674,8 @@ function calVerDetalhes(id) {
   btnCancel.disabled = cancelBloqueado;
   btnCancel.textContent = cancelBloqueado ? 'Cancelamento expirado' : 'Cancelar Reserva';
   btnCancel.title = cancelBloqueado ? 'Só é possível cancelar até 30 min após o início' : '';
-  btnCancel.style.opacity = cancelBloqueado ? '0.4' : '';
-  btnCancel.style.cursor = cancelBloqueado ? 'default' : '';
+  btnCancel.style.opacity = '';
+  btnCancel.style.cursor = '';
   btnCancel.onclick = cancelBloqueado ? null : () => {
     document.getElementById('resdet-overlay').style.display = 'none';
     calCancelar(r.id);
