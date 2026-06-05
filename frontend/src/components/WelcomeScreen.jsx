@@ -42,7 +42,7 @@ export default function WelcomeScreen({ visible, onStart, tokenData }) {
               </button>
             ) : (
               <div style={{ textAlign: 'center', color: '#B0A090', fontSize: 12.5, letterSpacing: '0.08em', lineHeight: 1.8, paddingTop: 8 }}>
-                Esta pesquisa está disponível<br />apenas via link exclusivo.
+                Nenhuma avaliação disponível<br />no momento.
               </div>
             )}
           </div>
