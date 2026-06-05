@@ -307,6 +307,43 @@ async function loadTable() {
 window.goPage = (o) => { _offset = o; loadTable(); };
 
 // ── Drawer ──
+const _FB_RATINGS = [
+  { key: 'otimo', pt: 'Ótimo', en: 'Excellent' },
+  { key: 'bom',   pt: 'Bom',   en: 'Good' },
+  { key: 'regular', pt: 'Regular', en: 'Fair' },
+  { key: 'ruim',  pt: 'Ruim',  en: 'Poor' },
+];
+const _FB_SERVICES = [
+  { field: 'servicos_expectativa', pt: 'A expectativa do tratamento',                                               en: 'Your expectations.' },
+  { field: 'servicos_explicacao',  pt: 'A explicação da massoterapeuta sobre os benefícios e procedimentos',         en: "The massage therapist's explanation about the benefits and procedures." },
+  { field: 'servicos_atitude',     pt: 'A atitude e a qualidade dos serviços prestados pela massoterapeuta',         en: 'The attitude and the quality of the services provided by the massage therapist.' },
+  { field: 'servicos_tecnica',     pt: 'A técnica e a habilidade da massoterapeuta',                                en: "The massage therapist's technique and ability." },
+];
+const _FB_FACILITIES = [
+  { field: 'instalacoes_conforto',     pt: 'Conforto e conservação da estrutura do SPA',                                                        en: 'SPA comfort and cleanliness.' },
+  { field: 'instalacoes_organizacao',  pt: 'Organização da sala, equipamentos e a atmosfera do ambiente',                                        en: 'Room organization, equipment and atmosphere.' },
+  { field: 'instalacoes_conveniencia', pt: 'Os itens de conveniência (roupões, toalhas, etc) fornecidos durante o tratamento foram suficientes', en: 'Were the convenience items (bathrobes, towels, etc.) provided during treatment sufficient?' },
+];
+
+function _fbScaleBar() {
+  return `<div class="fb-scale-bar">${_FB_RATINGS.map(r => `<div class="fb-scale-lbl">${r.pt}<br><span style="font-weight:400;text-transform:none;letter-spacing:0">${r.en}</span></div>`).join('')}</div>`;
+}
+function _fbRatingRow(q, val) {
+  const dots = _FB_RATINGS.map(r => `<div class="fb-dot${val===r.key?' sel-'+r.key:''}"><div class="fb-dot-circle"></div></div>`).join('');
+  return `<div class="fb-rating-row"><div class="fb-q-text">${escHtml(q.pt)}<span class="en">${escHtml(q.en)}</span></div><div class="fb-dots">${dots}</div></div>`;
+}
+function _fbField(pt, en, val, full) {
+  const v = val ? escHtml(val) : '';
+  return `<div class="fb-field${full?' fb-meta-full':''}"><div class="fb-field-lbl">${pt}${en?`<span class="en">/ ${en}</span>`:''}</div><div class="fb-field-val${!val?' empty':''}">${v||'—'}</div></div>`;
+}
+function _fbComment(label, text) {
+  if (!text) return '';
+  return `<div class="fb-comment"><div class="fb-comment-lbl">${label}</div><div class="fb-comment-text">${escHtml(text)}</div></div>`;
+}
+function _fbRadio(ptLabel, enLabel, checked, sub) {
+  return `<div class="fb-radio-row"><div class="fb-radio-circle${checked?' sel':''}"></div><div class="fb-radio-text">${ptLabel}<span class="en">${enLabel}</span>${sub?`<div class="fb-radio-sub">"${escHtml(sub)}"</div>`:''}</div></div>`;
+}
+
 async function openDrawer(id) {
   const drawerEl = document.getElementById('drawer');
   const content  = document.getElementById('drawer-content');
@@ -321,44 +358,77 @@ async function openDrawer(id) {
   const r = d.item;
   if (!r) { content.innerHTML = '<div class="detail-section" style="color:var(--danger)">Avaliação não encontrada.</div>'; return; }
 
-  function nota(v) {
-    if (!v) return '<span style="color:var(--muted)">—</span>';
-    const cls = { otimo:'nota-otimo', bom:'nota-bom', regular:'nota-regular', ruim:'nota-ruim' }[v] || '';
-    const label = { otimo:'Ótimo', bom:'Bom', regular:'Regular', ruim:'Ruim' }[v] || v;
-    return `<span class="nota-pill ${cls}">${label}</span>`;
-  }
-  function row(k, v) { return `<div class="detail-row"><span class="detail-key">${escHtml(k)}</span><span>${v ? escHtml(v) : '<span style="color:var(--muted)">—</span>'}</span></div>`; }
+  const tipoCli = { hospede: 'Hóspede / Guest', passante: 'Passante / Walk-in', lazer: 'Lazer / Leisure', negocios: 'Negócios / Business', evento: 'Evento / Event' }[r.tipo_cliente] || r.tipo_cliente || '';
 
   content.innerHTML = `
-    <div class="detail-section">
-      <h3>Identificação</h3>
-      ${row('Nome', r.nome)} ${row('E-mail', r.email)} ${row('Apto', r.apto)}
-      ${row('Telefone', r.telefone)} ${row('Tipo', r.tipo_cliente)}
-      <div class="detail-row"><span class="detail-key">Origem</span><span class="badge ${r.origem==='hospede'?'badge-hospede':'badge-colab'}">${r.origem==='hospede'?'Hóspede':'Colaborador'}</span></div>
-      ${row('Data avaliação', fmtDate(r.submitted_at))}
-    </div>
-    <div class="detail-section">
-      <h3>Tratamento</h3>
-      ${row('Data tratamento', fmtDate(r.data_tratamento))} ${row('Tratamento', r.tratamento_realizado)} ${row('Massoterapista', r.nome_massoterapeuta)}
-    </div>
-    <div class="detail-section">
-      <h3>Serviços</h3>
-      <div class="detail-row"><span class="detail-key">Expectativa</span>${nota(r.servicos_expectativa)}</div>
-      <div class="detail-row"><span class="detail-key">Explicação</span>${nota(r.servicos_explicacao)}</div>
-      <div class="detail-row"><span class="detail-key">Atitude</span>${nota(r.servicos_atitude)}</div>
-      <div class="detail-row"><span class="detail-key">Técnica</span>${nota(r.servicos_tecnica)}</div>
-      ${r.servicos_comentario ? `<div class="detail-row"><span class="detail-key">Comentário</span><span style="font-style:italic;color:var(--muted)">"${escHtml(r.servicos_comentario)}"</span></div>` : ''}
-    </div>
-    <div class="detail-section">
-      <h3>Instalações</h3>
-      <div class="detail-row"><span class="detail-key">Conforto</span>${nota(r.instalacoes_conforto)}</div>
-      <div class="detail-row"><span class="detail-key">Organização</span>${nota(r.instalacoes_organizacao)}</div>
-      <div class="detail-row"><span class="detail-key">Conveniência</span>${nota(r.instalacoes_conveniencia)}</div>
-      ${r.instalacoes_comentario ? `<div class="detail-row"><span class="detail-key">Comentário</span><span style="font-style:italic;color:var(--muted)">"${escHtml(r.instalacoes_comentario)}"</span></div>` : ''}
-    </div>
-    <div class="detail-section">
-      <h3>Recomendação</h3>
-      ${row('Recomenda?', r.recomenda)} ${row('Para quem', r.recomenda_qual)} ${row('Por quê', r.recomenda_porque)}
+    <div class="fb-view">
+      <div class="fb-view-hd">
+        <div class="fb-view-title">Formulário de Feedback de Serviço</div>
+        <div class="fb-view-intro">
+          Para que possamos continuar nos aperfeiçoando, gostaríamos que você respondesse as perguntas abaixo assinalando a opção apropriada.
+          <span class="en">Share your experience with us. In order to continue improving our services, we would like you to answer the following questions by selecting the appropriate checkbox.</span>
+        </div>
+      </div>
+
+      <div class="fb-meta-grid">
+        ${_fbField('Nome', 'Name', r.nome)}
+        ${_fbField('Nº do Apto', 'Room number', r.apto)}
+        ${_fbField('E-mail', 'E-mail', r.email)}
+        ${_fbField('Tel / WhatsApp', 'Phone', r.telefone)}
+        ${_fbField('Data', 'Date', r.data_tratamento ? new Date(r.data_tratamento + 'T12:00:00').toLocaleDateString('pt-BR') : null)}
+        ${_fbField('Tratamento realizado', 'Spa treatment provided', r.tratamento_realizado)}
+        ${_fbField('Nome da massoterapeuta', "Massage therapist's name", r.nome_massoterapeuta, true)}
+      </div>
+
+      <div class="fb-section">
+        <div class="fb-sec-head">
+          <span class="fb-sec-num">1</span>
+          <span class="fb-sec-title">Serviços <span class="fb-sec-en">Services</span></span>
+        </div>
+        ${_fbScaleBar()}
+        ${_FB_SERVICES.map(q => _fbRatingRow(q, r[q.field])).join('')}
+        ${_fbComment('Comentários e sugestões / Additional comments', r.servicos_comentario)}
+      </div>
+
+      <div class="fb-section">
+        <div class="fb-sec-head">
+          <span class="fb-sec-num">2</span>
+          <span class="fb-sec-title">Instalações <span class="fb-sec-en">Facilities</span></span>
+        </div>
+        ${_fbScaleBar()}
+        ${_FB_FACILITIES.map(q => _fbRatingRow(q, r[q.field])).join('')}
+        ${_fbComment('Comentários e sugestões / Additional comments', r.instalacoes_comentario)}
+      </div>
+
+      <div class="fb-section">
+        <div class="fb-sec-head">
+          <span class="fb-sec-num">3</span>
+          <span class="fb-sec-title">Recomendação <span class="fb-sec-en">Recommendation</span></span>
+        </div>
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Você recomendaria algum tratamento em particular? / Would you recommend any particular treatment?</div>
+        <div class="fb-radio-list">
+          ${_fbRadio('Sim', 'Yes', r.recomenda === 'sim', r.recomenda_qual)}
+          ${_fbRadio('Não', 'No', r.recomenda === 'nao', r.recomenda_porque)}
+        </div>
+      </div>
+
+      <div class="fb-section">
+        <div class="fb-sec-head">
+          <span class="fb-sec-num">4</span>
+          <span class="fb-sec-title">Tipo de cliente <span class="fb-sec-en">Type of guest</span></span>
+        </div>
+        <div class="fb-radio-list">
+          ${_fbRadio('Lazer', 'Leisure', r.tipo_cliente === 'lazer')}
+          ${_fbRadio('Negócios', 'Business', r.tipo_cliente === 'negocios')}
+          ${_fbRadio('Evento', 'Event', r.tipo_cliente === 'evento')}
+        </div>
+      </div>
+
+      <div class="fb-view-footer">
+        <div class="fb-view-footer-sig">Atenciosamente,</div>
+        <div class="fb-view-footer-brand">Equipe do Gran SPA by L'Occitane</div>
+        <div class="fb-submitted">Enviado em ${fmtDate(r.submitted_at)} · <span class="badge ${r.origem==='hospede'?'badge-hospede':'badge-colab'}">${r.origem==='hospede'?'Hóspede':'Colaborador'}</span></div>
+      </div>
     </div>`;
 }
 window.openDrawer = openDrawer;
