@@ -2120,6 +2120,20 @@
       background: var(--gold-dim);
       color: var(--gold-dark);
     }
+
+    /* Modal idioma pré-massagem */
+    .lang-card {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .65rem .9rem; border: 1.5px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+      transition: border-color .14s, background .14s;
+      background: var(--surface);
+    }
+    .lang-card:hover { border-color: var(--gold); }
+    .lang-card.selected { border-color: var(--gold); background: var(--gold-dim, rgba(212,149,61,.09)); }
+    .lang-card-flag { font-size: 1.35rem; line-height: 1; flex-shrink: 0; }
+    .lang-card-name { font-size: .84rem; font-weight: 500; color: var(--text); flex: 1; }
+    .lang-card-code { font-size: .7rem; color: var(--muted); letter-spacing: .05em; }
     .badge-tipo-hospede, .badge-tipo-passante, .badge-tipo-outro {
       display: inline-block;
       padding: .2rem .55rem;
@@ -2816,9 +2830,30 @@
     <div class="res-modal-ft" style="justify-content:space-between">
       <button class="btn btn-outline" id="resdet-cancelar-res" style="color:var(--danger);border-color:var(--danger)">Cancelar Reserva</button>
       <div style="display:flex;gap:.6rem;align-items:center">
+        <button class="btn btn-outline" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="" style="border-color:var(--gold);color:var(--gold)">Enviar Ficha</button>
         <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
         <button class="btn btn-gold" id="resdet-fechar">Fechar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IDIOMA PRÉ-MASSAGEM -->
+<div class="res-modal-overlay" id="lang-overlay" style="display:none">
+  <div class="res-modal" style="max-width:500px">
+    <div class="res-modal-hd">
+      <div>
+        <div class="res-modal-title">Formulário Pré-Massagem</div>
+        <div class="res-modal-sub">Selecione o idioma do hóspede</div>
+      </div>
+      <button class="res-modal-x" id="lang-x">✕</button>
+    </div>
+    <div class="res-modal-body" style="max-height:none;padding-top:.75rem">
+      <div id="lang-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem"></div>
+    </div>
+    <div class="res-modal-ft" style="justify-content:flex-end;gap:.6rem">
+      <button class="btn btn-outline" id="lang-cancelar">Cancelar</button>
+      <button class="btn btn-gold" id="lang-confirmar">Enviar via WhatsApp</button>
     </div>
   </div>
 </div>

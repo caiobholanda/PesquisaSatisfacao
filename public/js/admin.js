@@ -8,6 +8,17 @@ let _calWeekOffset = 0;
 let _calDiaSel = null;
 let _modalOpen = false;
 let _resDetAtual = null;
+let _langSelected = 'pt-BR';
+
+const LANGS_PRE = [
+  { code: 'pt-BR', flag: '🇧🇷', name: 'Português (Brasil)' },
+  { code: 'pt-PT', flag: '🇵🇹', name: 'Português (Portugal)' },
+  { code: 'en',    flag: '🇺🇸', name: 'English' },
+  { code: 'fr',    flag: '🇫🇷', name: 'Français' },
+  { code: 'es',    flag: '🇪🇸', name: 'Español' },
+  { code: 'it',    flag: '🇮🇹', name: 'Italiano' },
+  { code: 'de',    flag: '🇩🇪', name: 'Deutsch' },
+];
 
 function token() { return _token || sessionStorage.getItem(TOKEN_KEY); }
 function setToken(t) { _token = t; sessionStorage.setItem(TOKEN_KEY, t); }
@@ -427,6 +438,19 @@ async function liberarPesquisaReserva(id) {
   }
 }
 
+function enviarPreMassagemReserva() {
+  _langSelected = 'pt-BR';
+  const grid = document.getElementById('lang-grid');
+  grid.innerHTML = LANGS_PRE.map(l => `
+    <div class="lang-card${l.code === _langSelected ? ' selected' : ''}" data-action="sel-lang" data-lang="${l.code}">
+      <span class="lang-card-flag">${l.flag}</span>
+      <span class="lang-card-name">${l.name}</span>
+      <span class="lang-card-code">${l.code}</span>
+    </div>
+  `).join('');
+  document.getElementById('lang-overlay').style.display = 'flex';
+}
+
 // ── Event delegation ──
 function setupDelegation() {
   document.addEventListener('click', e => {
@@ -446,8 +470,14 @@ function setupDelegation() {
     else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
     else if (action === 'page')        { goPage(+el.dataset.off); }
     else if (action === 'hc-page')     { loadHistoricoClientes(+el.dataset.p); }
-    else if (action === 'edit-user')   { editarUsuario(+el.dataset.id); }
-    else if (action === 'del-user')    { deletarUsuario(+el.dataset.id, el.dataset.nome); }
+    else if (action === 'edit-user')         { editarUsuario(+el.dataset.id); }
+    else if (action === 'del-user')          { deletarUsuario(+el.dataset.id, el.dataset.nome); }
+    else if (action === 'liberar-pesquisa')  { liberarPesquisaReserva(+el.dataset.id); }
+    else if (action === 'enviar-pre-massagem'){ enviarPreMassagemReserva(); }
+    else if (action === 'sel-lang') {
+      _langSelected = el.dataset.lang;
+      document.querySelectorAll('.lang-card').forEach(c => c.classList.toggle('selected', c.dataset.lang === _langSelected));
+    }
   });
 }
 
@@ -1385,6 +1415,8 @@ function calVerDetalhes(id) {
   _resDetAtual = r;
   const btnLib = document.getElementById('resdet-liberar');
   if (btnLib) btnLib.dataset.id = r.id;
+  const btnFicha = document.getElementById('resdet-ficha');
+  if (btnFicha) btnFicha.dataset.id = r.id;
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
   const salaCls = sala ? sala.cls : 's1';
@@ -1446,6 +1478,27 @@ document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-overlay').addEventListener('click', e => {
   if (e.target.id === 'resdet-overlay') { _modalOpen = false; e.target.style.display = 'none'; }
+});
+
+// Modal idioma pré-massagem
+const _closeLangOverlay = () => { document.getElementById('lang-overlay').style.display = 'none'; };
+document.getElementById('lang-x').addEventListener('click', _closeLangOverlay);
+document.getElementById('lang-cancelar').addEventListener('click', _closeLangOverlay);
+document.getElementById('lang-overlay').addEventListener('click', e => { if (e.target.id === 'lang-overlay') _closeLangOverlay(); });
+document.getElementById('lang-confirmar').addEventListener('click', () => {
+  const r = _resDetAtual;
+  if (!r) return;
+  const url = `https://sistema-chamados-granmarquise.fly.dev/spa-profile.html?lang=${_langSelected}`;
+  const raw = (r.telefone || '').replace(/\D/g, '');
+  const phone = raw.startsWith('55') ? raw : '55' + raw;
+  const msg = `Olá, *${r.cliente || 'hóspede'}*! 😊\n\nPara prepararmos sua experiência no *Gran SPA by L'Occitane*, pedimos que preencha a ficha de saúde antes do seu tratamento:\n\n👉 ${url}\n\n*Hotel Gran Marquise* 🌿`;
+  _closeLangOverlay();
+  if (raw) {
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  } else {
+    try { navigator.clipboard.writeText(url); } catch {}
+    alert(`Link gerado!\n\n${url}\n\n(Copiado para a área de transferência)`);
+  }
 });
 
 function calCloseModal(){
