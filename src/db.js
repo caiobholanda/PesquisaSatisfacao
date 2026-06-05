@@ -164,6 +164,8 @@ export function initDb() {
   try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN liberada_em TEXT`); } catch {}
   // Migration: add respondida_em to survey_tokens
   try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN respondida_em TEXT`); } catch {}
+  // Migration: idioma detectado por IA no feedback
+  try { db.exec(`ALTER TABLE feedback ADD COLUMN idioma_detectado TEXT`); } catch {}
 
   // Migration: spa pre-treatment document token fields
   for (const col of ['documento_token TEXT', 'documento_token_expiry TEXT', 'idioma_documento TEXT', 'documento_enviado_em TEXT', 'documento_perfil_id INTEGER']) {
@@ -567,6 +569,10 @@ export function marcarSurveyTokenRespondido() {
       ORDER BY liberada_em DESC LIMIT 1
     )
   `).run();
+}
+
+export function atualizarIdiomaFeedback(id, idioma) {
+  getDb().prepare(`UPDATE feedback SET idioma_detectado = ? WHERE id = ?`).run(idioma, id);
 }
 
 export function buscarSurveyToken(token) {

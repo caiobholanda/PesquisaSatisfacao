@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, exportarCsv, marcarSurveyTokenRespondido } from '../db.js';
+import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, exportarCsv, marcarSurveyTokenRespondido, atualizarIdiomaFeedback } from '../db.js';
+import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -78,6 +79,13 @@ router.post('/', rateLimit, (req, res) => {
   });
 
   try { marcarSurveyTokenRespondido(); } catch {}
+
+  // Detecção de idioma em background — não bloqueia a resposta
+  const textosLivres = [b.servicos_comentario, b.instalacoes_comentario, b.recomenda_qual, b.recomenda_porque, b.nome];
+  detectarIdioma(textosLivres)
+    .then(idioma => { if (idioma) atualizarIdiomaFeedback(id, idioma); })
+    .catch(() => {});
+
   return res.status(201).json({ ok: true, id });
 });
 

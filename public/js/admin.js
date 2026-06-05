@@ -226,9 +226,13 @@ function avgRow(r) {
   if (!vals.length) return null;
   return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
 }
-// Média exclusiva da massoterapeuta: apenas os 4 campos de serviço
-function avgRowMass(r) {
-  const campos = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica'];
+// Média exclusiva da massoterapeuta — exclui servicos_explicacao para hóspedes não-PT
+// quando a profissional não é bilíngue (campo bilingue = 0)
+function ehIdiomaPortugues(idioma) { return !idioma || idioma.startsWith('pt'); }
+function avgRowMass(r, ehBilingue) {
+  const idiomaOk = ehBilingue || ehIdiomaPortugues(r.idioma_detectado);
+  const campos = ['servicos_expectativa', 'servicos_atitude', 'servicos_tecnica'];
+  if (idiomaOk) campos.splice(1, 0, 'servicos_explicacao');
   const vals = campos.map(c => NOTA_MAP[r[c]]).filter(v => v !== undefined && v !== null);
   if (!vals.length) return null;
   return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
@@ -385,6 +389,7 @@ async function openDrawer(id) {
         ${_fbField('Data', 'Date', r.data_tratamento ? new Date(r.data_tratamento + 'T12:00:00').toLocaleDateString('pt-BR') : null)}
         ${_fbField('Tratamento realizado', 'Spa treatment provided', r.tratamento_realizado)}
         ${_fbField('Nome da massoterapeuta', "Massage therapist's name", r.nome_massoterapeuta, true)}
+        ${r.idioma_detectado ? `<div class="fb-meta-full" style="margin-top:.25rem"><div class="fb-field-lbl">Idioma detectado <span class="en">/ Detected language</span></div><div style="margin-top:3px"><span class="badge ${ehIdiomaPortugues(r.idioma_detectado) ? 'badge-hospede' : ''}" style="${ehIdiomaPortugues(r.idioma_detectado) ? '' : 'background:var(--warn-dim,#FEF3CD);color:var(--warn,#C49A2D)'}">${r.idioma_detectado.toUpperCase()}</span>${!ehIdiomaPortugues(r.idioma_detectado) ? ' <span style="font-size:.75rem;color:var(--muted)">— Explicação desconsiderada para profissionais não bilíngues</span>' : ''}</div></div>` : ''}
       </div>
 
       <div class="fb-section">
@@ -929,10 +934,13 @@ window.showHistoricoMassagista = async (id, nome) => {
 
   const items = d.items || [];
   const total = items.length;
-  const avgs = items.map(avgRowMass).filter(v => v !== null).map(Number);
+  const massObj = _massagistas.find(m => m.id === id);
+  const ehBilingue = !!(massObj?.bilingue);
+  const avgs = items.map(r => avgRowMass(r, ehBilingue)).filter(v => v !== null).map(Number);
   const mediaGeral = avgs.length ? (avgs.reduce((a, b) => a + b, 0) / avgs.length).toFixed(2) : null;
   const recSim = items.filter(r => r.recomenda === 'sim').length;
   const pctRec = total > 0 ? (recSim / total * 100).toFixed(0) : null;
+  const naoPortugues = items.filter(r => !ehIdiomaPortugues(r.idioma_detectado)).length;
 
   document.getElementById('hist-kpi-row').innerHTML = `
     <div class="hist-kpi">
@@ -946,7 +954,12 @@ window.showHistoricoMassagista = async (id, nome) => {
     <div class="hist-kpi">
       <div class="hist-kpi-label">Recomendariam</div>
       <div class="hist-kpi-val">${pctRec != null ? pctRec + '%' : '—'}</div>
-    </div>`;
+    </div>
+    ${naoPortugues > 0 && !ehBilingue ? `<div class="hist-kpi" title="Explicação desconsiderada para hóspedes não falantes de português">
+      <div class="hist-kpi-label">Hóspedes outro idioma</div>
+      <div class="hist-kpi-val" style="color:var(--warn,#C49A2D)">${naoPortugues} <span style="font-size:.7rem;font-weight:400">(expl. excluída)</span></div>
+    </div>` : ''}
+    ${ehBilingue ? `<div class="hist-kpi"><div class="hist-kpi-label">Bilíngue</div><div class="hist-kpi-val" style="color:var(--success)">✓</div></div>` : ''}`;
 
   if (!total) {
     document.getElementById('hist-list').innerHTML = '<div class="table-wrap"><div class="empty">Nenhuma pesquisa vinculada a esta profissional.</div></div>';
@@ -1031,14 +1044,18 @@ window.showHistoricoMassagista = async (id, nome) => {
       <table>
         <thead>
           <tr>
-            <th>Data</th><th>Cliente</th><th>Tratamento</th>
+            <th>Data</th><th>Cliente</th><th>Idioma</th><th>Tratamento</th>
             <th>Expectativa</th><th>Atitude</th><th>Técnica</th>
             <th>Média</th><th>Recomenda</th><th></th>
           </tr>
         </thead>
         <tbody>
           ${items.map(r => {
-            const avg = avgRowMass(r);
+            const avg = avgRowMass(r, ehBilingue);
+            const idiomaOk = ehBilingue || ehIdiomaPortugues(r.idioma_detectado);
+            const idiomaBadge = r.idioma_detectado && !ehIdiomaPortugues(r.idioma_detectado)
+              ? `<span class="badge" style="background:var(--warn-dim,#FEF3CD);color:var(--warn,#C49A2D);font-size:.68rem" title="Explicação excluída da média">${r.idioma_detectado.toUpperCase()}</span>`
+              : (r.idioma_detectado ? `<span style="color:var(--muted);font-size:.75rem">pt</span>` : '—');
             const recBadge = r.recomenda === 'sim'
               ? '<span class="badge badge-hospede">Sim</span>'
               : r.recomenda === 'nao'
@@ -1047,6 +1064,7 @@ window.showHistoricoMassagista = async (id, nome) => {
             return `<tr>
               <td>${fmtDate(r.submitted_at)}</td>
               <td style="font-weight:500">${escHtml(r.nome)}</td>
+              <td>${idiomaBadge}</td>
               <td style="color:var(--muted)">${escHtml(r.tratamento_realizado || '—')}</td>
               <td>${notaPill(r.servicos_expectativa)}</td>
               <td>${notaPill(r.servicos_atitude)}</td>
