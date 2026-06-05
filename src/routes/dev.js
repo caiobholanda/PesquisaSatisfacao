@@ -66,10 +66,53 @@ router.post('/seed-demo', (req, res) => {
   }
 
   let feedbacksInseridos = 0;
+  let reservasInseridas = 0;
 
   db.transaction(() => {
-    // 1. Limpa feedbacks anteriores
+    // 1. Limpa tudo
+    db.prepare('DELETE FROM survey_tokens').run();
+    db.prepare('DELETE FROM reservas').run();
     db.prepare('DELETE FROM feedback').run();
+
+    // 2. Insere 5 reservas fictícias
+    const stmtRes = db.prepare(`
+      INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, massagista_id, tipo_massagem_id)
+      VALUES (@sala, @cliente, @tipo_cliente, @apto, @email, @telefone, @tratamento, @data, @hora_inicio, @hora_fim, @massagista_id, @tipo_massagem_id)
+    `);
+
+    function dataFutura(diasAfrente) {
+      const d = new Date(); d.setDate(d.getDate() + diasAfrente);
+      return d.toISOString().slice(0, 10);
+    }
+
+    const SLOTS_RES = [
+      { sala: 1, diasAfrente: 0,  hora_inicio: '09:00', hora_fim: '10:30' },
+      { sala: 2, diasAfrente: 0,  hora_inicio: '10:45', hora_fim: '11:45' },
+      { sala: 1, diasAfrente: 1,  hora_inicio: '14:00', hora_fim: '15:30' },
+      { sala: 3, diasAfrente: 1,  hora_inicio: '09:00', hora_fim: '10:00' },
+      { sala: 2, diasAfrente: 2,  hora_inicio: '11:00', hora_fim: '12:30' },
+    ];
+
+    SLOTS_RES.forEach((slot, i) => {
+      const massagista = massagistas[i % massagistas.length];
+      const tipo       = tipos[i % tipos.length];
+      const nome       = NOMES[i];
+      stmtRes.run({
+        sala: slot.sala,
+        cliente: nome,
+        tipo_cliente: i % 2 === 0 ? 'hospede' : 'passante',
+        apto: APTOS[i],
+        email: nomeToEmail(nome),
+        telefone: '(85) 9' + Math.floor(1000 + Math.random() * 9000) + '-' + Math.floor(1000 + Math.random() * 9000),
+        tratamento: tipo.nome,
+        data: dataFutura(slot.diasAfrente),
+        hora_inicio: slot.hora_inicio,
+        hora_fim: slot.hora_fim,
+        massagista_id: massagista.id,
+        tipo_massagem_id: tipo.id,
+      });
+      reservasInseridas++;
+    });
 
     // 2. Insere 15 feedbacks com mix de notas
     // Distribuição planejada: 4 superpositivos, 4 positivos, 3 medianos, 2 negativos, 2 mistos
@@ -173,7 +216,7 @@ router.post('/seed-demo', (req, res) => {
 
   })();
 
-  res.json({ ok: true, feedbacks: feedbacksInseridos });
+  res.json({ ok: true, feedbacks: feedbacksInseridos, reservas: reservasInseridas });
 });
 
 export default router;

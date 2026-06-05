@@ -590,7 +590,7 @@ document.getElementById('btn-header-home')?.addEventListener('click', () => { sh
 
 // Botão de gerar dados de demonstração — só pesquisas (reservas continuam manuais)
 async function seedDemo(btnEl) {
-  const ok = confirm('⚠ Isso vai APAGAR todas as pesquisas atuais e gerar 15 respostas fictícias com variação de notas.\n\nAs reservas NÃO são afetadas — continuam criadas só pelos admins.\n\nContinuar?');
+  const ok = confirm('⚠ Isso vai APAGAR todas as reservas e pesquisas atuais e gerar:\n• 5 reservas fictícias (próximos 3 dias)\n• 15 pesquisas de satisfação fictícias\n\nContinuar?');
   if (!ok) return;
   btnEl.disabled = true;
   const txt = btnEl.textContent;
@@ -600,7 +600,7 @@ async function seedDemo(btnEl) {
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { alert('Erro: ' + (d.error || 'falha ao gerar dados')); return; }
-    alert(`✓ Pronto! ${d.feedbacks} pesquisas inseridas.`);
+    alert(`✓ Pronto! ${d.reservas} reservas e ${d.feedbacks} pesquisas inseridas.`);
     loadStats();
     loadAll();
   } catch (e) {
