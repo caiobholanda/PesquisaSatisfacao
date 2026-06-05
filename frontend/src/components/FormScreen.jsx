@@ -12,21 +12,26 @@ function FieldErr({ msg }) {
   return msg ? <p className="field-err" role="alert">{msg}</p> : null;
 }
 
-export default function FormScreen({ visible, onSubmit, onBack }) {
+export default function FormScreen({ visible, onSubmit, onBack, prefill = null }) {
   const [loading,   setLoading]   = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [massagistasOpts, setMassagistasOpts] = useState([]);
   const [tiposOpts,       setTiposOpts]       = useState([]);
 
   const [fields, setFields] = useState({
-    nome: '', apto: '', email: '', tel: '', tratamento: '', massoterapeuta: '',
+    nome: prefill?.nome || '',
+    apto: prefill?.tipo_cliente === 'passante' ? 'Passante' : (prefill?.apto || ''),
+    email: prefill?.email || '',
+    tel: prefill?.telefone || '',
+    tratamento: prefill?.tratamento || '',
+    massoterapeuta: prefill?.massoterapeuta || '',
   });
   const [ratings,               setRatings]               = useState({});
   const [comentarioServicos,    setComentarioServicos]    = useState('');
   const [comentarioInstalacoes, setComentarioInstalacoes] = useState('');
   const [recommend,     setRecommend]     = useState('');
   const [recommendText, setRecommendText] = useState('');
-  const [clientType,    setClientType]    = useState('');
+  const [clientType,    setClientType]    = useState(prefill?.tipo_cliente || '');
   const [errors,        setErrors]        = useState({});
   const [fills,         setFills]         = useState([0, 0, 0, 0]);
   const [submitting,    setSubmitting]    = useState(false);
@@ -98,7 +103,7 @@ export default function FormScreen({ visible, onSubmit, onBack }) {
       apto: fields.apto || null,
       email: fields.email,
       telefone: fields.tel || null,
-      data_tratamento: new Date().toISOString().slice(0, 10),
+      data_tratamento: prefill?.data || new Date().toISOString().slice(0, 10),
       tratamento_realizado: fields.tratamento || null,
       nome_massoterapeuta: fields.massoterapeuta || null,
       servicos_expectativa: ratings['s0'] || null,
@@ -236,7 +241,7 @@ export default function FormScreen({ visible, onSubmit, onBack }) {
             <div className="field">
               <FieldLabel pt="Data" en="Date" />
               <div style={{ padding: '8px 2px', fontSize: 16, color: '#9B9B9B', borderBottom: '1px solid #E4DAC6', userSelect: 'none' }}>
-                {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                {new Date((prefill?.data || new Date().toISOString().slice(0, 10)) + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </div>
             </div>
             <div className="field">

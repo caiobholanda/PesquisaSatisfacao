@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -95,6 +96,14 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_reservas_sala_data     ON reservas(sala, data);
     CREATE INDEX IF NOT EXISTS idx_reservas_massagista    ON reservas(massagista_id, data);
     CREATE INDEX IF NOT EXISTS idx_feedback_massoterapeuta ON feedback(nome_massoterapeuta);
+
+    CREATE TABLE IF NOT EXISTS survey_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token TEXT UNIQUE NOT NULL,
+      reserva_id INTEGER NOT NULL,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_survey_tokens_token ON survey_tokens(token);
   `);
 
   // Migration: add descricao column to tipos_massagem if absent
@@ -473,6 +482,32 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
 
 export function cancelarReserva(id) {
   return getDb().prepare(`DELETE FROM reservas WHERE id = ?`).run(id).changes;
+}
+
+export function buscarReservaById(id) {
+  return getDb().prepare(`
+    SELECT r.*, m.nome AS massagista_nome
+    FROM reservas r
+    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    WHERE r.id = ?
+  `).get(id) || null;
+}
+
+export function criarSurveyToken(reservaId) {
+  const token = randomBytes(24).toString('hex');
+  getDb().prepare('INSERT INTO survey_tokens (token, reserva_id) VALUES (?, ?)').run(token, reservaId);
+  return token;
+}
+
+export function buscarSurveyToken(token) {
+  return getDb().prepare(`
+    SELECT r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
+           m.nome AS massagista_nome
+    FROM survey_tokens st
+    JOIN reservas r ON r.id = st.reserva_id
+    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    WHERE st.token = ?
+  `).get(token) || null;
 }
 
 export function buscarAdmin(username) {

@@ -5,7 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -80,6 +80,24 @@ app.get('/api/tipos-massagem-ativos', (_req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime(), version: pkg.version });
+});
+
+app.get('/api/survey/:token', (req, res) => {
+  const row = buscarSurveyToken(req.params.token);
+  if (!row) return res.status(404).json({ ok: false, error: 'Token inválido' });
+  res.json({
+    ok: true,
+    dados: {
+      nome: row.cliente,
+      apto: row.apto,
+      email: row.email,
+      telefone: row.telefone,
+      data: row.data,
+      tratamento: row.tratamento,
+      tipo_cliente: row.tipo_cliente,
+      massoterapeuta: row.massagista_nome || '',
+    },
+  });
 });
 
 app.use('/api/feedback', feedbackRouter);

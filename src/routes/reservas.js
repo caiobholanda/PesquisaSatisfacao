@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -71,6 +71,16 @@ router.post('/', (req, res) => {
     }
     throw e;
   }
+});
+
+router.post('/:id/liberar-pesquisa', (req, res) => {
+  const reserva = buscarReservaById(+req.params.id);
+  if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
+  const token = criarSurveyToken(reserva.id);
+  const origin = process.env.NODE_ENV === 'production'
+    ? `https://${req.get('host')}`
+    : `${req.protocol}://${req.get('host')}`;
+  res.json({ ok: true, token, url: `${origin}/?token=${token}`, nome: reserva.cliente, telefone: reserva.telefone });
 });
 
 router.delete('/:id', (req, res) => {

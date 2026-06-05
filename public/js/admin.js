@@ -7,6 +7,7 @@ let _filters = {};
 let _calWeekOffset = 0;
 let _calDiaSel = null;
 let _modalOpen = false;
+let _resDetAtual = null;
 
 function token() { return _token || sessionStorage.getItem(TOKEN_KEY); }
 function setToken(t) { _token = t; sessionStorage.setItem(TOKEN_KEY, t); }
@@ -398,6 +399,32 @@ function showView(id) {
   // Mostra/esconde botão "Início" no header
   const homeBtn = document.getElementById('btn-header-home');
   if (homeBtn) homeBtn.style.display = (id === 'view-reservas') ? 'none' : '';
+}
+
+// ── Liberar Pesquisa de Satisfação ──
+async function liberarPesquisaReserva(id) {
+  const btn = document.getElementById('resdet-liberar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
+  try {
+    const res = await api(`/api/reservas/${id}/liberar-pesquisa`, { method: 'POST', body: '{}' });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { alert('Erro ao gerar link: ' + (d.error || '')); return; }
+
+    const raw = (d.telefone || '').replace(/\D/g, '');
+    const phone = raw.startsWith('55') ? raw : '55' + raw;
+    const nome = escHtml(d.nome || 'hóspede');
+    const msg = `Olá, *${d.nome || 'hóspede'}*! 😊\n\nGostaríamos de conhecer sua experiência no *Gran SPA by L'Occitane* — Hotel Gran Marquise.\n\nSua avaliação é muito importante para nós! 🌿\n\n👉 ${d.url}`;
+
+    if (raw) {
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      try { await navigator.clipboard.writeText(d.url); } catch {}
+      alert(`Link gerado!\n\n${d.url}\n\n(Copiado para a área de transferência)`);
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Liberar Pesquisa'; }
+  }
 }
 
 // ── Event delegation ──
@@ -1355,6 +1382,9 @@ document.getElementById('res-flt-bilingue')?.addEventListener('change', _renderM
 function calVerDetalhes(id) {
   const r = _reservas.find(x => x.id === id);
   if (!r) return;
+  _resDetAtual = r;
+  const btnLib = document.getElementById('resdet-liberar');
+  if (btnLib) btnLib.dataset.id = r.id;
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
   const salaCls = sala ? sala.cls : 's1';
