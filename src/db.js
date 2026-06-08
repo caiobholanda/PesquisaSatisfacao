@@ -575,6 +575,20 @@ export function atualizarIdiomaFeedback(id, idioma) {
   getDb().prepare(`UPDATE feedback SET idioma_detectado = ? WHERE id = ?`).run(idioma, id);
 }
 
+export function countSessoesSemPesquisa() {
+  return getDb().prepare(`
+    SELECT COUNT(*) AS total FROM reservas r
+    WHERE (
+      r.data < date('now','localtime')
+      OR (r.data = date('now','localtime') AND r.hora_fim <= time('now','localtime'))
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM survey_tokens st
+      WHERE st.reserva_id = r.id AND st.respondida_em IS NOT NULL
+    )
+  `).get()?.total ?? 0;
+}
+
 export function buscarSurveyToken(token) {
   return getDb().prepare(`
     SELECT r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,

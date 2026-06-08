@@ -188,6 +188,18 @@ async function loadStats() {
   document.getElementById('kpi-origem').innerHTML = `<span style="color:var(--gold)">${h}</span> / <span style="color:var(--indigo)">${c}</span>`;
   renderAnalysis(d);
   _atualizarUltimoSync();
+  loadSessoesSemPesquisa();
+}
+
+async function loadSessoesSemPesquisa() {
+  const res = await api('/api/reservas/sem-pesquisa');
+  if (!res) return;
+  const d = await res.json();
+  if (!d.ok) return;
+  const el = document.getElementById('kpi-sem-pesquisa');
+  const card = document.getElementById('kpi-sem-pesquisa-card');
+  if (el) el.textContent = d.total;
+  if (card) card.classList.toggle('alert', d.total > 0);
 }
 
 let _statsPoller = null;

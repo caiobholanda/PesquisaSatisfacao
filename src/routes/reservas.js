@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
+
+router.get('/sem-pesquisa', (req, res) => {
+  res.json({ ok: true, total: countSessoesSemPesquisa() });
+});
 
 router.get('/', (req, res) => {
   const { from, to } = req.query;
