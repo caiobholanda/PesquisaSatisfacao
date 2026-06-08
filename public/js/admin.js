@@ -1759,7 +1759,12 @@ function _iniciais(nome) {
 function _massagistaDetHtml(r) {
   if (!r.massagista_id) return '<span class="resdet-kv-val empty">não informada</span>';
   const m = _massagistasModal.find(x => x.id === r.massagista_id);
-  if (!m) return `<span class="resdet-kv-val mono">#${r.massagista_id}</span>`;
+  if (!m) {
+    const nome = r.massagista_nome || null;
+    return nome
+      ? `<span class="resdet-kv-val">${escHtml(nome)}</span>`
+      : `<span class="resdet-kv-val" style="color:var(--muted)">#${r.massagista_id}</span>`;
+  }
   const badges = [];
   if (m.bilingue) badges.push('<span style="background:rgba(91,103,150,.12);color:var(--indigo);padding:.1rem .45rem;border-radius:999px;font-size:.67rem;font-weight:600;margin-left:.35rem">Bilíngue</span>');
   if (m.vinculo)  badges.push(`<span style="background:var(--gold-dim);color:var(--gold-dark);padding:.1rem .45rem;border-radius:999px;font-size:.67rem;font-weight:600;margin-left:.3rem">${escHtml(m.vinculo)}</span>`);

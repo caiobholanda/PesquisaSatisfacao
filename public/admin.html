@@ -2268,7 +2268,7 @@
       word-break: break-word; line-height: 1.35;
     }
     .resdet-kv-val.empty { color: var(--muted); font-style: italic; font-weight: 400; font-size: .82rem; }
-    .resdet-kv-val.mono { font-family: 'JetBrains Mono', monospace; }
+    .resdet-kv-val.mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: "zero" 1; }
     .resdet-kv-val.gold { color: var(--gold-dark); font-weight: 600; }
 
     /* Nome do tratamento */
@@ -2284,19 +2284,25 @@
       display: flex; border: 1px solid var(--border-soft);
       border-radius: 8px; overflow: hidden;
       background: var(--surface2);
+      flex-shrink: 0; /* impede compressão vertical no flex column do modal-body */
+      align-items: stretch;
     }
     .resdet-registro-item {
-      flex: 1; padding: .55rem .95rem;
+      flex: 1; min-width: 0; padding: .55rem .95rem;
       border-right: 1px solid var(--border-soft);
+      display: flex; flex-direction: column; justify-content: center;
     }
     .resdet-registro-item:last-child { border-right: none; }
     .resdet-registro-label {
       font-size: .61rem; color: var(--muted);
       text-transform: uppercase; letter-spacing: .08em; font-weight: 500; margin-bottom: .1rem;
+      white-space: nowrap;
     }
     .resdet-registro-val {
       font-family: 'JetBrains Mono', monospace;
       font-size: .82rem; color: var(--text); font-weight: 600;
+      word-break: break-word;
+      font-feature-settings: "zero" 1;
     }
 
     /* Pills */
