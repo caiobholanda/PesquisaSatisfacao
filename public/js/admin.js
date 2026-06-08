@@ -1867,6 +1867,7 @@ function calVerDetalhes(id) {
         ${r.email ? `<div class="resdet-kv"><div class="resdet-kv-label">E-mail</div><div class="resdet-kv-val">${escHtml(r.email)}</div></div>` : ''}
         ${r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-label">Telefone</div><div class="resdet-kv-val mono">${escHtml(r.telefone)}</div></div>` : ''}
         ${!r.email && !r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-val empty">Sem contato informado</div></div>` : ''}
+        <div class="resdet-kv"><div class="resdet-kv-label">Registrado por</div><div class="resdet-kv-val">${r.criado_por ? escHtml(r.criado_por) : '—'}</div></div>
       </div>
 
       <div class="resdet-card">
