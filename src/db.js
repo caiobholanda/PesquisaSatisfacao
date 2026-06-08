@@ -451,7 +451,11 @@ export function historicoMassagista(nome) {
 // ── Reservas ──
 export function listarReservasSemana(from, to) {
   return getDb().prepare(
-    `SELECT * FROM reservas WHERE data >= ? AND data <= ? ORDER BY data, hora_inicio`
+    `SELECT r.*, m.nome AS massagista_nome
+     FROM reservas r
+     LEFT JOIN massagistas m ON m.id = r.massagista_id
+     WHERE r.data >= ? AND r.data <= ?
+     ORDER BY r.data, r.hora_inicio`
   ).all(from, to);
 }
 
