@@ -885,7 +885,6 @@ document.getElementById('mgmt-m-ativo').addEventListener('change', function() {
 function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
 document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);
 document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM);
-document.getElementById('mgmt-m-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-m-overlay')) closeMgmtM(); });
 document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   const err = document.getElementById('mgmt-m-err');
   err.textContent = '';
@@ -1081,7 +1080,6 @@ document.getElementById('mgmt-t-ativo').addEventListener('change', function() {
 function closeMgmtT() { _modalOpen = false; document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
 document.getElementById('mgmt-t-x').addEventListener('click', closeMgmtT);
 document.getElementById('mgmt-t-cancelar').addEventListener('click', closeMgmtT);
-document.getElementById('mgmt-t-overlay').addEventListener('click', e => { if (e.target === document.getElementById('mgmt-t-overlay')) closeMgmtT(); });
 document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
   const err = document.getElementById('mgmt-t-err');
   err.textContent = '';
@@ -2122,15 +2120,11 @@ window.calVerDetalhes = calVerDetalhes;
 
 document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
-document.getElementById('resdet-overlay').addEventListener('click', e => {
-  if (e.target.id === 'resdet-overlay') { _modalOpen = false; e.target.style.display = 'none'; }
-});
 
 // Modal idioma pré-massagem
 const _closeLangOverlay = () => { document.getElementById('lang-overlay').style.display = 'none'; };
 document.getElementById('lang-x').addEventListener('click', _closeLangOverlay);
 document.getElementById('lang-cancelar').addEventListener('click', _closeLangOverlay);
-document.getElementById('lang-overlay').addEventListener('click', e => { if (e.target.id === 'lang-overlay') _closeLangOverlay(); });
 document.getElementById('lang-confirmar').addEventListener('click', async () => {
   const r = _resDetAtual;
   if (!r) return;
@@ -2169,9 +2163,6 @@ function calCloseModal(){
 document.getElementById('btn-nova-reserva').addEventListener('click',()=>calOpenModal(1,_calDiaSel?calDateStr(_calDiaSel):null,'09:00'));
 document.getElementById('btn-res-x').addEventListener('click',calCloseModal);
 document.getElementById('btn-res-cancelar').addEventListener('click',calCloseModal);
-document.getElementById('res-modal-overlay').addEventListener('click',e=>{
-  if(e.target===document.getElementById('res-modal-overlay'))calCloseModal();
-});
 
 document.querySelectorAll('.res-room-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
