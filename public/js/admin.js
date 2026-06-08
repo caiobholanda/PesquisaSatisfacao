@@ -560,7 +560,7 @@ function _aplicarEstadoBtnFicha(btn, estado) {
   }
 }
 
-// estado: 'ok' | 'liberada' | 'fora_prazo'
+// estado: 'ok' | 'liberada' | 'fora_prazo' | 'antes_fim'
 function _aplicarEstadoLiberada(btn, estado) {
   if (!btn) return;
   if (estado === true) estado = 'liberada';
@@ -571,6 +571,8 @@ function _aplicarEstadoLiberada(btn, estado) {
     btn.textContent = 'PESQUISA JÁ LIBERADA';
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
+  } else if (estado === 'antes_fim') {
+    btn.textContent = 'Disponível ao fim do tratamento';
   } else {
     btn.textContent = 'Liberar Pesquisa';
   }
@@ -581,14 +583,16 @@ function _aplicarEstadoLiberada(btn, estado) {
 
 function _estadoBtnLiberar(r) {
   if (_pesquisasLiberadas.has(r.id)) return 'liberada';
-  const fim = new Date(`${r.data}T${r.hora_fim}:00`);
-  if (Date.now() > fim.getTime() + 45 * 60 * 1000) return 'fora_prazo';
+  const now = Date.now();
+  const fim = new Date(`${r.data}T${r.hora_fim}:00`).getTime();
+  if (now < fim) return 'antes_fim';
+  if (now > fim + 30 * 60 * 1000) return 'fora_prazo';
   return 'ok';
 }
 
 async function liberarPesquisaReserva(id) {
   const btn = document.getElementById('resdet-liberar');
-  if (btn?.dataset.estado === 'fora_prazo' || btn?.dataset.estado === 'liberada') return;
+  if (btn?.dataset.estado === 'fora_prazo' || btn?.dataset.estado === 'liberada' || btn?.dataset.estado === 'antes_fim') return;
   if (btn) { btn.disabled = true; btn.textContent = 'Liberando…'; }
   try {
     const res = await api(`/api/reservas/${id}/liberar-pesquisa`, { method: 'POST', body: '{}' });
