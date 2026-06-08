@@ -1101,20 +1101,6 @@ document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
     closeMgmtT(); loadTipos(); _tratamentos = [];
   } finally { btn.disabled = false; }
 });
-document.getElementById('mgmt-t-excluir').addEventListener('click', async () => {
-  const err = document.getElementById('mgmt-t-err');
-  const nome = document.getElementById('mgmt-t-sub').textContent;
-  if (!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
-  const btn = document.getElementById('mgmt-t-excluir');
-  btn.disabled = true;
-  try {
-    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'DELETE' });
-    if (!res) return;
-    const d = await res.json();
-    if (!d.ok) { err.textContent = d.error || 'Erro ao excluir.'; return; }
-    closeMgmtT(); loadTipos(); _tratamentos = [];
-  } finally { btn.disabled = false; }
-});
 
 // ── Histórico de Massagista ──
 window.showHistoricoMassagista = async (id, nome) => {
