@@ -882,7 +882,8 @@ async function loadEscala() {
   const res = await api('/api/massagistas');
   if (!res) return;
   const d = await res.json();
-  renderEscala(d.items || []);
+  _massagistas = d.items || [];
+  renderEscala(_massagistas);
 }
 
 function renderEscala(massagistas) {
@@ -912,10 +913,16 @@ function renderEscala(massagistas) {
           <tr>
             <td title="${escHtml(m.nome)}">${escHtml(m.nome)}</td>
             ${['seg','ter','qua','qui','sex','sab','dom'].map(d => `<td>${_cellHtml(_faixa(m, d))}</td>`).join('')}
-            <td><button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="openEditMassagista(${m.id},'${escHtml(m.nome).replace(/'/g,"\\'")}',${m.ativo})">Editar</button></td>
+            <td><button class="btn btn-outline btn-sm" style="white-space:nowrap" data-action="edit-mass-escala" data-id="${m.id}">Editar</button></td>
           </tr>`).join('')}
       </tbody>
     </table>`;
+  wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = _massagistas.find(x => x.id === +btn.dataset.id);
+      if (m) openEditMassagista(m.id, m.nome, m.ativo);
+    });
+  });
 }
 
 // ── Tipos de Tratamento ──
