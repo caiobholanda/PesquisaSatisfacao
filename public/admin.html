@@ -1965,6 +1965,29 @@
       font-style: italic;
     }
 
+    /* Escala table */
+    .escala-table { width:100%; border-collapse:collapse; font-size:.8125rem; min-width:600px; }
+    .escala-table th { padding:.5rem .75rem; text-align:center; font-size:.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+    .escala-table th:first-child { text-align:left; }
+    .escala-table td { padding:.5rem .75rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; }
+    .escala-table td:first-child { font-weight:500; font-size:.8rem; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .escala-table td:not(:first-child):not(:last-child) { text-align:center; }
+    .escala-td-on { color:var(--success); font-size:.75rem; font-family:var(--mono); white-space:nowrap; }
+    .escala-td-off { color:var(--muted); font-size:.75rem; }
+    .escala-table tr:last-child td { border-bottom:none; }
+    .escala-table tr:hover td { background:var(--surface2); }
+
+    /* Disponibilidade row no modal */
+    .disp-row { display:flex; align-items:center; gap:.625rem; padding:.3rem .5rem; border-radius:6px; transition:background .12s; }
+    .disp-row:hover { background:var(--surface2); }
+    .disp-row-label { width:68px; font-size:.8rem; font-weight:500; color:var(--text); flex-shrink:0; }
+    .disp-row-times { display:flex; align-items:center; gap:.375rem; flex:1; }
+    .disp-row-times input[type=time] { font-family:var(--mono); font-size:.8rem; padding:.25rem .4rem; border:1px solid var(--border); border-radius:5px; background:var(--surface); color:var(--text); width:84px; }
+    .disp-row-times input[type=time]:disabled { opacity:.35; }
+    .disp-row-sep { font-size:.75rem; color:var(--muted); }
+    .disp-row input[type=checkbox] { width:15px; height:15px; accent-color:var(--gold-dark); cursor:pointer; flex-shrink:0; }
+    .disp-row-off { font-size:.75rem; color:var(--muted); font-style:italic; }
+
     /* Combo info box */
     .res-combo-box {
       margin-top: 0.6rem;
@@ -2396,6 +2419,7 @@
         <button class="btn btn-outline btn-sm" id="btn-spa-toggle">SPA<span class="dropdown-caret">▾</span></button>
         <div class="admin-dropdown-menu" id="spa-dropdown-menu">
           <button class="dropdown-item" id="btn-open-massagistas">Massoterapeutas</button>
+          <button class="dropdown-item" id="btn-open-escala">Escala de Trabalho</button>
           <button class="dropdown-item" id="btn-open-tipos">Tipos de Tratamento</button>
         </div>
       </div>
@@ -2564,6 +2588,29 @@
         </div>
         <div id="list-massagistas">
           <div class="mgmt-empty">Nenhuma massoterapeuta cadastrada.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: Escala de Trabalho ── -->
+    <div id="view-escala" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-escala">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">02</span>
+            <h1 class="page-title">Escala de Trabalho</h1>
+          </div>
+          <p class="page-sub">Horários semanais por massoterapeuta</p>
+        </div>
+      </div>
+      <div class="mgmt-list-card">
+        <div class="mgmt-list-card-header" style="padding-bottom:0.75rem">
+          <span class="mgmt-list-card-title">Escala semanal</span>
+          <span style="font-size:0.8125rem;color:var(--muted)">Clique em Editar para ajustar o horário de cada profissional</span>
+        </div>
+        <div id="escala-table-wrap" style="overflow-x:auto;padding:0 1.5rem 1.5rem">
+          <div class="mgmt-empty">Carregando…</div>
         </div>
       </div>
     </div>
@@ -3026,6 +3073,10 @@
           <span class="mgmt-toggle-track"><span class="mgmt-toggle-thumb"></span></span>
           <span class="mgmt-toggle-txt" id="mgmt-m-ativo-txt">Ativa</span>
         </label>
+      </div>
+      <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
+        <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala Semanal</div>
+        <div id="mgmt-m-disp-grid" style="display:flex;flex-direction:column;gap:.375rem"></div>
       </div>
     </div>
     <div class="res-modal-err" id="mgmt-m-err"></div>
