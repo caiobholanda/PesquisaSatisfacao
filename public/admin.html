@@ -1890,6 +1890,44 @@
       box-shadow: 0 0 0 3px var(--gold-dim);
     }
 
+    /* ── Combobox filtável ── */
+    .res-cb { position: relative; }
+    .res-cb-wrap {
+      display: flex; align-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 7px; transition: border-color .15s, box-shadow .15s;
+    }
+    .res-cb-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
+    .res-cb-inp {
+      flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+      font-family: var(--font); font-size: .9375rem; color: var(--text);
+      padding: .575rem .8rem;
+    }
+    .res-cb-inp::placeholder { color: var(--muted); }
+    .res-cb-clr {
+      flex-shrink: 0; padding: 0 .65rem; border: none; background: transparent;
+      color: var(--muted); cursor: pointer; font-size: .8rem; line-height: 1;
+    }
+    .res-cb-clr:hover { color: var(--danger); }
+    .res-cb-list {
+      position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; max-height: 220px; overflow-y: auto;
+      z-index: 6000; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .res-cb-grp {
+      padding: .3rem .8rem .12rem; font-size: .67rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em; font-weight: 600;
+      border-top: 1px solid var(--border-soft);
+    }
+    .res-cb-grp:first-child { border-top: none; }
+    .res-cb-opt {
+      padding: .46rem .9rem; cursor: pointer; font-size: .875rem;
+      color: var(--text); line-height: 1.3;
+    }
+    .res-cb-opt:hover { background: var(--surface2); }
+    .res-cb-opt.cb-empty { color: var(--muted); font-style: italic; cursor: default; }
+
     .res-tempo-info {
       display: flex;
       align-items: center;
@@ -2953,9 +2991,14 @@
       </div>
       <div class="res-fg">
         <label>Tratamento</label>
-        <select id="res-inp-tratamento">
-          <option value="">— Selecione —</option>
-        </select>
+        <div class="res-cb" id="res-cb-trat">
+          <div class="res-cb-wrap">
+            <input type="text" class="res-cb-inp" id="res-cb-trat-inp" placeholder="— Pesquisar tratamento —" autocomplete="off" spellcheck="false">
+            <button type="button" class="res-cb-clr" id="res-cb-trat-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
+          </div>
+          <div class="res-cb-list" id="res-cb-trat-list" style="display:none"></div>
+        </div>
+        <input type="hidden" id="res-inp-tratamento">
       </div>
       <div class="res-fg-row">
         <div class="res-fg">
@@ -2975,9 +3018,14 @@
             🌍 só bilíngues
           </label>
         </label>
-        <select id="res-inp-massagista" required>
-          <option value="">— Carregando —</option>
-        </select>
+        <div class="res-cb" id="res-cb-mass">
+          <div class="res-cb-wrap">
+            <input type="text" class="res-cb-inp" id="res-cb-mass-inp" placeholder="— Pesquisar profissional —" autocomplete="off" spellcheck="false">
+            <button type="button" class="res-cb-clr" id="res-cb-mass-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
+          </div>
+          <div class="res-cb-list" id="res-cb-mass-list" style="display:none"></div>
+        </div>
+        <input type="hidden" id="res-inp-massagista">
       </div>
       <div class="res-tempo-info" id="res-tempo-info">
         <span class="res-tempo-label">Horário final</span>

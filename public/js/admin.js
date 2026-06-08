@@ -1295,6 +1295,64 @@ let _resHoraFim    = null;
 let _tratamentos = []; // [{nome, duracao_min, ...}]
 let _massagistasModal = []; // cache p/ modal de reserva — [{id, nome, bilingue, vinculo, ...}]
 
+// ── Combobox filtável ──
+let _cbTrat = null, _cbMass = null;
+function _cbInit({ textId, listId, clrId, hiddenId }) {
+  const inp = document.getElementById(textId);
+  const list = document.getElementById(listId);
+  const clr = document.getElementById(clrId);
+  const hid = document.getElementById(hiddenId);
+
+  function doFilter() {
+    const q = inp.value.trim().toLowerCase();
+    list.querySelectorAll('.res-cb-opt').forEach(o => {
+      o.style.display = (!q || o.textContent.toLowerCase().includes(q)) ? '' : 'none';
+    });
+    list.querySelectorAll('.res-cb-grp').forEach(g => {
+      let s = g.nextElementSibling, any = false;
+      while (s && !s.classList.contains('res-cb-grp')) {
+        if (s.style.display !== 'none') { any = true; break; }
+        s = s.nextElementSibling;
+      }
+      g.style.display = any ? '' : 'none';
+    });
+  }
+  function clear() {
+    hid.value = ''; inp.value = ''; clr.style.display = 'none';
+    doFilter();
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  inp.addEventListener('focus', () => { list.style.display = 'block'; doFilter(); });
+  inp.addEventListener('input', () => {
+    hid.value = ''; clr.style.display = inp.value ? '' : 'none';
+    list.style.display = 'block'; doFilter();
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  inp.addEventListener('blur', () => { setTimeout(() => { list.style.display = 'none'; }, 160); });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { list.style.display = 'none'; inp.blur(); }
+    if (e.key === 'Enter') {
+      const first = list.querySelector('.res-cb-opt:not(.cb-empty)');
+      if (first) { first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); }
+    }
+  });
+  clr.addEventListener('mousedown', e => e.preventDefault());
+  clr.addEventListener('click', clear);
+  list.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const opt = e.target.closest('.res-cb-opt:not(.cb-empty)');
+    if (!opt) return;
+    hid.value = opt.dataset.val;
+    inp.value = opt.dataset.label;
+    clr.style.display = '';
+    list.style.display = 'none';
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  return { clear, doFilter };
+}
+_cbTrat = _cbInit({ textId:'res-cb-trat-inp', listId:'res-cb-trat-list', clrId:'res-cb-trat-clr', hiddenId:'res-inp-tratamento' });
+_cbMass = _cbInit({ textId:'res-cb-mass-inp', listId:'res-cb-mass-list', clrId:'res-cb-mass-clr', hiddenId:'res-inp-massagista' });
+
 async function loadMassagistasModal() {
   if (_massagistasModal.length) return;
   let r, d;
@@ -1303,8 +1361,8 @@ async function loadMassagistasModal() {
     if (!r) return;
     d = await r.json();
   } catch {
-    const sel = document.getElementById('res-inp-massagista');
-    if (sel) sel.innerHTML = '<option value="">Erro ao carregar profissionais</option>';
+    const list = document.getElementById('res-cb-mass-list');
+    if (list) list.innerHTML = '<div class="res-cb-opt cb-empty">Erro ao carregar profissionais</div>';
     return;
   }
   _massagistasModal = d.items || [];
@@ -1336,21 +1394,31 @@ function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
 }
 
 function _renderMassagistasModal() {
-  const sel = document.getElementById('res-inp-massagista');
-  if (!sel) return;
+  const list = document.getElementById('res-cb-mass-list');
+  const hid  = document.getElementById('res-inp-massagista');
+  const inp  = document.getElementById('res-cb-mass-inp');
+  const clr  = document.getElementById('res-cb-mass-clr');
+  if (!list) return;
   const apenasBilingue = document.getElementById('res-flt-bilingue')?.checked;
   const data = document.getElementById('res-inp-data')?.value || null;
   const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
-  const prevSel = sel.value;
+  const prevId = hid?.value;
   let lista = apenasBilingue ? _massagistasModal.filter(m => m.bilingue) : _massagistasModal;
   lista = lista.filter(m => _massagistaTrabalhaNoHorario(m, data, horaInicio, _resHoraFim));
   if (!lista.length) {
-    sel.innerHTML = `<option value="">${apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário'}</option>`;
+    list.innerHTML = `<div class="res-cb-opt cb-empty">${apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário'}</div>`;
     return;
   }
-  sel.innerHTML = '<option value="">— Selecione —</option>' +
-    lista.map(m => `<option value="${m.id}" data-bilingue="${m.bilingue?1:0}" data-vinculo="${m.vinculo||''}">${m.nome}${m.vinculo?` · ${m.vinculo}`:''}</option>`).join('');
-  if (prevSel) sel.value = prevSel;
+  list.innerHTML = lista.map(m => {
+    const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
+    return `<div class="res-cb-opt" data-val="${m.id}" data-label="${escHtml(m.nome)}">${escHtml(m.nome)}${suffix}${m.bilingue ? ' 🌍' : ''}</div>`;
+  }).join('');
+  // Se seleção anterior saiu da lista, limpa
+  if (prevId && !lista.find(m => String(m.id) === String(prevId))) {
+    if (hid) hid.value = '';
+    if (inp) { inp.value = ''; }
+    if (clr) clr.style.display = 'none';
+  }
 }
 
 async function loadTratamentosModal() {
@@ -1360,9 +1428,8 @@ async function loadTratamentosModal() {
     if (!r) return;
     const d = await r.json();
     _tratamentos = d.items || [];
-    const sel = document.getElementById('res-inp-tratamento');
-
-    // Agrupa por categoria com optgroups, combos primeiro
+    const list = document.getElementById('res-cb-trat-list');
+    if (!list) return;
     const ordem = ['Combo', 'Massagem', 'Tratamento', 'Facial', 'Complementar'];
     const porCat = {};
     for (const t of _tratamentos) {
@@ -1370,18 +1437,17 @@ async function loadTratamentosModal() {
       (porCat[cat] = porCat[cat] || []).push(t);
     }
     const cats = ordem.filter(c => porCat[c]).concat(Object.keys(porCat).filter(c => !ordem.includes(c)));
-
-    let html = '<option value="">— Selecione —</option>';
+    let html = '';
     for (const cat of cats) {
-      html += `<optgroup label="${cat}">`;
+      html += `<div class="res-cb-grp">${cat}</div>`;
       for (const t of porCat[cat]) {
         const precoLbl = t.preco ? ` · R$ ${Number(t.preco).toFixed(0)}` : '';
         const durLbl = t.duracao_min ? ` (${t.duracao_min} min)` : '';
-        html += `<option value="${t.nome}" data-id="${t.id}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-tipo="${t.tipo||'individual'}">${t.nome}${durLbl}${precoLbl}</option>`;
+        html += `<div class="res-cb-opt" data-val="${escHtml(t.nome)}" data-label="${escHtml(t.nome)}">${escHtml(t.nome)}${durLbl}${precoLbl}</div>`;
       }
-      html += '</optgroup>';
     }
-    sel.innerHTML = html;
+    if (!html) html = '<div class="res-cb-opt cb-empty">Nenhum tratamento disponível</div>';
+    list.innerHTML = html;
   } catch {}
 }
 
@@ -1586,9 +1652,11 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res-modal-err').textContent='';
   document.querySelectorAll('.res-tipo-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('res-fg-apto').style.display='none';
-  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-tratamento'].forEach(id=>{
+  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel'].forEach(id=>{
     document.getElementById(id).value='';
   });
+  if (_cbTrat) _cbTrat.clear();
+  if (_cbMass) _cbMass.clear();
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
@@ -1600,8 +1668,6 @@ function calOpenModal(salaId, data, hora) {
   loadMassagistasModal();
   const flt = document.getElementById('res-flt-bilingue');
   if (flt) flt.checked = false;
-  const selM = document.getElementById('res-inp-massagista');
-  if (selM) selM.value = '';
   setTimeout(()=>document.getElementById('res-inp-nome').focus(),50);
 }
 window.calOpenModal=calOpenModal;
@@ -1610,8 +1676,8 @@ window.calOpenModal=calOpenModal;
 function calAtualizarHoraFim() {
   const inicio = document.getElementById('res-inp-hora-inicio').value;
   const trat = document.getElementById('res-inp-tratamento');
-  const opt = trat.options[trat.selectedIndex];
-  const dur = parseInt(opt?.dataset?.dur || '0', 10);
+  const tratObj = _tratSelecionado();
+  const dur = tratObj?.duracao_min || 0;
   const tempoEl = document.getElementById('res-tempo-val');
   const stripEl = document.getElementById('res-tempo-info');
   stripEl.style.borderColor = '';
