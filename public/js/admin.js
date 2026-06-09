@@ -51,14 +51,10 @@ async function api(url, opts = {}) {
   }
 }
 
-function logout() { pararPollingStats?.(); clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
+function logout() { pararPollingStats?.(); clearToken(); sessionStorage.removeItem('_vst'); window.location.href = 'https://hub-granmarquise.fly.dev'; }
 
-function showLogin() {
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app-screen').style.display = 'none';
-}
+function showLogin() { window.location.href = 'https://hub-granmarquise.fly.dev'; }
 function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   loadAll(); // sempre carrega dados do painel principal em background
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
@@ -75,38 +71,6 @@ function showApp() {
   }
 }
 
-// ── Login ──
-document.getElementById('btn-login').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-login');
-  const msg = document.getElementById('msg-login');
-  const username = document.getElementById('inp-user').value.trim();
-  const password = document.getElementById('inp-pass').value;
-  if (!username || !password) { msg.textContent = 'Preencha usuário e senha.'; return; }
-  btn.innerHTML = '<span class="spinner"></span>';
-  btn.disabled = true;
-  msg.textContent = '';
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const d = await res.json();
-    if (d.ok) { setToken(d.token); showApp(); }
-    else { msg.textContent = d.error || 'Credenciais inválidas'; }
-  } catch { msg.textContent = 'Erro de conexão.'; }
-  finally { btn.innerHTML = 'Entrar'; btn.disabled = false; }
-});
-document.getElementById('inp-pass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-login').click(); });
-
-document.getElementById('btn-toggle-pass').addEventListener('click', () => {
-  const inp = document.getElementById('inp-pass');
-  const showing = inp.type === 'text';
-  inp.type = showing ? 'password' : 'text';
-  document.getElementById('icon-eye-off').style.display = showing ? '' : 'none';
-  document.getElementById('icon-eye-on').style.display = showing ? 'none' : '';
-});
-document.getElementById('btn-sair').addEventListener('click', logout);
 
 // ── Stats + Análise ──
 const SERVICOS_LABELS = [
