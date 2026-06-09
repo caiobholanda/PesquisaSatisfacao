@@ -189,7 +189,7 @@ export function initDb() {
   db.prepare(`INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, 'master')
     ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`).run(adminUser, hash);
 
-  // Migration: seed hub users com acesso ao sistema
+  // Migration: seed hub users com acesso ao sistema (mesma senha do admin principal)
   const hubUsers = [
     { username: 'estagio.ti@granmarquise.com.br', nome: 'Estágio TI' },
     { username: 'suporte.ti@granmarquise.com.br', nome: 'Suporte TI' },
@@ -197,10 +197,9 @@ export function initDb() {
     { username: 'qualidade@granmarquise.com.br', nome: 'Qualidade' },
     { username: 'spa@granmarquise.com.br', nome: 'Spa' },
   ];
-  const defaultHash = bcrypt.hashSync('Admin123!', 10);
   for (const u of hubUsers) {
     db.prepare(`INSERT INTO admin_users (username, password_hash, nome, role) VALUES (?, ?, ?, 'master')
-      ON CONFLICT(username) DO NOTHING`).run(u.username, defaultHash, u.nome);
+      ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`).run(u.username, hash, u.nome);
   }
   // Garante que todos os usuários existentes sejam master
   db.prepare(`UPDATE admin_users SET role = 'master' WHERE role IS NULL OR role != 'master'`).run();
