@@ -745,7 +745,12 @@ function toggleFormMassagista(show) {
   const wrap = document.getElementById('form-massagista-wrap');
   wrap.style.display = show ? 'block' : 'none';
   if (show) document.getElementById('inp-m-nome').focus();
-  else { document.getElementById('inp-m-nome').value = ''; document.getElementById('err-massagista').textContent = ''; }
+  else {
+    document.getElementById('inp-m-nome').value = '';
+    document.getElementById('inp-m-cargo').value = '';
+    document.getElementById('inp-m-matricula').value = '';
+    document.getElementById('err-massagista').textContent = '';
+  }
 }
 
 document.getElementById('btn-toggle-form-massagista').addEventListener('click', () => {
@@ -757,10 +762,14 @@ document.getElementById('btn-cancel-form-massagista').addEventListener('click', 
 
 document.getElementById('btn-add-massagista').addEventListener('click', async () => {
   const nome = document.getElementById('inp-m-nome').value.trim();
+  const funcao = document.getElementById('inp-m-cargo').value.trim();
+  const matricula = document.getElementById('inp-m-matricula').value.trim();
   const err = document.getElementById('err-massagista');
   err.textContent = '';
   if (!nome) { err.textContent = 'Informe o nome.'; return; }
-  const res = await api('/api/massagistas', { method: 'POST', body: JSON.stringify({ nome }) });
+  if (!funcao) { err.textContent = 'Informe o cargo.'; return; }
+  if (!matricula) { err.textContent = 'Informe a matrícula.'; return; }
+  const res = await api('/api/massagistas', { method: 'POST', body: JSON.stringify({ nome, funcao, matricula }) });
   if (!res) return;
   const d = await res.json();
   if (!d.ok) { err.textContent = d.error; return; }

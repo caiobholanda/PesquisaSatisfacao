@@ -944,6 +944,7 @@
     }
 
     .mgmt-form-fields input { width: 100%; }
+    .mgmt-label { display: block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
 
     .mgmt-form-row {
       display: grid;
@@ -2385,8 +2386,21 @@
           <button class="btn btn-gold btn-sm" id="btn-toggle-form-massagista">+ Nova</button>
         </div>
         <div id="form-massagista-wrap" style="display:none;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2)">
-          <div class="mgmt-form-fields" style="flex-direction:row;align-items:flex-end;gap:0.75rem">
-            <input type="text" id="inp-m-nome" placeholder="Nome completo" style="flex:1">
+          <div class="mgmt-form-fields" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+            <div>
+              <label class="mgmt-label" for="inp-m-nome">Nome <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="inp-m-nome" placeholder="Nome completo" style="width:100%">
+            </div>
+            <div>
+              <label class="mgmt-label" for="inp-m-cargo">Cargo <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="inp-m-cargo" placeholder="Ex: Massoterapeuta" style="width:100%">
+            </div>
+            <div>
+              <label class="mgmt-label" for="inp-m-matricula">Matrícula <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="inp-m-matricula" placeholder="Ex: 00123" style="width:100%">
+            </div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
             <button class="btn btn-gold" id="btn-add-massagista">Adicionar</button>
             <button class="btn btn-outline" id="btn-cancel-form-massagista">Cancelar</button>
           </div>
@@ -3025,6 +3039,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=12"></script>
+<script src="/js/admin.js?v=13"></script>
 </body>
 </html>
