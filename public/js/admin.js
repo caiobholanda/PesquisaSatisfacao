@@ -759,6 +759,8 @@ function toggleFormMassagista(show) {
     document.getElementById('inp-m-nome').value = '';
     document.getElementById('inp-m-cargo').value = '';
     document.getElementById('inp-m-matricula').value = '';
+    document.getElementById('inp-m-vinculo').value = '';
+    document.getElementById('inp-m-bilingue').checked = false;
     document.getElementById('err-massagista').textContent = '';
   }
 }
@@ -774,12 +776,14 @@ document.getElementById('btn-add-massagista').addEventListener('click', async ()
   const nome = document.getElementById('inp-m-nome').value.trim();
   const funcao = document.getElementById('inp-m-cargo').value.trim();
   const matricula = document.getElementById('inp-m-matricula').value.trim();
+  const vinculo = document.getElementById('inp-m-vinculo').value || null;
+  const bilingue = document.getElementById('inp-m-bilingue').checked;
   const err = document.getElementById('err-massagista');
   err.textContent = '';
   if (!nome) { err.textContent = 'Informe o nome.'; return; }
   if (!funcao) { err.textContent = 'Informe o cargo.'; return; }
   if (!matricula) { err.textContent = 'Informe a matrícula.'; return; }
-  const res = await api('/api/massagistas', { method: 'POST', body: JSON.stringify({ nome, funcao, matricula }) });
+  const res = await api('/api/massagistas', { method: 'POST', body: JSON.stringify({ nome, funcao, matricula, vinculo, bilingue }) });
   if (!res) return;
   const d = await res.json();
   if (!d.ok) { err.textContent = d.error; return; }
@@ -856,6 +860,8 @@ window.openEditMassagista = (id, nome, ativo) => {
   document.getElementById('mgmt-m-err').textContent = '';
   const m = _massagistas.find(x => x.id === id);
   document.getElementById('mgmt-m-cargo').value = m?.funcao || '';
+  document.getElementById('mgmt-m-vinculo').value = m?.vinculo || '';
+  document.getElementById('mgmt-m-bilingue').checked = !!m?.bilingue;
   const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
   _renderDispGrid(disp);
   _modalOpen = true;
@@ -875,13 +881,15 @@ document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   const nome = document.getElementById('mgmt-m-nome').value.trim();
   if (!nome) { err.textContent = 'Informe o nome.'; return; }
   const funcao = document.getElementById('mgmt-m-cargo').value.trim() || null;
+  const vinculo = document.getElementById('mgmt-m-vinculo').value || null;
+  const bilingue = document.getElementById('mgmt-m-bilingue').checked;
   const ativo = document.getElementById('mgmt-m-ativo').checked ? 1 : 0;
   const btn = document.getElementById('mgmt-m-salvar');
   btn.disabled = true;
   try {
     const disponibilidade = _coletarDisp();
     if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, disponibilidade }) });
+    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }

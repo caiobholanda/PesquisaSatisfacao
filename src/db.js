@@ -347,6 +347,9 @@ function seedMassoterapeutasGranSpa() {
 export function listarMassagistas() {
   return getDb().prepare('SELECT * FROM massagistas ORDER BY nome ASC').all();
 }
+export function buscarMassagistaById(id) {
+  return getDb().prepare('SELECT * FROM massagistas WHERE id=?').get(id) || null;
+}
 
 export function listarMassagistasComStats() {
   return getDb().prepare(`

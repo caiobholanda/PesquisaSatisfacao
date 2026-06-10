@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats,
-  inserirMassagista, atualizarMassagista, deletarMassagista,
+  inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista,
 } from '../db.js';
@@ -10,18 +10,30 @@ import {
 const router = Router();
 router.use(requireAuth);
 
+function _computarEsp(funcao, bilingue, vinculo) {
+  if (!funcao?.trim()) return null;
+  let esp = funcao.trim().toUpperCase();
+  if (bilingue) esp += ' BILINGUE';
+  if (vinculo === 'Pleno') esp += ' PL';
+  else if (vinculo?.trim()) esp += ' ' + vinculo.trim().toUpperCase();
+  return esp;
+}
+
 // ── Massagistas ──
 router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
 
 router.post('/massagistas', (req, res) => {
-  const { nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
+  const { nome, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
+  const resolvedFuncao = funcao?.trim() || 'Massoterapeuta';
+  const resolvedVinculo = vinculo?.trim() || null;
+  const resolvedBilingue = bilingue ? 1 : 0;
   const id = inserirMassagista(nome, {
     matricula: matricula?.trim() || null,
-    especialidade_original: especialidade_original?.trim() || null,
-    funcao: funcao?.trim() || 'Massoterapeuta',
-    vinculo: vinculo?.trim() || null,
-    bilingue: bilingue ? 1 : 0,
+    especialidade_original: _computarEsp(resolvedFuncao, resolvedBilingue, resolvedVinculo),
+    funcao: resolvedFuncao,
+    vinculo: resolvedVinculo,
+    bilingue: resolvedBilingue,
     disponibilidade: disponibilidade ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade)) : null,
   });
   res.status(201).json({ ok: true, id });
@@ -45,21 +57,31 @@ function _validarDisp(disponibilidade) {
 }
 
 router.put('/massagistas/:id', (req, res) => {
-  const { nome, ativo = 1, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
+  const { nome, ativo = 1, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   if (disponibilidade !== undefined) {
     const erroDisp = _validarDisp(disponibilidade);
     if (erroDisp) return res.status(400).json({ ok: false, error: erroDisp });
   }
-  const opts = {};
+  const existing = buscarMassagistaById(parseInt(req.params.id));
+  if (!existing) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+
+  const resolvedFuncao = funcao !== undefined ? (funcao?.trim() || 'Massoterapeuta') : (existing.funcao || 'Massoterapeuta');
+  const resolvedVinculo = vinculo !== undefined ? (vinculo?.trim() || null) : existing.vinculo;
+  const resolvedBilingue = bilingue !== undefined ? (bilingue ? 1 : 0) : existing.bilingue;
+
+  const opts = {
+    funcao: resolvedFuncao,
+    vinculo: resolvedVinculo,
+    bilingue: resolvedBilingue,
+    especialidade_original: _computarEsp(resolvedFuncao, resolvedBilingue, resolvedVinculo),
+  };
   if (matricula !== undefined) opts.matricula = matricula?.trim() || null;
-  if (especialidade_original !== undefined) opts.especialidade_original = especialidade_original?.trim() || null;
-  if (funcao !== undefined) opts.funcao = funcao?.trim() || 'Massoterapeuta';
-  if (vinculo !== undefined) opts.vinculo = vinculo?.trim() || null;
-  if (bilingue !== undefined) opts.bilingue = bilingue ? 1 : 0;
-  if (disponibilidade !== undefined) opts.disponibilidade = disponibilidade ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade)) : null;
-  const changes = atualizarMassagista(parseInt(req.params.id), nome, ativo ? 1 : 0, opts);
-  if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  if (disponibilidade !== undefined) opts.disponibilidade = disponibilidade
+    ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade))
+    : null;
+
+  atualizarMassagista(parseInt(req.params.id), nome, ativo ? 1 : 0, opts);
   res.json({ ok: true });
 });
 
