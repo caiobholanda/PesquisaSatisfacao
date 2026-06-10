@@ -14,6 +14,27 @@ import reservasRouter from './routes/reservas.js';
 import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
 
+const SPA_ADMIN_EMAILS = [
+  'richard@granmarquise.com.br',
+  'suporte.ti@granmarquise.com.br',
+  'estagio.ti@granmarquise.com.br',
+];
+
+function getCookie(req, name) {
+  const h = req.headers.cookie || '';
+  const m = h.split(';').find(c => c.trim().startsWith(name + '='));
+  return m ? decodeURIComponent(m.trim().slice(name.length + 1)) : null;
+}
+
+function setAdminCookie(res, token, maxAgeSeconds) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `spa_admin_sess=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Path=/${secure}`);
+}
+
+function clearAdminCookie(res) {
+  res.setHeader('Set-Cookie', 'spa_admin_sess=; Max-Age=0; Path=/; HttpOnly');
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -126,25 +147,35 @@ app.use('/api', cadastrosRouter);
 
 app.get('/sso', (req, res) => {
   const { sso_token, next } = req.query;
-  if (!sso_token) return res.redirect('/admin?erro=sem_token');
+  if (!sso_token) return res.redirect('/');
   try {
     const payload = jwt.verify(sso_token, process.env.SSO_SECRET);
+    const email = (payload.email || '').trim().toLowerCase();
+    if (!SPA_ADMIN_EMAILS.includes(email)) return res.redirect('/');
     const token = jwt.sign(
       { sub: 0, username: payload.email, role: 'admin' },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
+    setAdminCookie(res, token, 28800);
     const dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : '/admin';
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>sessionStorage.setItem('granspa_token',${JSON.stringify(token)});window.location.replace(${JSON.stringify(dest)});<\/script></head></html>`);
   } catch {
-    res.redirect('/admin?erro=sso_invalido');
+    res.redirect('/');
   }
 });
 
-// Fallback SPA: admin.html para /admin
-app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+app.get('/admin', (req, res) => {
+  const cookie = getCookie(req, 'spa_admin_sess');
+  if (!cookie) return res.redirect('/');
+  try {
+    jwt.verify(cookie, process.env.JWT_SECRET);
+    res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+  } catch {
+    clearAdminCookie(res);
+    res.redirect('/');
+  }
 });
 
 app.use((err, _req, res, _next) => {

@@ -4,6 +4,11 @@ import jwt from 'jsonwebtoken';
 import { buscarAdmin, buscarAdminById, listarAdmins, inserirAdmin, atualizarAdmin, deletarAdmin } from '../db.js';
 import { requireAuth, requireMaster } from '../middleware/auth.js';
 
+function setAdminCookie(res, token, maxAgeSeconds) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `spa_admin_sess=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Path=/${secure}`);
+}
+
 const router = Router();
 const ROLES_VALIDOS = ['master', 'admin', 'normal'];
 
@@ -30,6 +35,7 @@ router.post('/login', async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '12h' }
   );
+  setAdminCookie(res, token, 43200);
   return res.json({ ok: true, token });
 });
 
