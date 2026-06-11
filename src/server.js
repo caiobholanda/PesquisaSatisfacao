@@ -28,11 +28,28 @@ function getCookie(req, name) {
 
 function setAdminCookie(res, token, maxAgeSeconds) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `spa_admin_sess=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Path=/${secure}`);
+  res.appendHeader('Set-Cookie', `spa_admin_sess=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Path=/${secure}`);
+}
+
+function setUserCookie(res, token, maxAgeSeconds) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.appendHeader('Set-Cookie', `spa_user_sess=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}; Path=/${secure}`);
 }
 
 function clearAdminCookie(res) {
-  res.setHeader('Set-Cookie', 'spa_admin_sess=; Max-Age=0; Path=/; HttpOnly');
+  res.appendHeader('Set-Cookie', 'spa_admin_sess=; Max-Age=0; Path=/; HttpOnly');
+}
+
+function temSessaoSpa(req) {
+  const adminCookie = getCookie(req, 'spa_admin_sess');
+  if (adminCookie) {
+    try { jwt.verify(adminCookie, process.env.JWT_SECRET); return true; } catch {}
+  }
+  const userCookie = getCookie(req, 'spa_user_sess');
+  if (userCookie) {
+    try { jwt.verify(userCookie, process.env.JWT_SECRET); return true; } catch {}
+  }
+  return false;
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -58,6 +75,24 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
+
+// Gate de acesso ao Spa: paginas HTML (incluindo /) so para quem ja passou pelo
+// Hub e recebeu cookie spa_admin_sess (admin) ou spa_user_sess (padrao).
+// Excecoes liberadas: APIs, /sso, /health, assets do bundle, favicon, acesso-hub.html.
+function isPublicPath(p) {
+  if (p.startsWith('/api/')) return true;
+  if (p.startsWith('/assets/')) return true;
+  if (p === '/sso' || p === '/health') return true;
+  if (p === '/acesso-hub.html') return true;
+  if (p === '/favicon.svg' || p === '/favicon.ico') return true;
+  return false;
+}
+app.use((req, res, next) => {
+  if (isPublicPath(req.path)) return next();
+  if (temSessaoSpa(req)) return next();
+  if (req.method !== 'GET') return res.status(401).json({ ok: false, error: 'Sessao expirada' });
+  return res.redirect('/acesso-hub.html');
+});
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -147,22 +182,25 @@ app.use('/api', cadastrosRouter);
 
 app.get('/sso', (req, res) => {
   const { sso_token, next } = req.query;
-  if (!sso_token) return res.redirect('/');
+  if (!sso_token) return res.redirect('/acesso-hub.html');
   try {
     const payload = jwt.verify(sso_token, process.env.SSO_SECRET);
     const email = (payload.email || '').trim().toLowerCase();
-    if (!SPA_ADMIN_EMAILS.includes(email)) return res.redirect('/');
+    const isAdmin = SPA_ADMIN_EMAILS.includes(email);
+    const role = isAdmin ? 'admin' : 'user';
     const token = jwt.sign(
-      { sub: 0, username: payload.email, role: 'admin' },
+      { sub: 0, username: email, role },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
-    setAdminCookie(res, token, 28800);
-    const dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : '/admin';
+    if (isAdmin) setAdminCookie(res, token, 28800);
+    else setUserCookie(res, token, 28800);
+    const defaultDest = isAdmin ? '/admin' : '/';
+    const dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : defaultDest;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>sessionStorage.setItem('granspa_token',${JSON.stringify(token)});window.location.replace(${JSON.stringify(dest)});<\/script></head></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>${isAdmin ? `sessionStorage.setItem('granspa_token',${JSON.stringify(token)});` : ''}window.location.replace(${JSON.stringify(dest)});<\/script></head></html>`);
   } catch {
-    res.redirect('/');
+    res.redirect('/acesso-hub.html');
   }
 });
 
