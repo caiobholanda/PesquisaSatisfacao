@@ -2249,8 +2249,23 @@
         </div>
       </div>
       <button class="btn btn-outline btn-sm" id="btn-seed-demo" title="⚠ APAGA todos os dados atuais e gera reservas + pesquisas fictícias" style="border-color:var(--indigo);color:var(--indigo)">⚠ Resetar & Demo</button>
+      <button class="btn btn-outline btn-sm" id="btn-sair-hub" title="Sair e voltar ao Hub" style="margin-left:.5rem;display:inline-flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+      </button>
     </div>
   </header>
+  <script>
+    // Botao Sair: limpa storage local e volta ao Hub.
+    (function () {
+      var btn = document.getElementById('btn-sair-hub');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+        try { fetch('/api/admin/logout', { method: 'POST', credentials: 'include', keepalive: true }).catch(function(){}); } catch (_) {}
+        window.location.href = 'https://hub-granmarquise.fly.dev/';
+      });
+    })();
+  </script>
 
   <main>
 
