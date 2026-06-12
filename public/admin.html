@@ -2262,7 +2262,8 @@
       btn.addEventListener('click', function () {
         try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
         try { fetch('/api/admin/logout', { method: 'POST', credentials: 'include', keepalive: true }).catch(function(){}); } catch (_) {}
-        window.location.href = 'https://hub-granmarquise.fly.dev/';
+        // ?logout=1&from=pesquisa permite ao Hub registrar este logout.
+        window.location.href = 'https://hub-granmarquise.fly.dev/?logout=1&from=pesquisa';
       });
     })();
   </script>
