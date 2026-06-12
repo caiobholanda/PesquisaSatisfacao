@@ -76,6 +76,9 @@ function showApp() {
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
     loadReservas();
   }
+  // FIX: view-usuarios restaurada via sessionStorage tambem precisa
+  // disparar loadUsuarios. Antes ficava em 'Carregando...' eterno na F5.
+  else if (view === 'view-usuarios') { loadUsuarios(); }
 }
 
 
