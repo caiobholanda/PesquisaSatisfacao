@@ -39,9 +39,15 @@ function escHtml(s) {
 
 async function api(url, opts = {}) {
   try {
+    // Sempre inclui cookies (cookie spa_admin_sess setado pelo /sso e' o
+    // fallback de auth quando o sessionStorage perdeu o token).
+    const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    const t = token();
+    if (t) headers['Authorization'] = `Bearer ${t}`;
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
       ...opts,
+      headers,
+      credentials: 'include',
     });
     if (res.status === 401) { logout(); return null; }
     if (res.status === 403) { showToast('Acesso restrito a administradores master.', 4000); return null; }
