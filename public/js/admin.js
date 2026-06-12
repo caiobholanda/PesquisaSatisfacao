@@ -2287,6 +2287,34 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-next').addEventListener('click',()=>{_calWeekOffset++;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekOffset=0;_calDiaSel=null;loadReservas();});
+
+// Vigia a virada de meia-noite: se a aba fica aberta cruzando o dia, o
+// destaque "hoje" e a selecao ficavam presos no dia anterior. A cada 60s
+// (e tambem ao focar a aba apos suspender) checa se mudou o dia local;
+// quando muda, se estiver na semana atual, reseta para o novo "hoje" e
+// recarrega reservas.
+(function vigiarViradaDoDia() {
+  function diaLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+  let ultimoDia = diaLocal();
+  function checar() {
+    const agora = diaLocal();
+    if (agora === ultimoDia) return;
+    ultimoDia = agora;
+    // So mexe se o usuario esta vendo a semana corrente — nao tira
+    // ninguem que esta navegando por outras semanas.
+    if (_calWeekOffset === 0) {
+      _calDiaSel = null;
+      loadReservas();
+    }
+  }
+  setInterval(checar, 60 * 1000);
+  // Tambem checa quando a aba volta do background (laptop suspenso, etc).
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checar(); });
+  window.addEventListener('focus', checar);
+})();
 document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
 document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-reservas'));
 
