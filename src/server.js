@@ -13,6 +13,7 @@ import cadastrosRouter from './routes/cadastros.js';
 import reservasRouter from './routes/reservas.js';
 import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
+import relatoriosRouter from './routes/relatorios.js';
 
 const SPA_ADMIN_EMAILS = [
   'richard@granmarquise.com.br',
@@ -174,6 +175,7 @@ app.get('/api/survey/:token', (req, res) => {
 });
 
 app.use('/api/spa', spaRouter);
+app.use('/api/relatorios', relatoriosRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/reservas', reservasRouter);

@@ -83,6 +83,8 @@ function aplicarRoleNaUI(role) {
   if (btnRelat) btnRelat.style.display = p.podeSatisfacao ? '' : 'none';
   const btnHist = document.getElementById('btn-open-historico-clientes');
   if (btnHist) btnHist.style.display = p.podeSatisfacao ? '' : 'none';
+  const btnRM = document.getElementById('btn-open-relatorio-mensal');
+  if (btnRM) btnRM.style.display = p.podeSatisfacao ? '' : 'none';
   const btnUsr = document.getElementById('btn-open-usuarios');
   if (btnUsr) btnUsr.style.display = p.podeUsuarios ? '' : 'none';
   // Dropdowns inteiros: esconde se nenhum item dentro esta visivel
@@ -105,6 +107,7 @@ function showApp() {
   else if (view === 'view-tipos') { loadTipos(); }
   else if (view === 'view-historico' && st.histId) { showHistoricoMassagista(st.histId, st.histNome); }
   else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
+  else if (view === 'view-relatorio-mensal') { loadRelatorioMensal(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -2359,6 +2362,87 @@ document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekO
   window.addEventListener('focus', checar);
 })();
 document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
+document.getElementById('btn-open-relatorio-mensal')?.addEventListener('click', () => { showView('view-relatorio-mensal'); loadRelatorioMensal(); });
+document.getElementById('btn-back-relatorio-mensal')?.addEventListener('click', () => showView('view-main'));
+
+// ── Relatorio Mensal (Fase 2): KPIs do mes + cruzamento sessao x pesquisa ──
+function _ymAtualFortaleza() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+async function loadRelatorioMensal() {
+  const ymInput = document.getElementById('rm-ym');
+  if (ymInput && !ymInput.value) ymInput.value = _ymAtualFortaleza();
+  const ym = ymInput?.value || _ymAtualFortaleza();
+  // KPIs do mes
+  try {
+    const r = await api(`/api/relatorios/mensal?ym=${encodeURIComponent(ym)}`);
+    if (r) {
+      const d = await r.json();
+      if (d.ok) {
+        document.getElementById('rm-kpi-sessoes').textContent = d.sessoes;
+        document.getElementById('rm-kpi-respondidas').textContent = d.respondidas;
+        document.getElementById('rm-kpi-taxa').textContent = (d.taxa || 0) + '%';
+        document.getElementById('rm-kpi-pendentes').textContent = d.pendentes + ' pendentes';
+      }
+    }
+  } catch {}
+  // Default do filtro: mes selecionado por inteiro
+  const [yy, mm] = ym.split('-').map(Number);
+  const fromEl = document.getElementById('rm-from');
+  const toEl   = document.getElementById('rm-to');
+  if (fromEl && !fromEl.value) fromEl.value = `${ym}-01`;
+  if (toEl && !toEl.value)     toEl.value = new Date(yy, mm, 0).toISOString().slice(0, 10);
+  await loadCruzamento();
+}
+async function loadCruzamento() {
+  const from   = document.getElementById('rm-from')?.value || '';
+  const to     = document.getElementById('rm-to')?.value || '';
+  const status = document.getElementById('rm-status')?.value || 'todos';
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to)   params.set('to', to);
+  params.set('status', status);
+  let d;
+  try {
+    const r = await api(`/api/relatorios/cruzamento?${params}`);
+    if (!r) return;
+    d = await r.json();
+  } catch { return; }
+  if (!d.ok) return;
+  const body  = document.getElementById('rm-body');
+  const empty = document.getElementById('rm-empty');
+  const count = document.getElementById('rm-count');
+  if (count) count.textContent = d.total + (d.total === 1 ? ' sessão' : ' sessões');
+  if (!d.items.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const fmtData = iso => iso ? iso.slice(0, 10).split('-').reverse().join('/') : '—';
+  body.innerHTML = d.items.map(r => {
+    const badge = r.respondeu_pesquisa
+      ? '<span style="color:var(--success,#1f7a3d);font-weight:600">✓ respondeu</span>'
+      : '<span style="color:var(--danger,#b33);font-weight:600">✗ pendente</span>';
+    return `<tr>
+      <td>${fmtData(r.data)}</td>
+      <td style="font-variant-numeric:tabular-nums">${r.hora_inicio?.slice(0,5) || '—'} – ${r.hora_fim?.slice(0,5) || '—'}</td>
+      <td>${escHtml(r.cliente || '—')}<div style="font-size:.72rem;color:var(--muted)">${escHtml(r.email || '')}</div></td>
+      <td>${escHtml(r.massagista_nome || '—')}</td>
+      <td>${escHtml(r.tratamento || '—')}</td>
+      <td style="text-align:center">${badge}</td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('btn-rm-atualizar')?.addEventListener('click', loadRelatorioMensal);
+document.getElementById('btn-rm-filtrar')?.addEventListener('click', loadCruzamento);
+document.getElementById('btn-rm-limpar')?.addEventListener('click', () => {
+  document.getElementById('rm-from').value = '';
+  document.getElementById('rm-to').value = '';
+  document.getElementById('rm-status').value = 'todos';
+  loadCruzamento();
+});
 document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-reservas'));
 
 // Dropdowns SPA e Administrativo

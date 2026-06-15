@@ -630,6 +630,55 @@ export function atualizarIdiomaFeedback(id, idioma) {
   getDb().prepare(`UPDATE feedback SET idioma_detectado = ? WHERE id = ?`).run(idioma, id);
 }
 
+// === Relatorios (Fase 2) ====================================================
+// "Respondeu a pesquisa" = existe survey_token vinculado a reserva com
+// respondida_em != NULL. Esta e' a unica fonte de verdade — o fluxo publico
+// (cliente digitando direto na pesquisa) tambem marca o token via
+// marcarSurveyTokenRespondido() em feedback.js.
+
+// Resumo do mes: total de sessoes (1 reserva = 1 sessao, mesmo casal),
+// total respondido e taxa. ym no formato 'YYYY-MM'.
+export function estatisticasMes(ym) {
+  const db = getDb();
+  const sessoes = db.prepare(
+    `SELECT COUNT(*) AS t FROM reservas WHERE substr(data,1,7) = ?`
+  ).get(ym).t;
+  const respondidas = db.prepare(`
+    SELECT COUNT(DISTINCT st.reserva_id) AS t
+    FROM survey_tokens st
+    JOIN reservas r ON r.id = st.reserva_id
+    WHERE substr(r.data,1,7) = ? AND st.respondida_em IS NOT NULL
+  `).get(ym).t;
+  const taxa = sessoes ? Math.round((respondidas / sessoes) * 1000) / 10 : 0;
+  return { ym, sessoes, respondidas, pendentes: sessoes - respondidas, taxa };
+}
+
+// Cruzamento sessao x pesquisa. status: 'todos' | 'respondidas' | 'pendentes'.
+// Retorna cada reserva (passada) com flag respondeu_pesquisa.
+export function cruzamentoSessoesPesquisa({ from, to, status = 'todos' } = {}) {
+  const db = getDb();
+  const conds = ['(r.data < date(\'now\',\'localtime\') OR (r.data = date(\'now\',\'localtime\') AND r.hora_fim <= time(\'now\',\'localtime\')))'];
+  const params = [];
+  if (from) { conds.push('r.data >= ?'); params.push(from); }
+  if (to)   { conds.push('r.data <= ?'); params.push(to); }
+  const where = 'WHERE ' + conds.join(' AND ');
+  const respondidaExpr = `EXISTS (SELECT 1 FROM survey_tokens st WHERE st.reserva_id = r.id AND st.respondida_em IS NOT NULL)`;
+  let extra = '';
+  if (status === 'respondidas') extra = ` AND ${respondidaExpr}`;
+  else if (status === 'pendentes') extra = ` AND NOT ${respondidaExpr}`;
+  const rows = db.prepare(`
+    SELECT r.id, r.cliente, r.email, r.data, r.hora_inicio, r.hora_fim, r.sala, r.tratamento,
+           m.nome AS massagista_nome,
+           (${respondidaExpr}) AS respondeu_pesquisa,
+           (SELECT MAX(st.respondida_em) FROM survey_tokens st WHERE st.reserva_id = r.id) AS respondida_em
+    FROM reservas r
+    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    ${where}${extra}
+    ORDER BY r.data DESC, r.hora_inicio DESC
+  `).all(...params);
+  return rows.map(r => ({ ...r, respondeu_pesquisa: !!r.respondeu_pesquisa }));
+}
+
 export function countSessoesSemPesquisa() {
   return getDb().prepare(`
     SELECT COUNT(*) AS total FROM reservas r

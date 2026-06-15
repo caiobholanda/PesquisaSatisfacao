@@ -2244,6 +2244,7 @@
         <button class="btn btn-outline btn-sm" id="btn-admin-toggle">Administrativo<span class="dropdown-caret">▾</span></button>
         <div class="admin-dropdown-menu" id="admin-dropdown-menu">
           <button class="dropdown-item" id="btn-open-relatorios">Relatórios</button>
+          <button class="dropdown-item" id="btn-open-relatorio-mensal">Relatório Mensal</button>
           <button class="dropdown-item" id="btn-open-historico-clientes">Histórico</button>
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
@@ -2598,6 +2599,87 @@
           <div class="cal-rooms-header" id="cal-rooms-header"></div>
           <div class="cal-grid" id="cal-grid"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: Relatório Mensal ── -->
+    <div id="view-relatorio-mensal" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-relatorio-mensal">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Admin</span>
+            <h1 class="page-title">Relatório Mensal</h1>
+          </div>
+          <p class="page-sub">Sessões realizadas e cruzamento com pesquisas de satisfação.</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+          <label style="font-size:.78rem;color:var(--muted)">Mês</label>
+          <input type="month" id="rm-ym" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:var(--bg)">
+          <button class="btn btn-outline btn-sm" id="btn-rm-atualizar">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:1.5rem">
+        <div class="kpi">
+          <div class="kpi-label">Sessões no mês</div>
+          <div class="kpi-val" id="rm-kpi-sessoes">—</div>
+          <div class="kpi-sub">tratamentos realizados</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Pesquisas respondidas</div>
+          <div class="kpi-val accent" id="rm-kpi-respondidas">—</div>
+          <div class="kpi-sub">avaliações recebidas</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Taxa de resposta</div>
+          <div class="kpi-val" id="rm-kpi-taxa">—</div>
+          <div class="kpi-sub" id="rm-kpi-pendentes">— pendentes</div>
+        </div>
+      </div>
+
+      <div class="filters" style="flex-wrap:wrap;gap:.6rem">
+        <div class="filter-group">
+          <label>De</label>
+          <input type="date" id="rm-from">
+        </div>
+        <div class="filter-group">
+          <label>Até</label>
+          <input type="date" id="rm-to">
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="rm-status" style="width:180px">
+            <option value="todos">Todos</option>
+            <option value="respondidas">Só respondidas</option>
+            <option value="pendentes">Só pendentes</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-gold" id="btn-rm-filtrar">Filtrar</button>
+          <button class="btn btn-outline" id="btn-rm-limpar">Limpar</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2>Cruzamento Sessão × Pesquisa</h2>
+          <span id="rm-count"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Horário</th>
+              <th>Cliente</th>
+              <th>Massoterapeuta</th>
+              <th>Tratamento</th>
+              <th style="text-align:center">Pesquisa</th>
+            </tr>
+          </thead>
+          <tbody id="rm-body"></tbody>
+        </table>
+        <div id="rm-empty" class="empty" style="display:none">Nenhuma sessão encontrada no período.</div>
       </div>
     </div>
 
