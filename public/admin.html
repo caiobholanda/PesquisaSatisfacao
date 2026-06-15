@@ -2312,6 +2312,7 @@
         <div class="admin-dropdown-menu" id="admin-dropdown-menu">
           <button class="dropdown-item" id="btn-open-relatorios">Relatórios</button>
           <button class="dropdown-item" id="btn-open-relatorio-mensal">Relatório Mensal</button>
+          <button class="dropdown-item" id="btn-open-qualidade">Gestão da Qualidade</button>
           <button class="dropdown-item" id="btn-open-historico-clientes">Histórico</button>
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
@@ -2790,6 +2791,68 @@
           <tbody id="rm-body"></tbody>
         </table>
         <div id="rm-empty" class="empty" style="display:none">Nenhuma sessão encontrada no período.</div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: Gestão da Qualidade ── -->
+    <div id="view-qualidade" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-qualidade">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Admin</span>
+            <h1 class="page-title">Gestão da Qualidade</h1>
+          </div>
+          <p class="page-sub">Médias por pergunta vs. metas, com semáforo de atingimento.</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+          <label style="font-size:.78rem;color:var(--muted)">Período</label>
+          <input type="date" id="ql-from" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+          <input type="date" id="ql-to" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+          <button class="btn btn-outline btn-sm" id="btn-ql-atualizar">Atualizar</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:1.5rem">
+        <div class="kpi">
+          <div class="kpi-label">Pesquisa publicada</div>
+          <div class="kpi-val" id="ql-kpi-pesquisa" style="font-size:1rem">—</div>
+          <div class="kpi-sub" id="ql-kpi-versao">versão —</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total de respostas</div>
+          <div class="kpi-val" id="ql-kpi-total">—</div>
+          <div class="kpi-sub">no período</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Média geral</div>
+          <div class="kpi-val accent" id="ql-kpi-media">—</div>
+          <div class="kpi-sub">/ 9</div>
+        </div>
+        <div class="kpi" id="ql-kpi-reco-card">
+          <div class="kpi-label">% Recomenda</div>
+          <div class="kpi-val" id="ql-kpi-reco">—</div>
+          <div class="kpi-sub" id="ql-kpi-reco-meta">meta —</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2>Metas por pergunta</h2>
+          <span id="ql-count"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Pergunta</th>
+              <th style="text-align:center">Média atual</th>
+              <th style="text-align:center">Meta</th>
+              <th style="text-align:center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="ql-body"></tbody>
+        </table>
+        <div id="ql-empty" class="empty" style="display:none">Sem metas configuradas.</div>
       </div>
     </div>
 
@@ -3288,6 +3351,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=25"></script>
+<script src="/js/admin.js?v=26"></script>
 </body>
 </html>

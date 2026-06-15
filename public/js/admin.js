@@ -85,6 +85,8 @@ function aplicarRoleNaUI(role) {
   if (btnHist) btnHist.style.display = p.podeSatisfacao ? '' : 'none';
   const btnRM = document.getElementById('btn-open-relatorio-mensal');
   if (btnRM) btnRM.style.display = p.podeSatisfacao ? '' : 'none';
+  const btnQL = document.getElementById('btn-open-qualidade');
+  if (btnQL) btnQL.style.display = p.podeSatisfacao ? '' : 'none';
   const btnUsr = document.getElementById('btn-open-usuarios');
   if (btnUsr) btnUsr.style.display = p.podeUsuarios ? '' : 'none';
   // Dropdowns inteiros: esconde se nenhum item dentro esta visivel
@@ -112,6 +114,7 @@ function showApp() {
   else if (view === 'view-historico' && st.histId) { showHistoricoMassagista(st.histId, st.histNome); }
   else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
   else if (view === 'view-relatorio-mensal') { loadRelatorioMensal(); }
+  else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -524,8 +527,12 @@ function loadAll() { loadStats(); loadTable(); }
 
 // ── Navegação entre views ──
 function showView(id) {
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios'].forEach(v => {
-    document.getElementById(v).style.display = v === id ? 'block' : 'none';
+  // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
+  // view-qualidade) tinham que entrar aqui — sem isso o display nunca
+  // virava 'block' e a view ficava invisivel.
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade'].forEach(v => {
+    const el = document.getElementById(v);
+    if (el) el.style.display = v === id ? 'block' : 'none';
   });
   if (id === 'view-massagistas') {
     const s = document.getElementById('search-massagistas');
@@ -2368,6 +2375,76 @@ document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekO
 document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
 document.getElementById('btn-open-relatorio-mensal')?.addEventListener('click', () => { showView('view-relatorio-mensal'); loadRelatorioMensal(); });
 document.getElementById('btn-back-relatorio-mensal')?.addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-open-qualidade')?.addEventListener('click', () => { showView('view-qualidade'); loadQualidade(); });
+document.getElementById('btn-back-qualidade')?.addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-ql-atualizar')?.addEventListener('click', () => loadQualidade());
+
+// ── Gestao da Qualidade: pesquisa publicada + metas x medias por pergunta ──
+// Consome /api/qualidade/admin/visao-geral. So leitura — nao mexe em
+// estados nem persiste nada. Falha silenciosa se a pesquisa nao estiver
+// publicada (mostra '—' nos KPIs).
+async function loadQualidade() {
+  const slug = 'spa-locc-v1';
+  const from = document.getElementById('ql-from')?.value || '';
+  const to   = document.getElementById('ql-to')?.value || '';
+  const p = new URLSearchParams({ slug });
+  if (from) p.set('from', from);
+  if (to)   p.set('to', to);
+  let d;
+  try {
+    const r = await api('/api/qualidade/admin/visao-geral?' + p);
+    if (!r) return;
+    d = await r.json();
+  } catch { return; }
+  if (!d || !d.ok) return;
+  const { stats, metas } = d;
+  document.getElementById('ql-kpi-pesquisa').textContent = slug;
+  document.getElementById('ql-kpi-versao').textContent = 'período: ' + (stats.periodo?.from || '—') + ' a ' + (stats.periodo?.to || '—');
+  document.getElementById('ql-kpi-total').textContent = stats.total ?? '—';
+  document.getElementById('ql-kpi-media').textContent = stats.mediaGeral != null ? stats.mediaGeral.toFixed(2) : '—';
+  document.getElementById('ql-kpi-reco').textContent = stats.pctRecomenda != null ? stats.pctRecomenda + '%' : '—';
+  const metaReco = metas?.por_questionario?.pct_recomenda;
+  const recoCard = document.getElementById('ql-kpi-reco-card');
+  if (metaReco) {
+    document.getElementById('ql-kpi-reco-meta').textContent = 'meta ≥ ' + metaReco.alvo + '%';
+    if (recoCard) recoCard.classList.toggle('alert', metaReco.atingido === false);
+  } else {
+    document.getElementById('ql-kpi-reco-meta').textContent = 'sem meta';
+    if (recoCard) recoCard.classList.remove('alert');
+  }
+
+  const porPerg = metas?.por_pergunta || {};
+  const body  = document.getElementById('ql-body');
+  const empty = document.getElementById('ql-empty');
+  const count = document.getElementById('ql-count');
+  const linhas = Object.entries(porPerg);
+  if (count) count.textContent = linhas.length ? linhas.length + ' metas' : '';
+  if (!linhas.length) {
+    body.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  // Rotulos amigaveis a partir dos labels ja hardcoded
+  const LABELS = Object.fromEntries(
+    [...SERVICOS_LABELS, ...INSTALACOES_LABELS].map(x => [x.campo, x.label])
+  );
+  body.innerHTML = linhas.map(([campo, m]) => {
+    const rotulo = LABELS[campo] || campo;
+    const atual = m.valor_atual != null ? m.valor_atual.toFixed(2) : '—';
+    const alvo = m.alvo != null ? m.alvo.toFixed(1) : '—';
+    let badge;
+    if (m.atingido === true)  badge = '<span style="color:var(--success);font-weight:600">✓ Atingida</span>';
+    else if (m.atingido === false) badge = '<span style="color:var(--danger);font-weight:600">✗ Abaixo</span>';
+    else                            badge = '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td>${escHtml(rotulo)}</td>
+      <td style="text-align:center;font-variant-numeric:tabular-nums">${atual}</td>
+      <td style="text-align:center;font-variant-numeric:tabular-nums">${alvo}</td>
+      <td style="text-align:center">${badge}</td>
+    </tr>`;
+  }).join('');
+}
 
 // ── Relatorio Mensal (Fase 2): KPIs do mes + cruzamento sessao x pesquisa ──
 function _ymAtualFortaleza() {
