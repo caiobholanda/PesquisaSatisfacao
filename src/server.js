@@ -157,7 +157,11 @@ app.get('/api/survey/live', (_req, res) => {
   });
 });
 
-app.get('/api/survey/:token', (req, res) => {
+app.get('/api/survey/:token', (req, res, next) => {
+  // Guard: paths reservados do modulo Qualidade nao podem cair aqui (sao
+  // tratados pelo qualidadeRouter montado em /api/survey logo abaixo).
+  const PATHS_RESERVADOS = new Set(['config', 'published', 'admin']);
+  if (PATHS_RESERVADOS.has(req.params.token)) return next();
   const row = buscarSurveyToken(req.params.token);
   if (!row) return res.status(404).json({ ok: false, error: 'Token inválido' });
   res.json({
