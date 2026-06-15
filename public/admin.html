@@ -7,6 +7,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Tema (claro/escuro): aplicado ANTES do CSS para evitar flash (FOUC).
+    // Ordem de prioridade do tema inicial:
+    //   1) ?theme=dark|light na URL — vem do Hub ao abrir o sistema.
+    //      Sobrescreve localStorage e fica como nova preferencia.
+    //   2) localStorage.spa_theme — preferencia salva nesta maquina.
+    //   3) prefers-color-scheme do sistema operacional.
+    (function() {
+      try {
+        var url = new URLSearchParams(window.location.search);
+        var fromUrl = url.get('theme');
+        if (fromUrl === 'dark' || fromUrl === 'light') {
+          localStorage.setItem('spa_theme', fromUrl);
+        }
+      } catch (e) {}
+      var t = (function() {
+        try { return localStorage.getItem('spa_theme'); } catch (e) { return null; }
+      })();
+      if (t !== 'dark' && t !== 'light') {
+        try {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } catch (e) { t = 'light'; }
+      }
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -33,14 +59,52 @@
       --font:        'DM Sans', system-ui, sans-serif;
       --serif:       'Cormorant Garamond', Georgia, serif;
       --mono:        'JetBrains Mono', monospace;
+      --bg-grad-1:   rgba(212,149,61,.04);
+      --bg-grad-2:   rgba(212,149,61,.025);
+    }
+
+    /* Modo escuro: mantem identidade quente (carvao + creme + terracota
+       clareado para contraste AA). Sobrescreve as variaveis acima quando
+       <html data-theme="dark">. Aplicado pelo script inline no <head> antes
+       do paint, para evitar flash de tema claro. */
+    :root[data-theme="dark"] {
+      --bg:          #1A1815;
+      --surface:     #26221D;
+      --surface2:    #2D2924;
+      --border:      #3A352D;
+      --border-soft: #2F2A24;
+      --text:        #EDE6D8;
+      --muted:       #A39A88;
+      --muted2:      #C9BFA8;
+      --gold:        #D89048;
+      --gold-dark:   #E2A05A;
+      --gold-dim:    rgba(216,144,72,.18);
+      --indigo:      #8B98C4;
+      --indigo-dim:  rgba(139,152,196,.18);
+      --success:     #5BAA7B;
+      --success-dim: rgba(91,170,123,.18);
+      --warn:        #D9A828;
+      --warn-dim:    rgba(217,168,40,.18);
+      --danger:      #D86862;
+      --danger-dim:  rgba(216,104,98,.18);
+      --bg-grad-1:   rgba(216,144,72,.06);
+      --bg-grad-2:   rgba(216,144,72,.035);
+    }
+
+    /* Transicao global suave entre temas (so background-color/color/border).
+       Excludes transforms/animations existentes para nao quebrar. */
+    body, header, .card, .kpi, table, th, td, input, select, textarea, button,
+    .badge, .role-badge, .empty, .tag, .filter-group, .pagination,
+    .view-page, .modal, .modal-overlay, .table-wrap, .filters, .page-hero {
+      transition: background-color .18s ease, color .18s ease, border-color .18s ease;
     }
 
     body {
       font-family: var(--font);
       background-color: var(--bg);
       background-image:
-        radial-gradient(ellipse at 15% 40%, rgba(212,149,61,.04) 0%, transparent 55%),
-        radial-gradient(ellipse at 85% 15%, rgba(212,149,61,.025) 0%, transparent 55%);
+        radial-gradient(ellipse at 15% 40%, var(--bg-grad-1) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 15%, var(--bg-grad-2) 0%, transparent 55%);
       color: var(--text);
       min-height: 100vh;
       font-size: 15px;
@@ -2249,7 +2313,11 @@
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
       </div>
-      <span id="gm-datahora" class="gm-datahora" title="Horário de Fortaleza" style="margin-left:.5rem;font-family:ui-monospace,'JetBrains Mono',Menlo,monospace;font-size:.75rem;letter-spacing:.04em;color:var(--text-secondary,#64748b);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500">--/--/---- · --:--</span>
+      <span id="gm-datahora" class="gm-datahora" title="Horário de Fortaleza" style="margin-left:.5rem;font-family:ui-monospace,'JetBrains Mono',Menlo,monospace;font-size:.75rem;letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500">--/--/---- · --:--</span>
+      <button class="btn btn-outline btn-sm" id="btn-theme" title="Alternar modo claro/escuro" aria-label="Alternar modo claro/escuro" style="margin-left:.25rem;padding:.3rem .5rem;display:inline-flex;align-items:center;justify-content:center;line-height:1">
+        <svg id="ic-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <button class="btn btn-outline btn-sm" id="btn-seed-demo" title="⚠ APAGA todos os dados atuais e gera reservas + pesquisas fictícias" style="border-color:var(--indigo);color:var(--indigo)">⚠ Resetar & Demo</button>
       <button class="btn btn-outline btn-sm" id="btn-sair-hub" title="Sair e voltar ao Hub" style="margin-left:.5rem;display:inline-flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
@@ -2257,15 +2325,54 @@
     </div>
   </header>
   <script>
-    // Botao Sair: limpa storage local e volta ao Hub.
+    // Botao Sair: limpa storage local e volta ao Hub. Captura o tema ATUAL
+    // antes do clear para propagar via ?theme= — o Hub aplica essa mesma
+    // preferencia, e os demais sistemas internos seguem o padrao.
     (function () {
       var btn = document.getElementById('btn-sair-hub');
       if (!btn) return;
       btn.addEventListener('click', function () {
+        var t = 'light';
+        try { t = localStorage.getItem('spa_theme') === 'dark' ? 'dark' : 'light'; } catch (_) {}
         try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
         try { fetch('/api/admin/logout', { method: 'POST', credentials: 'include', keepalive: true }).catch(function(){}); } catch (_) {}
-        // ?logout=1&from=pesquisa permite ao Hub registrar este logout.
-        window.location.href = 'https://hub-granmarquise.fly.dev/?logout=1&from=pesquisa';
+        window.location.href = 'https://hub-granmarquise.fly.dev/?logout=1&from=pesquisa&theme=' + t;
+      });
+    })();
+
+    // Logo do header (link para o Hub em nova aba): propaga ?theme= para o Hub
+    // aplicar a mesma preferencia que o admin escolheu no Spa. Sem deslogar.
+    (function () {
+      var logo = document.querySelector('a.header-brand');
+      if (!logo) return;
+      logo.addEventListener('click', function () {
+        var t = 'light';
+        try { t = localStorage.getItem('spa_theme') === 'dark' ? 'dark' : 'light'; } catch (_) {}
+        // Atualiza o href no momento do clique para incluir o tema corrente.
+        var base = 'https://hub-granmarquise.fly.dev';
+        logo.setAttribute('href', base + '/?theme=' + t);
+      });
+    })();
+
+    // Toggle de tema: alterna data-theme no <html>, persiste em localStorage,
+    // mantem o icone visivel coerente com o estado atual.
+    (function () {
+      var btn = document.getElementById('btn-theme');
+      var icSun = document.getElementById('ic-sun');
+      var icMoon = document.getElementById('ic-moon');
+      function aplicarVisual() {
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (icSun) icSun.style.display = dark ? '' : 'none';
+        if (icMoon) icMoon.style.display = dark ? 'none' : '';
+      }
+      aplicarVisual();
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var atual = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (atual) document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', 'dark');
+        try { localStorage.setItem('spa_theme', atual ? 'light' : 'dark'); } catch (_) {}
+        aplicarVisual();
       });
     })();
     // Relogio do header — padrao Gran Marquise: DD/MM/AAAA · HH:MM (Fortaleza).
@@ -3178,6 +3285,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=23"></script>
+<script src="/js/admin.js?v=24"></script>
 </body>
 </html>

@@ -183,8 +183,11 @@ app.use('/api/dev', devRouter);
 app.use('/api', cadastrosRouter);
 
 app.get('/sso', (req, res) => {
-  const { sso_token, next } = req.query;
+  const { sso_token, next, theme } = req.query;
   if (!sso_token) return res.redirect('/acesso-hub.html');
+  // Repassa ?theme=dark|light do Hub para o destino final, para que o admin.html
+  // aplique a mesma preferencia visual (script inline le ?theme= antes do CSS).
+  const themeOK = (theme === 'dark' || theme === 'light') ? theme : null;
   try {
     const payload = jwt.verify(sso_token, process.env.SSO_SECRET);
     const email = (payload.email || '').trim().toLowerCase();
@@ -214,7 +217,11 @@ app.get('/sso', (req, res) => {
     if (isAdmin) setAdminCookie(res, token, 28800);
     else setUserCookie(res, token, 28800);
     const defaultDest = isAdmin ? '/admin' : '/';
-    const dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : defaultDest;
+    let dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : defaultDest;
+    if (themeOK) {
+      const sep = dest.includes('?') ? '&' : '?';
+      dest = `${dest}${sep}theme=${themeOK}`;
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>${isAdmin ? `sessionStorage.setItem('granspa_token',${JSON.stringify(token)});` : ''}window.location.replace(${JSON.stringify(dest)});<\/script></head></html>`);
   } catch {
