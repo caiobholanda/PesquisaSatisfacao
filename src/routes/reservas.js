@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
+// Reservas sao escopo Spa. GETs livres p/ autenticados. Escrita (criar reserva,
+// liberar pesquisa, gerar ficha, cancelar) exige requireSpa + requireWrite.
+const podeEscreverSpa = [requireSpa, requireWrite];
 
 router.get('/sem-pesquisa', (req, res) => {
   res.json({ ok: true, total: countSessoesSemPesquisa() });
@@ -37,7 +40,7 @@ function _hhmmToMin(s) {
   return (+m[1]) * 60 + (+m[2]);
 }
 
-router.post('/', (req, res) => {
+router.post('/', ...podeEscreverSpa, (req, res) => {
   const {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
@@ -97,7 +100,7 @@ router.post('/', (req, res) => {
   }
 });
 
-router.post('/:id/liberar-pesquisa', (req, res) => {
+router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
   const token = criarSurveyToken(reserva.id);
@@ -107,7 +110,7 @@ router.post('/:id/liberar-pesquisa', (req, res) => {
   res.json({ ok: true, token, url: `${origin}/?token=${token}`, nome: reserva.cliente, telefone: reserva.telefone });
 });
 
-router.post('/:id/gerar-ficha', (req, res) => {
+router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
   const token = gerarDocumentoToken(reserva.id);
@@ -118,7 +121,7 @@ router.post('/:id/gerar-ficha', (req, res) => {
     baseUrl: `${origin}/spa-profile.html` });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', ...podeEscreverSpa, (req, res) => {
   const changes = cancelarReserva(+req.params.id);
   if (!changes) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
   res.json({ ok: true });

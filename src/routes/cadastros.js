@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
@@ -9,6 +9,10 @@ import {
 
 const router = Router();
 router.use(requireAuth);
+// Cadastros pertencem ao escopo Spa. GET livre p/ qualquer autenticado (master,
+// admin, spa, satisfacao podem listar). Escrita exige requireSpa + requireWrite:
+// master e spa OK; admin (read-only) e satisfacao (escopo relatorios) caem em 403.
+const podeEscreverSpa = [requireSpa, requireWrite];
 
 function _computarEsp(funcao, bilingue, vinculo) {
   if (!funcao?.trim()) return null;
@@ -22,7 +26,7 @@ function _computarEsp(funcao, bilingue, vinculo) {
 // ── Massagistas ──
 router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
 
-router.post('/massagistas', (req, res) => {
+router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
   const { nome, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   const resolvedFuncao = funcao?.trim() || 'Massoterapeuta';
@@ -56,7 +60,7 @@ function _validarDisp(disponibilidade) {
   return null;
 }
 
-router.put('/massagistas/:id', (req, res) => {
+router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
   const { nome, ativo = 1, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   if (disponibilidade !== undefined) {
@@ -92,7 +96,7 @@ router.get('/massagistas/:id/historico', (req, res) => {
   res.json({ ok: true, massagista: m, items });
 });
 
-router.delete('/massagistas/:id', (req, res) => {
+router.delete('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
   const changes = deletarMassagista(parseInt(req.params.id));
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   res.json({ ok: true });
@@ -101,14 +105,14 @@ router.delete('/massagistas/:id', (req, res) => {
 // ── Tipos de Massagem ──
 router.get('/tipos-massagem', (_req, res) => res.json({ ok: true, items: listarTiposMassagem() }));
 
-router.post('/tipos-massagem', (req, res) => {
+router.post('/tipos-massagem', ...podeEscreverSpa, (req, res) => {
   const { nome, duracao_min, preco, descricao } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   const id = inserirTipoMassagem(nome, duracao_min, preco, descricao);
   res.status(201).json({ ok: true, id });
 });
 
-router.put('/tipos-massagem/:id', (req, res) => {
+router.put('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
   const { nome, duracao_min, preco, ativo = 1, descricao } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   const changes = atualizarTipoMassagem(parseInt(req.params.id), nome, duracao_min, preco, ativo ? 1 : 0, descricao);
@@ -116,7 +120,7 @@ router.put('/tipos-massagem/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/tipos-massagem/:id', (req, res) => {
+router.delete('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
   const changes = deletarTipoMassagem(parseInt(req.params.id));
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   res.json({ ok: true });
