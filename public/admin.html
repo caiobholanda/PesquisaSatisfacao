@@ -6,7 +6,7 @@
   <title>Pesquisa de Satisfação · Painel Interno</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
     // Tema (claro/escuro): aplicado ANTES do CSS para evitar flash (FOUC).
     // Ordem de prioridade do tema inicial:
@@ -36,67 +36,68 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:          #F5F0E6;
-      --surface:     #FFFFFF;
-      --surface2:    #FAF6EF;
-      --border:      #E4DAC6;
-      --border-soft: #EDE7D9;
-      --text:        #1A1A1A;
-      --muted:       #6B6B6B;
-      --muted2:      #4A4A4A;
-      --gold:        #D4953D;
-      --gold-dark:   #C2832F;
-      --gold-dim:    rgba(212,149,61,.12);
-      --indigo:      #5B6796;
-      --indigo-dim:  rgba(91,103,150,.1);
-      --success:     #2D7A4F;
-      --success-dim: rgba(45,122,79,.1);
-      --warn:        #8B6914;
-      --warn-dim:    rgba(139,105,20,.12);
+    /* Paleta "Gran Marquise" — identidade editorial/luxo hoteleiro.
+       Light: creme quente + grafite + dourado. Dark: navy + marfim + dourado.
+       Aplicada pelo script inline no <head> antes do paint (zero FOUC). */
+    :root,
+    :root[data-theme="light"] {
+      --bg:          #F4EEE1;
+      --surface:     #FAF9F5;
+      --surface2:    #F4EEE1;
+      --border:      rgba(96, 87, 56, 0.13);
+      --border-soft: rgba(96, 87, 56, 0.08);
+      --text:        #1C2030;
+      --muted:       #605738;
+      --muted2:      #44402F;
+      --gold:        #8A6B1F;
+      --gold-dark:   #6F551A;
+      --gold-dim:    rgba(138,107,31,.12);
+      --indigo:      #15705A;
+      --indigo-dim:  rgba(21,112,90,.12);
+      --success:     #15705A;
+      --success-dim: rgba(21,112,90,.10);
+      --warn:        #8A6B1F;
+      --warn-dim:    rgba(138,107,31,.12);
       --danger:      #B85450;
-      --danger-dim:  rgba(184,84,80,.1);
-      --font:        'DM Sans', system-ui, sans-serif;
-      --serif:       'Cormorant Garamond', Georgia, serif;
+      --danger-dim:  rgba(184,84,80,.10);
+      --header-bg:   rgba(244, 238, 225, 0.82);
+      --font:        'Inter', 'DM Sans', system-ui, sans-serif;
+      --serif:       'Fraunces', Georgia, serif;
       --mono:        'JetBrains Mono', monospace;
-      --bg-grad-1:   rgba(212,149,61,.04);
-      --bg-grad-2:   rgba(212,149,61,.025);
+      --bg-grad-1:   rgba(138,107,31,.06);
+      --bg-grad-2:   rgba(138,107,31,.03);
     }
 
-    /* Modo escuro: mantem identidade quente (carvao + creme + terracota
-       clareado para contraste AA). Sobrescreve as variaveis acima quando
-       <html data-theme="dark">. Aplicado pelo script inline no <head> antes
-       do paint, para evitar flash de tema claro. */
     :root[data-theme="dark"] {
-      --bg:          #1A1815;
-      --surface:     #26221D;
-      --surface2:    #2D2924;
-      --border:      #3A352D;
-      --border-soft: #2F2A24;
-      --text:        #EDE6D8;
-      --muted:       #A39A88;
-      --muted2:      #C9BFA8;
-      --gold:        #D89048;
-      --gold-dark:   #E2A05A;
-      --gold-dim:    rgba(216,144,72,.18);
-      --indigo:      #8B98C4;
-      --indigo-dim:  rgba(139,152,196,.18);
-      --success:     #5BAA7B;
-      --success-dim: rgba(91,170,123,.18);
-      --warn:        #D9A828;
-      --warn-dim:    rgba(217,168,40,.18);
+      --bg:          #0A0E1A;
+      --surface:     #11162A;
+      --surface2:    #161B2E;
+      --border:      rgba(138, 126, 100, 0.13);
+      --border-soft: rgba(138, 126, 100, 0.08);
+      --text:        #F5F0E6;
+      --muted:       #8A7E64;
+      --muted2:      #D4C4A0;
+      --gold:        #C9A961;
+      --gold-dark:   #B3924E;
+      --gold-dim:    rgba(201,169,97,.16);
+      --indigo:      #3E8497;
+      --indigo-dim:  rgba(62,132,151,.18);
+      --success:     #3E8497;
+      --success-dim: rgba(62,132,151,.16);
+      --warn:        #C9A961;
+      --warn-dim:    rgba(201,169,97,.16);
       --danger:      #D86862;
       --danger-dim:  rgba(216,104,98,.18);
-      --bg-grad-1:   rgba(216,144,72,.06);
-      --bg-grad-2:   rgba(216,144,72,.035);
+      --header-bg:   rgba(10, 14, 26, 0.72);
+      --bg-grad-1:   rgba(201,169,97,.08);
+      --bg-grad-2:   rgba(201,169,97,.04);
     }
 
-    /* Transicao global suave entre temas (so background-color/color/border).
-       Excludes transforms/animations existentes para nao quebrar. */
+    /* Transicao suave de tema. 300ms conforme spec ('luxo' menos brusco). */
     body, header, .card, .kpi, table, th, td, input, select, textarea, button,
     .badge, .role-badge, .empty, .tag, .filter-group, .pagination,
     .view-page, .modal, .modal-overlay, .table-wrap, .filters, .page-hero {
-      transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+      transition: background-color .3s ease, color .3s ease, border-color .3s ease;
     }
 
     body {
@@ -118,7 +119,9 @@
     #app-screen { display: block; }
 
     header {
-      background: var(--surface);
+      background: var(--header-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
       padding: 0 2.5rem;
       height: 64px;
@@ -3285,6 +3288,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=24"></script>
+<script src="/js/admin.js?v=25"></script>
 </body>
 </html>
