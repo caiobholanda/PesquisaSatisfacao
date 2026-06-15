@@ -130,6 +130,104 @@ export function seedQualidadeSpa() {
   return true;
 }
 
+// Seed idempotente da Anamnese pre-tratamento do SPA. Cadastra as 16
+// perguntas hardcoded de POST /api/spa/perfil como pesquisa configuravel
+// com app_escopo='spa-anamnese'. Permite ao admin gerenciar perguntas/
+// ordem/ativacao via UI sem mexer no formulario que o cliente abre.
+export function seedAnamneseSpa() {
+  const db = getDb();
+  const existe = db.prepare("SELECT 1 FROM pesquisa WHERE slug='spa-anamnese-v1'").get();
+  if (existe) return false;
+
+  // Reaproveita escala sim_nao do seed principal
+  let escalaSN = db.prepare("SELECT id FROM escala WHERE chave='sim_nao'").get();
+  if (!escalaSN) {
+    db.prepare("INSERT OR IGNORE INTO escala (chave, tipo) VALUES (?, ?)").run('sim_nao', 'sim_nao');
+    escalaSN = db.prepare("SELECT id FROM escala WHERE chave='sim_nao'").get();
+  }
+
+  // 16 perguntas mapeando 1:1 cada campo do POST /api/spa/perfil
+  const perguntas = [
+    { chave: 'anamnese_nome',                   tipo: 'texto_livre', legado: 'nome',                   ptBR: 'Nome', en: 'First name' },
+    { chave: 'anamnese_sobrenome',              tipo: 'texto_livre', legado: 'sobrenome',              ptBR: 'Sobrenome', en: 'Last name' },
+    { chave: 'anamnese_tipo_documento',         tipo: 'unica',       legado: 'tipo_documento',         ptBR: 'Tipo de documento', en: 'Document type' },
+    { chave: 'anamnese_documento',              tipo: 'texto_livre', legado: 'documento',              ptBR: 'Numero do documento', en: 'Document number' },
+    { chave: 'anamnese_email',                  tipo: 'texto_livre', legado: 'email',                  ptBR: 'E-mail', en: 'E-mail' },
+    { chave: 'anamnese_telefone',               tipo: 'texto_livre', legado: 'telefone',               ptBR: 'Telefone', en: 'Phone' },
+    { chave: 'anamnese_data_nascimento',        tipo: 'texto_livre', legado: 'data_nascimento',        ptBR: 'Data de nascimento', en: 'Date of birth' },
+    { chave: 'anamnese_rotina_facial',          tipo: 'multipla',    legado: 'rotina_facial',          ptBR: 'Rotina facial', en: 'Facial routine' },
+    { chave: 'anamnese_rotina_corporal',        tipo: 'multipla',    legado: 'rotina_corporal',        ptBR: 'Rotina corporal', en: 'Body routine' },
+    { chave: 'anamnese_produto_especifico',     tipo: 'texto_livre', legado: 'produto_especifico',     ptBR: 'Produto especifico que utiliza', en: 'Specific product used' },
+    { chave: 'anamnese_pressao_massagem',       tipo: 'unica',       legado: 'pressao_massagem',       ptBR: 'Pressao preferida na massagem', en: 'Preferred massage pressure' },
+    { chave: 'anamnese_info_medica',            tipo: 'texto_livre', legado: 'info_medica',            ptBR: 'Informacoes medicas relevantes', en: 'Relevant medical information' },
+    { chave: 'anamnese_consentimento_saude',    tipo: 'escala', escala: escalaSN.id, legado: 'consentimento_saude',    ptBR: 'Declaro estar apto a realizar o tratamento', en: 'I declare I am fit for treatment' },
+    { chave: 'anamnese_consentimento_marketing',tipo: 'escala', escala: escalaSN.id, legado: 'consentimento_marketing',ptBR: 'Autorizo receber comunicacoes de marketing', en: 'I authorize marketing communications' },
+    { chave: 'anamnese_canais_marketing',       tipo: 'multipla',    legado: 'canais_marketing',       ptBR: 'Canais preferidos para contato', en: 'Preferred contact channels' },
+    { chave: 'anamnese_assinatura',             tipo: 'texto_livre', legado: 'assinatura_data_url',    ptBR: 'Assinatura digital', en: 'Digital signature' },
+  ];
+  const insP = db.prepare("INSERT OR IGNORE INTO pergunta_satisfacao (chave, tipo, escala_id, mapeia_campo_legado, ativo) VALUES (?,?,?,?,1)");
+  const insPTr = db.prepare("INSERT OR IGNORE INTO pergunta_traducao (pergunta_id, idioma, rotulo) VALUES (?,?,?)");
+  for (const p of perguntas) {
+    insP.run(p.chave, p.tipo, p.escala || null, p.legado);
+    const pId = db.prepare("SELECT id FROM pergunta_satisfacao WHERE chave=?").get(p.chave).id;
+    insPTr.run(pId, 'pt-BR', p.ptBR);
+    insPTr.run(pId, 'en', p.en);
+  }
+
+  // Pesquisa anamnese (versao 1, publicada, escopo 'spa-anamnese')
+  db.prepare("INSERT INTO pesquisa (slug, titulo, descricao, ativo, versao, app_escopo, publicada_em) VALUES (?,?,?,1,1,'spa-anamnese',datetime('now'))")
+    .run('spa-anamnese-v1', 'Anamnese Pre-Tratamento Gran SPA', 'Formulario preenchido pelo hospede antes da sessao do SPA');
+  const pId = db.prepare("SELECT id FROM pesquisa WHERE slug='spa-anamnese-v1' AND versao=1").get().id;
+  db.prepare("INSERT OR IGNORE INTO pesquisa_traducao (pesquisa_id, idioma, titulo, descricao) VALUES (?,?,?,?)")
+    .run(pId, 'pt-BR', 'Anamnese Pre-Tratamento Gran SPA', 'Formulario preenchido pelo hospede antes da sessao');
+  db.prepare("INSERT OR IGNORE INTO pesquisa_traducao (pesquisa_id, idioma, titulo, descricao) VALUES (?,?,?,?)")
+    .run(pId, 'en', 'Gran SPA Pre-Treatment Form', 'Form filled by the guest before the session');
+
+  // Secoes
+  const secoes = [
+    { chave: 'dados_pessoais',  ordem: 1, ptBR: 'Dados Pessoais', en: 'Personal Information' },
+    { chave: 'saude_rotinas',   ordem: 2, ptBR: 'Saude e Rotinas',  en: 'Health and Routines' },
+    { chave: 'consentimentos',  ordem: 3, ptBR: 'Consentimentos',  en: 'Consents' },
+  ];
+  const insS = db.prepare("INSERT OR IGNORE INTO pesquisa_secao (pesquisa_id, chave, ordem, ativo) VALUES (?,?,?,1)");
+  const insSTr = db.prepare("INSERT OR IGNORE INTO pesquisa_secao_traducao (pesquisa_secao_id, idioma, titulo) VALUES (?,?,?)");
+  const secaoIds = {};
+  for (const s of secoes) {
+    insS.run(pId, s.chave, s.ordem);
+    const sid = db.prepare("SELECT id FROM pesquisa_secao WHERE pesquisa_id=? AND chave=?").get(pId, s.chave).id;
+    secaoIds[s.chave] = sid;
+    insSTr.run(sid, 'pt-BR', s.ptBR);
+    insSTr.run(sid, 'en', s.en);
+  }
+
+  const associacoes = [
+    { chave: 'anamnese_nome',                    secao: 'dados_pessoais', ordem: 1,  obrigatoria: 1 },
+    { chave: 'anamnese_sobrenome',               secao: 'dados_pessoais', ordem: 2,  obrigatoria: 1 },
+    { chave: 'anamnese_tipo_documento',          secao: 'dados_pessoais', ordem: 3,  obrigatoria: 0 },
+    { chave: 'anamnese_documento',               secao: 'dados_pessoais', ordem: 4,  obrigatoria: 0 },
+    { chave: 'anamnese_email',                   secao: 'dados_pessoais', ordem: 5,  obrigatoria: 0 },
+    { chave: 'anamnese_telefone',                secao: 'dados_pessoais', ordem: 6,  obrigatoria: 0 },
+    { chave: 'anamnese_data_nascimento',         secao: 'dados_pessoais', ordem: 7,  obrigatoria: 0 },
+    { chave: 'anamnese_rotina_facial',           secao: 'saude_rotinas',  ordem: 1,  obrigatoria: 0 },
+    { chave: 'anamnese_rotina_corporal',         secao: 'saude_rotinas',  ordem: 2,  obrigatoria: 0 },
+    { chave: 'anamnese_produto_especifico',      secao: 'saude_rotinas',  ordem: 3,  obrigatoria: 0 },
+    { chave: 'anamnese_pressao_massagem',        secao: 'saude_rotinas',  ordem: 4,  obrigatoria: 0 },
+    { chave: 'anamnese_info_medica',             secao: 'saude_rotinas',  ordem: 5,  obrigatoria: 0 },
+    { chave: 'anamnese_consentimento_saude',     secao: 'consentimentos', ordem: 1,  obrigatoria: 1 },
+    { chave: 'anamnese_consentimento_marketing', secao: 'consentimentos', ordem: 2,  obrigatoria: 0 },
+    { chave: 'anamnese_canais_marketing',        secao: 'consentimentos', ordem: 3,  obrigatoria: 0 },
+    { chave: 'anamnese_assinatura',              secao: 'consentimentos', ordem: 4,  obrigatoria: 1 },
+  ];
+  const insPP = db.prepare("INSERT OR IGNORE INTO pesquisa_pergunta (pesquisa_id, pergunta_id, secao_id, ordem, ativo, obrigatoria) VALUES (?,?,?,?,1,?)");
+  for (const a of associacoes) {
+    const pidQ = db.prepare("SELECT id FROM pergunta_satisfacao WHERE chave=?").get(a.chave)?.id;
+    if (!pidQ) continue;
+    insPP.run(pId, pidQ, secaoIds[a.secao], a.ordem, a.obrigatoria);
+  }
+
+  return true;
+}
+
 // ── Leitura ────────────────────────────────────────────────────────────────
 export function buscarPesquisaPublicada(slug, idioma = 'pt-BR') {
   const db = getDb();

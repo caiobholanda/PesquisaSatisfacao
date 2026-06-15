@@ -15,7 +15,7 @@ import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
 import relatoriosRouter from './routes/relatorios.js';
 import qualidadeRouter from './routes/qualidade.js';
-import { seedQualidadeSpa } from './qualidade.js';
+import { seedQualidadeSpa, seedAnamneseSpa } from './qualidade.js';
 
 const SPA_ADMIN_EMAILS = [
   'richard@granmarquise.com.br',
@@ -264,4 +264,5 @@ initDb();
 // Seed idempotente do questionario SPA (Gestao da Qualidade).
 // Re-rodar e' seguro: detecta se 'spa-locc-v1' ja existe e ignora.
 try { seedQualidadeSpa(); } catch (err) { console.error('[Qualidade] seed falhou:', err.message); }
+try { seedAnamneseSpa(); } catch (err) { console.error('[Anamnese] seed falhou:', err.message); }
 app.listen(PORT, () => console.log(`[Gran SPA] Servidor rodando na porta ${PORT}`));
