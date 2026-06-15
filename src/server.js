@@ -14,6 +14,8 @@ import reservasRouter from './routes/reservas.js';
 import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
 import relatoriosRouter from './routes/relatorios.js';
+import qualidadeRouter from './routes/qualidade.js';
+import { seedQualidadeSpa } from './qualidade.js';
 
 const SPA_ADMIN_EMAILS = [
   'richard@granmarquise.com.br',
@@ -176,6 +178,11 @@ app.get('/api/survey/:token', (req, res) => {
 
 app.use('/api/spa', spaRouter);
 app.use('/api/relatorios', relatoriosRouter);
+// Modulo Gestao da Qualidade / Pesquisas configuraveis. Publicas em
+// /api/survey/config|published (consumidas pelo front e por outros apps);
+// admin em /api/qualidade/admin/* (requireAuth).
+app.use('/api/survey', qualidadeRouter);
+app.use('/api/qualidade', qualidadeRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/reservas', reservasRouter);
@@ -250,4 +257,7 @@ app.use((err, _req, res, _next) => {
 });
 
 initDb();
+// Seed idempotente do questionario SPA (Gestao da Qualidade).
+// Re-rodar e' seguro: detecta se 'spa-locc-v1' ja existe e ignora.
+try { seedQualidadeSpa(); } catch (err) { console.error('[Qualidade] seed falhou:', err.message); }
 app.listen(PORT, () => console.log(`[Gran SPA] Servidor rodando na porta ${PORT}`));

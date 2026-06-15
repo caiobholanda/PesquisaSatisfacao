@@ -180,8 +180,137 @@ export function initDb() {
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
 
+  // ── Modulo Gestao da Qualidade / Pesquisas configuraveis ─────────────────
+  // Additive-only. Nenhuma das tabelas existentes (feedback, reservas, etc.) e'
+  // tocada. Todas as migrations sao idempotentes (CREATE IF NOT EXISTS).
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS escala (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chave TEXT NOT NULL UNIQUE,
+      tipo TEXT NOT NULL,
+      criada_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS escala_opcao (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      escala_id INTEGER NOT NULL REFERENCES escala(id) ON DELETE CASCADE,
+      chave TEXT NOT NULL,
+      valor_numerico REAL,
+      polaridade TEXT NOT NULL DEFAULT 'neutral',
+      ordem INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(escala_id, chave)
+    );
+    CREATE TABLE IF NOT EXISTS escala_opcao_traducao (
+      escala_opcao_id INTEGER NOT NULL REFERENCES escala_opcao(id) ON DELETE CASCADE,
+      idioma TEXT NOT NULL,
+      rotulo TEXT NOT NULL,
+      PRIMARY KEY (escala_opcao_id, idioma)
+    );
+    CREATE TABLE IF NOT EXISTS pergunta_satisfacao (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chave TEXT NOT NULL UNIQUE,
+      tipo TEXT NOT NULL,
+      escala_id INTEGER REFERENCES escala(id),
+      mapeia_campo_legado TEXT,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      criada_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS pergunta_traducao (
+      pergunta_id INTEGER NOT NULL REFERENCES pergunta_satisfacao(id) ON DELETE CASCADE,
+      idioma TEXT NOT NULL,
+      rotulo TEXT NOT NULL,
+      ajuda TEXT,
+      PRIMARY KEY (pergunta_id, idioma)
+    );
+    CREATE TABLE IF NOT EXISTS pesquisa (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL,
+      titulo TEXT NOT NULL,
+      descricao TEXT,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      versao INTEGER NOT NULL DEFAULT 1,
+      app_escopo TEXT NOT NULL DEFAULT 'all',
+      publicada_em TEXT,
+      criada_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizada_em TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(slug, versao)
+    );
+    CREATE TABLE IF NOT EXISTS pesquisa_traducao (
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id) ON DELETE CASCADE,
+      idioma TEXT NOT NULL,
+      titulo TEXT NOT NULL,
+      descricao TEXT,
+      PRIMARY KEY (pesquisa_id, idioma)
+    );
+    CREATE TABLE IF NOT EXISTS pesquisa_secao (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id) ON DELETE CASCADE,
+      chave TEXT NOT NULL,
+      ordem INTEGER NOT NULL DEFAULT 0,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      UNIQUE(pesquisa_id, chave)
+    );
+    CREATE TABLE IF NOT EXISTS pesquisa_secao_traducao (
+      pesquisa_secao_id INTEGER NOT NULL REFERENCES pesquisa_secao(id) ON DELETE CASCADE,
+      idioma TEXT NOT NULL,
+      titulo TEXT NOT NULL,
+      PRIMARY KEY (pesquisa_secao_id, idioma)
+    );
+    CREATE TABLE IF NOT EXISTS pesquisa_pergunta (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id) ON DELETE CASCADE,
+      pergunta_id INTEGER NOT NULL REFERENCES pergunta_satisfacao(id),
+      secao_id INTEGER REFERENCES pesquisa_secao(id) ON DELETE SET NULL,
+      ordem INTEGER NOT NULL DEFAULT 0,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      obrigatoria INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(pesquisa_id, pergunta_id)
+    );
+    CREATE TABLE IF NOT EXISTS meta_pergunta (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id) ON DELETE CASCADE,
+      pergunta_id INTEGER NOT NULL REFERENCES pergunta_satisfacao(id),
+      tipo_meta TEXT NOT NULL,
+      valor_alvo REAL NOT NULL,
+      valido_de TEXT,
+      valido_ate TEXT,
+      criada_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS meta_questionario (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id) ON DELETE CASCADE,
+      tipo_meta TEXT NOT NULL,
+      valor_alvo REAL NOT NULL,
+      valido_de TEXT,
+      valido_ate TEXT,
+      criada_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS resposta_pesquisa (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pesquisa_id INTEGER NOT NULL REFERENCES pesquisa(id),
+      pesquisa_versao INTEGER NOT NULL,
+      app_origem TEXT NOT NULL DEFAULT 'spa',
+      cliente_id INTEGER,
+      reserva_id INTEGER,
+      feedback_id INTEGER,
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS resposta_item (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      resposta_pesquisa_id INTEGER NOT NULL REFERENCES resposta_pesquisa(id) ON DELETE CASCADE,
+      pergunta_chave TEXT NOT NULL,
+      valor_texto TEXT,
+      valor_numerico REAL,
+      escala_opcao_chave TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_resposta_pesquisa     ON resposta_pesquisa(pesquisa_id, submitted_at);
+    CREATE INDEX IF NOT EXISTS idx_resposta_pesquisa_app ON resposta_pesquisa(app_origem, submitted_at);
+    CREATE INDEX IF NOT EXISTS idx_resposta_item_resp    ON resposta_item(resposta_pesquisa_id);
+    CREATE INDEX IF NOT EXISTS idx_pesquisa_slug_ativo   ON pesquisa(slug) WHERE ativo=1;
+  `);
+
   seedTratamentosGranSpa();
   seedMassoterapeutasGranSpa();
+  // Modulo Qualidade: seed e' chamado em server.js apos initDb() (ESM).
 
   const adminUser = process.env.ADMIN_USER || 'admin';
   const adminPass = process.env.ADMIN_PASS || 'TrocarEmProducao!';

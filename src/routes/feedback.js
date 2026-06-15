@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, exportarCsv, marcarSurveyTokenRespondido, atualizarIdiomaFeedback } from '../db.js';
 import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { inserirRespostaPesquisa, aplicarMetasEmStats } from '../qualidade.js';
 
 const router = Router();
 
@@ -77,6 +78,37 @@ router.post('/', rateLimit, (req, res) => {
 
   try { marcarSurveyTokenRespondido(); } catch {}
 
+  // Gravacao paralela ESTRUTURADA (Gestao da Qualidade): se o body trouxer
+  // pesquisa_slug, criar resposta_pesquisa + resposta_item vinculados ao
+  // feedback_id. Falhas aqui NAO derrubam a submissao publica — o feedback
+  // legado ja foi gravado e a pesquisa nunca pode quebrar para o usuario.
+  if (b.pesquisa_slug) {
+    try {
+      const itens = [];
+      for (const campo of CAMPOS_NOTA) {
+        if (b[campo]) {
+          const mapa = { otimo: 9, bom: 6, regular: 3, ruim: 0 };
+          itens.push({ chave: campo, escala_opcao_chave: b[campo], valor_numerico: mapa[b[campo]] ?? null });
+        }
+      }
+      if (b.recomenda) itens.push({ chave: 'recomenda', escala_opcao_chave: b.recomenda === 'sim' ? 'sim' : 'nao', valor_numerico: b.recomenda === 'sim' ? 1 : 0 });
+      for (const tx of ['servicos_comentario', 'instalacoes_comentario', 'recomenda_qual', 'recomenda_porque']) {
+        if (b[tx]) itens.push({ chave: tx, valor_texto: b[tx] });
+      }
+      inserirRespostaPesquisa({
+        pesquisa_slug: b.pesquisa_slug,
+        pesquisa_versao: b.pesquisa_versao,
+        app_origem: b.app_origem || 'spa',
+        cliente_id: b.cliente_id || null,
+        reserva_id: b.reserva_id || null,
+        feedback_id: id,
+        itens,
+      });
+    } catch (err) {
+      console.error('[Qualidade] gravacao estruturada falhou (legado OK):', err.message);
+    }
+  }
+
   // Detecção de idioma em background — não bloqueia a resposta
   const textosLivres = [b.servicos_comentario, b.instalacoes_comentario, b.recomenda_qual, b.recomenda_porque, b.nome];
   detectarIdioma(textosLivres)
@@ -116,10 +148,18 @@ router.get('/', requireAuth, (req, res) => {
   return res.json({ ok: true, total, items });
 });
 
-// GET /api/feedback/stats — protegido
+// GET /api/feedback/stats — protegido. Mantem 100% do retorno antigo
+// (total, periodo, porOrigem, porTipo, recomenda, medias, mediaGeral,
+// pctRecomenda, distribuicoes, textos). Adiciona campo OPCIONAL 'metas'
+// quando ?pesquisa_slug=X, calculado sobre o mesmo periodo.
 router.get('/stats', requireAuth, (req, res) => {
-  const { from, to } = req.query;
-  return res.json({ ok: true, ...statsFeedback({ from, to }) });
+  const { from, to, pesquisa_slug } = req.query;
+  const stats = statsFeedback({ from, to });
+  const out = { ok: true, ...stats };
+  if (pesquisa_slug) {
+    try { out.metas = aplicarMetasEmStats(pesquisa_slug, stats); } catch {}
+  }
+  return res.json(out);
 });
 
 // GET /api/feedback/item/:id — protegido (após /stats para não conflitar)
