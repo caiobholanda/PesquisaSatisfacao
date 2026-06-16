@@ -2950,8 +2950,10 @@ document.getElementById('btn-qb-nova-esc')?.addEventListener('click', async () =
 // Helper: POST/PUT/DELETE com JSON, retorna {ok, ...}.
 async function apiSend(method, url, body) {
   const headers = { 'Content-Type': 'application/json' };
-  const tok = sessionStorage.getItem('granspa_token');
-  if (tok) headers['Authorization'] = 'Bearer ' + JSON.parse(tok);
+  // O token é armazenado como string pura (não JSON-encoded). Usar o
+  // helper token() pra reaproveitar a mesma lógica de api().
+  const tok = token();
+  if (tok) headers['Authorization'] = 'Bearer ' + tok;
   const opts = { method, headers, credentials: 'include' };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const r = await fetch(url, opts);
