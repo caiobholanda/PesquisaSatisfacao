@@ -4013,15 +4013,48 @@ async function _anamAddSecao() {
   const titulo = document.getElementById('anam-nova-secao-titulo')?.value.trim();
   if (!chave) return showToast('Informe a chave da seção');
   if (!titulo) return showToast('Informe o título da seção');
+  showToast('Traduzindo título para os 7 idiomas…');
   try {
+    const trMap = await (async () => {
+      try {
+        const r = await api('/api/qualidade/admin/traduzir', {
+          method: 'POST',
+          body: JSON.stringify({ texto: titulo, idiomas: ['pt-PT','en','es','fr','it','de'] }),
+        });
+        if (!r) return null;
+        const d = await r.json();
+        return d?.ok ? d.traducoes : null;
+      } catch { return null; }
+    })();
+    const traducoes = { 'pt-BR': titulo };
+    if (trMap) for (const [k, v] of Object.entries(trMap)) traducoes[k] = v;
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
-      chave, ordem: 99, traducoes: { 'pt-BR': { titulo } },
+      chave, ordem: 99, traducoes,
     });
-    showToast('Seção criada');
+    showToast('Seção criada (traduzida em 7 idiomas)');
     document.getElementById('anam-nova-secao-chave').value = '';
     document.getElementById('anam-nova-secao-titulo').value = '';
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+// Pede ao backend as traduções pt-BR → 6 idiomas e devolve o mapa
+// { idioma: { rotulo: '...' } } pronto para gravar via /admin/perguntas.
+async function _anamTraduzirRotulo(rotuloPtBR) {
+  try {
+    const r = await api('/api/qualidade/admin/traduzir', {
+      method: 'POST',
+      body: JSON.stringify({ texto: rotuloPtBR, idiomas: ['pt-PT','en','es','fr','it','de'] }),
+    });
+    if (!r) return null;
+    const d = await r.json();
+    if (!d?.ok || !d.traducoes) return null;
+    const out = { 'pt-BR': { rotulo: rotuloPtBR } };
+    for (const [idioma, texto] of Object.entries(d.traducoes)) {
+      out[idioma] = { rotulo: texto };
+    }
+    return out;
+  } catch { return null; }
 }
 
 async function _anamAddPergunta(secaoId) {
@@ -4033,16 +4066,18 @@ async function _anamAddPergunta(secaoId) {
   const tipo   = tipoSel?.value || 'texto_livre';
   if (!chave) return showToast('Informe a chave da pergunta');
   if (!rotulo) return showToast('Informe o rótulo (texto exibido ao cliente)');
+  showToast('Traduzindo automaticamente para os 7 idiomas…');
   try {
-    // 1) Cria pergunta na biblioteca
+    const traducoes = await _anamTraduzirRotulo(rotulo) || { 'pt-BR': { rotulo } };
+    // 1) Cria pergunta na biblioteca já com TODAS as traduções
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes: { 'pt-BR': { rotulo } }
+      chave, tipo, traducoes,
     });
     // 2) Associa à pesquisa, na seção informada
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
     });
-    showToast('Pergunta criada');
+    showToast('Pergunta criada (traduzida em 7 idiomas)');
     if (chaveInp)  chaveInp.value = '';
     if (rotuloInp) rotuloInp.value = '';
     initAnamneseEditor();
@@ -4065,12 +4100,14 @@ async function _anamEditPergunta(chave) {
   const novoTipo = prompt('Tipo (texto_livre, unica, multipla, escala):', p.tipo);
   if (novoTipo === null) return;
   if (!_ANAM_TIPOS.find(t => t.value === novoTipo)) return showToast('Tipo inválido');
+  showToast('Traduzindo para os 7 idiomas…');
   try {
+    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim()) || { 'pt-BR': { rotulo: novoRotulo.trim() } };
     await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, {
       tipo: novoTipo,
-      traducoes: { 'pt-BR': { rotulo: novoRotulo.trim() } },
+      traducoes,
     });
-    showToast('Pergunta atualizada');
+    showToast('Pergunta atualizada (traduzida em 7 idiomas)');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
@@ -4133,12 +4170,28 @@ async function _anamEditSecao(secaoId) {
   if (novoTit === null) return;
   const novaOrdem = prompt('Ordem (número inteiro):', String(sec.ordem));
   if (novaOrdem === null) return;
+  showToast('Traduzindo título para os 7 idiomas…');
   try {
+    // Traduz título pt-BR → 6 idiomas. Estrutura para pesquisa_secao_traducao:
+    // { idioma: 'titulo string' } (não objeto).
+    const trMap = await (async () => {
+      try {
+        const r = await api('/api/qualidade/admin/traduzir', {
+          method: 'POST',
+          body: JSON.stringify({ texto: novoTit.trim(), idiomas: ['pt-PT','en','es','fr','it','de'] }),
+        });
+        if (!r) return null;
+        const d = await r.json();
+        return d?.ok ? d.traducoes : null;
+      } catch { return null; }
+    })();
+    const traducoes = { 'pt-BR': novoTit.trim() };
+    if (trMap) for (const [k, v] of Object.entries(trMap)) traducoes[k] = v;
     await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, {
       ordem: parseInt(novaOrdem) || 0,
-      traducoes: { 'pt-BR': { titulo: novoTit.trim() } },
+      traducoes,
     });
-    showToast('Seção atualizada');
+    showToast('Seção atualizada (traduzida em 7 idiomas)');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireSatisfacao, requireWrite } from '../middleware/auth.js';
 import { statsFeedback } from '../db.js';
+import { traduzirParaTodos } from '../utils/traduzir.js';
 import {
   buscarPesquisaPublicada,
   buscarPesquisaPublicadaPorApp,
@@ -164,6 +165,19 @@ router.post('/admin/metas/questionario', writeChain, (req, res) => {
 });
 router.delete('/admin/metas/:tipo/:id', writeChain, (req, res) => {
   removerMeta(req.params.tipo, parseInt(req.params.id)); res.json({ ok: true });
+});
+
+// Tradução automática pt-BR → demais idiomas (anamnese)
+router.post('/admin/traduzir', requireAuth, requireSatisfacao, async (req, res) => {
+  const texto = (req.body?.texto || '').toString();
+  const idiomas = Array.isArray(req.body?.idiomas) ? req.body.idiomas : null;
+  if (!texto.trim()) return res.json({ ok: true, traducoes: {} });
+  try {
+    const traducoes = await traduzirParaTodos(texto, idiomas);
+    res.json({ ok: true, traducoes });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // Opções de pergunta (tipos 'unica'/'multipla' sem escala)
