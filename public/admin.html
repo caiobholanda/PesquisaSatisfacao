@@ -2312,6 +2312,7 @@
         <div class="admin-dropdown-menu" id="admin-dropdown-menu">
           <button class="dropdown-item" id="btn-open-relatorios">Relatórios</button>
           <button class="dropdown-item" id="btn-open-qualidade">Gestão da Qualidade</button>
+          <button class="dropdown-item" id="btn-open-anamnese-editor">Editor de Anamnese</button>
           <button class="dropdown-item" id="btn-open-clientes">Clientes 360</button>
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
@@ -3016,6 +3017,36 @@
     </div>
 
     <!-- ── VIEW: Usuários ── -->
+    <!-- ── VIEW: Editor da Anamnese (Formulário Pré-Massagem) ── -->
+    <div id="view-anamnese-editor" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-anamnese-editor">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Admin</span>
+            <h1 class="page-title">Editor da Anamnese</h1>
+          </div>
+          <p class="page-sub">Perguntas do Formulário Pré-Massagem (spa-anamnese-v1). Mudanças se aplicam no próximo formulário preenchido pelo cliente.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-anam-reload" style="margin-left:auto">↻ Recarregar</button>
+      </div>
+
+      <div id="anam-empty" class="empty" style="display:none;margin:2rem 0">
+        Carregando estrutura da anamnese…
+      </div>
+
+      <div id="anam-secoes"></div>
+
+      <div style="margin-top:2rem;padding:1rem;border:1px dashed var(--border);border-radius:6px">
+        <h3 style="margin:0 0 .6rem 0;font-family:Cormorant Garamond,serif;font-size:1.1rem">Adicionar nova seção</h3>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <input id="anam-nova-secao-chave" placeholder="chave (ex: medicamentos)" style="padding:.5rem;border:1px solid var(--border);background:var(--bg);font-size:.85rem;min-width:200px">
+          <input id="anam-nova-secao-titulo" placeholder="Título pt-BR" style="padding:.5rem;border:1px solid var(--border);background:var(--bg);font-size:.85rem;flex:1;min-width:240px">
+          <button class="btn btn-primary btn-sm" id="btn-anam-add-secao">+ Adicionar seção</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── VIEW: Histórico do Sistema (Auditoria) ── -->
     <div id="view-auditoria" class="view-page" style="display:none">
       <div class="page-hero">

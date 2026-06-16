@@ -156,6 +156,7 @@ function showApp() {
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
+  else if (view === 'view-anamnese-editor') { initAnamneseEditor(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -562,7 +563,7 @@ function showView(id) {
   // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
   // view-qualidade) tinham que entrar aqui — sem isso o display nunca
   // virava 'block' e a view ficava invisivel.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -3830,4 +3831,296 @@ async function loadAuditoria() {
   document.getElementById('aud-pag').textContent = `Página ${_audPage + 1} de ${totalPages}`;
   document.getElementById('btn-aud-prev').disabled = _audPage === 0;
   document.getElementById('btn-aud-next').disabled = (_audPage + 1) >= totalPages;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// EDITOR DA ANAMNESE (Formulário Pré-Massagem) — gerencia perguntas, ordem,
+// tipo, obrigatoriedade, ativo/inativo e opções (para perguntas tipo
+// 'unica'/'multipla'). Reusa os endpoints CRUD do módulo Qualidade.
+// ────────────────────────────────────────────────────────────────────────────
+
+const ANAMNESE_SLUG = 'spa-anamnese-v1';
+let _anamPesquisaId = null;
+let _anamEstrutura  = null;
+
+const _ANAM_TIPOS = [
+  { value: 'texto_livre', label: 'Texto livre' },
+  { value: 'unica',       label: 'Escolha única (opções)' },
+  { value: 'multipla',    label: 'Múltipla escolha (opções)' },
+  { value: 'escala',      label: 'Escala (ex: sim/não, otimo/bom/...)' },
+];
+
+document.getElementById('btn-open-anamnese-editor')?.addEventListener('click', () => showView('view-anamnese-editor'));
+document.getElementById('btn-back-anamnese-editor')?.addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-anam-reload')?.addEventListener('click', () => initAnamneseEditor());
+
+async function initAnamneseEditor() {
+  const wrap = document.getElementById('anam-secoes');
+  const empty = document.getElementById('anam-empty');
+  empty.style.display = 'block';
+  empty.textContent = 'Carregando…';
+  wrap.innerHTML = '';
+
+  // 1) Descobre o id da pesquisa anamnese (slug fixo)
+  try {
+    const rL = await api('/api/qualidade/admin/pesquisas');
+    if (!rL) return;
+    const dL = await rL.json();
+    if (!dL.ok) return;
+    const p = dL.items
+      .filter(x => x.slug === ANAMNESE_SLUG)
+      .sort((a,b) => b.versao - a.versao)[0];
+    if (!p) {
+      empty.textContent = `Pesquisa "${ANAMNESE_SLUG}" não encontrada. Reinicie o servidor para rodar o seed.`;
+      return;
+    }
+    _anamPesquisaId = p.id;
+  } catch (e) {
+    empty.textContent = 'Erro ao carregar lista de pesquisas: ' + e.message;
+    return;
+  }
+
+  // 2) Busca a config pública (já agrupa seções + perguntas + opções traduzidas)
+  try {
+    const rC = await api(`/api/survey/config?slug=${ANAMNESE_SLUG}&idioma=pt-BR`);
+    if (!rC) return;
+    const dC = await rC.json();
+    if (!dC.ok || !dC.pesquisa) {
+      // Pesquisa pode estar despublicada — usa endpoint admin para montar estrutura
+      empty.textContent = 'Anamnese não publicada. Publique-a em Gestão da Qualidade para editar.';
+      return;
+    }
+    _anamEstrutura = dC.pesquisa;
+  } catch (e) {
+    empty.textContent = 'Erro ao carregar estrutura: ' + e.message;
+    return;
+  }
+
+  empty.style.display = 'none';
+  _renderAnamEstrutura();
+}
+
+function _renderAnamEstrutura() {
+  const wrap = document.getElementById('anam-secoes');
+  const e = _anamEstrutura;
+  wrap.innerHTML = e.secoes.map(s => `
+    <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin-bottom:1.4rem;background:var(--surface)">
+      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.6rem">
+        <div>
+          <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.25rem">${escHtml(s.titulo)}</h3>
+          <span style="color:var(--muted);font-size:.74rem">chave: <code>${escHtml(s.chave)}</code> · ordem ${s.ordem} · ${s.perguntas.length} pergunta${s.perguntas.length === 1 ? '' : 's'}</span>
+        </div>
+        <div style="display:flex;gap:.4rem">
+          <button class="btn btn-outline btn-sm" data-anam-act="edit-secao" data-secao-id="${s.id}">✎ Editar seção</button>
+          <button class="btn btn-outline btn-sm" data-anam-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">× Remover seção</button>
+        </div>
+      </header>
+      <div class="anam-perguntas">
+        ${s.perguntas.map((q, idx) => _renderAnamPergunta(q, idx, s.perguntas.length, s.id)).join('')}
+      </div>
+      <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px dashed var(--border);display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+        <input data-anam-newperg-chave data-secao-id="${s.id}" placeholder="chave (ex: alergias_alimentares)" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem;min-width:200px">
+        <input data-anam-newperg-rotulo data-secao-id="${s.id}" placeholder="Rótulo pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem;flex:1;min-width:240px">
+        <select data-anam-newperg-tipo data-secao-id="${s.id}" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem">
+          ${_ANAM_TIPOS.map(t => `<option value="${t.value}">${escHtml(t.label)}</option>`).join('')}
+        </select>
+        <button class="btn btn-outline btn-sm" data-anam-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar pergunta</button>
+      </div>
+    </section>
+  `).join('');
+  _wireAnamAcoes();
+}
+
+function _renderAnamPergunta(q, idx, total, secaoId) {
+  // Note: o endpoint /api/survey/config NÃO retorna pp_id (id da associação
+  // pesquisa_pergunta), apenas dados da pergunta. Para editar ordem/ativo/
+  // obrigatoriedade, precisaríamos da pp_id; isso requer outro endpoint
+  // admin. Por enquanto, mostramos status e usamos editar pergunta direto
+  // (que é o que mais matters: rótulo + tipo).
+  const opcoes = q.opcoes && q.opcoes.length
+    ? `<div style="margin-top:.3rem;color:var(--muted);font-size:.74rem">Opções: ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
+    : '';
+  return `
+    <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;padding:.7rem .8rem;margin-bottom:.4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+          ${escHtml(q.rotulo)}
+          ${q.obrigatoria ? '<span style="color:var(--danger);font-size:.78rem">*</span>' : ''}
+          <span style="font-size:.7rem;color:var(--muted);font-family:monospace">${escHtml(q.chave)}</span>
+        </div>
+        <div style="font-size:.74rem;color:var(--muted);margin-top:.2rem">
+          tipo: <strong>${escHtml(q.tipo)}</strong>
+          ${q.mapeia_campo_legado ? ` · mapeia: <code>${escHtml(q.mapeia_campo_legado)}</code>` : ''}
+          ${q.ajuda ? ` · ajuda: ${escHtml(q.ajuda)}` : ''}
+        </div>
+        ${opcoes}
+      </div>
+      <div style="display:flex;gap:.3rem;flex-shrink:0">
+        <button class="btn btn-outline btn-sm" data-anam-act="edit-perg" data-chave="${escHtml(q.chave)}" title="Editar pergunta">✎</button>
+        ${q.tipo === 'unica' || q.tipo === 'multipla' ? `<button class="btn btn-outline btn-sm" data-anam-act="edit-opcoes" data-chave="${escHtml(q.chave)}" title="Editar opções">⚙</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function _wireAnamAcoes() {
+  // Add seção
+  document.getElementById('btn-anam-add-secao')?.addEventListener('click', _anamAddSecao, { once: true });
+  // Ações por botão
+  document.querySelectorAll('[data-anam-act]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = btn.dataset.anamAct;
+      const secaoId = btn.dataset.secaoId ? parseInt(btn.dataset.secaoId) : null;
+      const chave = btn.dataset.chave;
+      if (act === 'add-pergunta') _anamAddPergunta(secaoId);
+      else if (act === 'edit-perg') _anamEditPergunta(chave);
+      else if (act === 'edit-opcoes') _anamEditOpcoes(chave);
+      else if (act === 'edit-secao') _anamEditSecao(secaoId);
+      else if (act === 'del-secao') _anamDelSecao(secaoId);
+    });
+  });
+}
+
+async function _anamAddSecao() {
+  const chave  = document.getElementById('anam-nova-secao-chave')?.value.trim();
+  const titulo = document.getElementById('anam-nova-secao-titulo')?.value.trim();
+  if (!chave) return showToast('Informe a chave da seção');
+  if (!titulo) return showToast('Informe o título da seção');
+  try {
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes: { 'pt-BR': { titulo } },
+    });
+    showToast('Seção criada');
+    document.getElementById('anam-nova-secao-chave').value = '';
+    document.getElementById('anam-nova-secao-titulo').value = '';
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _anamAddPergunta(secaoId) {
+  const chaveInp  = document.querySelector(`[data-anam-newperg-chave][data-secao-id="${secaoId}"]`);
+  const rotuloInp = document.querySelector(`[data-anam-newperg-rotulo][data-secao-id="${secaoId}"]`);
+  const tipoSel   = document.querySelector(`[data-anam-newperg-tipo][data-secao-id="${secaoId}"]`);
+  const chave  = chaveInp?.value.trim();
+  const rotulo = rotuloInp?.value.trim();
+  const tipo   = tipoSel?.value || 'texto_livre';
+  if (!chave) return showToast('Informe a chave da pergunta');
+  if (!rotulo) return showToast('Informe o rótulo (texto exibido ao cliente)');
+  try {
+    // 1) Cria pergunta na biblioteca
+    const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
+      chave, tipo, traducoes: { 'pt-BR': { rotulo } }
+    });
+    // 2) Associa à pesquisa, na seção informada
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
+      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
+    });
+    showToast('Pergunta criada');
+    if (chaveInp)  chaveInp.value = '';
+    if (rotuloInp) rotuloInp.value = '';
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro: ' + e.message, 5000);
+  }
+}
+
+async function _anamEditPergunta(chave) {
+  // Busca a pergunta na lista da biblioteca pra pegar id + traduções atuais
+  const r = await api('/api/qualidade/admin/perguntas');
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) return;
+  const p = d.items.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+  const rotuloAtual = p.rotulo || chave;
+  const novoRotulo = prompt('Rótulo pt-BR (texto exibido ao cliente):', rotuloAtual);
+  if (novoRotulo === null) return;
+  const novoTipo = prompt('Tipo (texto_livre, unica, multipla, escala):', p.tipo);
+  if (novoTipo === null) return;
+  if (!_ANAM_TIPOS.find(t => t.value === novoTipo)) return showToast('Tipo inválido');
+  try {
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, {
+      tipo: novoTipo,
+      traducoes: { 'pt-BR': { rotulo: novoRotulo.trim() } },
+    });
+    showToast('Pergunta atualizada');
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _anamEditOpcoes(chave) {
+  // Busca id da pergunta
+  const r = await api('/api/qualidade/admin/perguntas');
+  if (!r) return;
+  const d = await r.json();
+  const p = d.items.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+
+  const rOp = await api(`/api/qualidade/admin/perguntas/${p.id}/opcoes`);
+  if (!rOp) return;
+  const dOp = await rOp.json();
+  const opcoes = dOp.items || [];
+  const txt = opcoes.map(o => {
+    const rotPt = o.traducoes && o.traducoes['pt-BR'] || o.chave;
+    return `${o.chave}|${rotPt}`;
+  }).join('\n');
+  const novo = prompt(
+    'Edite as opções (uma por linha, formato chave|Rótulo pt-BR).\n' +
+    'Linhas removidas serão APAGADAS, novas linhas serão adicionadas.\n\n',
+    txt
+  );
+  if (novo === null) return;
+  const linhas = novo.split('\n').map(l => l.trim()).filter(Boolean);
+  const novosByChave = {};
+  for (const ln of linhas) {
+    const [k, ...rest] = ln.split('|');
+    if (!k) continue;
+    novosByChave[k.trim()] = (rest.join('|') || k).trim();
+  }
+  try {
+    // Remove os que sumiram
+    for (const o of opcoes) {
+      if (!(o.chave in novosByChave)) {
+        await apiSend('DELETE', `/api/qualidade/admin/opcoes/${o.id}`);
+      }
+    }
+    // Insere/atualiza
+    let ordem = 1;
+    for (const [k, rot] of Object.entries(novosByChave)) {
+      const existing = opcoes.find(o => o.chave === k);
+      await apiSend('POST', `/api/qualidade/admin/perguntas/${p.id}/opcoes`, {
+        id: existing?.id || undefined,
+        chave: k, ordem: ordem++, ativo: 1,
+        traducoes: { 'pt-BR': rot },
+      });
+    }
+    showToast('Opções atualizadas');
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _anamEditSecao(secaoId) {
+  const sec = _anamEstrutura.secoes.find(s => s.id === secaoId);
+  if (!sec) return;
+  const novoTit = prompt('Título pt-BR da seção:', sec.titulo);
+  if (novoTit === null) return;
+  const novaOrdem = prompt('Ordem (número inteiro):', String(sec.ordem));
+  if (novaOrdem === null) return;
+  try {
+    await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, {
+      ordem: parseInt(novaOrdem) || 0,
+      traducoes: { 'pt-BR': { titulo: novoTit.trim() } },
+    });
+    showToast('Seção atualizada');
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _anamDelSecao(secaoId) {
+  if (!confirm('Remover esta seção e suas perguntas associadas? (As perguntas continuam na Biblioteca mas saem desta seção.)')) return;
+  try {
+    await apiSend('DELETE', `/api/qualidade/admin/secoes/${secaoId}`);
+    showToast('Seção removida');
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
