@@ -81,7 +81,18 @@ async function api(url, opts = {}) {
       credentials: 'include',
     });
     if (res.status === 401) { logout(); return null; }
-    if (res.status === 403) { showToast('Acesso restrito a administradores master.', 4000); return null; }
+    if (res.status === 403) {
+      // Mostra a mensagem REAL do servidor (não uma genérica) — ajuda a
+      // diferenciar "perfil read-only" de "rota master-only" etc.
+      let msg = 'Sem permissão para esta ação.';
+      try {
+        const clone = res.clone();
+        const d = await clone.json();
+        if (d && d.error) msg = d.error;
+      } catch {}
+      showToast(msg, 5000);
+      return null;
+    }
     return res;
   } catch (e) {
     if (e.name === 'AbortError') return null;

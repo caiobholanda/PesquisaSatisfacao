@@ -225,22 +225,25 @@ app.get('/sso', (req, res) => {
   try {
     const payload = jwt.verify(sso_token, process.env.SSO_SECRET);
     const email = (payload.email || '').trim().toLowerCase();
-    // Fonte de verdade: site_roles['pesquisa-satisfacao'] no JWT do Hub.
-    // Valores possiveis: master, admin (read-only), spa, satisfacao.
-    // Fallback em cadeia:
-    //   1) site_roles  → role granular do Hub
-    //   2) sites_admin → 'admin' (cookie de admin sem distincao de papel)
-    //   3) allowlist local SPA_ADMIN_EMAILS → 'master' (compat com TI)
+    // Cadeia de decisão do role (ordem importa):
+    //   1) Allowlist local SPA_ADMIN_EMAILS → 'master' (TI) — PRIORIDADE TOTAL.
+    //      Garante que a equipe de TI nunca fique trancada fora do sistema,
+    //      mesmo que o Hub baixe a permissão por acidente.
+    //   2) site_roles['pesquisa-satisfacao'] do Hub → role granular.
+    //   3) sites_admin do Hub → 'admin' (read-only).
+    //   4) fallback → 'user' (sem cookie de admin, só público).
     let role;
-    const siteRole = payload.site_roles && payload.site_roles['pesquisa-satisfacao'];
-    if (siteRole && ['master', 'admin', 'spa', 'satisfacao'].includes(siteRole)) {
-      role = siteRole;
-    } else if (Array.isArray(payload.sites_admin) && payload.sites_admin.includes('pesquisa-satisfacao')) {
-      role = 'admin';
-    } else if (SPA_ADMIN_EMAILS.includes(email)) {
+    if (SPA_ADMIN_EMAILS.includes(email)) {
       role = 'master';
     } else {
-      role = 'user';
+      const siteRole = payload.site_roles && payload.site_roles['pesquisa-satisfacao'];
+      if (siteRole && ['master', 'admin', 'spa', 'satisfacao'].includes(siteRole)) {
+        role = siteRole;
+      } else if (Array.isArray(payload.sites_admin) && payload.sites_admin.includes('pesquisa-satisfacao')) {
+        role = 'admin';
+      } else {
+        role = 'user';
+      }
     }
     const isAdmin = role !== 'user';
     const token = jwt.sign(
