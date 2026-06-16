@@ -355,6 +355,13 @@ export function initDb() {
       criado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_cliente_produto_cli ON cliente_produto(cliente_id, data_compra);
+
+    -- Flags do sistema (controle de seeds e migrações pontuais).
+    CREATE TABLE IF NOT EXISTS system_meta (
+      chave TEXT PRIMARY KEY,
+      valor TEXT,
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // Vínculos cliente_id/cpf adicionados de forma idempotente.
@@ -598,6 +605,13 @@ export function atualizarTipoMassagem(id, nome, duracao_min, preco, ativo, descr
 // ── Seed: tratamentos do Gran Spa by L'Occitane ──
 function seedTratamentosGranSpa() {
   const db = getDb();
+  // Se a tabela system_meta marca este seed como concluído, NÃO re-popular.
+  // Caso o admin tenha zerado a base intencionalmente, a flag impede o
+  // restart de recriar os tratamentos default.
+  try {
+    const flag = db.prepare("SELECT valor FROM system_meta WHERE chave='tipos_massagem_seeded'").get();
+    if (flag) return;
+  } catch {}
   const exists = nome => db.prepare('SELECT id FROM tipos_massagem WHERE nome = ?').get(nome);
   const insert = (nome, duracao_min, preco, descricao, opts = {}) => {
     if (exists(nome)) return exists(nome).id;
@@ -648,6 +662,10 @@ function seedTratamentosGranSpa() {
        VALUES (?, ?, ?, ?, 'combo', 'Combo', ?, 1)`
     ).run(c.nome, c.desc, c.duracao, c.preco, JSON.stringify([ida, idb]));
   }
+  // Marca o seed como concluído para não re-rodar em restarts futuros.
+  try {
+    db.prepare("INSERT OR REPLACE INTO system_meta (chave, valor) VALUES ('tipos_massagem_seeded','1')").run();
+  } catch {}
 }
 export function deletarTipoMassagem(id) {
   return getDb().prepare('DELETE FROM tipos_massagem WHERE id=?').run(id).changes;
