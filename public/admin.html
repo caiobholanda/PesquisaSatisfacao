@@ -2932,8 +2932,11 @@
         <aside style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
           <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
             <input id="cli-q" placeholder="Nome, CPF, e-mail…" style="flex:1;padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.9rem">
-            <button class="btn btn-primary btn-sm" id="btn-cli-novo" title="Novo cliente">+</button>
           </div>
+          <p style="margin:0 0 .8rem 0;font-size:.74rem;color:var(--muted);line-height:1.4">
+            Esta tela é somente leitura. Novos clientes são criados automaticamente
+            ao salvar uma reserva com CPF inédito.
+          </p>
           <div id="cli-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:60vh;overflow:auto">
             <div class="empty" style="font-size:.85rem">Comece digitando.</div>
           </div>
@@ -3122,6 +3125,12 @@
 
       <!-- ── Campos Pessoa 1 ── -->
       <div id="res-pessoa1-wrap" class="res-pessoa1-wrap">
+        <!-- CPF primeiro: se já existir cadastro, autofill dos demais campos. -->
+        <div class="res-fg" id="res-fg-cpf">
+          <label>CPF <span style="color:var(--danger)">*</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0">— informe primeiro para autopreencher dados já cadastrados</span></label>
+          <input type="text" id="res-inp-cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off" inputmode="numeric">
+          <small id="res-cpf-info" style="display:none;font-size:.78rem;margin-top:.3rem"></small>
+        </div>
         <div class="res-fg">
           <label>Tipo de cliente <span style="color:var(--danger)">*</span></label>
           <div class="res-tipo-grid">
@@ -3141,18 +3150,13 @@
         </div>
         <div class="res-frow">
           <div class="res-fg">
-            <label>CPF <span style="color:var(--muted);font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0">(opcional, traz dados se já cadastrado)</span></label>
-            <input type="text" id="res-inp-cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off">
-            <small id="res-cpf-info" style="display:none;font-size:.72rem;color:var(--success);margin-top:.25rem"></small>
-          </div>
-          <div class="res-fg">
             <label>E-mail <span style="color:var(--danger)">*</span></label>
             <input type="email" id="res-inp-email" placeholder="email@exemplo.com">
           </div>
-        </div>
-        <div class="res-fg">
-          <label>Telefone</label>
-          <input type="text" id="res-inp-tel" placeholder="(85) 99999-9999">
+          <div class="res-fg">
+            <label>Telefone</label>
+            <input type="text" id="res-inp-tel" placeholder="(85) 99999-9999">
+          </div>
         </div>
         <div class="res-fg">
           <label>Tratamento</label>

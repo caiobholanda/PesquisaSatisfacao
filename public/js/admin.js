@@ -1823,7 +1823,8 @@ function calOpenModal(salaId, data, hora) {
   loadMassagistasModal();
   const flt = document.getElementById('res-flt-bilingue');
   if (flt) flt.checked = false;
-  setTimeout(()=>document.getElementById('res-inp-nome').focus(),50);
+  // CPF é o primeiro campo: foca para que, se já cadastrado, o autofill rode.
+  setTimeout(()=>document.getElementById('res-inp-cpf')?.focus(),50);
 }
 window.calOpenModal=calOpenModal;
 
@@ -2269,6 +2270,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   err.textContent='';
   const sala=_resSala;
   const tipo=_resTipo;
+  const cpfInpVal = (document.getElementById('res-inp-cpf')?.value || '').replace(/\D/g, '');
   const nome=document.getElementById('res-inp-nome').value.trim();
   const apto=document.getElementById('res-inp-apto').value.trim();
   const email=document.getElementById('res-inp-email').value.trim();
@@ -2277,6 +2279,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const data=document.getElementById('res-inp-data').value;
   const horaInicio=document.getElementById('res-inp-hora-inicio').value;
   if(!sala){err.textContent='Selecione uma sala.';return;}
+  if(!cpfInpVal){err.textContent='Informe o CPF do cliente (obrigatório).';document.getElementById('res-inp-cpf')?.focus();return;}
+  if(!validarCpfMod11(cpfInpVal)){err.textContent='CPF inválido.';document.getElementById('res-inp-cpf')?.focus();return;}
   if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
   if(!nome){err.textContent='Informe o nome do cliente.';return;}
   if(!email){err.textContent='Informe o e-mail.';return;}
@@ -2340,15 +2344,12 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const btn=document.getElementById('btn-res-salvar');
   btn.disabled=true;
   try{
-    const cpfRaw = (document.getElementById('res-inp-cpf')?.value || '').replace(/\D/g, '');
-    if (cpfRaw && !validarCpfMod11?.(cpfRaw)) {
-      err.textContent = 'CPF inválido.'; btn.disabled = false; return;
-    }
+    // cpfInpVal já validado mais acima (obrigatório + módulo-11)
     const body = {
       sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data,
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
-      cpf: cpfRaw || null,
+      cpf: cpfInpVal,
     };
     if (_isCasal()) {
       Object.assign(body, {
@@ -3218,7 +3219,8 @@ function initClienteView() {
     inp.oninput = debounce(loadClientesLista, 250);
     loadClientesLista();
   }
-  document.getElementById('btn-cli-novo')?.addEventListener('click', criarClienteNovo, { once: true });
+  // Tela Clientes 360 é somente leitura — criação acontece ao salvar reserva
+  // com CPF inédito. Botões + Novo / Editar foram removidos a pedido.
 }
 
 function debounce(fn, ms) {
@@ -3292,17 +3294,14 @@ async function selectCliente(id) {
 function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produtos }) {
   const det = document.getElementById('cli-detail');
   det.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
-      <div>
-        <h2 style="margin:0 0 .3rem 0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
-          ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
-          ${c.email ? `<span>✉ ${escHtml(c.email)}</span>` : ''}
-          ${c.telefone ? `<span>☎ ${escHtml(c.telefone)}</span>` : ''}
-          ${c.locale_pref ? `<span>🌐 ${escHtml(c.locale_pref)}</span>` : ''}
-        </div>
+    <div style="margin-bottom:1rem">
+      <h2 style="margin:0 0 .3rem 0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
+        ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
+        ${c.email ? `<span>✉ ${escHtml(c.email)}</span>` : ''}
+        ${c.telefone ? `<span>☎ ${escHtml(c.telefone)}</span>` : ''}
+        ${c.locale_pref ? `<span>🌐 ${escHtml(c.locale_pref)}</span>` : ''}
       </div>
-      <button class="btn btn-outline btn-sm" id="btn-cli-edit">Editar</button>
     </div>
 
     <!-- abas -->
@@ -3327,7 +3326,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
     det.querySelectorAll('.cli-pane').forEach(p => p.style.display = 'none');
     document.getElementById('cli-pane-' + t).style.display = '';
   }));
-  document.getElementById('btn-cli-edit')?.addEventListener('click', () => editarCliente(c));
+  // Botão "Editar" removido — tela é somente leitura.
   // Wire up botões dos produtos
   document.getElementById('btn-prod-add')?.addEventListener('click', () => adicionarProduto(c.id));
   det.querySelectorAll('button[data-prod-del]').forEach(b =>

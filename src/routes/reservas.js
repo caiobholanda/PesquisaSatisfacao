@@ -72,24 +72,26 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   try {
     const criado_por = (() => { const a = req.user?.sub ? buscarAdminById(req.user.sub) : null; return a?.nome || a?.username || req.user?.username || null; })();
 
-    // Módulo 1+3: se vier CPF válido, garante registro em clientes e vincula
+    // CPF é OBRIGATÓRIO: toda reserva precisa estar vinculada ao cadastro
+    // central de clientes. Se o CPF não existir ainda, criamos o cliente.
     let clienteIdReserva = null;
     const cpfNorm = (cpf || '').toString().replace(/\D/g, '');
-    if (cpfNorm) {
-      if (!validarCpfMod11(cpfNorm)) {
-        return res.status(400).json({ ok: false, error: 'CPF inválido' });
-      }
-      const existing = buscarClientePorCpf(cpfNorm);
-      if (existing) {
-        clienteIdReserva = existing.id;
-      } else {
-        clienteIdReserva = inserirCliente({
-          cpf: cpfNorm,
-          nome: cliente.trim(),
-          email: email.trim() || null,
-          telefone: telefone?.trim() || null,
-        });
-      }
+    if (!cpfNorm) {
+      return res.status(400).json({ ok: false, error: 'CPF do cliente é obrigatório' });
+    }
+    if (!validarCpfMod11(cpfNorm)) {
+      return res.status(400).json({ ok: false, error: 'CPF inválido' });
+    }
+    const existing = buscarClientePorCpf(cpfNorm);
+    if (existing) {
+      clienteIdReserva = existing.id;
+    } else {
+      clienteIdReserva = inserirCliente({
+        cpf: cpfNorm,
+        nome: cliente.trim(),
+        email: email.trim() || null,
+        telefone: telefone?.trim() || null,
+      });
     }
 
     const id = inserirReserva(
