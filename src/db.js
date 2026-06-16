@@ -362,6 +362,29 @@ export function initDb() {
       valor TEXT,
       atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Auditoria: log de TODAS as ações que modificam o sistema. Alimentado
+    -- automaticamente por middleware em qualquer POST/PUT/DELETE, mais
+    -- eventos explícitos de login/logout.
+    CREATE TABLE IF NOT EXISTS auditoria (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      ator_username TEXT,
+      ator_role TEXT,
+      ator_ip TEXT,
+      metodo TEXT,
+      rota TEXT,
+      acao TEXT,
+      recurso TEXT,
+      recurso_id TEXT,
+      status INTEGER,
+      detalhes TEXT,
+      sucesso INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_auditoria_data    ON auditoria(criado_em DESC);
+    CREATE INDEX IF NOT EXISTS idx_auditoria_ator    ON auditoria(ator_username);
+    CREATE INDEX IF NOT EXISTS idx_auditoria_recurso ON auditoria(recurso, recurso_id);
+    CREATE INDEX IF NOT EXISTS idx_auditoria_acao    ON auditoria(acao);
   `);
 
   // Vínculos cliente_id/cpf adicionados de forma idempotente.
@@ -1148,4 +1171,56 @@ export function atualizarProdutoCliente(id, { produto_nome, categoria, valor, da
 export function removerProdutoCliente(id) {
   getDb().prepare('DELETE FROM cliente_produto WHERE id=?').run(id);
   return true;
+}
+
+// ── Auditoria ─────────────────────────────────────────────────────────────
+export function logAuditoria(evt) {
+  try {
+    getDb().prepare(`
+      INSERT INTO auditoria
+        (ator_username, ator_role, ator_ip, metodo, rota, acao, recurso, recurso_id, status, detalhes, sucesso)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      evt.ator_username || null,
+      evt.ator_role || null,
+      evt.ator_ip || null,
+      evt.metodo || null,
+      evt.rota || null,
+      evt.acao || null,
+      evt.recurso || null,
+      evt.recurso_id != null ? String(evt.recurso_id) : null,
+      evt.status ?? null,
+      evt.detalhes || null,
+      evt.sucesso ? 1 : 0,
+    );
+  } catch (e) {
+    // Auditoria nunca pode derrubar uma operação real.
+    console.error('[auditoria] falha ao gravar:', e.message);
+  }
+}
+
+export function listarAuditoria({ from, to, ator, acao, recurso, sucesso, limit = 100, offset = 0 } = {}) {
+  const db = getDb();
+  const where = [], args = [];
+  if (from)    { where.push("criado_em >= ?"); args.push(from + ' 00:00:00'); }
+  if (to)      { where.push("criado_em <= ?"); args.push(to + ' 23:59:59'); }
+  if (ator)    { where.push("ator_username LIKE ?"); args.push('%' + ator.toLowerCase() + '%'); }
+  if (acao)    { where.push("acao LIKE ?");     args.push('%' + acao + '%'); }
+  if (recurso) { where.push("recurso = ?");     args.push(recurso); }
+  if (sucesso === '1' || sucesso === 1 || sucesso === true)  { where.push("sucesso = 1"); }
+  if (sucesso === '0' || sucesso === 0 || sucesso === false) { where.push("sucesso = 0"); }
+  const sqlWhere = where.length ? ('WHERE ' + where.join(' AND ')) : '';
+  const items = db.prepare(`
+    SELECT id, criado_em, ator_username, ator_role, ator_ip, metodo, rota, acao,
+           recurso, recurso_id, status, detalhes, sucesso
+    FROM auditoria ${sqlWhere}
+    ORDER BY criado_em DESC, id DESC
+    LIMIT ? OFFSET ?
+  `).all(...args, limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM auditoria ${sqlWhere}`).get(...args).n;
+  return { items, total };
+}
+
+export function listarRecursosAuditoria() {
+  return getDb().prepare("SELECT DISTINCT recurso FROM auditoria WHERE recurso IS NOT NULL ORDER BY recurso").all().map(r => r.recurso);
 }

@@ -113,6 +113,7 @@ function showApp() {
   else if (view === 'view-relatorio-mensal') { loadRelatorioMensal(); }
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
+  else if (view === 'view-auditoria') { initAuditoriaView(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -519,7 +520,7 @@ function showView(id) {
   // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
   // view-qualidade) tinham que entrar aqui — sem isso o display nunca
   // virava 'block' e a view ficava invisivel.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -3482,3 +3483,175 @@ async function adicionarProduto(cliId) {
     } catch {}
   });
 })();
+
+// ────────────────────────────────────────────────────────────────────────────
+// HISTÓRICO DO SISTEMA (auditoria) — master only.
+// Lista todas as ações que modificam estado, com filtros por período,
+// quem fez, recurso e status. Acessível via botão na tela de Usuários.
+// ────────────────────────────────────────────────────────────────────────────
+
+const _AUD_RECURSO_LABEL = {
+  reservas: 'Reservas',
+  feedback: 'Pesquisas',
+  auth: 'Login',
+  clientes: 'Clientes',
+  qualidade: 'Qualidade',
+  survey: 'Qualidade',
+  spa: 'Anamnese',
+  massagistas: 'Massoterapeutas',
+  'tipos-massagem': 'Tratamentos',
+  dev: 'Dev',
+  outro: 'Outro',
+};
+const _AUD_ACAO_LABEL = {
+  criar_reservas: 'Criou reserva',
+  remover_reservas: 'Cancelou reserva',
+  atualizar_reservas: 'Atualizou reserva',
+  liberar_pesquisa: 'Liberou pesquisa',
+  gerar_ficha_anamnese: 'Gerou link de anamnese',
+  salvar_anamnese: 'Cliente preencheu anamnese',
+  criar_feedback: 'Cliente respondeu pesquisa',
+  login: 'Login (form local)',
+  login_sso: 'Login via Hub',
+  criar_clientes: 'Criou cliente',
+  atualizar_clientes: 'Editou cliente',
+  criar_massagistas: 'Cadastrou massoterapeuta',
+  atualizar_massagistas: 'Editou massoterapeuta',
+  remover_massagistas: 'Removeu massoterapeuta',
+  'criar_tipos-massagem': 'Criou tratamento',
+  'atualizar_tipos-massagem': 'Editou tratamento',
+  'remover_tipos-massagem': 'Removeu tratamento',
+  criar_qualidade: 'Criou em Qualidade',
+  atualizar_qualidade: 'Editou em Qualidade',
+  remover_qualidade: 'Removeu em Qualidade',
+  publicar_pesquisa: 'Publicou pesquisa',
+  despublicar_pesquisa: 'Despublicou pesquisa',
+  clonar_pesquisa: 'Clonou pesquisa',
+  criar_auth: 'Criou usuário admin',
+  atualizar_auth: 'Editou usuário admin',
+  remover_auth: 'Removeu usuário admin',
+  reset_demo: 'Reset/demo executado',
+};
+
+let _audPage = 0;
+const _audLimit = 50;
+let _audTotal = 0;
+
+document.getElementById('btn-open-auditoria')?.addEventListener('click', () => {
+  showView('view-auditoria');
+});
+document.getElementById('btn-back-auditoria')?.addEventListener('click', () => {
+  showView('view-usuarios');
+});
+document.getElementById('btn-aud-reload')?.addEventListener('click', () => loadAuditoria());
+document.getElementById('btn-aud-filtrar')?.addEventListener('click', () => { _audPage = 0; loadAuditoria(); });
+document.getElementById('btn-aud-limpar')?.addEventListener('click', () => {
+  ['aud-from','aud-to','aud-ator','aud-acao'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  document.getElementById('aud-recurso').value = '';
+  document.getElementById('aud-sucesso').value = '';
+  _audPage = 0;
+  loadAuditoria();
+});
+document.getElementById('btn-aud-prev')?.addEventListener('click', () => { if (_audPage > 0) { _audPage--; loadAuditoria(); } });
+document.getElementById('btn-aud-next')?.addEventListener('click', () => {
+  if ((_audPage + 1) * _audLimit < _audTotal) { _audPage++; loadAuditoria(); }
+});
+
+let _audRecursosCarregados = false;
+async function initAuditoriaView() {
+  if (!_audRecursosCarregados) {
+    try {
+      const r = await api('/api/auditoria/recursos');
+      if (r) {
+        const d = await r.json();
+        if (d.ok) {
+          const sel = document.getElementById('aud-recurso');
+          for (const rec of d.items) {
+            const opt = document.createElement('option');
+            opt.value = rec;
+            opt.textContent = _AUD_RECURSO_LABEL[rec] || rec;
+            sel.appendChild(opt);
+          }
+        }
+      }
+    } catch {}
+    _audRecursosCarregados = true;
+  }
+  _audPage = 0;
+  loadAuditoria();
+}
+
+function _fmtDataHora(s) {
+  // s vem como "YYYY-MM-DD HH:MM:SS" do SQLite (datetime('now') é UTC).
+  // Convertemos para a hora local de Fortaleza p/ apresentação.
+  if (!s) return '—';
+  const d = new Date(s.replace(' ', 'T') + 'Z');
+  if (isNaN(d.getTime())) return s;
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Fortaleza',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).format(d).replace(',', '');
+}
+
+async function loadAuditoria() {
+  const params = new URLSearchParams();
+  const from = document.getElementById('aud-from')?.value;
+  const to   = document.getElementById('aud-to')?.value;
+  const ator = document.getElementById('aud-ator')?.value.trim();
+  const recurso = document.getElementById('aud-recurso')?.value;
+  const acao = document.getElementById('aud-acao')?.value.trim();
+  const sucesso = document.getElementById('aud-sucesso')?.value;
+  if (from) params.set('from', from);
+  if (to)   params.set('to', to);
+  if (ator) params.set('ator', ator);
+  if (recurso) params.set('recurso', recurso);
+  if (acao) params.set('acao', acao);
+  if (sucesso !== '') params.set('sucesso', sucesso);
+  params.set('limit', _audLimit);
+  params.set('offset', _audPage * _audLimit);
+
+  let d;
+  try {
+    const r = await api('/api/auditoria?' + params);
+    if (!r) return;
+    d = await r.json();
+  } catch (e) { return; }
+  if (!d.ok) { showToast('Erro ao carregar histórico'); return; }
+  _audTotal = d.total;
+  const body = document.getElementById('aud-body');
+  const empty = document.getElementById('aud-empty');
+  const count = document.getElementById('aud-count');
+  count.textContent = d.total ? `${d.total} evento${d.total === 1 ? '' : 's'}` : '';
+  if (!d.items.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    body.innerHTML = d.items.map(e => {
+      const ator = e.ator_username || '— (público)';
+      const role = e.ator_role ? `<small style="color:var(--muted)"> · ${escHtml(e.ator_role)}</small>` : '';
+      const recLabel = _AUD_RECURSO_LABEL[e.recurso] || e.recurso || '—';
+      const acaoLabel = _AUD_ACAO_LABEL[e.acao] || e.acao || `${e.metodo} ${e.rota}`;
+      const statusBadge = e.sucesso
+        ? `<span style="color:var(--success);font-weight:600">${e.status}</span>`
+        : `<span style="color:var(--danger);font-weight:600">${e.status}</span>`;
+      const det = e.detalhes
+        ? `<details><summary style="cursor:pointer;color:var(--muted);font-size:.78rem">ver</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:.72rem;color:var(--muted);margin:.3rem 0 0 0;max-width:380px">${escHtml(e.detalhes)}</pre></details>`
+        : '<span style="color:var(--muted)">—</span>';
+      return `<tr>
+        <td style="white-space:nowrap;font-variant-numeric:tabular-nums;font-size:.82rem">${_fmtDataHora(e.criado_em)}</td>
+        <td style="font-size:.85rem">${escHtml(ator)}${role}<br><small style="color:var(--muted);font-size:.7rem">${escHtml(e.ator_ip || '')}</small></td>
+        <td style="font-size:.85rem">${escHtml(acaoLabel)}<br><small style="color:var(--muted);font-size:.7rem"><code>${e.metodo} ${escHtml(e.rota || '')}</code></small></td>
+        <td><span class="badge">${escHtml(recLabel)}</span></td>
+        <td style="text-align:center;font-size:.85rem">${e.recurso_id ? '#' + escHtml(e.recurso_id) : '—'}</td>
+        <td style="text-align:center">${statusBadge}</td>
+        <td>${det}</td>
+      </tr>`;
+    }).join('');
+  }
+  const totalPages = Math.max(1, Math.ceil(d.total / _audLimit));
+  document.getElementById('aud-pag').textContent = `Página ${_audPage + 1} de ${totalPages}`;
+  document.getElementById('btn-aud-prev').disabled = _audPage === 0;
+  document.getElementById('btn-aud-next').disabled = (_audPage + 1) >= totalPages;
+}

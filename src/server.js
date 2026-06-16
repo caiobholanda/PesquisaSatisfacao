@@ -6,7 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -16,7 +16,9 @@ import spaRouter from './routes/spa.js';
 import relatoriosRouter from './routes/relatorios.js';
 import qualidadeRouter from './routes/qualidade.js';
 import clientesRouter from './routes/clientes.js';
+import auditoriaRouter from './routes/auditoria.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
+import { auditMiddleware } from './middleware/audit.js';
 
 const SPA_ADMIN_EMAILS = [
   'richard@granmarquise.com.br',
@@ -181,6 +183,10 @@ app.get('/api/survey/:token', (req, res, next) => {
   });
 });
 
+// Audit middleware: aplicado ANTES de QUALQUER router /api/*, para garantir
+// que todo POST/PUT/DELETE seja registrado no histórico do sistema.
+app.use('/api', auditMiddleware);
+
 app.use('/api/spa', spaRouter);
 app.use('/api/relatorios', relatoriosRouter);
 // Modulo Gestao da Qualidade / Pesquisas configuraveis. Publicas em
@@ -191,6 +197,7 @@ app.use('/api/qualidade', qualidadeRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/clientes', clientesRouter);
+app.use('/api/auditoria', auditoriaRouter);
 app.use('/api/reservas', reservasRouter);
 app.use('/api/dev', devRouter);
 app.use('/api', cadastrosRouter);
@@ -229,6 +236,16 @@ app.get('/sso', (req, res) => {
     );
     if (isAdmin) setAdminCookie(res, token, 28800);
     else setUserCookie(res, token, 28800);
+    // Auditoria: registra login SSO bem-sucedido
+    try {
+      const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim() || null;
+      logAuditoria({
+        ator_username: email, ator_role: role, ator_ip: ip,
+        metodo: 'GET', rota: '/sso', acao: 'login_sso',
+        recurso: 'auth', status: 200, sucesso: true,
+        detalhes: JSON.stringify({ via: 'hub' }),
+      });
+    } catch {}
     const defaultDest = isAdmin ? '/admin' : '/';
     let dest = next && /^\/[a-zA-Z0-9\-_/.~]*$/.test(next) ? next : defaultDest;
     if (themeOK) {

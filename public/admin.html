@@ -3016,6 +3016,85 @@
     </div>
 
     <!-- ── VIEW: Usuários ── -->
+    <!-- ── VIEW: Histórico do Sistema (Auditoria) ── -->
+    <div id="view-auditoria" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-auditoria">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Admin</span>
+            <h1 class="page-title">Histórico do Sistema</h1>
+          </div>
+          <p class="page-sub">Todas as ações registradas: quem fez, o quê, quando e em qual recurso.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-aud-reload" style="margin-left:auto">↻ Atualizar</button>
+      </div>
+
+      <div class="filters" style="flex-wrap:wrap;gap:.6rem;margin-bottom:1rem">
+        <div class="filter-group">
+          <label>De</label>
+          <input type="date" id="aud-from">
+        </div>
+        <div class="filter-group">
+          <label>Até</label>
+          <input type="date" id="aud-to">
+        </div>
+        <div class="filter-group">
+          <label>Quem (usuário)</label>
+          <input type="text" id="aud-ator" placeholder="email ou parte dele">
+        </div>
+        <div class="filter-group">
+          <label>Recurso</label>
+          <select id="aud-recurso">
+            <option value="">— todos —</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Ação</label>
+          <input type="text" id="aud-acao" placeholder="ex: criar, atualizar, login">
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="aud-sucesso">
+            <option value="">— todos —</option>
+            <option value="1">Sucesso</option>
+            <option value="0">Falha</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-gold btn-sm" id="btn-aud-filtrar">Filtrar</button>
+          <button class="btn btn-outline btn-sm" id="btn-aud-limpar">Limpar</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2>Eventos</h2>
+          <span id="aud-count" style="color:var(--muted);font-size:.85rem"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="white-space:nowrap">Quando</th>
+              <th>Quem</th>
+              <th>Ação</th>
+              <th>Recurso</th>
+              <th style="text-align:center">ID</th>
+              <th style="text-align:center">Status</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="aud-body"></tbody>
+        </table>
+        <div id="aud-empty" class="empty" style="display:none">Nenhum evento no período/filtro.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-top:1px solid var(--border)">
+          <button class="btn btn-outline btn-sm" id="btn-aud-prev">← Anteriores</button>
+          <span id="aud-pag" style="font-size:.78rem;color:var(--muted)"></span>
+          <button class="btn btn-outline btn-sm" id="btn-aud-next">Próximos →</button>
+        </div>
+      </div>
+    </div>
+
     <div id="view-usuarios" class="view-page" style="display:none">
       <div class="page-hero">
         <button class="btn-back" id="btn-back-usuarios">← Voltar</button>
@@ -3026,6 +3105,10 @@
           </div>
           <p class="page-sub">Gerenciamento de usuários administrativos</p>
         </div>
+        <button class="btn btn-outline btn-sm" id="btn-open-auditoria" style="margin-left:auto" title="Ver tudo o que aconteceu no sistema">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:.3rem"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          Histórico do Sistema
+        </button>
       </div>
 
       <!-- Card: usuário logado -->
