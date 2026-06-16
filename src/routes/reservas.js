@@ -83,6 +83,24 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   if (fimMin > SPA_CLOSE_MIN)
     return res.status(400).json({ ok: false, error: 'O tratamento terminaria após o fechamento do spa às 22:00' });
 
+  // Bloqueia agendamento em data/hora passada (referência: America/Fortaleza).
+  try {
+    const nowFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+    const hojeFt = nowFt.getFullYear() + '-' +
+                   String(nowFt.getMonth()+1).padStart(2,'0') + '-' +
+                   String(nowFt.getDate()).padStart(2,'0');
+    if (data < hojeFt) {
+      return res.status(400).json({ ok: false, error: 'Não é possível agendar em data passada' });
+    }
+    if (data === hojeFt) {
+      const nowMin = nowFt.getHours()*60 + nowFt.getMinutes();
+      if (iniMin < nowMin) {
+        const hh = String(nowFt.getHours()).padStart(2,'0') + ':' + String(nowFt.getMinutes()).padStart(2,'0');
+        return res.status(400).json({ ok: false, error: `Horário no passado. Agora são ${hh} (Fortaleza)` });
+      }
+    }
+  } catch {}
+
   try {
     const criado_por = (() => { const a = req.user?.sub ? buscarAdminById(req.user.sub) : null; return a?.nome || a?.username || req.user?.username || null; })();
 

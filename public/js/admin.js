@@ -1868,6 +1868,11 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
   document.getElementById('res-tempo-val').textContent = 'selecione um tratamento';
   document.getElementById('res-extra-info').innerHTML = '';
+  // Bloqueia agendamento em data passada via attr min do input de data.
+  const _agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+  const _hojeFt = _agoraFt.getFullYear() + '-' + String(_agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(_agoraFt.getDate()).padStart(2,'0');
+  const dataInp = document.getElementById('res-inp-data');
+  if (dataInp) dataInp.min = _hojeFt;
   if(data) document.getElementById('res-inp-data').value=data;
   document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
   loadTratamentosModal();
@@ -2367,6 +2372,22 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     return;
   }
   if(!data){err.textContent='Informe a data.';return;}
+  // Bloqueia agendamento no passado. Comparação em hora de Fortaleza.
+  const _agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+  const _hojeYMD = _agora.getFullYear() + '-' + String(_agora.getMonth()+1).padStart(2,'0') + '-' + String(_agora.getDate()).padStart(2,'0');
+  if (data < _hojeYMD) {
+    err.textContent = 'Não é possível agendar em data passada.';
+    document.getElementById('res-inp-data')?.focus();
+    return;
+  }
+  if (data === _hojeYMD) {
+    const agoraHHMM = String(_agora.getHours()).padStart(2,'0') + ':' + String(_agora.getMinutes()).padStart(2,'0');
+    if (horaInicio < agoraHHMM) {
+      err.textContent = `Horário no passado. Agora são ${agoraHHMM} (Fortaleza) — agende a partir desse horário.`;
+      document.getElementById('res-inp-hora-inicio')?.focus();
+      return;
+    }
+  }
   const iniMinSub = calTimeMin(horaInicio);
   if (iniMinSub < CAL_H_START*60 || iniMinSub >= CAL_H_END*60) {
     err.textContent = `Hora de início fora do expediente do spa (${String(CAL_H_START).padStart(2,'0')}:00–${String(CAL_H_END).padStart(2,'0')}:00).`;
@@ -3601,6 +3622,43 @@ async function adicionarProduto(cliId) {
     } catch {}
   });
 })();
+
+// ────────────────────────────────────────────────────────────────────────────
+// Máscara automática do TELEFONE na Nova Reserva.
+// BR: (DD) 9 NNNN-NNNN (celular) ou (DD) NNNN-NNNN (fixo).
+// Internacional: se começar com '+', NÃO formata — preserva como digitado.
+// ────────────────────────────────────────────────────────────────────────────
+function _formatarTelefoneBR(raw) {
+  if (!raw) return '';
+  // Internacional: deixa o usuário digitar livremente.
+  if (raw.trim().startsWith('+')) return raw;
+  const d = raw.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2)  return '(' + d;
+  if (d.length <= 6)  return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+  if (d.length <= 7 && d.length === 7)  return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+  if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+  if (d.length === 11) return '(' + d.slice(0,2) + ') ' + d.slice(2,3) + ' ' + d.slice(3,7) + '-' + d.slice(7);
+  // Comprimento intermediário (digitando): formata progressivamente como celular
+  return '(' + d.slice(0,2) + ') ' + d.slice(2,3) + ' ' + d.slice(3,7) + (d.length > 7 ? '-' + d.slice(7) : '');
+}
+window._formatarTelefoneBR = _formatarTelefoneBR;
+
+(function wireUpReservaTelefone() {
+  const inp = document.getElementById('res-inp-tel');
+  if (!inp) return;
+  inp.addEventListener('input', function () {
+    const before = this.value;
+    const cursor = this.selectionStart;
+    // Preserva '+' inicial (internacional)
+    if (before.trim().startsWith('+')) return;
+    const formatted = _formatarTelefoneBR(before);
+    if (formatted === before) return;
+    this.value = formatted;
+    // Tenta reposicionar cursor no final (mais simples e previsível)
+    try { this.setSelectionRange(formatted.length, formatted.length); } catch {}
+  });
+}());
 
 // ────────────────────────────────────────────────────────────────────────────
 // HISTÓRICO DO SISTEMA (auditoria) — master only.
