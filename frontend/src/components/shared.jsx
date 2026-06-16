@@ -105,20 +105,21 @@ export function SectionHeading({ num, pt, en }) {
   );
 }
 
-export function ScaleBar() {
+export function ScaleBar({ i18n = null }) {
+  const ratingLabel = (key, fallback) => (i18n?.ratings?.[key]) || fallback;
   return (
     <div className="scale-bar">
       <div className="scale-bar-title">
         <span>Como você classifica:</span>
-        <span className="en" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>Your rating:</span>
+        {!i18n && <span className="en" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>Your rating:</span>}
       </div>
       <div className="scale-bar-legend">
         {RATINGS.map((r) => (
           <div key={r.key} className="scale-legend-item">
             <Smiley type={r.type} size={30} color="#FFFFFF" />
             <div className="scale-legend-label">
-              <span>{r.pt}</span>
-              <span className="en" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10.5 }}>{r.en}</span>
+              <span>{ratingLabel(r.key, r.pt)}</span>
+              {!i18n && <span className="en" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10.5 }}>{r.en}</span>}
             </div>
           </div>
         ))}

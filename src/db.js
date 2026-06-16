@@ -848,7 +848,7 @@ export function criarSurveyToken(reservaId) {
 export function buscarSurveyTokenAtivo() {
   return getDb().prepare(`
     SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
-           r.tipo_cliente, r.quarto, m.nome AS massagista_nome
+           r.tipo_cliente, r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
     LEFT JOIN massagistas m ON m.id = r.massagista_id
@@ -942,7 +942,7 @@ export function countSessoesSemPesquisa() {
 export function buscarSurveyToken(token) {
   return getDb().prepare(`
     SELECT st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
-           r.quarto, m.nome AS massagista_nome
+           r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
     LEFT JOIN massagistas m ON m.id = r.massagista_id

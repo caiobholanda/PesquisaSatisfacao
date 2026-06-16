@@ -158,6 +158,7 @@ app.get('/api/survey/live', (_req, res) => {
       liberada_em: row.liberada_em,
       quarto: row.quarto || null,
       gran_class: quartoNum ? isGranClass(quartoNum) : false,
+      idioma: row.idioma || 'pt-BR',
     },
   });
 });
@@ -184,6 +185,7 @@ app.get('/api/survey/:token', (req, res, next) => {
       liberada_em: row.liberada_em,
       quarto: row.quarto || null,
       gran_class: quartoNum ? isGranClass(quartoNum) : false,
+      idioma: row.idioma || 'pt-BR',
     },
   });
 });

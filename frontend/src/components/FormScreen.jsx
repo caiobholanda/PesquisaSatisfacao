@@ -14,7 +14,15 @@ function FieldErr({ msg }) {
 
 const TIME_LIMIT = 15 * 60 * 1000;
 
-export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout }) {
+export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null }) {
+  // Quando a reserva está num idioma diferente de pt-BR, sobrescrevemos os
+  // rótulos das perguntas e os nomes das classificações com o que veio do
+  // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
+  const tr = (id, fallback) => (i18n?.labels?.[id]) || fallback;
+  const trRating = (key, fallback) => (i18n?.ratings?.[key]) || fallback;
+  const services = SERVICES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n ? '' : s.en }));
+  const facilities = FACILITIES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n ? '' : s.en }));
+
   const [loading,   setLoading]   = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [massagistasOpts, setMassagistasOpts] = useState([]);
@@ -283,25 +291,25 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
         </section>
 
         <section ref={secRefs[0]} className="enter" style={{ animationDelay: '270ms' }}>
-          <SectionHeading num="1" pt="Serviços" en="Services" />
-          <ScaleBar />
+          <SectionHeading num="1" pt={i18n?.sectionTitles?.servicos || 'Serviços'} en={i18n ? '' : 'Services'} />
+          <ScaleBar i18n={i18n} />
           <div className="rating-list">
-            {SERVICES.map((q) => (
+            {services.map((q) => (
               <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
             ))}
           </div>
           <div className="field comment-field">
-            <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en="Additional comments and suggestions:" />
+            <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en={i18n ? '' : 'Additional comments and suggestions:'} />
             <AutoTextarea id="f-com-serv" value={comentarioServicos} onChange={setComentarioServicos} placeholder="Opcional..." />
             <span className="fill"></span>
           </div>
         </section>
 
         <section ref={secRefs[1]} className="enter">
-          <SectionHeading num="2" pt="Instalações" en="Facilities" />
-          <ScaleBar />
+          <SectionHeading num="2" pt={i18n?.sectionTitles?.instalacoes || 'Instalações'} en={i18n ? '' : 'Facilities'} />
+          <ScaleBar i18n={i18n} />
           <div className="rating-list">
-            {FACILITIES.map((q) => (
+            {facilities.map((q) => (
               <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
             ))}
           </div>

@@ -3,13 +3,53 @@ import WelcomeScreen      from './components/WelcomeScreen.jsx';
 import FormScreen         from './components/FormScreen.jsx';
 import ConfirmationScreen from './components/ConfirmationScreen.jsx';
 
+// Mapa chave da pergunta no banco → id local hardcoded usado em
+// shared.jsx/FormScreen.jsx. Permite sobrescrever rótulos dinamicamente.
+const _MAP_CHAVE_ID = {
+  servicos_expectativa:    's0',
+  servicos_explicacao:     's1',
+  servicos_atitude:        's2',
+  servicos_tecnica:        's3',
+  instalacoes_conforto:    'f0',
+  instalacoes_organizacao: 'f1',
+  instalacoes_conveniencia:'f2',
+};
+
 export default function App() {
   const [screen,       setScreen]       = useState('welcome');
   const [visible,      setVisible]      = useState(true);
   const [tokenData,    setTokenData]    = useState(null);
   const [tokenChecked, setTokenChecked] = useState(false);
   const [formStart,    setFormStart]    = useState(null);
+  const [i18n,         setI18n]         = useState(null);
   const pollRef = useRef(null);
+
+  // Busca config da pesquisa no idioma da reserva e monta o mapa de
+  // rótulos para sobrescrever os hardcoded.
+  const carregarI18n = useCallback(async (idioma) => {
+    const lang = idioma && idioma !== 'pt-BR' ? idioma : null;
+    if (!lang) { setI18n(null); return; }
+    try {
+      const r = await fetch('/api/survey/config?slug=spa-locc-v1&idioma=' + encodeURIComponent(lang));
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d?.ok || !d.pesquisa) return;
+      const labels = {};         // { s0: 'Your expectations.', ... }
+      const ratings = {};        // { otimo: 'Excellent', bom: 'Good', ... }
+      const sectionTitles = {};  // { servicos: 'Services', ... }
+      for (const sec of d.pesquisa.secoes || []) {
+        if (sec.chave) sectionTitles[sec.chave] = sec.titulo;
+        for (const q of sec.perguntas || []) {
+          const id = _MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave];
+          if (id) labels[id] = q.rotulo;
+          if (Array.isArray(q.opcoes)) {
+            for (const o of q.opcoes) if (o.chave && o.rotulo) ratings[o.chave] = o.rotulo;
+          }
+        }
+      }
+      setI18n({ lang, labels, ratings, sectionTitles });
+    } catch {}
+  }, []);
 
   const startPolling = useCallback(() => {
     clearInterval(pollRef.current);
@@ -19,12 +59,13 @@ export default function App() {
         .then(d => {
           if (d?.ok) {
             setTokenData(d.dados);
+            carregarI18n(d.dados?.idioma);
             clearInterval(pollRef.current);
           }
         })
         .catch(() => {});
     }, 4000);
-  }, []);
+  }, [carregarI18n]);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token');
@@ -32,7 +73,7 @@ export default function App() {
     if (token) {
       fetch(`/api/survey/${encodeURIComponent(token)}`)
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.ok) setTokenData(d.dados); })
+        .then(d => { if (d?.ok) { setTokenData(d.dados); carregarI18n(d.dados?.idioma); } })
         .catch(() => {})
         .finally(() => setTokenChecked(true));
       return;
@@ -41,7 +82,7 @@ export default function App() {
     setTokenChecked(true);
     startPolling();
     return () => clearInterval(pollRef.current);
-  }, [startPolling]);
+  }, [startPolling, carregarI18n]);
 
   useEffect(() => {
     if (screen !== 'welcome') clearInterval(pollRef.current);
@@ -68,9 +109,9 @@ export default function App() {
 
   return (
     <div className="app-root">
-      {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} />}
-      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} />}
-      {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} />}
+      {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
+      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} />}
+      {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
     </div>
   );
 }
