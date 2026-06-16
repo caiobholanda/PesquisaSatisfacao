@@ -7,8 +7,22 @@
 import { getDb } from './db.js';
 
 // ── Seed idempotente: re-rodar e' seguro ───────────────────────────────────
+// Flag system_meta 'pesquisas_seeded' impede re-seed após reset manual.
+function _seedJaConcluido(db) {
+  try {
+    const f = db.prepare("SELECT valor FROM system_meta WHERE chave='pesquisas_seeded'").get();
+    return !!f;
+  } catch { return false; }
+}
+function _marcarSeedConcluido(db) {
+  try {
+    db.prepare("INSERT OR REPLACE INTO system_meta (chave, valor) VALUES ('pesquisas_seeded','1')").run();
+  } catch {}
+}
+
 export function seedQualidadeSpa() {
   const db = getDb();
+  if (_seedJaConcluido(db)) return false;
   const existe = db.prepare("SELECT 1 FROM pesquisa WHERE slug='spa-locc-v1'").get();
   if (existe) return false;
 
@@ -127,6 +141,7 @@ export function seedQualidadeSpa() {
   }
   db.prepare("INSERT INTO meta_questionario (pesquisa_id, tipo_meta, valor_alvo) VALUES (?, 'pct_recomenda', 90)").run(pesquisaId);
 
+  _marcarSeedConcluido(db);
   return true;
 }
 
@@ -136,6 +151,7 @@ export function seedQualidadeSpa() {
 // ordem/ativacao via UI sem mexer no formulario que o cliente abre.
 export function seedAnamneseSpa() {
   const db = getDb();
+  if (_seedJaConcluido(db)) return false;
   const existe = db.prepare("SELECT 1 FROM pesquisa WHERE slug='spa-anamnese-v1'").get();
   if (existe) return false;
 
@@ -225,6 +241,7 @@ export function seedAnamneseSpa() {
     insPP.run(pId, pidQ, secaoIds[a.secao], a.ordem, a.obrigatoria);
   }
 
+  _marcarSeedConcluido(db);
   return true;
 }
 
