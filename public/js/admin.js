@@ -78,13 +78,10 @@ function aplicarRoleNaUI(role) {
     const el = document.getElementById(id);
     if (el) el.style.display = p.podeSpa ? '' : 'none';
   });
-  // Itens do dropdown Administrativo
+  // Itens do dropdown Administrativo (Relatórios concentra 3 sub-abas:
+  // Avaliações, Visão Mensal e Atendimentos — todas exigem podeSatisfacao).
   const btnRelat = document.getElementById('btn-open-relatorios');
   if (btnRelat) btnRelat.style.display = p.podeSatisfacao ? '' : 'none';
-  const btnHist = document.getElementById('btn-open-historico-clientes');
-  if (btnHist) btnHist.style.display = p.podeSatisfacao ? '' : 'none';
-  const btnRM = document.getElementById('btn-open-relatorio-mensal');
-  if (btnRM) btnRM.style.display = p.podeSatisfacao ? '' : 'none';
   const btnQL = document.getElementById('btn-open-qualidade');
   if (btnQL) btnQL.style.display = p.podeSatisfacao ? '' : 'none';
   const btnUsr = document.getElementById('btn-open-usuarios');
@@ -511,18 +508,9 @@ document.getElementById('btn-filtrar').addEventListener('click', () => {
   loadAll();
 });
 
-// ── Exportar CSV ──
-document.getElementById('btn-exportar').addEventListener('click', () => {
-  const params = new URLSearchParams({ format: 'csv' });
-  if (_filters.from) params.set('from', _filters.from);
-  if (_filters.to) params.set('to', _filters.to);
-  if (_filters.origem) params.set('origem', _filters.origem);
-  if (_filters.tipo) params.set('tipo_cliente', _filters.tipo);
-  const url = `/api/feedback?${params}`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.click();
-});
+// Botão "Exportar CSV" removido a pedido: relatórios consultados apenas
+// na tela. Endpoint /api/feedback?format=csv continua disponível pra uso
+// externo se necessário.
 
 function loadAll() { loadStats(); loadTable(); }
 
@@ -550,6 +538,48 @@ function showView(id) {
   // Mostra/esconde botão "Início" no header
   const homeBtn = document.getElementById('btn-header-home');
   if (homeBtn) homeBtn.style.display = (id === 'view-reservas') ? 'none' : '';
+  // Renderiza a barra de sub-abas de Relatórios quando uma das 3 views está
+  // ativa. Carrega os dados da view que acabou de ser ativada também.
+  renderTabsRelatorios(id);
+  if (id === 'view-relatorio-mensal') loadRelatorioMensal();
+  if (id === 'view-historico-clientes') loadHistoricoClientes();
+}
+
+// ── Sub-abas de Relatórios ──
+// Mantém 3 views fisicamente separadas no DOM (view-main, view-relatorio-mensal
+// e view-historico-clientes) mas apresenta uma barra de abas única no topo
+// para o usuário alternar entre elas como se fossem uma só página.
+const REL_TABS = [
+  { view: 'view-main',                 label: 'Avaliações' },
+  { view: 'view-relatorio-mensal',     label: 'Visão Mensal' },
+  { view: 'view-historico-clientes',   label: 'Atendimentos' },
+];
+
+function renderTabsRelatorios(viewAtual) {
+  // Remove barras antigas em todas as views
+  document.querySelectorAll('[data-rel-tabs]').forEach(el => el.remove());
+  const ehRel = REL_TABS.some(t => t.view === viewAtual);
+  if (!ehRel) return;
+  const host = document.getElementById(viewAtual);
+  if (!host) return;
+  const nav = document.createElement('nav');
+  nav.setAttribute('data-rel-tabs', '');
+  nav.style.cssText = 'display:flex;gap:0;margin:0 0 1.4rem 0;border-bottom:1px solid var(--border)';
+  nav.innerHTML = REL_TABS.map(t => {
+    const ativo = t.view === viewAtual;
+    return `<button class="rel-tab${ativo ? ' is-active' : ''}" data-rel-view="${t.view}" style="
+      padding:.7rem 1.3rem;background:none;border:none;cursor:pointer;
+      border-bottom:2px solid ${ativo ? 'var(--gold,#bf9a55)' : 'transparent'};
+      color:${ativo ? 'var(--text)' : 'var(--muted)'};
+      font-family:'Cormorant Garamond',Georgia,serif;font-size:1.08rem;
+      font-weight:${ativo ? '600' : '500'};letter-spacing:.015em;
+      transition:color .15s, border-color .15s;
+    ">${t.label}</button>`;
+  }).join('');
+  host.insertBefore(nav, host.firstChild);
+  nav.querySelectorAll('button[data-rel-view]').forEach(btn => {
+    btn.addEventListener('click', () => showView(btn.dataset.relView));
+  });
 }
 
 // ── Toast ──
@@ -2381,7 +2411,8 @@ document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekO
   window.addEventListener('focus', checar);
 })();
 document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
-document.getElementById('btn-open-relatorio-mensal')?.addEventListener('click', () => { showView('view-relatorio-mensal'); loadRelatorioMensal(); });
+// btn-open-relatorio-mensal foi removido da dropdown — agora é a sub-aba
+// "Visão Mensal" dentro de Relatórios (renderTabsRelatorios).
 document.getElementById('btn-back-relatorio-mensal')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-open-qualidade')?.addEventListener('click', () => { showView('view-qualidade'); loadQualidade(); });
 document.getElementById('btn-back-qualidade')?.addEventListener('click', () => showView('view-main'));
@@ -3047,8 +3078,8 @@ window.deletarUsuario = async (id, nome) => {
   loadUsuarios();
 };
 
-document.getElementById('btn-open-historico-clientes').addEventListener('click',()=>{showView('view-historico-clientes');loadHistoricoClientes();});
-document.getElementById('btn-back-historico-clientes').addEventListener('click',()=>showView('view-main'));
+// btn-open-historico-clientes removido — sub-aba "Atendimentos" em Relatórios.
+document.getElementById('btn-back-historico-clientes')?.addEventListener('click',()=>showView('view-main'));
 document.getElementById('btn-hc-filtrar').addEventListener('click',()=>loadHistoricoClientes());
 document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   document.getElementById('hc-from').value='';
@@ -3058,7 +3089,8 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   loadHistoricoClientes();
 });
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
-document.getElementById('btn-exportar-historico').addEventListener('click', exportarHistoricoCSV);
+// Botão "Exportar CSV" removido a pedido. Função exportarHistoricoCSV
+// mantida abaixo para uso futuro via console se necessário.
 
 let _hcPage = 0;
 const _hcLimit = 50;
