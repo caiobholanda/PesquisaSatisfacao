@@ -281,7 +281,14 @@ function montarConfigPesquisa(pesquisaId, idioma) {
       const trQ = db.prepare("SELECT rotulo, ajuda FROM pergunta_traducao WHERE pergunta_id=? AND idioma=?").get(q.pergunta_id, idioma);
       q.rotulo = trQ?.rotulo || q.chave;
       q.ajuda = trQ?.ajuda || null;
-      q.opcoes = q.escala_id ? montarOpcoesEscala(q.escala_id, idioma) : null;
+      if (q.escala_id) {
+        q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
+      } else if (q.tipo === 'unica' || q.tipo === 'multipla') {
+        q.opcoes = montarOpcoesPergunta(q.pergunta_id, idioma);
+        if (!q.opcoes.length) q.opcoes = null;
+      } else {
+        q.opcoes = null;
+      }
       delete q.pergunta_id;
     }
   }
@@ -295,6 +302,15 @@ function montarOpcoesEscala(escalaId, idioma) {
       COALESCE((SELECT rotulo FROM escala_opcao_traducao WHERE escala_opcao_id=eo.id AND idioma=?), eo.chave) AS rotulo
     FROM escala_opcao eo WHERE eo.escala_id=? ORDER BY eo.ordem
   `).all(idioma, escalaId);
+}
+
+function montarOpcoesPergunta(perguntaId, idioma) {
+  const db = getDb();
+  return db.prepare(`
+    SELECT po.chave, po.valor_numerico, po.ordem,
+      COALESCE((SELECT rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=po.id AND idioma=?), po.chave) AS rotulo
+    FROM pergunta_opcao po WHERE po.pergunta_id=? AND po.ativo=1 ORDER BY po.ordem
+  `).all(idioma, perguntaId);
 }
 
 // ── Submissao ─────────────────────────────────────────────────────────────
@@ -385,4 +401,406 @@ export function listarEscalas() {
     `).all(e.id);
   }
   return escalas;
+}
+
+// ── Admin: ESCRITAS (Módulo 4 - Central de Qualidade) ──────────────────────
+// Todas as funções abaixo são CRUD para a UI admin. Nada delas é chamada
+// pelo fluxo público — só pelas rotas /api/qualidade/admin/* protegidas.
+
+function _gravarTraducoesPesquisa(db, pesquisaId, traducoes) {
+  if (!traducoes || typeof traducoes !== 'object') return;
+  const upsert = db.prepare(`
+    INSERT INTO pesquisa_traducao (pesquisa_id, idioma, titulo, descricao) VALUES (?,?,?,?)
+    ON CONFLICT(pesquisa_id, idioma) DO UPDATE SET titulo=excluded.titulo, descricao=excluded.descricao
+  `);
+  for (const [idioma, t] of Object.entries(traducoes)) {
+    if (!idioma || !t) continue;
+    upsert.run(pesquisaId, idioma, t.titulo || '', t.descricao || null);
+  }
+}
+
+function _gravarTraducoesSecao(db, secaoId, traducoes) {
+  if (!traducoes) return;
+  const upsert = db.prepare(`
+    INSERT INTO pesquisa_secao_traducao (pesquisa_secao_id, idioma, titulo) VALUES (?,?,?)
+    ON CONFLICT(pesquisa_secao_id, idioma) DO UPDATE SET titulo=excluded.titulo
+  `);
+  for (const [idioma, t] of Object.entries(traducoes)) {
+    if (!idioma || !t) continue;
+    upsert.run(secaoId, idioma, typeof t === 'string' ? t : (t.titulo || ''));
+  }
+}
+
+function _gravarTraducoesPergunta(db, perguntaId, traducoes) {
+  if (!traducoes) return;
+  const upsert = db.prepare(`
+    INSERT INTO pergunta_traducao (pergunta_id, idioma, rotulo, ajuda) VALUES (?,?,?,?)
+    ON CONFLICT(pergunta_id, idioma) DO UPDATE SET rotulo=excluded.rotulo, ajuda=excluded.ajuda
+  `);
+  for (const [idioma, t] of Object.entries(traducoes)) {
+    if (!idioma || !t) continue;
+    if (typeof t === 'string') upsert.run(perguntaId, idioma, t, null);
+    else upsert.run(perguntaId, idioma, t.rotulo || '', t.ajuda || null);
+  }
+}
+
+export function criarPesquisa({ slug, titulo, descricao, app_escopo, versao, traducoes }) {
+  const db = getDb();
+  if (!slug || !titulo) throw new Error('slug e titulo obrigatorios');
+  const v = versao || 1;
+  const exists = db.prepare("SELECT 1 FROM pesquisa WHERE slug=? AND versao=?").get(slug, v);
+  if (exists) throw new Error('Pesquisa com este slug e versao ja existe');
+  const r = db.prepare(
+    "INSERT INTO pesquisa (slug, titulo, descricao, ativo, versao, app_escopo, publicada_em) VALUES (?,?,?,1,?,?,NULL)"
+  ).run(slug, titulo, descricao || null, v, app_escopo || 'spa');
+  const id = r.lastInsertRowid;
+  _gravarTraducoesPesquisa(db, id, traducoes || { 'pt-BR': { titulo, descricao } });
+  return id;
+}
+
+export function editarPesquisa(id, { titulo, descricao, app_escopo, ativo, traducoes }) {
+  const db = getDb();
+  const sets = [], args = [];
+  if (titulo !== undefined)     { sets.push('titulo=?');     args.push(titulo); }
+  if (descricao !== undefined)  { sets.push('descricao=?');  args.push(descricao); }
+  if (app_escopo !== undefined) { sets.push('app_escopo=?'); args.push(app_escopo); }
+  if (ativo !== undefined)      { sets.push('ativo=?');      args.push(ativo ? 1 : 0); }
+  if (sets.length) {
+    args.push(id);
+    db.prepare(`UPDATE pesquisa SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  }
+  if (traducoes) _gravarTraducoesPesquisa(db, id, traducoes);
+  return true;
+}
+
+export function publicarPesquisa(id) {
+  getDb().prepare("UPDATE pesquisa SET publicada_em=datetime('now') WHERE id=?").run(id);
+  return true;
+}
+
+export function despublicarPesquisa(id) {
+  getDb().prepare("UPDATE pesquisa SET publicada_em=NULL WHERE id=?").run(id);
+  return true;
+}
+
+// Clona uma pesquisa para outro app_escopo (ou nova versão do mesmo app).
+// Replica seções, associações pesquisa_pergunta, metas. Traduções da pesquisa
+// e das seções também são copiadas. A biblioteca de perguntas é compartilhada
+// (não duplicamos pergunta_satisfacao).
+export function clonarPesquisa(idOrigem, { novoSlug, novoAppEscopo, novaVersao }) {
+  const db = getDb();
+  const origem = db.prepare("SELECT * FROM pesquisa WHERE id=?").get(idOrigem);
+  if (!origem) throw new Error('Pesquisa de origem nao encontrada');
+  const slug = novoSlug || origem.slug;
+  const app = novoAppEscopo || origem.app_escopo;
+  // Próxima versão livre p/ esse slug
+  const maxV = db.prepare("SELECT MAX(versao) AS v FROM pesquisa WHERE slug=?").get(slug)?.v || 0;
+  const versao = novaVersao || (maxV + 1);
+  const tx = db.transaction(() => {
+    const r = db.prepare(
+      "INSERT INTO pesquisa (slug, titulo, descricao, ativo, versao, app_escopo, publicada_em) VALUES (?,?,?,1,?,?,NULL)"
+    ).run(slug, origem.titulo, origem.descricao, versao, app);
+    const novoId = r.lastInsertRowid;
+    // Traduções da pesquisa
+    const trs = db.prepare("SELECT idioma, titulo, descricao FROM pesquisa_traducao WHERE pesquisa_id=?").all(idOrigem);
+    const insT = db.prepare("INSERT OR IGNORE INTO pesquisa_traducao (pesquisa_id, idioma, titulo, descricao) VALUES (?,?,?,?)");
+    for (const t of trs) insT.run(novoId, t.idioma, t.titulo, t.descricao);
+    // Seções (mapeia secaoOrigem.id → secaoNova.id)
+    const secoes = db.prepare("SELECT id, chave, ordem, ativo FROM pesquisa_secao WHERE pesquisa_id=?").all(idOrigem);
+    const insS = db.prepare("INSERT INTO pesquisa_secao (pesquisa_id, chave, ordem, ativo) VALUES (?,?,?,?)");
+    const mapSecao = {};
+    for (const s of secoes) {
+      const rs = insS.run(novoId, s.chave, s.ordem, s.ativo);
+      mapSecao[s.id] = rs.lastInsertRowid;
+      const tsec = db.prepare("SELECT idioma, titulo FROM pesquisa_secao_traducao WHERE pesquisa_secao_id=?").all(s.id);
+      const insTS = db.prepare("INSERT OR IGNORE INTO pesquisa_secao_traducao (pesquisa_secao_id, idioma, titulo) VALUES (?,?,?)");
+      for (const t of tsec) insTS.run(mapSecao[s.id], t.idioma, t.titulo);
+    }
+    // Associações pesquisa_pergunta
+    const ass = db.prepare("SELECT pergunta_id, secao_id, ordem, ativo, obrigatoria FROM pesquisa_pergunta WHERE pesquisa_id=?").all(idOrigem);
+    const insPP = db.prepare("INSERT INTO pesquisa_pergunta (pesquisa_id, pergunta_id, secao_id, ordem, ativo, obrigatoria) VALUES (?,?,?,?,?,?)");
+    for (const a of ass) {
+      insPP.run(novoId, a.pergunta_id, mapSecao[a.secao_id] || null, a.ordem, a.ativo, a.obrigatoria);
+    }
+    // Metas
+    const mps = db.prepare("SELECT pergunta_id, tipo_meta, valor_alvo, valido_de, valido_ate FROM meta_pergunta WHERE pesquisa_id=?").all(idOrigem);
+    const insMP = db.prepare("INSERT INTO meta_pergunta (pesquisa_id, pergunta_id, tipo_meta, valor_alvo, valido_de, valido_ate) VALUES (?,?,?,?,?,?)");
+    for (const m of mps) insMP.run(novoId, m.pergunta_id, m.tipo_meta, m.valor_alvo, m.valido_de, m.valido_ate);
+    const mqs = db.prepare("SELECT tipo_meta, valor_alvo, valido_de, valido_ate FROM meta_questionario WHERE pesquisa_id=?").all(idOrigem);
+    const insMQ = db.prepare("INSERT INTO meta_questionario (pesquisa_id, tipo_meta, valor_alvo, valido_de, valido_ate) VALUES (?,?,?,?,?)");
+    for (const m of mqs) insMQ.run(novoId, m.tipo_meta, m.valor_alvo, m.valido_de, m.valido_ate);
+    return novoId;
+  });
+  return tx();
+}
+
+export function criarSecao(pesquisaId, { chave, ordem, ativo, traducoes }) {
+  const db = getDb();
+  if (!chave) throw new Error('chave obrigatoria');
+  const r = db.prepare("INSERT INTO pesquisa_secao (pesquisa_id, chave, ordem, ativo) VALUES (?,?,?,?)")
+    .run(pesquisaId, chave, ordem ?? 0, ativo === 0 ? 0 : 1);
+  const id = r.lastInsertRowid;
+  _gravarTraducoesSecao(db, id, traducoes || { 'pt-BR': { titulo: chave } });
+  return id;
+}
+
+export function editarSecao(id, { chave, ordem, ativo, traducoes }) {
+  const db = getDb();
+  const sets = [], args = [];
+  if (chave !== undefined) { sets.push('chave=?'); args.push(chave); }
+  if (ordem !== undefined) { sets.push('ordem=?'); args.push(ordem); }
+  if (ativo !== undefined) { sets.push('ativo=?'); args.push(ativo ? 1 : 0); }
+  if (sets.length) {
+    args.push(id);
+    db.prepare(`UPDATE pesquisa_secao SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  }
+  if (traducoes) _gravarTraducoesSecao(db, id, traducoes);
+  return true;
+}
+
+export function removerSecao(id) {
+  const db = getDb();
+  const tx = db.transaction(() => {
+    db.prepare("DELETE FROM pesquisa_pergunta WHERE secao_id=?").run(id);
+    db.prepare("DELETE FROM pesquisa_secao_traducao WHERE pesquisa_secao_id=?").run(id);
+    db.prepare("DELETE FROM pesquisa_secao WHERE id=?").run(id);
+  });
+  tx();
+  return true;
+}
+
+export function associarPergunta(pesquisaId, { pergunta_id, secao_id, ordem, obrigatoria, ativo }) {
+  const db = getDb();
+  if (!pergunta_id) throw new Error('pergunta_id obrigatoria');
+  const r = db.prepare(
+    "INSERT INTO pesquisa_pergunta (pesquisa_id, pergunta_id, secao_id, ordem, ativo, obrigatoria) VALUES (?,?,?,?,?,?)"
+  ).run(pesquisaId, pergunta_id, secao_id || null, ordem ?? 0, ativo === 0 ? 0 : 1, obrigatoria ? 1 : 0);
+  return r.lastInsertRowid;
+}
+
+export function editarAssociacaoPergunta(id, { secao_id, ordem, obrigatoria, ativo }) {
+  const db = getDb();
+  const sets = [], args = [];
+  if (secao_id !== undefined)    { sets.push('secao_id=?');    args.push(secao_id); }
+  if (ordem !== undefined)       { sets.push('ordem=?');       args.push(ordem); }
+  if (obrigatoria !== undefined) { sets.push('obrigatoria=?'); args.push(obrigatoria ? 1 : 0); }
+  if (ativo !== undefined)       { sets.push('ativo=?');       args.push(ativo ? 1 : 0); }
+  if (!sets.length) return false;
+  args.push(id);
+  db.prepare(`UPDATE pesquisa_pergunta SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  return true;
+}
+
+export function desassociarPergunta(id) {
+  getDb().prepare("DELETE FROM pesquisa_pergunta WHERE id=?").run(id);
+  return true;
+}
+
+export function criarPergunta({ chave, tipo, escala_id, mapeia_campo_legado, traducoes, ativo }) {
+  const db = getDb();
+  if (!chave || !tipo) throw new Error('chave e tipo obrigatorios');
+  const r = db.prepare(
+    "INSERT INTO pergunta_satisfacao (chave, tipo, escala_id, mapeia_campo_legado, ativo) VALUES (?,?,?,?,?)"
+  ).run(chave, tipo, escala_id || null, mapeia_campo_legado || null, ativo === 0 ? 0 : 1);
+  const id = r.lastInsertRowid;
+  _gravarTraducoesPergunta(db, id, traducoes || { 'pt-BR': { rotulo: chave } });
+  return id;
+}
+
+export function editarPergunta(id, { tipo, escala_id, mapeia_campo_legado, ativo, traducoes }) {
+  const db = getDb();
+  const sets = [], args = [];
+  if (tipo !== undefined)                { sets.push('tipo=?');                args.push(tipo); }
+  if (escala_id !== undefined)           { sets.push('escala_id=?');           args.push(escala_id); }
+  if (mapeia_campo_legado !== undefined) { sets.push('mapeia_campo_legado=?'); args.push(mapeia_campo_legado); }
+  if (ativo !== undefined)               { sets.push('ativo=?');               args.push(ativo ? 1 : 0); }
+  if (sets.length) {
+    args.push(id);
+    db.prepare(`UPDATE pergunta_satisfacao SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  }
+  if (traducoes) _gravarTraducoesPergunta(db, id, traducoes);
+  return true;
+}
+
+export function criarEscala({ chave, tipo, opcoes }) {
+  const db = getDb();
+  if (!chave) throw new Error('chave obrigatoria');
+  const tx = db.transaction(() => {
+    db.prepare("INSERT INTO escala (chave, tipo) VALUES (?,?)").run(chave, tipo || chave);
+    const escalaId = db.prepare("SELECT id FROM escala WHERE chave=?").get(chave).id;
+    if (Array.isArray(opcoes)) {
+      const insOp = db.prepare("INSERT INTO escala_opcao (escala_id, chave, valor_numerico, polaridade, ordem) VALUES (?,?,?,?,?)");
+      const insTr = db.prepare("INSERT INTO escala_opcao_traducao (escala_opcao_id, idioma, rotulo) VALUES (?,?,?)");
+      let i = 1;
+      for (const o of opcoes) {
+        if (!o.chave) continue;
+        insOp.run(escalaId, o.chave, o.valor_numerico ?? null, o.polaridade || 'neutral', o.ordem ?? i++);
+        const opId = db.prepare("SELECT id FROM escala_opcao WHERE escala_id=? AND chave=?").get(escalaId, o.chave).id;
+        if (o.traducoes) {
+          for (const [idioma, rotulo] of Object.entries(o.traducoes)) insTr.run(opId, idioma, rotulo);
+        } else {
+          insTr.run(opId, 'pt-BR', o.rotulo || o.chave);
+        }
+      }
+    }
+    return escalaId;
+  });
+  return tx();
+}
+
+export function salvarMetaPergunta({ pesquisa_id, pergunta_id, tipo_meta, valor_alvo, valido_de, valido_ate }) {
+  const db = getDb();
+  // upsert: 1 meta por (pesquisa, pergunta, tipo_meta)
+  const existing = db.prepare(
+    "SELECT id FROM meta_pergunta WHERE pesquisa_id=? AND pergunta_id=? AND tipo_meta=?"
+  ).get(pesquisa_id, pergunta_id, tipo_meta);
+  if (existing) {
+    db.prepare("UPDATE meta_pergunta SET valor_alvo=?, valido_de=?, valido_ate=? WHERE id=?")
+      .run(valor_alvo, valido_de || null, valido_ate || null, existing.id);
+    return existing.id;
+  }
+  const r = db.prepare(
+    "INSERT INTO meta_pergunta (pesquisa_id, pergunta_id, tipo_meta, valor_alvo, valido_de, valido_ate) VALUES (?,?,?,?,?,?)"
+  ).run(pesquisa_id, pergunta_id, tipo_meta, valor_alvo, valido_de || null, valido_ate || null);
+  return r.lastInsertRowid;
+}
+
+export function salvarMetaQuestionario({ pesquisa_id, tipo_meta, valor_alvo, valido_de, valido_ate }) {
+  const db = getDb();
+  const existing = db.prepare(
+    "SELECT id FROM meta_questionario WHERE pesquisa_id=? AND tipo_meta=?"
+  ).get(pesquisa_id, tipo_meta);
+  if (existing) {
+    db.prepare("UPDATE meta_questionario SET valor_alvo=?, valido_de=?, valido_ate=? WHERE id=?")
+      .run(valor_alvo, valido_de || null, valido_ate || null, existing.id);
+    return existing.id;
+  }
+  const r = db.prepare(
+    "INSERT INTO meta_questionario (pesquisa_id, tipo_meta, valor_alvo, valido_de, valido_ate) VALUES (?,?,?,?,?)"
+  ).run(pesquisa_id, tipo_meta, valor_alvo, valido_de || null, valido_ate || null);
+  return r.lastInsertRowid;
+}
+
+export function removerMeta(tipo, id) {
+  const tabela = tipo === 'questionario' ? 'meta_questionario' : 'meta_pergunta';
+  getDb().prepare(`DELETE FROM ${tabela} WHERE id=?`).run(id);
+  return true;
+}
+
+// ── Opções de pergunta (Módulo 2 - anamnese dinâmica) ──────────────────────
+export function listarOpcoesPergunta(perguntaId) {
+  const db = getDb();
+  const opcoes = db.prepare(
+    "SELECT id, chave, valor_numerico, ordem, ativo FROM pergunta_opcao WHERE pergunta_id=? ORDER BY ordem"
+  ).all(perguntaId);
+  for (const o of opcoes) {
+    o.traducoes = db.prepare(
+      "SELECT idioma, rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=?"
+    ).all(o.id).reduce((acc, t) => { acc[t.idioma] = t.rotulo; return acc; }, {});
+  }
+  return opcoes;
+}
+
+export function salvarOpcaoPergunta(perguntaId, { id, chave, valor_numerico, ordem, ativo, traducoes }) {
+  const db = getDb();
+  if (!chave) throw new Error('chave obrigatoria');
+  let opId = id;
+  if (opId) {
+    const sets = [], args = [];
+    if (chave !== undefined)          { sets.push('chave=?');          args.push(chave); }
+    if (valor_numerico !== undefined) { sets.push('valor_numerico=?'); args.push(valor_numerico); }
+    if (ordem !== undefined)          { sets.push('ordem=?');          args.push(ordem); }
+    if (ativo !== undefined)          { sets.push('ativo=?');          args.push(ativo ? 1 : 0); }
+    if (sets.length) { args.push(opId); db.prepare(`UPDATE pergunta_opcao SET ${sets.join(', ')} WHERE id=?`).run(...args); }
+  } else {
+    const r = db.prepare(
+      "INSERT INTO pergunta_opcao (pergunta_id, chave, valor_numerico, ordem, ativo) VALUES (?,?,?,?,?)"
+    ).run(perguntaId, chave, valor_numerico ?? null, ordem ?? 0, ativo === 0 ? 0 : 1);
+    opId = r.lastInsertRowid;
+  }
+  if (traducoes) {
+    const upsert = db.prepare(`
+      INSERT INTO pergunta_opcao_traducao (pergunta_opcao_id, idioma, rotulo) VALUES (?,?,?)
+      ON CONFLICT(pergunta_opcao_id, idioma) DO UPDATE SET rotulo=excluded.rotulo
+    `);
+    for (const [idioma, rotulo] of Object.entries(traducoes)) {
+      if (idioma && rotulo) upsert.run(opId, idioma, rotulo);
+    }
+  }
+  return opId;
+}
+
+export function removerOpcaoPergunta(id) {
+  getDb().prepare("DELETE FROM pergunta_opcao WHERE id=?").run(id);
+  return true;
+}
+
+// Seed idempotente das opções das perguntas 'unica'/'multipla' da anamnese
+// que hoje estão hardcoded nos locales JSON. Só popula se ainda não houver
+// opções cadastradas para a pergunta — assim re-rodar é seguro.
+export function seedAnamneseOpcoes() {
+  const db = getDb();
+  const peg = (chave) => db.prepare("SELECT id FROM pergunta_satisfacao WHERE chave=?").get(chave)?.id;
+  const semOpcoes = (perguntaId) => !db.prepare("SELECT 1 FROM pergunta_opcao WHERE pergunta_id=? LIMIT 1").get(perguntaId);
+
+  const insOp = db.prepare("INSERT INTO pergunta_opcao (pergunta_id, chave, ordem, ativo) VALUES (?,?,?,1)");
+  const insTr = db.prepare("INSERT OR IGNORE INTO pergunta_opcao_traducao (pergunta_opcao_id, idioma, rotulo) VALUES (?,?,?)");
+
+  function popular(chavePergunta, opcoes) {
+    const pid = peg(chavePergunta);
+    if (!pid || !semOpcoes(pid)) return;
+    let i = 1;
+    for (const o of opcoes) {
+      const r = insOp.run(pid, o.chave, i++);
+      const opId = r.lastInsertRowid;
+      for (const [idioma, rotulo] of Object.entries(o.t || {})) insTr.run(opId, idioma, rotulo);
+    }
+  }
+
+  // tipo_documento (já hardcoded no spa-profile)
+  popular('anamnese_tipo_documento', [
+    { chave: 'cpf',       t: { 'pt-BR': 'CPF',           'pt-PT': 'CPF',           en: 'CPF',           es: 'CPF',           fr: 'CPF',           it: 'CPF',           de: 'CPF' } },
+    { chave: 'passaporte',t: { 'pt-BR': 'Passaporte',    'pt-PT': 'Passaporte',    en: 'Passport',      es: 'Pasaporte',     fr: 'Passeport',     it: 'Passaporto',    de: 'Reisepass' } },
+    { chave: 'rg',        t: { 'pt-BR': 'RG / Documento de identidade', 'pt-PT': 'Documento de identidade', en: 'ID document', es: 'Documento de identidad', fr: 'Pièce d’identité', it: 'Documento d’identità', de: 'Personalausweis' } },
+  ]);
+
+  // pressao_massagem
+  popular('anamnese_pressao_massagem', [
+    { chave: 'leve',     t: { 'pt-BR': 'Leve',     'pt-PT': 'Leve',     en: 'Light',     es: 'Suave',    fr: 'Légère',  it: 'Leggera', de: 'Leicht' } },
+    { chave: 'media',    t: { 'pt-BR': 'Média',    'pt-PT': 'Média',    en: 'Medium',    es: 'Media',    fr: 'Moyenne', it: 'Media',   de: 'Mittel' } },
+    { chave: 'forte',    t: { 'pt-BR': 'Forte',    'pt-PT': 'Forte',    en: 'Firm',      es: 'Fuerte',   fr: 'Forte',   it: 'Forte',   de: 'Stark' } },
+  ]);
+
+  // rotina_facial — 11 itens L’Occitane (chaves curtas; rótulo pt-BR define o display)
+  popular('anamnese_rotina_facial', [
+    { chave: 'limpeza',        t: { 'pt-BR': 'Limpeza' } },
+    { chave: 'tonico',         t: { 'pt-BR': 'Tônico' } },
+    { chave: 'esfoliante',     t: { 'pt-BR': 'Esfoliante' } },
+    { chave: 'mascara',        t: { 'pt-BR': 'Máscara facial' } },
+    { chave: 'serum',          t: { 'pt-BR': 'Sérum' } },
+    { chave: 'hidratante',     t: { 'pt-BR': 'Hidratante' } },
+    { chave: 'olheiras',       t: { 'pt-BR': 'Tratamento para olheiras' } },
+    { chave: 'protetor_solar', t: { 'pt-BR': 'Protetor solar' } },
+    { chave: 'antienvelhec',   t: { 'pt-BR': 'Antienvelhecimento' } },
+    { chave: 'oleo_facial',    t: { 'pt-BR': 'Óleo facial' } },
+    { chave: 'demaquilante',   t: { 'pt-BR': 'Demaquilante' } },
+  ]);
+
+  // rotina_corporal — 5 itens
+  popular('anamnese_rotina_corporal', [
+    { chave: 'hidratante_corporal', t: { 'pt-BR': 'Hidratante corporal' } },
+    { chave: 'esfoliante_corporal', t: { 'pt-BR': 'Esfoliante corporal' } },
+    { chave: 'oleo_corporal',       t: { 'pt-BR': 'Óleo corporal' } },
+    { chave: 'sabonete',            t: { 'pt-BR': 'Sabonete específico' } },
+    { chave: 'pos_banho',           t: { 'pt-BR': 'Loção pós-banho' } },
+  ]);
+
+  // canais_marketing
+  popular('anamnese_canais_marketing', [
+    { chave: 'email',    t: { 'pt-BR': 'E-mail',    'pt-PT': 'E-mail',    en: 'E-mail',    es: 'Correo',  fr: 'E-mail', it: 'E-mail', de: 'E-Mail' } },
+    { chave: 'whatsapp', t: { 'pt-BR': 'WhatsApp',  'pt-PT': 'WhatsApp',  en: 'WhatsApp',  es: 'WhatsApp',fr: 'WhatsApp',it:'WhatsApp', de: 'WhatsApp' } },
+    { chave: 'sms',      t: { 'pt-BR': 'SMS',       'pt-PT': 'SMS',       en: 'SMS',       es: 'SMS',     fr: 'SMS',    it: 'SMS',    de: 'SMS' } },
+  ]);
+
+  return true;
 }

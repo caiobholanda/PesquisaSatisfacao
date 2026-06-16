@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -44,6 +44,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   const {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
+    cpf,
   } = req.body || {};
   if (!sala || !tipo_cliente || !cliente?.trim() || !email?.trim() || !data || !hora_inicio || !hora_fim)
     return res.status(400).json({ ok: false, error: 'Campos obrigatórios ausentes' });
@@ -70,6 +71,27 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
 
   try {
     const criado_por = (() => { const a = req.user?.sub ? buscarAdminById(req.user.sub) : null; return a?.nome || a?.username || req.user?.username || null; })();
+
+    // Módulo 1+3: se vier CPF válido, garante registro em clientes e vincula
+    let clienteIdReserva = null;
+    const cpfNorm = (cpf || '').toString().replace(/\D/g, '');
+    if (cpfNorm) {
+      if (!validarCpfMod11(cpfNorm)) {
+        return res.status(400).json({ ok: false, error: 'CPF inválido' });
+      }
+      const existing = buscarClientePorCpf(cpfNorm);
+      if (existing) {
+        clienteIdReserva = existing.id;
+      } else {
+        clienteIdReserva = inserirCliente({
+          cpf: cpfNorm,
+          nome: cliente.trim(),
+          email: email.trim() || null,
+          telefone: telefone?.trim() || null,
+        });
+      }
+    }
+
     const id = inserirReserva(
       +sala, cliente.trim(), tipo_cliente, apto?.trim() || null, email.trim(),
       telefone?.trim() || null, tratamento?.trim() || null, data, hora_inicio, hora_fim,
@@ -88,7 +110,18 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         massagista_id2: massagista_id2 ? +massagista_id2 : null,
       }
     );
-    res.status(201).json({ ok: true, id });
+
+    // Vincula cliente_id / cpf na reserva recém-criada (a inserirReserva
+    // não conhece esses campos — gravamos via UPDATE para não mexer na
+    // assinatura existente). Falha silenciosa se as colunas não existirem.
+    if (clienteIdReserva || cpfNorm) {
+      try {
+        getDb().prepare('UPDATE reservas SET cliente_id=?, cpf=? WHERE id=?')
+          .run(clienteIdReserva || null, cpfNorm || null, id);
+      } catch {}
+    }
+
+    res.status(201).json({ ok: true, id, cliente_id: clienteIdReserva });
   } catch (e) {
     if (e.code === 'CONFLITO_SALA') {
       return res.status(409).json({ ok: false, error: 'Sala já reservada neste horário', tipo: 'sala', conflito: e.conflito });

@@ -517,3 +517,102 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+/* ─── Aplicação de config dinâmica da anamnese ───
+   GET /api/spa/anamnese/config retorna a estrutura da pesquisa publicada
+   spa-anamnese-v1. Aplicamos APENAS as regras seguras: ocultar perguntas
+   ativo=0 / ausentes, remover marcador de "obrigatório" quando obrigatoria=0,
+   e sobrescrever rótulos via traduções (caso o admin tenha customizado).
+   Se a fetch falhar, o HTML estático permanece inalterado (fallback). */
+const _LEGADO_DOM = {
+  // campo_legado → { sel: bloco a esconder/mostrar, labelId?: id do span do label }
+  nome:                    { sel: '#f-nome',         labelId: 'lbl-nome' },
+  sobrenome:               { sel: '#f-sobrenome',    labelId: 'lbl-sobrenome' },
+  tipo_documento:          { sel: '#f-doc-tipo',     labelId: 'lbl-doc-tipo' },
+  documento:               { sel: '#f-doc-num',      labelId: 'lbl-doc-num' },
+  email:                   { sel: '#f-email',        labelId: 'lbl-email' },
+  telefone:                { sel: '#f-telefone',     labelId: 'lbl-telefone' },
+  data_nascimento:         { sel: '#f-nascimento',   labelId: 'lbl-nascimento' },
+  rotina_facial:           { sectionId: 'sec-facial' },
+  rotina_corporal:         { sectionId: 'sec-body' },
+  produto_especifico:      { sel: '#f-outro-produto',labelId: 'lbl-outro' },
+  pressao_massagem:        { sectionId: 'sec-pressao' },
+  info_medica:             { sel: '#f-medico',       labelId: 'lbl-medico' },
+  consentimento_saude:     { sel: '#consent-health-wrap' },
+  canais_marketing:        { sel: '.spa-mkt-channels' },
+  assinatura_data_url:     { sectionId: 'sec-sig' },
+};
+
+function _blocoDe(spec) {
+  if (spec.sectionId) {
+    const titulo = document.getElementById(spec.sectionId);
+    return titulo ? titulo.closest('.spa-section') : null;
+  }
+  if (spec.sel) {
+    const el = document.querySelector(spec.sel);
+    return el ? (el.closest('.spa-field') || el.closest('.spa-section') || el) : null;
+  }
+  return null;
+}
+
+async function applyAnamneseConfig(idioma) {
+  let cfg = null;
+  try {
+    const r = await fetch('/api/spa/anamnese/config?idioma=' + encodeURIComponent(idioma || 'pt-BR'));
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d || !d.ok || !d.pesquisa) return;
+    cfg = d.pesquisa;
+  } catch { return; }
+
+  // Achata perguntas: { campo_legado: { ativo, obrigatoria, rotulo } }
+  const map = {};
+  for (const sec of (cfg.secoes || [])) {
+    for (const q of (sec.perguntas || [])) {
+      const legado = q.mapeia_campo_legado;
+      if (!legado) continue;
+      map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria };
+    }
+  }
+
+  for (const [legado, spec] of Object.entries(_LEGADO_DOM)) {
+    const bloco = _blocoDe(spec);
+    if (!bloco) continue;
+    const cfgItem = map[legado];
+    if (!cfgItem) {
+      // Pergunta NÃO retornada pela config → considera inativa, oculta o bloco.
+      // (assinatura é exceção: nunca ocultar o canvas pela config)
+      if (legado !== 'assinatura_data_url') bloco.style.display = 'none';
+      continue;
+    }
+    bloco.style.display = '';
+    // Sobrescreve rótulo se a config trouxer um custom
+    if (spec.labelId && cfgItem.rotulo) {
+      const lbl = document.getElementById(spec.labelId);
+      if (lbl && cfgItem.rotulo.trim()) lbl.textContent = cfgItem.rotulo;
+    }
+    // Remove "*" visual quando não obrigatoria (apenas no label de campo)
+    if (spec.labelId) {
+      const lbl = document.getElementById(spec.labelId);
+      const req = lbl?.parentElement?.querySelector('.req');
+      if (req) req.style.display = cfgItem.obrigatoria ? '' : 'none';
+    }
+  }
+}
+
+// Wire-up: aplicar config após init/loadLocale ter rodado. Faz fallback
+// silencioso se backend não responder — form estático original aparece.
+(function () {
+  const originalInit = init;
+  // Substitui a referência global, mas como já chamamos init() acima,
+  // forçamos apply após DOMContentLoaded de qualquer forma.
+  const tentar = () => {
+    const lang = _currentLang || (new URLSearchParams(location.search)).get('lang') || localStorage.getItem('spa_lang') || 'pt-BR';
+    applyAnamneseConfig(lang);
+  };
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(tentar, 50);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(tentar, 50));
+  }
+})();

@@ -306,7 +306,66 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_resposta_pesquisa_app ON resposta_pesquisa(app_origem, submitted_at);
     CREATE INDEX IF NOT EXISTS idx_resposta_item_resp    ON resposta_item(resposta_pesquisa_id);
     CREATE INDEX IF NOT EXISTS idx_pesquisa_slug_ativo   ON pesquisa(slug) WHERE ativo=1;
+
+    -- Opções de perguntas dos tipos 'unica'/'multipla' que NÃO usam escala
+    -- (ex.: rotina_facial, tipo_documento, canais_marketing da anamnese).
+    CREATE TABLE IF NOT EXISTS pergunta_opcao (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pergunta_id INTEGER NOT NULL REFERENCES pergunta_satisfacao(id) ON DELETE CASCADE,
+      chave TEXT NOT NULL,
+      valor_numerico REAL,
+      ordem INTEGER NOT NULL DEFAULT 0,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      UNIQUE(pergunta_id, chave)
+    );
+    CREATE TABLE IF NOT EXISTS pergunta_opcao_traducao (
+      pergunta_opcao_id INTEGER NOT NULL REFERENCES pergunta_opcao(id) ON DELETE CASCADE,
+      idioma TEXT NOT NULL,
+      rotulo TEXT NOT NULL,
+      PRIMARY KEY (pergunta_opcao_id, idioma)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pergunta_opcao_perg ON pergunta_opcao(pergunta_id, ordem);
+
+    -- Cadastro central de clientes (Módulo 1).
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cpf TEXT,
+      nome TEXT NOT NULL,
+      email TEXT,
+      telefone TEXT,
+      data_nascimento TEXT,
+      locale_pref TEXT DEFAULT 'pt-BR',
+      observacao TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_cpf ON clientes(cpf) WHERE cpf IS NOT NULL AND cpf <> '';
+    CREATE INDEX IF NOT EXISTS idx_clientes_nome ON clientes(nome);
+
+    -- Produtos adquiridos pelo cliente (conceito novo - Módulo 1).
+    CREATE TABLE IF NOT EXISTS cliente_produto (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+      produto_nome TEXT NOT NULL,
+      categoria TEXT,
+      valor REAL,
+      data_compra TEXT,
+      reserva_id INTEGER REFERENCES reservas(id) ON DELETE SET NULL,
+      observacao TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_cliente_produto_cli ON cliente_produto(cliente_id, data_compra);
   `);
+
+  // Vínculos cliente_id/cpf adicionados de forma idempotente.
+  try { db.exec(`ALTER TABLE reservas    ADD COLUMN cliente_id INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE reservas    ADD COLUMN cpf TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN cliente_id INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cpf       ON reservas(cpf)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_spa_perfis_cliente ON spa_perfis(cliente_id)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_feedback_cliente   ON feedback(cliente_id)`); } catch {}
 
   seedTratamentosGranSpa();
   seedMassoterapeutasGranSpa();
@@ -913,4 +972,162 @@ export function inserirSpaPerfil(dados) {
 
 export function vincularDocumentoToken(reservaId, locale) {
   try { getDb().prepare('UPDATE reservas SET idioma_documento=? WHERE id=?').run(locale, reservaId); } catch {}
+}
+
+// ── Módulo 1: Cadastro de Clientes ────────────────────────────────────────
+function _normCpf(v) {
+  return (v || '').toString().replace(/\D/g, '');
+}
+
+export function validarCpfMod11(cpf) {
+  cpf = _normCpf(cpf);
+  if (cpf.length !== 11 || /^(.)\1+$/.test(cpf)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += +cpf[i] * (10 - i);
+  let r = (s * 10) % 11;
+  if (r >= 10) r = 0;
+  if (r !== +cpf[9]) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += +cpf[i] * (11 - i);
+  r = (s * 10) % 11;
+  if (r >= 10) r = 0;
+  return r === +cpf[10];
+}
+
+export function listarClientes({ q, limit = 100, offset = 0 } = {}) {
+  const db = getDb();
+  let where = '1=1', args = [];
+  if (q) {
+    const needle = '%' + q.toLowerCase().replace(/\s+/g, '%') + '%';
+    where = '(LOWER(nome) LIKE ? OR cpf LIKE ? OR LOWER(email) LIKE ? OR telefone LIKE ?)';
+    const cpfN = '%' + _normCpf(q) + '%';
+    args = [needle, cpfN, needle, needle];
+  }
+  const items = db.prepare(`
+    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, criado_em, atualizado_em
+    FROM clientes WHERE ${where}
+    ORDER BY nome
+    LIMIT ? OFFSET ?
+  `).all(...args, limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM clientes WHERE ${where}`).get(...args).n;
+  return { items, total };
+}
+
+export function buscarClientePorId(id) {
+  return getDb().prepare(`
+    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    FROM clientes WHERE id=?
+  `).get(id) || null;
+}
+
+export function buscarClientePorCpf(cpf) {
+  const n = _normCpf(cpf);
+  if (!n) return null;
+  return getDb().prepare(`
+    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    FROM clientes WHERE cpf=? LIMIT 1
+  `).get(n) || null;
+}
+
+export function inserirCliente({ cpf, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
+  if (!nome) throw new Error('nome obrigatorio');
+  const cpfN = _normCpf(cpf) || null;
+  if (cpfN && !validarCpfMod11(cpfN)) throw new Error('CPF invalido');
+  // upsert por CPF (se cpf existir, retorna o existente; se nome novo, atualiza)
+  if (cpfN) {
+    const existing = buscarClientePorCpf(cpfN);
+    if (existing) return existing.id;
+  }
+  const r = getDb().prepare(`
+    INSERT INTO clientes (cpf, nome, email, telefone, data_nascimento, locale_pref, observacao)
+    VALUES (?,?,?,?,?,?,?)
+  `).run(cpfN, nome, email || null, telefone || null, data_nascimento || null, locale_pref || 'pt-BR', observacao || null);
+  return r.lastInsertRowid;
+}
+
+export function atualizarCliente(id, { cpf, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
+  const db = getDb();
+  const sets = [], args = [];
+  if (cpf !== undefined) {
+    const cpfN = _normCpf(cpf) || null;
+    if (cpfN && !validarCpfMod11(cpfN)) throw new Error('CPF invalido');
+    sets.push('cpf=?'); args.push(cpfN);
+  }
+  if (nome !== undefined)            { sets.push('nome=?');            args.push(nome); }
+  if (email !== undefined)           { sets.push('email=?');           args.push(email); }
+  if (telefone !== undefined)        { sets.push('telefone=?');        args.push(telefone); }
+  if (data_nascimento !== undefined) { sets.push('data_nascimento=?'); args.push(data_nascimento); }
+  if (locale_pref !== undefined)     { sets.push('locale_pref=?');     args.push(locale_pref); }
+  if (observacao !== undefined)      { sets.push('observacao=?');      args.push(observacao); }
+  if (!sets.length) return false;
+  sets.push("atualizado_em=datetime('now')");
+  args.push(id);
+  db.prepare(`UPDATE clientes SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  return true;
+}
+
+export function buscarCliente360(id) {
+  const db = getDb();
+  const cliente = buscarClientePorId(id);
+  if (!cliente) return null;
+  // Tratamentos (reservas), via cliente_id direto OU CPF de match
+  const reservas = db.prepare(`
+    SELECT id, data, hora_inicio, hora_fim, sala, cliente, cliente2, tratamento, tipo_cliente,
+           massagista_id, massagista_id2, tipo_massagem_id, criado_em
+    FROM reservas
+    WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)
+    ORDER BY data DESC, hora_inicio DESC
+  `).all(id, cliente.cpf || '');
+  // Anamneses
+  const anamneses = db.prepare(`
+    SELECT id, nome, sobrenome, tipo_documento, documento, email, telefone,
+           idioma, reserva_id, criado_em
+    FROM spa_perfis
+    WHERE cliente_id=? OR (documento IS NOT NULL AND documento=?)
+    ORDER BY criado_em DESC
+  `).all(id, cliente.cpf || '');
+  // Pesquisas respondidas — via cliente_id direto OU via reserva_id matched
+  const pesquisas = db.prepare(`
+    SELECT rp.id, rp.pesquisa_id, p.slug, rp.app_origem, rp.submitted_at, rp.reserva_id, rp.feedback_id
+    FROM resposta_pesquisa rp
+    LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
+    WHERE rp.cliente_id=?
+       OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=?)
+    ORDER BY rp.submitted_at DESC
+  `).all(id, id);
+  // Produtos
+  const produtos = db.prepare(`
+    SELECT id, produto_nome, categoria, valor, data_compra, reserva_id, observacao, criado_em
+    FROM cliente_produto WHERE cliente_id=?
+    ORDER BY data_compra DESC, criado_em DESC
+  `).all(id);
+  return { cliente, reservas, anamneses, pesquisas, produtos };
+}
+
+export function inserirProdutoCliente(clienteId, { produto_nome, categoria, valor, data_compra, reserva_id, observacao }) {
+  if (!produto_nome) throw new Error('produto_nome obrigatorio');
+  const r = getDb().prepare(`
+    INSERT INTO cliente_produto (cliente_id, produto_nome, categoria, valor, data_compra, reserva_id, observacao)
+    VALUES (?,?,?,?,?,?,?)
+  `).run(clienteId, produto_nome, categoria || null, valor ?? null, data_compra || null, reserva_id || null, observacao || null);
+  return r.lastInsertRowid;
+}
+
+export function atualizarProdutoCliente(id, { produto_nome, categoria, valor, data_compra, reserva_id, observacao }) {
+  const sets = [], args = [];
+  if (produto_nome !== undefined) { sets.push('produto_nome=?'); args.push(produto_nome); }
+  if (categoria !== undefined)    { sets.push('categoria=?');    args.push(categoria); }
+  if (valor !== undefined)        { sets.push('valor=?');        args.push(valor); }
+  if (data_compra !== undefined)  { sets.push('data_compra=?'); args.push(data_compra); }
+  if (reserva_id !== undefined)   { sets.push('reserva_id=?');   args.push(reserva_id); }
+  if (observacao !== undefined)   { sets.push('observacao=?');   args.push(observacao); }
+  if (!sets.length) return false;
+  args.push(id);
+  getDb().prepare(`UPDATE cliente_produto SET ${sets.join(', ')} WHERE id=?`).run(...args);
+  return true;
+}
+
+export function removerProdutoCliente(id) {
+  getDb().prepare('DELETE FROM cliente_produto WHERE id=?').run(id);
+  return true;
 }

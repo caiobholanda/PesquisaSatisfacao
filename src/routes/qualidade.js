@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireSatisfacao, requireWrite } from '../middleware/auth.js';
 import { statsFeedback } from '../db.js';
 import {
   buscarPesquisaPublicada,
@@ -11,6 +11,13 @@ import {
   listarEscalas,
   listarMetasPorPesquisa,
   aplicarMetasEmStats,
+  criarPesquisa, editarPesquisa, publicarPesquisa, despublicarPesquisa, clonarPesquisa,
+  criarSecao, editarSecao, removerSecao,
+  associarPergunta, editarAssociacaoPergunta, desassociarPergunta,
+  criarPergunta, editarPergunta,
+  criarEscala,
+  salvarMetaPergunta, salvarMetaQuestionario, removerMeta,
+  listarOpcoesPergunta, salvarOpcaoPergunta, removerOpcaoPergunta,
 } from '../qualidade.js';
 
 const router = Router();
@@ -76,6 +83,99 @@ router.get('/admin/visao-geral', requireAuth, (req, res) => {
   const stats = statsFeedback({ from: req.query.from, to: req.query.to });
   const metasAplicadas = aplicarMetasEmStats(slug, stats);
   res.json({ ok: true, stats, metas: metasAplicadas });
+});
+
+// ── ADMIN: ESCRITAS (Módulo 4) ────────────────────────────────────────────
+// Cadeia: requireAuth → requireSatisfacao (master|satisfacao|admin) →
+// requireWrite (bloqueia admin read-only). master e satisfacao podem escrever.
+const writeChain = [requireAuth, requireSatisfacao, requireWrite];
+
+// Pesquisa
+router.post('/admin/pesquisas', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: criarPesquisa(req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.put('/admin/pesquisas/:id', writeChain, (req, res) => {
+  try { editarPesquisa(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.post('/admin/pesquisas/:id/publicar', writeChain, (req, res) => {
+  publicarPesquisa(parseInt(req.params.id)); res.json({ ok: true });
+});
+router.post('/admin/pesquisas/:id/despublicar', writeChain, (req, res) => {
+  despublicarPesquisa(parseInt(req.params.id)); res.json({ ok: true });
+});
+router.post('/admin/pesquisas/:id/clonar', writeChain, (req, res) => {
+  try {
+    const id = clonarPesquisa(parseInt(req.params.id), req.body || {});
+    res.json({ ok: true, id });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+// Seções
+router.post('/admin/pesquisas/:id/secoes', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: criarSecao(parseInt(req.params.id), req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.put('/admin/secoes/:id', writeChain, (req, res) => {
+  try { editarSecao(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.delete('/admin/secoes/:id', writeChain, (req, res) => {
+  removerSecao(parseInt(req.params.id)); res.json({ ok: true });
+});
+
+// Associação pesquisa_pergunta
+router.post('/admin/pesquisas/:id/perguntas', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: associarPergunta(parseInt(req.params.id), req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.put('/admin/pesquisa-pergunta/:id', writeChain, (req, res) => {
+  editarAssociacaoPergunta(parseInt(req.params.id), req.body || {}); res.json({ ok: true });
+});
+router.delete('/admin/pesquisa-pergunta/:id', writeChain, (req, res) => {
+  desassociarPergunta(parseInt(req.params.id)); res.json({ ok: true });
+});
+
+// Biblioteca de perguntas
+router.post('/admin/perguntas', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: criarPergunta(req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.put('/admin/perguntas/:id', writeChain, (req, res) => {
+  try { editarPergunta(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+// Escalas
+router.post('/admin/escalas', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: criarEscala(req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+
+// Metas
+router.post('/admin/metas/pergunta', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: salvarMetaPergunta(req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.post('/admin/metas/questionario', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: salvarMetaQuestionario(req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.delete('/admin/metas/:tipo/:id', writeChain, (req, res) => {
+  removerMeta(req.params.tipo, parseInt(req.params.id)); res.json({ ok: true });
+});
+
+// Opções de pergunta (tipos 'unica'/'multipla' sem escala)
+router.get('/admin/perguntas/:id/opcoes', requireAuth, (req, res) => {
+  res.json({ ok: true, items: listarOpcoesPergunta(parseInt(req.params.id)) });
+});
+router.post('/admin/perguntas/:id/opcoes', writeChain, (req, res) => {
+  try { res.json({ ok: true, id: salvarOpcaoPergunta(parseInt(req.params.id), req.body || {}) }); }
+  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+router.delete('/admin/opcoes/:id', writeChain, (req, res) => {
+  removerOpcaoPergunta(parseInt(req.params.id)); res.json({ ok: true });
 });
 
 export default router;

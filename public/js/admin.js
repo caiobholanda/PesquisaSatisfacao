@@ -115,6 +115,7 @@ function showApp() {
   else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
   else if (view === 'view-relatorio-mensal') { loadRelatorioMensal(); }
   else if (view === 'view-qualidade') { loadQualidade(); }
+  else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -530,7 +531,7 @@ function showView(id) {
   // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
   // view-qualidade) tinham que entrar aqui — sem isso o display nunca
   // virava 'block' e a view ficava invisivel.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -1758,9 +1759,11 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res-fg-apto').style.display='none';
   const _nomeFg = document.getElementById('res-fg-nome');
   if (_nomeFg) _nomeFg.style.gridColumn = '1 / -1';
-  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel'].forEach(id=>{
-    document.getElementById(id).value='';
+  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-cpf'].forEach(id=>{
+    const el = document.getElementById(id); if (el) el.value='';
   });
+  const _cpfInfo = document.getElementById('res-cpf-info');
+  if (_cpfInfo) { _cpfInfo.style.display = 'none'; _cpfInfo.textContent = ''; }
   if (_cbTrat)  _cbTrat.clear();
   if (_cbMass)  _cbMass.clear();
   if (_cbTrat2) _cbTrat2.clear();
@@ -2307,10 +2310,15 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const btn=document.getElementById('btn-res-salvar');
   btn.disabled=true;
   try{
+    const cpfRaw = (document.getElementById('res-inp-cpf')?.value || '').replace(/\D/g, '');
+    if (cpfRaw && !validarCpfMod11?.(cpfRaw)) {
+      err.textContent = 'CPF inválido.'; btn.disabled = false; return;
+    }
     const body = {
       sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data,
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
+      cpf: cpfRaw || null,
     };
     if (_isCasal()) {
       Object.assign(body, {
@@ -2379,12 +2387,58 @@ document.getElementById('btn-open-qualidade')?.addEventListener('click', () => {
 document.getElementById('btn-back-qualidade')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-ql-atualizar')?.addEventListener('click', () => loadQualidade());
 
+// ── Abas Qualidade ─────────────────────────────────────────────────────────
+document.querySelectorAll('.ql-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ql-tab').forEach(b => {
+      b.classList.remove('is-active');
+      b.style.borderBottomColor = 'transparent';
+      b.style.color = 'var(--muted)';
+    });
+    btn.classList.add('is-active');
+    btn.style.borderBottomColor = 'var(--accent)';
+    btn.style.color = '';
+    btn.style.fontWeight = '600';
+    const tab = btn.dataset.tab;
+    document.getElementById('ql-tab-visao').style.display     = tab === 'visao'     ? '' : 'none';
+    document.getElementById('ql-tab-pesquisas').style.display = tab === 'pesquisas' ? '' : 'none';
+    document.getElementById('ql-tab-biblioteca').style.display= tab === 'biblioteca'? '' : 'none';
+    if (tab === 'pesquisas') loadPesquisasAdmin();
+    if (tab === 'biblioteca') loadBiblioteca();
+  });
+});
+
 // ── Gestao da Qualidade: pesquisa publicada + metas x medias por pergunta ──
 // Consome /api/qualidade/admin/visao-geral. So leitura — nao mexe em
 // estados nem persiste nada. Falha silenciosa se a pesquisa nao estiver
 // publicada (mostra '—' nos KPIs).
 async function loadQualidade() {
-  const slug = 'spa-locc-v1';
+  // Popular o select de slugs (apenas uma vez por sessao desta view).
+  const sel = document.getElementById('ql-slug');
+  if (sel && !sel.options.length) {
+    try {
+      const r = await api('/api/qualidade/admin/pesquisas');
+      if (r) {
+        const d = await r.json();
+        if (d.ok) {
+          // Slugs unicos por (slug+versao mais alta)
+          const porSlug = {};
+          for (const p of d.items) {
+            if (!porSlug[p.slug] || porSlug[p.slug].versao < p.versao) porSlug[p.slug] = p;
+          }
+          const opts = Object.values(porSlug);
+          sel.innerHTML = opts.map(p => `<option value="${p.slug}">${escHtml(p.slug)} — ${escHtml(p.titulo)}</option>`).join('');
+          sel.addEventListener('change', () => loadQualidadeVisao());
+        }
+      }
+    } catch {}
+  }
+  await loadQualidadeVisao();
+}
+
+async function loadQualidadeVisao() {
+  const sel = document.getElementById('ql-slug');
+  const slug = (sel && sel.value) || 'spa-locc-v1';
   const from = document.getElementById('ql-from')?.value || '';
   const to   = document.getElementById('ql-to')?.value || '';
   const p = new URLSearchParams({ slug });
@@ -2444,6 +2498,311 @@ async function loadQualidade() {
       <td style="text-align:center">${badge}</td>
     </tr>`;
   }).join('');
+}
+
+// ── Qualidade / Aba PESQUISAS ──────────────────────────────────────────────
+let _qpCache = [];
+// Alias curto p/ feedback visual nas operações de qualidade.
+function toast(msg, isErr) { showToast(isErr ? '⚠ ' + msg : msg, isErr ? 5000 : 3000); }
+
+async function loadPesquisasAdmin() {
+  try {
+    const r = await api('/api/qualidade/admin/pesquisas');
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) return;
+    _qpCache = d.items;
+    const body = document.getElementById('qp-list');
+    body.innerHTML = d.items.map(p => `
+      <tr>
+        <td><code style="font-size:.78rem">${escHtml(p.slug)}</code></td>
+        <td>${escHtml(p.titulo)}</td>
+        <td><span class="badge">${escHtml(p.app_escopo)}</span></td>
+        <td style="text-align:center">v${p.versao}</td>
+        <td style="text-align:center">${p.publicada_em ? '<span style="color:var(--success)">●</span>' : '<span style="color:var(--muted)">○</span>'}</td>
+        <td style="text-align:center">${p.ativo ? 'Sim' : 'Não'}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn btn-outline btn-sm" data-act="edit" data-id="${p.id}">Editar</button>
+          <button class="btn btn-outline btn-sm" data-act="${p.publicada_em ? 'despub' : 'pub'}" data-id="${p.id}">${p.publicada_em ? 'Despublicar' : 'Publicar'}</button>
+          <button class="btn btn-outline btn-sm" data-act="clone" data-id="${p.id}">Clonar</button>
+        </td>
+      </tr>
+    `).join('');
+    body.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => handleQpAction(btn.dataset.act, parseInt(btn.dataset.id)));
+    });
+  } catch (e) { console.error(e); }
+}
+
+async function handleQpAction(act, id) {
+  if (act === 'pub') {
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${id}/publicar`);
+    return loadPesquisasAdmin();
+  }
+  if (act === 'despub') {
+    if (!confirm('Despublicar esta pesquisa? Apps que a consomem deixarão de recebê-la.')) return;
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${id}/despublicar`);
+    return loadPesquisasAdmin();
+  }
+  if (act === 'clone') {
+    const novoApp = prompt('App escopo do clone (ex: spa, spa-anamnese, hotel, all):', 'spa');
+    if (!novoApp) return;
+    const r = await apiSend('POST', `/api/qualidade/admin/pesquisas/${id}/clonar`, { novoAppEscopo: novoApp });
+    if (r?.ok) toast('Clone criado (id ' + r.id + ')');
+    return loadPesquisasAdmin();
+  }
+  if (act === 'edit') {
+    return openEditorPesquisa(id);
+  }
+}
+
+async function openEditorPesquisa(id) {
+  const r = await api(`/api/qualidade/admin/pesquisas/${id}`);
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) return;
+  const p = d.pesquisa;
+  const editor = document.getElementById('qp-editor');
+  editor.style.display = '';
+  editor.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">Editar pesquisa: <code>${escHtml(p.slug)}</code> v${p.versao}</h3>
+      <button class="btn btn-outline btn-sm" id="qp-ed-close">Fechar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem">
+      <label style="display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">Título
+        <input id="qp-ed-titulo" value="${escHtml(p.titulo || '')}" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">
+      </label>
+      <label style="display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">App escopo
+        <input id="qp-ed-app" value="${escHtml(p.app_escopo || 'spa')}" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">
+      </label>
+      <label style="grid-column:span 2;display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">Descrição
+        <textarea id="qp-ed-desc" rows="2" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">${escHtml(p.descricao || '')}</textarea>
+      </label>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
+      <button class="btn btn-primary btn-sm" id="qp-ed-save">Salvar</button>
+    </div>
+    <div id="qp-ed-secoes"></div>
+    <div id="qp-ed-metas" style="margin-top:1.5rem"></div>
+  `;
+  document.getElementById('qp-ed-close').addEventListener('click', () => { editor.style.display = 'none'; });
+  document.getElementById('qp-ed-save').addEventListener('click', async () => {
+    await apiSend('PUT', `/api/qualidade/admin/pesquisas/${id}`, {
+      titulo: document.getElementById('qp-ed-titulo').value.trim(),
+      descricao: document.getElementById('qp-ed-desc').value.trim(),
+      app_escopo: document.getElementById('qp-ed-app').value.trim(),
+    });
+    toast('Salvo'); loadPesquisasAdmin();
+  });
+  // Estrutura completa (seções + perguntas associadas) via /admin/visao-geral helper:
+  // usamos buscarPesquisaPublicada-like via /api/survey/config se publicada, ou montamos manual.
+  await renderEditorSecoes(id);
+  await renderEditorMetas(id, d.metas);
+}
+
+async function renderEditorSecoes(pesquisaId) {
+  const slug = (_qpCache.find(x => x.id === pesquisaId) || {}).slug;
+  if (!slug) return;
+  let cfg = null;
+  // Tenta config (somente publicadas) – se nao publicada, lista vazia
+  try {
+    const r = await api(`/api/survey/config?slug=${encodeURIComponent(slug)}&idioma=pt-BR`);
+    if (r) { const d = await r.json(); if (d.ok) cfg = d.pesquisa; }
+  } catch {}
+  const wrap = document.getElementById('qp-ed-secoes');
+  if (!cfg) {
+    wrap.innerHTML = `
+      <div class="empty">Esta pesquisa não está publicada ainda — publique-a para visualizar as seções e perguntas associadas.</div>
+      <div style="margin-top:.8rem;display:flex;gap:.5rem">
+        <input id="qp-novasecao-chave" placeholder="chave da seção" style="padding:.4rem;border:1px solid var(--border);background:var(--bg)">
+        <input id="qp-novasecao-titulo" placeholder="título pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);flex:1">
+        <button class="btn btn-outline btn-sm" id="qp-novasecao-add">+ Seção</button>
+      </div>
+    `;
+  } else {
+    wrap.innerHTML = `
+      <h4 style="margin:0 0 .6rem 0">Seções e perguntas</h4>
+      ${cfg.secoes.map(s => `
+        <div style="border:1px solid var(--border);padding:.8rem;margin-bottom:.6rem;border-radius:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+            <strong>${escHtml(s.titulo)}</strong>
+            <span style="color:var(--muted);font-size:.78rem">ordem ${s.ordem} · ${s.perguntas.length} pergunta(s)</span>
+          </div>
+          ${s.perguntas.length ? `
+            <table style="width:100%;font-size:.85rem">
+              <thead><tr><th style="text-align:left">Pergunta</th><th style="text-align:center">Tipo</th><th style="text-align:center">Obrig.</th></tr></thead>
+              <tbody>
+                ${s.perguntas.map(q => `
+                  <tr>
+                    <td>${escHtml(q.rotulo)} <code style="color:var(--muted);font-size:.72rem">${escHtml(q.chave)}</code></td>
+                    <td style="text-align:center">${escHtml(q.tipo)}</td>
+                    <td style="text-align:center">${q.obrigatoria ? '●' : '○'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<div style="color:var(--muted);font-size:.85rem">Sem perguntas associadas.</div>'}
+        </div>
+      `).join('')}
+      <div style="margin-top:.8rem;display:flex;gap:.5rem">
+        <input id="qp-novasecao-chave" placeholder="chave da seção" style="padding:.4rem;border:1px solid var(--border);background:var(--bg)">
+        <input id="qp-novasecao-titulo" placeholder="título pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);flex:1">
+        <button class="btn btn-outline btn-sm" id="qp-novasecao-add">+ Seção</button>
+      </div>
+    `;
+  }
+  document.getElementById('qp-novasecao-add')?.addEventListener('click', async () => {
+    const chave = document.getElementById('qp-novasecao-chave').value.trim();
+    const titulo = document.getElementById('qp-novasecao-titulo').value.trim();
+    if (!chave) return toast('Informe a chave');
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${pesquisaId}/secoes`, {
+      chave, ordem: 99,
+      traducoes: { 'pt-BR': { titulo: titulo || chave } }
+    });
+    toast('Seção criada'); renderEditorSecoes(pesquisaId);
+  });
+}
+
+async function renderEditorMetas(pesquisaId, metas) {
+  const wrap = document.getElementById('qp-ed-metas');
+  if (!wrap) return;
+  const mq = metas?.por_questionario || [];
+  const mp = metas?.por_pergunta || [];
+  wrap.innerHTML = `
+    <h4 style="margin:0 0 .6rem 0">Metas configuradas</h4>
+    <div style="font-size:.85rem">
+      <strong>Por questionário:</strong>
+      ${mq.length ? '<ul style="margin:.3rem 0 .6rem 1rem">' + mq.map(m => `<li>${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span style="color:var(--muted)"> nenhuma</span>'}
+      <strong>Por pergunta:</strong>
+      ${mp.length ? '<ul style="margin:.3rem 0 .6rem 1rem">' + mp.map(m => `<li><code style="font-size:.78rem">${escHtml(m.chave)}</code> — ${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span style="color:var(--muted)"> nenhuma</span>'}
+    </div>
+    <div style="margin-top:.8rem;display:flex;gap:.4rem;align-items:end;flex-wrap:wrap">
+      <label style="font-size:.78rem;color:var(--muted)">Meta de % recomenda
+        <input id="qp-meta-reco" type="number" min="0" max="100" step="1" placeholder="90" style="display:block;padding:.4rem;border:1px solid var(--border);background:var(--bg);width:90px">
+      </label>
+      <button class="btn btn-outline btn-sm" id="qp-meta-reco-save">Salvar % recomenda</button>
+    </div>
+  `;
+  document.getElementById('qp-meta-reco-save')?.addEventListener('click', async () => {
+    const v = parseFloat(document.getElementById('qp-meta-reco').value);
+    if (isNaN(v)) return toast('Informe um valor');
+    await apiSend('POST', '/api/qualidade/admin/metas/questionario', {
+      pesquisa_id: pesquisaId, tipo_meta: 'pct_recomenda', valor_alvo: v
+    });
+    toast('Meta salva');
+  });
+}
+
+// Botões "Nova pesquisa" / "Recarregar"
+document.getElementById('btn-qp-nova')?.addEventListener('click', async () => {
+  const slug = prompt('Slug da pesquisa (ex: hotel-checkin-v1):');
+  if (!slug) return;
+  const titulo = prompt('Título:', slug);
+  if (!titulo) return;
+  const app = prompt('App escopo (ex: spa, hotel, all):', 'spa');
+  if (!app) return;
+  try {
+    const r = await apiSend('POST', '/api/qualidade/admin/pesquisas', { slug, titulo, app_escopo: app });
+    if (r?.ok) toast('Criada (id ' + r.id + ')');
+  } catch (e) { toast('Erro: ' + e.message, true); }
+  loadPesquisasAdmin();
+});
+document.getElementById('btn-qp-reload')?.addEventListener('click', () => loadPesquisasAdmin());
+
+// ── Qualidade / Aba BIBLIOTECA ─────────────────────────────────────────────
+async function loadBiblioteca() {
+  try {
+    const [rp, re] = await Promise.all([
+      api('/api/qualidade/admin/perguntas'),
+      api('/api/qualidade/admin/escalas'),
+    ]);
+    if (rp) {
+      const dp = await rp.json();
+      if (dp.ok) {
+        document.getElementById('qb-perg-list').innerHTML = dp.items.map(p => `
+          <tr>
+            <td><code style="font-size:.78rem">${escHtml(p.chave)}</code><div style="color:var(--muted);font-size:.72rem">${escHtml(p.rotulo || '')}</div></td>
+            <td>${escHtml(p.tipo)}</td>
+            <td>${escHtml(p.escala_chave || '—')}</td>
+            <td style="text-align:center">${p.ativo ? '●' : '○'}</td>
+          </tr>
+        `).join('');
+      }
+    }
+    if (re) {
+      const de = await re.json();
+      if (de.ok) {
+        document.getElementById('qb-esc-list').innerHTML = de.items.map(e => `
+          <tr>
+            <td><code style="font-size:.78rem">${escHtml(e.chave)}</code></td>
+            <td>${escHtml(e.tipo)}</td>
+            <td style="font-size:.78rem">${e.opcoes.map(o => escHtml(o.rotulo || o.chave)).join(' · ')}</td>
+          </tr>
+        `).join('');
+      }
+    }
+  } catch (e) { console.error(e); }
+}
+
+document.getElementById('btn-qb-nova-perg')?.addEventListener('click', async () => {
+  const chave = prompt('Chave da pergunta (ex: hotel_recepcao):');
+  if (!chave) return;
+  const tipo = prompt('Tipo (escala / texto_livre / unica / multipla):', 'texto_livre');
+  if (!tipo) return;
+  const rotulo = prompt('Rótulo pt-BR:', chave);
+  let escala_id = null;
+  if (tipo === 'escala') {
+    const eChave = prompt('Chave da escala (ex: 4pt_qualitativa, sim_nao):');
+    if (eChave) {
+      // resolve id consultando a lista
+      const re = await api('/api/qualidade/admin/escalas');
+      if (re) { const de = await re.json(); if (de.ok) {
+        const found = de.items.find(x => x.chave === eChave);
+        if (found) escala_id = found.id;
+      }}
+    }
+  }
+  try {
+    await apiSend('POST', '/api/qualidade/admin/perguntas', {
+      chave, tipo, escala_id, traducoes: { 'pt-BR': { rotulo: rotulo || chave } }
+    });
+    toast('Pergunta criada');
+  } catch (e) { toast('Erro: ' + e.message, true); }
+  loadBiblioteca();
+});
+
+document.getElementById('btn-qb-nova-esc')?.addEventListener('click', async () => {
+  const chave = prompt('Chave da escala (ex: 5pt_likert):');
+  if (!chave) return;
+  const tipo = prompt('Tipo da escala (qualitativa, numerica, sim_nao...):', 'qualitativa');
+  const opcsRaw = prompt('Opções no formato chave:rotulo:valor, separadas por vírgula\nEx: muito_bom:Muito bom:10, bom:Bom:7, regular:Regular:5');
+  if (!opcsRaw) return;
+  const opcoes = opcsRaw.split(',').map((s, i) => {
+    const parts = s.trim().split(':');
+    return { chave: parts[0]?.trim(), rotulo: parts[1]?.trim() || parts[0]?.trim(), valor_numerico: parts[2] ? parseFloat(parts[2]) : null, ordem: i + 1 };
+  }).filter(o => o.chave);
+  try {
+    await apiSend('POST', '/api/qualidade/admin/escalas', { chave, tipo, opcoes });
+    toast('Escala criada');
+  } catch (e) { toast('Erro: ' + e.message, true); }
+  loadBiblioteca();
+});
+
+// Helper: POST/PUT/DELETE com JSON, retorna {ok, ...}.
+async function apiSend(method, url, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  const tok = sessionStorage.getItem('granspa_token');
+  if (tok) headers['Authorization'] = 'Bearer ' + JSON.parse(tok);
+  const opts = { method, headers, credentials: 'include' };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (r.status === 401) { logout?.(); return null; }
+  let d = null; try { d = await r.json(); } catch {}
+  if (!r.ok || (d && d.ok === false)) {
+    throw new Error((d && d.error) || ('HTTP ' + r.status));
+  }
+  return d;
 }
 
 // ── Relatorio Mensal (Fase 2): KPIs do mes + cruzamento sessao x pesquisa ──
@@ -2807,3 +3166,288 @@ async function exportarHistoricoCSV() {
   a.download = `historico-spa-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// MÓDULO 1: Clientes 360 (busca + detalhe com 4 abas: tratamentos, anamneses,
+// pesquisas, produtos). Reusa apiSend (POST/PUT/DELETE com JSON).
+// ────────────────────────────────────────────────────────────────────────────
+
+let _cliCache = [];
+let _cliSelId = null;
+
+document.getElementById('btn-open-clientes')?.addEventListener('click', () => {
+  showView('view-clientes'); initClienteView();
+});
+document.getElementById('btn-back-clientes')?.addEventListener('click', () => showView('view-main'));
+
+function initClienteView() {
+  const inp = document.getElementById('cli-q');
+  if (inp) {
+    inp.oninput = debounce(loadClientesLista, 250);
+    loadClientesLista();
+  }
+  document.getElementById('btn-cli-novo')?.addEventListener('click', criarClienteNovo, { once: true });
+}
+
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+function fmtCpfMask(d) {
+  d = (d || '').replace(/\D/g, '');
+  if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  return d;
+}
+
+// Validador CPF módulo-11 (espelha src/db.js#validarCpfMod11)
+function validarCpfMod11(cpf) {
+  cpf = (cpf || '').replace(/\D/g, '');
+  if (cpf.length !== 11 || /^(.)\1+$/.test(cpf)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += +cpf[i] * (10 - i);
+  let r = (s * 10) % 11; if (r >= 10) r = 0;
+  if (r !== +cpf[9]) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += +cpf[i] * (11 - i);
+  r = (s * 10) % 11; if (r >= 10) r = 0;
+  return r === +cpf[10];
+}
+window.validarCpfMod11 = validarCpfMod11; // exposto para reuso (form de reserva)
+window.fmtCpfMask = fmtCpfMask;
+
+async function loadClientesLista() {
+  const q = (document.getElementById('cli-q')?.value || '').trim();
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  const r = await api('/api/clientes?' + params);
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) return;
+  _cliCache = d.items;
+  const wrap = document.getElementById('cli-list');
+  if (!d.items.length) {
+    wrap.innerHTML = '<div class="empty" style="font-size:.85rem">Nenhum cliente encontrado.</div>';
+    return;
+  }
+  wrap.innerHTML = d.items.map(c => `
+    <button class="cli-card${c.id === _cliSelId ? ' is-active' : ''}" data-id="${c.id}"
+      style="display:block;width:100%;text-align:left;padding:.6rem .7rem;border:1px solid var(--border);background:${c.id === _cliSelId ? 'var(--surface2)' : 'var(--bg)'};border-radius:6px;cursor:pointer">
+      <div style="font-weight:600;font-size:.92rem">${escHtml(c.nome)}</div>
+      <div style="font-size:.74rem;color:var(--muted)">${escHtml(fmtCpfMask(c.cpf) || c.email || c.telefone || '—')}</div>
+    </button>
+  `).join('');
+  wrap.querySelectorAll('button[data-id]').forEach(b => {
+    b.addEventListener('click', () => selectCliente(parseInt(b.dataset.id)));
+  });
+}
+
+async function selectCliente(id) {
+  _cliSelId = id;
+  // realça lista
+  document.querySelectorAll('#cli-list .cli-card').forEach(c => {
+    c.classList.toggle('is-active', parseInt(c.dataset.id) === id);
+    c.style.background = parseInt(c.dataset.id) === id ? 'var(--surface2)' : 'var(--bg)';
+  });
+  const det = document.getElementById('cli-detail');
+  det.innerHTML = '<div class="empty">Carregando…</div>';
+  const r = await api('/api/clientes/' + id);
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) { det.innerHTML = '<div class="empty">Erro ao carregar cliente.</div>'; return; }
+  renderClienteDetail(d);
+}
+
+function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produtos }) {
+  const det = document.getElementById('cli-detail');
+  det.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+      <div>
+        <h2 style="margin:0 0 .3rem 0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
+          ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
+          ${c.email ? `<span>✉ ${escHtml(c.email)}</span>` : ''}
+          ${c.telefone ? `<span>☎ ${escHtml(c.telefone)}</span>` : ''}
+          ${c.locale_pref ? `<span>🌐 ${escHtml(c.locale_pref)}</span>` : ''}
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" id="btn-cli-edit">Editar</button>
+    </div>
+
+    <!-- abas -->
+    <div class="cli-tabs" style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
+      <button class="cli-tab is-active" data-t="trat"  style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600">Tratamentos <span class="badge">${reservas.length}</span></button>
+      <button class="cli-tab" data-t="anam" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Anamneses <span class="badge">${anamneses.length}</span></button>
+      <button class="cli-tab" data-t="pesq" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Pesquisas <span class="badge">${pesquisas.length}</span></button>
+      <button class="cli-tab" data-t="prod" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Produtos <span class="badge">${produtos.length}</span></button>
+    </div>
+
+    <div id="cli-pane-trat" class="cli-pane">${renderClienteReservas(reservas)}</div>
+    <div id="cli-pane-anam" class="cli-pane" style="display:none">${renderClienteAnamneses(anamneses)}</div>
+    <div id="cli-pane-pesq" class="cli-pane" style="display:none">${renderClientePesquisas(pesquisas)}</div>
+    <div id="cli-pane-prod" class="cli-pane" style="display:none">${renderClienteProdutos(c.id, produtos)}</div>
+  `;
+  det.querySelectorAll('.cli-tab').forEach(b => b.addEventListener('click', () => {
+    det.querySelectorAll('.cli-tab').forEach(t => {
+      t.classList.remove('is-active'); t.style.borderBottomColor = 'transparent'; t.style.color = 'var(--muted)';
+    });
+    b.classList.add('is-active'); b.style.borderBottomColor = 'var(--accent)'; b.style.color = '';
+    const t = b.dataset.t;
+    det.querySelectorAll('.cli-pane').forEach(p => p.style.display = 'none');
+    document.getElementById('cli-pane-' + t).style.display = '';
+  }));
+  document.getElementById('btn-cli-edit')?.addEventListener('click', () => editarCliente(c));
+  // Wire up botões dos produtos
+  document.getElementById('btn-prod-add')?.addEventListener('click', () => adicionarProduto(c.id));
+  det.querySelectorAll('button[data-prod-del]').forEach(b =>
+    b.addEventListener('click', async () => {
+      if (!confirm('Remover este produto?')) return;
+      await apiSend('DELETE', '/api/clientes/produtos/' + b.dataset.prodDel);
+      selectCliente(c.id);
+    })
+  );
+}
+
+function renderClienteReservas(rs) {
+  if (!rs.length) return '<div class="empty">Sem tratamentos registrados.</div>';
+  return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
+    <tr><th>Data</th><th>Horário</th><th>Sala</th><th>Tratamento</th><th>Cliente</th></tr>
+  </thead><tbody>${rs.map(r => `
+    <tr>
+      <td>${escHtml(r.data || '')}</td>
+      <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
+      <td style="text-align:center">${r.sala}</td>
+      <td>${r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'}</td>
+      <td>${escHtml(r.cliente || '')}${r.cliente2 ? ' + ' + escHtml(r.cliente2) : ''}</td>
+    </tr>
+  `).join('')}</tbody></table></div>`;
+}
+function renderClienteAnamneses(as) {
+  if (!as.length) return '<div class="empty">Cliente ainda não preencheu anamnese.</div>';
+  return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
+    <tr><th>Data</th><th>Idioma</th><th>Reserva</th><th>Email</th><th>Telefone</th></tr>
+  </thead><tbody>${as.map(a => `
+    <tr>
+      <td>${escHtml((a.criado_em || '').slice(0,10))}</td>
+      <td>${escHtml(a.idioma || '')}</td>
+      <td>${a.reserva_id ? '#' + a.reserva_id : '—'}</td>
+      <td>${escHtml(a.email || '')}</td>
+      <td>${escHtml(a.telefone || '')}</td>
+    </tr>
+  `).join('')}</tbody></table></div>`;
+}
+function renderClientePesquisas(ps) {
+  if (!ps.length) return '<div class="empty">Nenhuma pesquisa respondida.</div>';
+  return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
+    <tr><th>Data</th><th>Pesquisa</th><th>App</th><th>Reserva</th></tr>
+  </thead><tbody>${ps.map(p => `
+    <tr>
+      <td>${escHtml((p.submitted_at || '').slice(0,16))}</td>
+      <td><code style="font-size:.78rem">${escHtml(p.slug || '')}</code></td>
+      <td><span class="badge">${escHtml(p.app_origem || '')}</span></td>
+      <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
+    </tr>
+  `).join('')}</tbody></table></div>`;
+}
+function renderClienteProdutos(cliId, prods) {
+  return `
+    <div style="margin-bottom:.8rem">
+      <button class="btn btn-primary btn-sm" id="btn-prod-add">+ Lançar produto</button>
+    </div>
+    ${prods.length ? `<div class="table-wrap"><table style="font-size:.88rem"><thead>
+      <tr><th>Produto</th><th>Categoria</th><th>Valor</th><th>Data</th><th>Obs</th><th></th></tr>
+    </thead><tbody>${prods.map(p => `
+      <tr>
+        <td>${escHtml(p.produto_nome)}</td>
+        <td>${escHtml(p.categoria || '')}</td>
+        <td>${p.valor != null ? 'R$ ' + p.valor.toFixed(2) : '—'}</td>
+        <td>${escHtml(p.data_compra || '')}</td>
+        <td>${escHtml(p.observacao || '')}</td>
+        <td><button class="btn btn-outline btn-sm" data-prod-del="${p.id}">×</button></td>
+      </tr>
+    `).join('')}</tbody></table></div>` : '<div class="empty">Sem produtos lançados.</div>'}
+  `;
+}
+
+async function criarClienteNovo() {
+  const nome = prompt('Nome do cliente:');
+  if (!nome) return;
+  const cpf = prompt('CPF (opcional):') || '';
+  if (cpf && !validarCpfMod11(cpf)) { showToast('CPF inválido', 4000); return; }
+  const email = prompt('E-mail (opcional):') || '';
+  const tel = prompt('Telefone (opcional):') || '';
+  try {
+    const r = await apiSend('POST', '/api/clientes', { nome, cpf: cpf.replace(/\D/g,''), email, telefone: tel });
+    showToast('Cliente criado');
+    document.getElementById('cli-q').value = nome;
+    await loadClientesLista();
+    if (r?.id) selectCliente(r.id);
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function editarCliente(c) {
+  const nome = prompt('Nome:', c.nome); if (nome === null) return;
+  const cpf = prompt('CPF:', fmtCpfMask(c.cpf || '')); if (cpf === null) return;
+  if (cpf && !validarCpfMod11(cpf)) { showToast('CPF inválido', 4000); return; }
+  const email = prompt('E-mail:', c.email || ''); if (email === null) return;
+  const tel = prompt('Telefone:', c.telefone || ''); if (tel === null) return;
+  try {
+    await apiSend('PUT', '/api/clientes/' + c.id, {
+      nome, cpf: cpf.replace(/\D/g, ''), email, telefone: tel,
+    });
+    showToast('Atualizado'); selectCliente(c.id);
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function adicionarProduto(cliId) {
+  const produto_nome = prompt('Nome do produto:');
+  if (!produto_nome) return;
+  const categoria = prompt('Categoria (opcional):') || '';
+  const valorRaw = prompt('Valor R$ (opcional):') || '';
+  const valor = valorRaw ? parseFloat(valorRaw.replace(',', '.')) : null;
+  const data_compra = prompt('Data da compra (YYYY-MM-DD, opcional):') || '';
+  try {
+    await apiSend('POST', `/api/clientes/${cliId}/produtos`, { produto_nome, categoria, valor, data_compra });
+    showToast('Produto lançado'); selectCliente(cliId);
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// MÓDULO 3: máscara + autofill do CPF na Nova Reserva.
+// Ao digitar 11 dígitos válidos, busca cliente existente e preenche
+// nome/email/telefone. Não bloqueia o submit se for cliente novo.
+// ────────────────────────────────────────────────────────────────────────────
+(function wireUpReservaCpf() {
+  const inp = document.getElementById('res-inp-cpf');
+  if (!inp) return;
+  inp.addEventListener('input', async function () {
+    // máscara
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9)      v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+    this.value = v;
+    const info = document.getElementById('res-cpf-info');
+    const digits = v.replace(/\D/g, '');
+    if (digits.length !== 11) { if (info) info.style.display = 'none'; return; }
+    if (!validarCpfMod11(digits)) {
+      if (info) { info.style.color = 'var(--danger)'; info.textContent = '⚠ CPF inválido'; info.style.display = ''; }
+      return;
+    }
+    // CPF válido: tenta autofill
+    try {
+      const r = await api('/api/clientes/buscar?cpf=' + digits);
+      if (!r) return;
+      const d = await r.json();
+      if (d.ok && d.cliente) {
+        const c = d.cliente;
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+        set('res-inp-nome',  c.nome);
+        set('res-inp-email', c.email);
+        set('res-inp-tel',   c.telefone);
+        if (info) { info.style.color = 'var(--success)'; info.textContent = `✓ Cliente já cadastrado — dados preenchidos (editáveis)`; info.style.display = ''; }
+      } else {
+        if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
+      }
+    } catch {}
+  });
+})();

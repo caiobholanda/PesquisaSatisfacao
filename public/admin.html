@@ -2313,6 +2313,7 @@
           <button class="dropdown-item" id="btn-open-relatorios">Relatórios</button>
           <button class="dropdown-item" id="btn-open-relatorio-mensal">Relatório Mensal</button>
           <button class="dropdown-item" id="btn-open-qualidade">Gestão da Qualidade</button>
+          <button class="dropdown-item" id="btn-open-clientes">Clientes 360</button>
           <button class="dropdown-item" id="btn-open-historico-clientes">Histórico</button>
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
@@ -2803,56 +2804,148 @@
             <span class="page-num">Admin</span>
             <h1 class="page-title">Gestão da Qualidade</h1>
           </div>
-          <p class="page-sub">Médias por pergunta vs. metas, com semáforo de atingimento.</p>
+          <p class="page-sub">Central de pesquisas, biblioteca de perguntas e metas com semáforo.</p>
         </div>
-        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+      </div>
+
+      <!-- Abas -->
+      <div class="ql-tabs" style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
+        <button class="ql-tab is-active" data-tab="visao" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600">Visão Geral</button>
+        <button class="ql-tab" data-tab="pesquisas" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Pesquisas</button>
+        <button class="ql-tab" data-tab="biblioteca" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Biblioteca</button>
+      </div>
+
+      <!-- ABA: Visão Geral (existente) -->
+      <div id="ql-tab-visao" class="ql-tab-pane">
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+          <label style="font-size:.78rem;color:var(--muted)">Pesquisa</label>
+          <select id="ql-slug" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)"></select>
           <label style="font-size:.78rem;color:var(--muted)">Período</label>
           <input type="date" id="ql-from" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
           <input type="date" id="ql-to" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
           <button class="btn btn-outline btn-sm" id="btn-ql-atualizar">Atualizar</button>
         </div>
+        <div class="kpi-grid" style="margin-bottom:1.5rem">
+          <div class="kpi">
+            <div class="kpi-label">Pesquisa publicada</div>
+            <div class="kpi-val" id="ql-kpi-pesquisa" style="font-size:1rem">—</div>
+            <div class="kpi-sub" id="ql-kpi-versao">versão —</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Total de respostas</div>
+            <div class="kpi-val" id="ql-kpi-total">—</div>
+            <div class="kpi-sub">no período</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Média geral</div>
+            <div class="kpi-val accent" id="ql-kpi-media">—</div>
+            <div class="kpi-sub">/ 9</div>
+          </div>
+          <div class="kpi" id="ql-kpi-reco-card">
+            <div class="kpi-label">% Recomenda</div>
+            <div class="kpi-val" id="ql-kpi-reco">—</div>
+            <div class="kpi-sub" id="ql-kpi-reco-meta">meta —</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <h2>Metas por pergunta</h2>
+            <span id="ql-count"></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Pergunta</th>
+                <th style="text-align:center">Média atual</th>
+                <th style="text-align:center">Meta</th>
+                <th style="text-align:center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="ql-body"></tbody>
+          </table>
+          <div id="ql-empty" class="empty" style="display:none">Sem metas configuradas.</div>
+        </div>
       </div>
 
-      <div class="kpi-grid" style="margin-bottom:1.5rem">
-        <div class="kpi">
-          <div class="kpi-label">Pesquisa publicada</div>
-          <div class="kpi-val" id="ql-kpi-pesquisa" style="font-size:1rem">—</div>
-          <div class="kpi-sub" id="ql-kpi-versao">versão —</div>
+      <!-- ABA: Pesquisas -->
+      <div id="ql-tab-pesquisas" class="ql-tab-pane" style="display:none">
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;align-items:center">
+          <button class="btn btn-primary btn-sm" id="btn-qp-nova">+ Nova pesquisa</button>
+          <button class="btn btn-outline btn-sm" id="btn-qp-reload">Recarregar</button>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Total de respostas</div>
-          <div class="kpi-val" id="ql-kpi-total">—</div>
-          <div class="kpi-sub">no período</div>
+        <div class="table-wrap" id="qp-list-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Slug</th><th>Título</th><th>App</th><th style="text-align:center">Versão</th><th style="text-align:center">Publicada</th><th style="text-align:center">Ativo</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="qp-list"></tbody>
+          </table>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Média geral</div>
-          <div class="kpi-val accent" id="ql-kpi-media">—</div>
-          <div class="kpi-sub">/ 9</div>
+        <div id="qp-editor" style="display:none;margin-top:1.5rem;padding:1rem;border:1px solid var(--border);border-radius:6px"></div>
+      </div>
+
+      <!-- ABA: Biblioteca -->
+      <div id="ql-tab-biblioteca" class="ql-tab-pane" style="display:none">
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:360px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <h3 style="margin:0">Perguntas</h3>
+              <button class="btn btn-primary btn-sm" id="btn-qb-nova-perg">+ Nova pergunta</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Chave</th><th>Tipo</th><th>Escala</th><th style="text-align:center">Ativo</th></tr></thead>
+                <tbody id="qb-perg-list"></tbody>
+              </table>
+            </div>
+          </div>
+          <div style="flex:1;min-width:360px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <h3 style="margin:0">Escalas</h3>
+              <button class="btn btn-primary btn-sm" id="btn-qb-nova-esc">+ Nova escala</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Chave</th><th>Tipo</th><th>Opções</th></tr></thead>
+                <tbody id="qb-esc-list"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="kpi" id="ql-kpi-reco-card">
-          <div class="kpi-label">% Recomenda</div>
-          <div class="kpi-val" id="ql-kpi-reco">—</div>
-          <div class="kpi-sub" id="ql-kpi-reco-meta">meta —</div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: Clientes 360 ── -->
+    <div id="view-clientes" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-clientes">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Spa</span>
+            <h1 class="page-title">Clientes 360</h1>
+          </div>
+          <p class="page-sub">Busca centralizada · tratamentos · anamneses · pesquisas · produtos.</p>
         </div>
       </div>
 
-      <div class="table-wrap">
-        <div class="table-head">
-          <h2>Metas por pergunta</h2>
-          <span id="ql-count"></span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Pergunta</th>
-              <th style="text-align:center">Média atual</th>
-              <th style="text-align:center">Meta</th>
-              <th style="text-align:center">Status</th>
-            </tr>
-          </thead>
-          <tbody id="ql-body"></tbody>
-        </table>
-        <div id="ql-empty" class="empty" style="display:none">Sem metas configuradas.</div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:1.2rem;align-items:start">
+        <!-- Coluna lateral: busca + lista -->
+        <aside style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+          <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
+            <input id="cli-q" placeholder="Nome, CPF, e-mail…" style="flex:1;padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.9rem">
+            <button class="btn btn-primary btn-sm" id="btn-cli-novo" title="Novo cliente">+</button>
+          </div>
+          <div id="cli-list" style="display:flex;flex-direction:column;gap:.3rem;max-height:60vh;overflow:auto">
+            <div class="empty" style="font-size:.85rem">Comece digitando.</div>
+          </div>
+        </aside>
+
+        <!-- Coluna principal: detalhe do cliente -->
+        <section id="cli-detail" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;min-height:200px">
+          <div class="empty">Selecione um cliente para ver detalhes.</div>
+        </section>
       </div>
     </div>
 
@@ -3052,13 +3145,18 @@
         </div>
         <div class="res-frow">
           <div class="res-fg">
+            <label>CPF <span style="color:var(--muted);font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0">(opcional, traz dados se já cadastrado)</span></label>
+            <input type="text" id="res-inp-cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off">
+            <small id="res-cpf-info" style="display:none;font-size:.72rem;color:var(--success);margin-top:.25rem"></small>
+          </div>
+          <div class="res-fg">
             <label>E-mail <span style="color:var(--danger)">*</span></label>
             <input type="email" id="res-inp-email" placeholder="email@exemplo.com">
           </div>
-          <div class="res-fg">
-            <label>Telefone</label>
-            <input type="text" id="res-inp-tel" placeholder="(85) 99999-9999">
-          </div>
+        </div>
+        <div class="res-fg">
+          <label>Telefone</label>
+          <input type="text" id="res-inp-tel" placeholder="(85) 99999-9999">
         </div>
         <div class="res-fg">
           <label>Tratamento</label>

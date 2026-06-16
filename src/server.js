@@ -15,7 +15,8 @@ import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
 import relatoriosRouter from './routes/relatorios.js';
 import qualidadeRouter from './routes/qualidade.js';
-import { seedQualidadeSpa, seedAnamneseSpa } from './qualidade.js';
+import clientesRouter from './routes/clientes.js';
+import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
 
 const SPA_ADMIN_EMAILS = [
   'richard@granmarquise.com.br',
@@ -189,6 +190,7 @@ app.use('/api/survey', qualidadeRouter);
 app.use('/api/qualidade', qualidadeRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/clientes', clientesRouter);
 app.use('/api/reservas', reservasRouter);
 app.use('/api/dev', devRouter);
 app.use('/api', cadastrosRouter);
@@ -265,4 +267,5 @@ initDb();
 // Re-rodar e' seguro: detecta se 'spa-locc-v1' ja existe e ignora.
 try { seedQualidadeSpa(); } catch (err) { console.error('[Qualidade] seed falhou:', err.message); }
 try { seedAnamneseSpa(); } catch (err) { console.error('[Anamnese] seed falhou:', err.message); }
+try { seedAnamneseOpcoes(); } catch (err) { console.error('[Anamnese-Opcoes] seed falhou:', err.message); }
 app.listen(PORT, () => console.log(`[Gran SPA] Servidor rodando na porta ${PORT}`));
