@@ -3023,25 +3023,25 @@
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Admin</span>
-            <h1 class="page-title">Editor da Anamnese</h1>
+            <h1 class="page-title">Perguntas da Anamnese</h1>
           </div>
-          <p class="page-sub">Perguntas do Formulário Pré-Massagem (spa-anamnese-v1). Mudanças se aplicam no próximo formulário preenchido pelo cliente.</p>
+          <p class="page-sub">Edite as perguntas do formulário que o cliente preenche antes do tratamento. Tudo é traduzido automaticamente em 7 idiomas.</p>
         </div>
-        <button class="btn btn-outline btn-sm" id="btn-anam-reload" style="margin-left:auto">↻ Recarregar</button>
+        <button class="btn btn-outline btn-sm" id="btn-anam-reload" style="margin-left:auto">↻ Atualizar</button>
       </div>
 
       <div id="anam-empty" class="empty" style="display:none;margin:2rem 0">
-        Carregando estrutura da anamnese…
+        Carregando…
       </div>
 
       <div id="anam-secoes"></div>
 
-      <div style="margin-top:2rem;padding:1rem;border:1px dashed var(--border);border-radius:6px">
-        <h3 style="margin:0 0 .6rem 0;font-family:Cormorant Garamond,serif;font-size:1.1rem">Adicionar nova seção</h3>
+      <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
+        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
+        <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Saúde", "Preferências").</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-          <input id="anam-nova-secao-chave" placeholder="chave (ex: medicamentos)" style="padding:.5rem;border:1px solid var(--border);background:var(--bg);font-size:.85rem;min-width:200px">
-          <input id="anam-nova-secao-titulo" placeholder="Título pt-BR" style="padding:.5rem;border:1px solid var(--border);background:var(--bg);font-size:.85rem;flex:1;min-width:240px">
-          <button class="btn btn-primary btn-sm" id="btn-anam-add-secao">+ Adicionar seção</button>
+          <input id="anam-nova-secao-titulo" placeholder="Nome da seção (ex: Alergias)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <button class="btn btn-primary btn-sm" id="btn-anam-add-secao">+ Criar seção</button>
         </div>
       </div>
     </div>

@@ -3927,193 +3927,243 @@ async function initAnamneseEditor() {
   _renderAnamEstrutura();
 }
 
+// Helper: gera uma chave (slug) a partir de um texto pt-BR.
+// Ex: "Possui alguma alergia?" -> "anamnese_possui_alguma_alergia"
+function _slugChave(texto, prefixo = 'anamnese_') {
+  const base = String(texto || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 50) || 'pergunta';
+  // Adiciona sufixo numérico aleatório curto para evitar colisão
+  return prefixo + base + '_' + Math.random().toString(36).slice(2, 6);
+}
+
+const _TIPO_LABEL_AMIGAVEL = {
+  texto_livre: 'Texto curto',
+  unica:       'Escolha uma opção',
+  multipla:    'Marcar várias opções',
+  escala:      'Sim ou Não',
+};
+
 function _renderAnamEstrutura() {
   const wrap = document.getElementById('anam-secoes');
   const e = _anamEstrutura;
   wrap.innerHTML = e.secoes.map(s => `
-    <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin-bottom:1.4rem;background:var(--surface)">
-      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.6rem">
-        <div>
-          <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.25rem">${escHtml(s.titulo)}</h3>
-          <span style="color:var(--muted);font-size:.74rem">chave: <code>${escHtml(s.chave)}</code> · ordem ${s.ordem} · ${s.perguntas.length} pergunta${s.perguntas.length === 1 ? '' : 's'}</span>
-        </div>
+    <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
+      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
+        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
         <div style="display:flex;gap:.4rem">
-          <button class="btn btn-outline btn-sm" data-anam-act="edit-secao" data-secao-id="${s.id}">✎ Editar seção</button>
-          <button class="btn btn-outline btn-sm" data-anam-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">× Remover seção</button>
+          <button class="btn btn-outline btn-sm" data-anam-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
+          <button class="btn btn-outline btn-sm" data-anam-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
         </div>
       </header>
       <div class="anam-perguntas">
-        ${s.perguntas.map((q, idx) => _renderAnamPergunta(q, idx, s.perguntas.length, s.id)).join('')}
+        ${s.perguntas.map(q => _renderAnamPergunta(q)).join('')}
       </div>
-      <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px dashed var(--border);display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
-        <input data-anam-newperg-chave data-secao-id="${s.id}" placeholder="chave (ex: alergias_alimentares)" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem;min-width:200px">
-        <input data-anam-newperg-rotulo data-secao-id="${s.id}" placeholder="Rótulo pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem;flex:1;min-width:240px">
-        <select data-anam-newperg-tipo data-secao-id="${s.id}" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);font-size:.82rem">
-          ${_ANAM_TIPOS.map(t => `<option value="${t.value}">${escHtml(t.label)}</option>`).join('')}
-        </select>
-        <button class="btn btn-outline btn-sm" data-anam-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar pergunta</button>
+      <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input data-anam-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <select data-anam-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.88rem;border-radius:4px">
+            ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary btn-sm" data-anam-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
+        </div>
       </div>
     </section>
   `).join('');
   _wireAnamAcoes();
 }
 
-function _renderAnamPergunta(q, idx, total, secaoId) {
-  // Note: o endpoint /api/survey/config NÃO retorna pp_id (id da associação
-  // pesquisa_pergunta), apenas dados da pergunta. Para editar ordem/ativo/
-  // obrigatoriedade, precisaríamos da pp_id; isso requer outro endpoint
-  // admin. Por enquanto, mostramos status e usamos editar pergunta direto
-  // (que é o que mais matters: rótulo + tipo).
+function _renderAnamPergunta(q) {
+  const tipoLabel = _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
   const opcoes = q.opcoes && q.opcoes.length
-    ? `<div style="margin-top:.3rem;color:var(--muted);font-size:.74rem">Opções: ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
+    ? `<div style="margin-top:.35rem;color:var(--muted);font-size:.82rem"><strong style="color:var(--text);font-weight:500">Opções:</strong> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
+    : '';
+  const obrigBadge = q.obrigatoria
+    ? '<span style="background:var(--danger);color:white;font-size:.66rem;padding:.1rem .4rem;border-radius:9999px;font-weight:600;letter-spacing:.04em">OBRIGATÓRIA</span>'
+    : '';
+  const tipoBadge = `<span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .5rem;border-radius:9999px">${escHtml(tipoLabel)}</span>`;
+  const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
+    ? `<button class="btn btn-outline btn-sm" data-anam-act="edit-opcoes" data-chave="${escHtml(q.chave)}">Opções</button>`
     : '';
   return `
-    <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;padding:.7rem .8rem;margin-bottom:.4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+    <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
-          ${escHtml(q.rotulo)}
-          ${q.obrigatoria ? '<span style="color:var(--danger);font-size:.78rem">*</span>' : ''}
-          <span style="font-size:.7rem;color:var(--muted);font-family:monospace">${escHtml(q.chave)}</span>
-        </div>
-        <div style="font-size:.74rem;color:var(--muted);margin-top:.2rem">
-          tipo: <strong>${escHtml(q.tipo)}</strong>
-          ${q.mapeia_campo_legado ? ` · mapeia: <code>${escHtml(q.mapeia_campo_legado)}</code>` : ''}
-          ${q.ajuda ? ` · ajuda: ${escHtml(q.ajuda)}` : ''}
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
+          <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
+          ${obrigBadge}
+          ${tipoBadge}
         </div>
         ${opcoes}
       </div>
       <div style="display:flex;gap:.3rem;flex-shrink:0">
-        <button class="btn btn-outline btn-sm" data-anam-act="edit-perg" data-chave="${escHtml(q.chave)}" title="Editar pergunta">✎</button>
-        ${q.tipo === 'unica' || q.tipo === 'multipla' ? `<button class="btn btn-outline btn-sm" data-anam-act="edit-opcoes" data-chave="${escHtml(q.chave)}" title="Editar opções">⚙</button>` : ''}
+        <button class="btn btn-outline btn-sm" data-anam-act="edit-perg" data-chave="${escHtml(q.chave)}">Editar</button>
+        ${editOpcoesBtn}
+        <button class="btn btn-outline btn-sm" data-anam-act="del-perg" data-chave="${escHtml(q.chave)}" style="color:var(--danger);border-color:var(--danger)" title="Remover esta pergunta">×</button>
       </div>
     </div>
   `;
 }
 
+let _anamAcoesWired = false;
 function _wireAnamAcoes() {
-  // Add seção
-  document.getElementById('btn-anam-add-secao')?.addEventListener('click', _anamAddSecao, { once: true });
-  // Ações por botão
+  // Listener do botão + Criar seção: anexa UMA vez (sem { once }) e funciona
+  // para múltiplas execuções. O elemento existe sempre (fora do template
+  // dinâmico), então não precisa re-registrar a cada render.
+  if (!_anamAcoesWired) {
+    document.getElementById('btn-anam-add-secao')?.addEventListener('click', _anamAddSecao);
+    _anamAcoesWired = true;
+  }
+  // Os botões dentro de cada seção são re-criados a cada render. Substituir
+  // listeners é seguro (clone + replace).
   document.querySelectorAll('[data-anam-act]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const act = btn.dataset.anamAct;
-      const secaoId = btn.dataset.secaoId ? parseInt(btn.dataset.secaoId) : null;
-      const chave = btn.dataset.chave;
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener('click', () => {
+      const act = clone.dataset.anamAct;
+      const secaoId = clone.dataset.secaoId ? parseInt(clone.dataset.secaoId) : null;
+      const chave = clone.dataset.chave;
       if (act === 'add-pergunta') _anamAddPergunta(secaoId);
-      else if (act === 'edit-perg') _anamEditPergunta(chave);
+      else if (act === 'edit-perg')   _anamEditPergunta(chave);
+      else if (act === 'del-perg')    _anamDelPergunta(chave);
       else if (act === 'edit-opcoes') _anamEditOpcoes(chave);
-      else if (act === 'edit-secao') _anamEditSecao(secaoId);
-      else if (act === 'del-secao') _anamDelSecao(secaoId);
+      else if (act === 'edit-secao')  _anamEditSecao(secaoId);
+      else if (act === 'del-secao')   _anamDelSecao(secaoId);
     });
   });
 }
 
-async function _anamAddSecao() {
-  const chave  = document.getElementById('anam-nova-secao-chave')?.value.trim();
-  const titulo = document.getElementById('anam-nova-secao-titulo')?.value.trim();
-  if (!chave) return showToast('Informe a chave da seção');
-  if (!titulo) return showToast('Informe o título da seção');
-  showToast('Traduzindo título para os 7 idiomas…');
-  try {
-    const trMap = await (async () => {
-      try {
-        const r = await api('/api/qualidade/admin/traduzir', {
-          method: 'POST',
-          body: JSON.stringify({ texto: titulo, idiomas: ['pt-PT','en','es','fr','it','de'] }),
-        });
-        if (!r) return null;
-        const d = await r.json();
-        return d?.ok ? d.traducoes : null;
-      } catch { return null; }
-    })();
-    const traducoes = { 'pt-BR': titulo };
-    if (trMap) for (const [k, v] of Object.entries(trMap)) traducoes[k] = v;
-    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
-      chave, ordem: 99, traducoes,
-    });
-    showToast('Seção criada (traduzida em 7 idiomas)');
-    document.getElementById('anam-nova-secao-chave').value = '';
-    document.getElementById('anam-nova-secao-titulo').value = '';
-    initAnamneseEditor();
-  } catch (e) { showToast('Erro: ' + e.message, 5000); }
-}
-
-// Pede ao backend as traduções pt-BR → 6 idiomas e devolve o mapa
-// { idioma: { rotulo: '...' } } pronto para gravar via /admin/perguntas.
+// Tradução pt-BR → 6 idiomas. Falha silenciosa devolve só pt-BR.
 async function _anamTraduzirRotulo(rotuloPtBR) {
   try {
     const r = await api('/api/qualidade/admin/traduzir', {
       method: 'POST',
       body: JSON.stringify({ texto: rotuloPtBR, idiomas: ['pt-PT','en','es','fr','it','de'] }),
     });
-    if (!r) return null;
+    if (!r) return { 'pt-BR': { rotulo: rotuloPtBR } };
     const d = await r.json();
-    if (!d?.ok || !d.traducoes) return null;
     const out = { 'pt-BR': { rotulo: rotuloPtBR } };
-    for (const [idioma, texto] of Object.entries(d.traducoes)) {
-      out[idioma] = { rotulo: texto };
+    if (d?.ok && d.traducoes) {
+      for (const [idioma, texto] of Object.entries(d.traducoes)) {
+        out[idioma] = { rotulo: texto };
+      }
     }
     return out;
-  } catch { return null; }
+  } catch { return { 'pt-BR': { rotulo: rotuloPtBR } }; }
+}
+
+async function _anamAddSecao() {
+  if (!_anamPesquisaId) return showToast('Carregando estrutura, aguarde…', 3000);
+  const tituloEl = document.getElementById('anam-nova-secao-titulo');
+  const titulo = tituloEl?.value.trim();
+  if (!titulo) { tituloEl?.focus(); return showToast('Digite o nome da nova seção'); }
+  const chave = _slugChave(titulo, 'sec_');
+  showToast('Criando seção e traduzindo nos 7 idiomas…', 3000);
+  try {
+    const trad = await _anamTraduzirRotulo(titulo); // { idioma: {rotulo: '...'} }
+    const traducoes = {};
+    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes,
+    });
+    showToast('✓ Seção criada');
+    tituloEl.value = '';
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Não foi possível criar: ' + e.message, 5000);
+  }
 }
 
 async function _anamAddPergunta(secaoId) {
-  const chaveInp  = document.querySelector(`[data-anam-newperg-chave][data-secao-id="${secaoId}"]`);
+  if (!_anamPesquisaId) return showToast('Carregando estrutura, aguarde…');
   const rotuloInp = document.querySelector(`[data-anam-newperg-rotulo][data-secao-id="${secaoId}"]`);
   const tipoSel   = document.querySelector(`[data-anam-newperg-tipo][data-secao-id="${secaoId}"]`);
-  const chave  = chaveInp?.value.trim();
   const rotulo = rotuloInp?.value.trim();
   const tipo   = tipoSel?.value || 'texto_livre';
-  if (!chave) return showToast('Informe a chave da pergunta');
-  if (!rotulo) return showToast('Informe o rótulo (texto exibido ao cliente)');
-  showToast('Traduzindo automaticamente para os 7 idiomas…');
+  if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
+  const chave = _slugChave(rotulo);
+  showToast('Criando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(rotulo) || { 'pt-BR': { rotulo } };
-    // 1) Cria pergunta na biblioteca já com TODAS as traduções
+    const traducoes = await _anamTraduzirRotulo(rotulo);
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
       chave, tipo, traducoes,
     });
-    // 2) Associa à pesquisa, na seção informada
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
     });
-    showToast('Pergunta criada (traduzida em 7 idiomas)');
-    if (chaveInp)  chaveInp.value = '';
+    showToast('✓ Pergunta criada');
     if (rotuloInp) rotuloInp.value = '';
     initAnamneseEditor();
   } catch (e) {
-    showToast('Erro: ' + e.message, 5000);
+    showToast('Não foi possível criar: ' + e.message, 5000);
   }
 }
 
 async function _anamEditPergunta(chave) {
-  // Busca a pergunta na lista da biblioteca pra pegar id + traduções atuais
   const r = await api('/api/qualidade/admin/perguntas');
   if (!r) return;
   const d = await r.json();
   if (!d.ok) return;
   const p = d.items.find(x => x.chave === chave);
   if (!p) return showToast('Pergunta não encontrada');
-  const rotuloAtual = p.rotulo || chave;
-  const novoRotulo = prompt('Rótulo pt-BR (texto exibido ao cliente):', rotuloAtual);
+
+  const novoRotulo = await pedirTexto({
+    titulo: 'Editar pergunta',
+    mensagem: 'Texto que o cliente vê (português). A tradução para os outros idiomas é automática.',
+    valorInicial: p.rotulo || chave,
+    placeholder: 'Escreva a pergunta…',
+  });
   if (novoRotulo === null) return;
-  const novoTipo = prompt('Tipo (texto_livre, unica, multipla, escala):', p.tipo);
+
+  const novoTipo = await pedirOpcao({
+    titulo: 'Tipo de resposta',
+    mensagem: 'Como o cliente vai responder esta pergunta?',
+    valorInicial: p.tipo,
+    opcoes: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
+  });
   if (novoTipo === null) return;
-  if (!_ANAM_TIPOS.find(t => t.value === novoTipo)) return showToast('Tipo inválido');
-  showToast('Traduzindo para os 7 idiomas…');
+
+  showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim()) || { 'pt-BR': { rotulo: novoRotulo.trim() } };
+    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim());
     await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, {
       tipo: novoTipo,
       traducoes,
     });
-    showToast('Pergunta atualizada (traduzida em 7 idiomas)');
+    showToast('✓ Pergunta atualizada');
+    initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _anamDelPergunta(chave) {
+  // Encontra a associação via /api/survey/config (já temos em _anamEstrutura)
+  const ok = await confirmarAcao({
+    titulo: 'Remover pergunta?',
+    mensagem: `A pergunta "${chave.replace(/^anamnese_/,'').replace(/_/g,' ')}" sai da anamnese. Os dados já respondidos por clientes anteriores continuam preservados.`,
+    btnConfirmar: 'Sim, remover',
+    btnCancelar: 'Voltar',
+    perigoso: true,
+  });
+  if (!ok) return;
+  // Busca id da pergunta
+  const rL = await api('/api/qualidade/admin/perguntas');
+  if (!rL) return;
+  const dL = await rL.json();
+  const p = dL.items?.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+  // Busca pp_id (associação pesquisa_pergunta) — não temos endpoint direto,
+  // então marcamos a pergunta como ativo=0 (deixa de aparecer no formulário).
+  try {
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { ativo: 0 });
+    showToast('✓ Pergunta removida');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
 async function _anamEditOpcoes(chave) {
-  // Busca id da pergunta
   const r = await api('/api/qualidade/admin/perguntas');
   if (!r) return;
   const d = await r.json();
@@ -4124,41 +4174,50 @@ async function _anamEditOpcoes(chave) {
   if (!rOp) return;
   const dOp = await rOp.json();
   const opcoes = dOp.items || [];
-  const txt = opcoes.map(o => {
-    const rotPt = o.traducoes && o.traducoes['pt-BR'] || o.chave;
-    return `${o.chave}|${rotPt}`;
-  }).join('\n');
-  const novo = prompt(
-    'Edite as opções (uma por linha, formato chave|Rótulo pt-BR).\n' +
-    'Linhas removidas serão APAGADAS, novas linhas serão adicionadas.\n\n',
-    txt
-  );
+  const textoAtual = opcoes.map(o => (o.traducoes?.['pt-BR'] || o.chave)).join('\n');
+
+  const novo = await pedirTexto({
+    titulo: 'Editar opções da pergunta',
+    mensagem: 'Uma opção por linha. Remova ou adicione livremente. Traduzido automaticamente nos 7 idiomas.',
+    valorInicial: textoAtual,
+    placeholder: 'Opção 1\nOpção 2\nOpção 3',
+    multilinhas: true,
+  });
   if (novo === null) return;
+
   const linhas = novo.split('\n').map(l => l.trim()).filter(Boolean);
-  const novosByChave = {};
-  for (const ln of linhas) {
-    const [k, ...rest] = ln.split('|');
-    if (!k) continue;
-    novosByChave[k.trim()] = (rest.join('|') || k).trim();
-  }
+  if (!linhas.length) return showToast('Pelo menos uma opção é obrigatória');
+
+  showToast('Salvando opções e traduzindo…', 3000);
   try {
+    // Constrói novosByChave preservando chaves existentes quando o rótulo
+    // bater com a tradução antiga; gera chave nova quando o rótulo é novo.
+    const novosByChave = {};
+    for (const rot of linhas) {
+      const existing = opcoes.find(o => (o.traducoes?.['pt-BR'] || o.chave) === rot);
+      const k = existing ? existing.chave : _slugChave(rot, '').replace(/_[a-z0-9]{4}$/, '');
+      novosByChave[k || rot] = rot;
+    }
     // Remove os que sumiram
     for (const o of opcoes) {
       if (!(o.chave in novosByChave)) {
         await apiSend('DELETE', `/api/qualidade/admin/opcoes/${o.id}`);
       }
     }
-    // Insere/atualiza
+    // Insere/atualiza com tradução
     let ordem = 1;
     for (const [k, rot] of Object.entries(novosByChave)) {
       const existing = opcoes.find(o => o.chave === k);
+      const trad = await _anamTraduzirRotulo(rot);
+      const traducoesOp = {};
+      for (const [idioma, v] of Object.entries(trad)) traducoesOp[idioma] = v.rotulo;
       await apiSend('POST', `/api/qualidade/admin/perguntas/${p.id}/opcoes`, {
         id: existing?.id || undefined,
         chave: k, ordem: ordem++, ativo: 1,
-        traducoes: { 'pt-BR': rot },
+        traducoes: traducoesOp,
       });
     }
-    showToast('Opções atualizadas');
+    showToast('✓ Opções atualizadas');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
@@ -4166,41 +4225,113 @@ async function _anamEditOpcoes(chave) {
 async function _anamEditSecao(secaoId) {
   const sec = _anamEstrutura.secoes.find(s => s.id === secaoId);
   if (!sec) return;
-  const novoTit = prompt('Título pt-BR da seção:', sec.titulo);
+  const novoTit = await pedirTexto({
+    titulo: 'Renomear seção',
+    mensagem: 'Novo nome da seção (em português). Traduzido automaticamente nos 7 idiomas.',
+    valorInicial: sec.titulo,
+    placeholder: 'Nome da seção',
+  });
   if (novoTit === null) return;
-  const novaOrdem = prompt('Ordem (número inteiro):', String(sec.ordem));
-  if (novaOrdem === null) return;
-  showToast('Traduzindo título para os 7 idiomas…');
+  showToast('Salvando e traduzindo…', 3000);
   try {
-    // Traduz título pt-BR → 6 idiomas. Estrutura para pesquisa_secao_traducao:
-    // { idioma: 'titulo string' } (não objeto).
-    const trMap = await (async () => {
-      try {
-        const r = await api('/api/qualidade/admin/traduzir', {
-          method: 'POST',
-          body: JSON.stringify({ texto: novoTit.trim(), idiomas: ['pt-PT','en','es','fr','it','de'] }),
-        });
-        if (!r) return null;
-        const d = await r.json();
-        return d?.ok ? d.traducoes : null;
-      } catch { return null; }
-    })();
-    const traducoes = { 'pt-BR': novoTit.trim() };
-    if (trMap) for (const [k, v] of Object.entries(trMap)) traducoes[k] = v;
+    const trad = await _anamTraduzirRotulo(novoTit.trim());
+    const traducoes = {};
+    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
     await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, {
-      ordem: parseInt(novaOrdem) || 0,
+      ordem: sec.ordem,
       traducoes,
     });
-    showToast('Seção atualizada (traduzida em 7 idiomas)');
+    showToast('✓ Seção renomeada');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
 async function _anamDelSecao(secaoId) {
-  if (!confirm('Remover esta seção e suas perguntas associadas? (As perguntas continuam na Biblioteca mas saem desta seção.)')) return;
+  const sec = _anamEstrutura.secoes.find(s => s.id === secaoId);
+  const nome = sec ? `"${sec.titulo}"` : 'esta seção';
+  const ok = await confirmarAcao({
+    titulo: `Remover seção ${nome}?`,
+    mensagem: 'A seção e suas perguntas saem do formulário. Os dados já respondidos continuam preservados.',
+    btnConfirmar: 'Sim, remover',
+    btnCancelar: 'Voltar',
+    perigoso: true,
+  });
+  if (!ok) return;
   try {
     await apiSend('DELETE', `/api/qualidade/admin/secoes/${secaoId}`);
-    showToast('Seção removida');
+    showToast('✓ Seção removida');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
+
+// Prompt customizado (substitui prompt() nativo com estilo Gran Marquise).
+// Retorna o texto digitado ou null se cancelado.
+function pedirTexto({ titulo = 'Digite', mensagem = '', valorInicial = '', placeholder = '', multilinhas = false } = {}) {
+  return new Promise(resolve => {
+    document.querySelectorAll('.confirm-overlay').forEach(n => n.remove());
+    const ov = document.createElement('div');
+    ov.className = 'confirm-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    const inputHtml = multilinhas
+      ? `<textarea id="_pedir-inp" rows="8" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;border-radius:4px;font-family:inherit;resize:vertical">${escHtml(valorInicial)}</textarea>`
+      : `<input id="_pedir-inp" value="${escHtml(valorInicial)}" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">`;
+    ov.innerHTML = `
+      <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
+        ${inputHtml}
+        <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem">
+          <button class="btn btn-outline" data-act="cancel">Cancelar</button>
+          <button class="btn btn-gold" data-act="ok">Salvar</button>
+        </div>
+      </div>
+    `;
+    function close(result) { ov.remove(); document.removeEventListener('keydown', onKey); resolve(result); }
+    function onKey(e) {
+      if (e.key === 'Escape') close(null);
+      else if (e.key === 'Enter' && !multilinhas) close(ov.querySelector('#_pedir-inp').value);
+    }
+    ov.addEventListener('click', e => {
+      if (e.target === ov) close(null);
+      else if (e.target.dataset.act === 'cancel') close(null);
+      else if (e.target.dataset.act === 'ok') close(ov.querySelector('#_pedir-inp').value);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    setTimeout(() => { const i = ov.querySelector('#_pedir-inp'); i?.focus(); if (i && !multilinhas) i.select(); }, 30);
+  });
+}
+
+// Modal de seleção em dropdown (substitui prompt com lista).
+function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
+  return new Promise(resolve => {
+    document.querySelectorAll('.confirm-overlay').forEach(n => n.remove());
+    const ov = document.createElement('div');
+    ov.className = 'confirm-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    ov.innerHTML = `
+      <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:460px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
+        <select id="_pedir-sel" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">
+          ${opcoes.map(o => `<option value="${escHtml(o.value)}"${o.value === valorInicial ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem">
+          <button class="btn btn-outline" data-act="cancel">Cancelar</button>
+          <button class="btn btn-gold" data-act="ok">Salvar</button>
+        </div>
+      </div>
+    `;
+    function close(r) { ov.remove(); document.removeEventListener('keydown', onKey); resolve(r); }
+    function onKey(e) { if (e.key === 'Escape') close(null); else if (e.key === 'Enter') close(ov.querySelector('#_pedir-sel').value); }
+    ov.addEventListener('click', e => {
+      if (e.target === ov || e.target.dataset.act === 'cancel') close(null);
+      else if (e.target.dataset.act === 'ok') close(ov.querySelector('#_pedir-sel').value);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    setTimeout(() => ov.querySelector('#_pedir-sel')?.focus(), 30);
+  });
+}
+window.pedirTexto = pedirTexto;
+window.pedirOpcao = pedirOpcao;
