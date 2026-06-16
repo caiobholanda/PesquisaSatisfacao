@@ -60,7 +60,7 @@ Responda APENAS um JSON com as chaves dos idiomas e os valores traduzidos, exemp
 
   try {
     const resp = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-6',
       max_tokens: 600,
       temperature: 0,
       messages: [{ role: 'user', content: prompt }],
