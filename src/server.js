@@ -6,7 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -149,6 +149,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/survey/live', (_req, res) => {
   const row = buscarSurveyTokenAtivo();
   if (!row) return res.json({ ok: false });
+  const quartoNum = row.quarto || row.apto || '';
   res.json({
     ok: true,
     dados: {
@@ -156,6 +157,8 @@ app.get('/api/survey/live', (_req, res) => {
       data: row.data, tratamento: row.tratamento, tipo_cliente: row.tipo_cliente,
       massoterapeuta: row.massagista_nome || '',
       liberada_em: row.liberada_em,
+      quarto: row.quarto || null,
+      gran_class: quartoNum ? isGranClass(quartoNum) : false,
     },
   });
 });
@@ -167,6 +170,7 @@ app.get('/api/survey/:token', (req, res, next) => {
   if (PATHS_RESERVADOS.has(req.params.token)) return next();
   const row = buscarSurveyToken(req.params.token);
   if (!row) return res.status(404).json({ ok: false, error: 'Token inválido' });
+  const quartoNum = row.quarto || row.apto || '';
   res.json({
     ok: true,
     dados: {
@@ -179,8 +183,18 @@ app.get('/api/survey/:token', (req, res, next) => {
       tipo_cliente: row.tipo_cliente,
       massoterapeuta: row.massagista_nome || '',
       liberada_em: row.liberada_em,
+      quarto: row.quarto || null,
+      gran_class: quartoNum ? isGranClass(quartoNum) : false,
     },
   });
+});
+
+// Lista de quartos disponíveis (consumido pela UI da Nova Reserva e da
+// Anamnese para validação client-side e autocomplete).
+app.get('/api/quartos', (req, res) => {
+  const cat = req.query.categoria || null;
+  const items = listarQuartos({ categoria: cat, ativo: 1 });
+  res.json({ ok: true, items });
 });
 
 // Audit middleware: aplicado ANTES de QUALQUER router /api/*, para garantir

@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "Français", "code": "fr" },
+  "meta": {
+    "lang": "Français",
+    "code": "fr"
+  },
   "page_title": "Spa L'Occitane — Fiche Profil Client",
   "header": {
     "title": "Fiche Profil Client — Confidentiel",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+33 0 00 00 00 00",
     "dob": "Date de naissance",
     "other_product": "Autre produit spécifique",
-    "other_product_placeholder": "Décrivez le produit…"
+    "other_product_placeholder": "Décrivez le produit…",
+    "room": "Chambre",
+    "room_hint": "— si vous êtes client de l'hôtel"
   },
   "doc": {
     "type_label": "Type de document",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Numéro de passeport"
   },
   "facial_items": [
-    "Nettoyant", "Tonique", "Gommage visage", "Masque visage",
-    "Sérum yeux", "Contour des yeux", "Sérum visage",
-    "Crème de jour", "Crème de nuit", "Huile visage", "Protection solaire"
+    "Nettoyant",
+    "Tonique",
+    "Gommage visage",
+    "Masque visage",
+    "Sérum yeux",
+    "Contour des yeux",
+    "Sérum visage",
+    "Crème de jour",
+    "Crème de nuit",
+    "Huile visage",
+    "Protection solaire"
   ],
   "body_items": [
-    "Lait / Crème / Huile corps", "Gommage corps", "Crème amincissante",
-    "Crème pour les mains", "Crème pour les pieds"
+    "Lait / Crème / Huile corps",
+    "Gommage corps",
+    "Crème amincissante",
+    "Crème pour les mains",
+    "Crème pour les pieds"
   ],
   "pressure": {
     "label": "Sélectionnez la pression souhaitée",
@@ -83,12 +99,13 @@
     "doc_number": "Le numéro de document est obligatoire.",
     "cpf_invalid": "Numéro CPF invalide. Veuillez vérifier et réessayer.",
     "email": "Veuillez indiquer une adresse e-mail valide.",
-    "phone": "Le numéro de téléphone est obligatoire.",
+    "phone": "Téléphone invalide. Format BR ou international (+...).",
     "medical": "Veuillez décrire les informations médicales pertinentes.",
     "health_consent": "Le consentement au traitement des données de santé est obligatoire.",
     "signature": "La signature est obligatoire.",
     "generic": "Veuillez remplir tous les champs obligatoires avant d'envoyer.",
-    "server": "Une erreur est survenue lors de l'envoi. Veuillez réessayer."
+    "server": "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
+    "room_invalid": "Chambre inexistante. Vérifiez le numéro (ex : 0501, 1401)."
   },
   "success": {
     "title": "Formulaire envoyé avec succès !",

@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "Deutsch", "code": "de" },
+  "meta": {
+    "lang": "Deutsch",
+    "code": "de"
+  },
   "page_title": "Spa L'Occitane — Kundenprofil",
   "header": {
     "title": "Kundenprofil — Vertraulich",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+49 000 000 0000",
     "dob": "Geburtsdatum",
     "other_product": "Sonstiges Produkt",
-    "other_product_placeholder": "Produkt beschreiben…"
+    "other_product_placeholder": "Produkt beschreiben…",
+    "room": "Zimmer",
+    "room_hint": "— wenn Gast"
   },
   "doc": {
     "type_label": "Dokumententyp",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Reisepassnummer"
   },
   "facial_items": [
-    "Reiniger", "Toner / Gesichtswasser", "Gesichtspeeling", "Gesichtsmaske",
-    "Augenserum", "Augenkonturpflege", "Gesichtsserum",
-    "Tagescreme", "Nachtcreme", "Gesichtsöl", "Sonnenschutz"
+    "Reiniger",
+    "Toner / Gesichtswasser",
+    "Gesichtspeeling",
+    "Gesichtsmaske",
+    "Augenserum",
+    "Augenkonturpflege",
+    "Gesichtsserum",
+    "Tagescreme",
+    "Nachtcreme",
+    "Gesichtsöl",
+    "Sonnenschutz"
   ],
   "body_items": [
-    "Körperlotion / -creme / -öl", "Körperpeeling", "Schlankheitscreme",
-    "Handcreme", "Fußcreme"
+    "Körperlotion / -creme / -öl",
+    "Körperpeeling",
+    "Schlankheitscreme",
+    "Handcreme",
+    "Fußcreme"
   ],
   "pressure": {
     "label": "Bevorzugten Druck auswählen",
@@ -83,12 +99,13 @@
     "doc_number": "Die Dokumentennummer ist erforderlich.",
     "cpf_invalid": "Ungültige CPF-Nummer. Bitte überprüfen und erneut versuchen.",
     "email": "Bitte geben Sie eine gültige E-Mail-Adresse an.",
-    "phone": "Die Telefonnummer ist erforderlich.",
+    "phone": "Ungültige Telefonnummer. Bitte BR-Format oder international (+...).",
     "medical": "Bitte beschreiben Sie relevante medizinische Informationen.",
     "health_consent": "Die Einwilligung zur Verarbeitung der Gesundheitsdaten ist erforderlich.",
     "signature": "Die Unterschrift ist erforderlich.",
     "generic": "Bitte alle Pflichtfelder ausfüllen, bevor Sie absenden.",
-    "server": "Beim Absenden ist ein Fehler aufgetreten. Bitte erneut versuchen."
+    "server": "Beim Absenden ist ein Fehler aufgetreten. Bitte erneut versuchen.",
+    "room_invalid": "Zimmer existiert nicht. Bitte Nummer prüfen (z.B. 0501, 1401)."
   },
   "success": {
     "title": "Formular erfolgreich abgesendet!",

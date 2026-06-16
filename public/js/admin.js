@@ -32,6 +32,37 @@ function tokenValido() {
   } catch { return false; }
 }
 
+// Cache de quartos e helpers de Gran Class
+let _QUARTOS_MAP = null; // { '0501': 'standard', '1401': 'gran_class', ... }
+async function _carregarQuartos() {
+  if (_QUARTOS_MAP) return _QUARTOS_MAP;
+  try {
+    const r = await fetch('/api/quartos', { credentials: 'include' });
+    if (!r.ok) return (_QUARTOS_MAP = {});
+    const d = await r.json();
+    const map = {};
+    for (const q of d.items || []) map[q.numero] = q.categoria;
+    _QUARTOS_MAP = map;
+    return map;
+  } catch { return (_QUARTOS_MAP = {}); }
+}
+function _normNumQuarto(v) {
+  return String(v || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+}
+function quartoCategoria(num) {
+  const n = _normNumQuarto(num);
+  return _QUARTOS_MAP ? (_QUARTOS_MAP[n] || null) : null;
+}
+function isGranClassCli(num) {
+  return quartoCategoria(num) === 'gran_class';
+}
+// HTML do badge — sutil, dourado, padronizado.
+function badgeGranClassHtml(label = 'GRAN CLASS') {
+  return `<span class="gc-badge" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase">★ ${label}</span>`;
+}
+window.isGranClassCli = isGranClassCli;
+window.badgeGranClassHtml = badgeGranClassHtml;
+
 function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1698,11 +1729,12 @@ function renderCalDia() {
         if(isFirst){
           const topPx=((rs-slotS)/SLOT_MIN)*CAL_SLOT_PX+2;
           const ht=((re-rs)/SLOT_MIN)*CAL_SLOT_PX-4;
+          const ehGC = res.quarto_categoria === 'gran_class';
           html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento?' · '+escHtml(res.tratamento):''} · ${res.hora_inicio}–${res.hora_fim}">
-              <div class="cal-res-name">${escHtml(res.cliente)}${res.cliente2 ? ` & ${escHtml(res.cliente2)}` : ''}</div>
+            <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px${ehGC ? ';box-shadow:inset 0 0 0 2px #d4a64a' : ''}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento?' · '+escHtml(res.tratamento):''} · ${res.hora_inicio}–${res.hora_fim}${ehGC ? ' · GRAN CLASS' : ''}">
+              <div class="cal-res-name">${ehGC ? '★ ' : ''}${escHtml(res.cliente)}${res.cliente2 ? ` & ${escHtml(res.cliente2)}` : ''}</div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
-              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
+              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ` · qto ${escHtml(res.quarto)}` : ''}</div>
               ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' & '+escHtml(res.massagista_nome2):''}</div>`:''}
               <div class="cal-res-by">por ${res.criado_por ? escHtml(res.criado_por) : '—'}</div>
               <button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
@@ -1777,7 +1809,14 @@ function calSetTipo(tipo) {
   aptoEl.style.display = isHospede ? '' : 'none';
   const nomeFg = document.getElementById('res-fg-nome');
   if (nomeFg) nomeFg.style.gridColumn = isHospede ? '' : '1 / -1';
-  if (!isHospede) document.getElementById('res-inp-apto').value = '';
+  if (!isHospede) {
+    document.getElementById('res-inp-apto').value = '';
+    const info = document.getElementById('res-quarto-info');
+    if (info) info.style.display = 'none';
+  }
+  // O quarto só é obrigatório para hóspedes
+  const req = document.getElementById('res-quarto-req');
+  if (req) req.style.display = isHospede ? '' : 'none';
 }
 
 function calOpenModal(salaId, data, hora) {
@@ -2085,8 +2124,12 @@ function calVerDetalhes(id) {
   const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
   const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
   const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
+  const _ehGCDet = r.quarto_categoria === 'gran_class' || isGranClassCli(r.quarto);
   document.getElementById('resdet-sub').innerHTML =
-    `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span><span style="margin-left:.5rem;color:var(--muted);font-size:.76rem">${salaTipo}</span>`;
+    `<span class="resdet-sala-badge ${salaCls}"><span class="resdet-sala-dot ${salaCls}"></span>${salaName}</span>` +
+    `<span style="margin-left:.5rem;color:var(--muted);font-size:.76rem">${salaTipo}</span>` +
+    (r.quarto ? `<span style="margin-left:.5rem;color:var(--muted);font-size:.76rem">· Quarto ${escHtml(r.quarto)}</span>` : '') +
+    (_ehGCDet ? `<span style="margin-left:.5rem">${badgeGranClassHtml()}</span>` : '');
 
   const isCasal = !!r.cliente2;
   document.getElementById('resdet-body').innerHTML = `
@@ -2285,6 +2328,27 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
   if(!nome){err.textContent='Informe o nome do cliente.';return;}
   if(!email){err.textContent='Informe o e-mail.';return;}
+  // Quarto: obrigatório se hóspede; se informado (mesmo passante), tem que existir.
+  const quartoInpRaw = (document.getElementById('res-inp-apto')?.value || '').trim();
+  const quartoInp = quartoInpRaw ? _normNumQuarto(quartoInpRaw) : '';
+  if (tipo === 'hospede' && !quartoInp) {
+    err.textContent='Informe o número do quarto (obrigatório para hóspedes).';
+    document.getElementById('res-inp-apto')?.focus();
+    return;
+  }
+  if (quartoInp && !quartoCategoria(quartoInp)) {
+    err.textContent='Quarto inexistente. Confira o número (ex: 0501, 1401).';
+    document.getElementById('res-inp-apto')?.focus();
+    return;
+  }
+  // Telefone: aceita BR ou internacional, mas se digitado precisa ser válido.
+  if (telefone) {
+    const t = telefone.trim();
+    let ok;
+    if (t.startsWith('+')) { ok = t.slice(1).replace(/\D/g,'').length >= 8; }
+    else { const d = t.replace(/\D/g,''); ok = d.length === 10 || d.length === 11; }
+    if (!ok) { err.textContent='Telefone inválido. Use BR (85 99999-9999) ou internacional (+33 6 12 34 56 78).'; document.getElementById('res-inp-tel')?.focus(); return; }
+  }
   if(!horaInicio){err.textContent='Informe a hora de início.';return;}
   if(!tratamento){err.textContent='Selecione o tratamento.';return;}
   if(!_resHoraFim){
@@ -2351,6 +2415,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
       cpf: cpfInpVal,
+      quarto: quartoInp || null,
     };
     if (_isCasal()) {
       Object.assign(body, {
@@ -3292,11 +3357,14 @@ async function selectCliente(id) {
   renderClienteDetail(d);
 }
 
-function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produtos }) {
+function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produtos, gran_class }) {
   const det = document.getElementById('cli-detail');
   det.innerHTML = `
     <div style="margin-bottom:1rem">
-      <h2 style="margin:0 0 .3rem 0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+      <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.3rem">
+        <h2 style="margin:0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+        ${gran_class ? badgeGranClassHtml('Cliente Gran Class') : ''}
+      </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
         ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
         ${c.email ? `<span>✉ ${escHtml(c.email)}</span>` : ''}
@@ -3342,16 +3410,18 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
 function renderClienteReservas(rs) {
   if (!rs.length) return '<div class="empty">Sem tratamentos registrados.</div>';
   return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
-    <tr><th>Data</th><th>Horário</th><th>Sala</th><th>Tratamento</th><th>Cliente</th></tr>
-  </thead><tbody>${rs.map(r => `
-    <tr>
+    <tr><th>Data</th><th>Horário</th><th>Sala</th><th>Quarto</th><th>Tratamento</th><th>Cliente</th></tr>
+  </thead><tbody>${rs.map(r => {
+    const ehGC = r.quarto_categoria === 'gran_class';
+    return `<tr${ehGC ? ' style="background:rgba(212,166,74,.06)"' : ''}>
       <td>${escHtml(r.data || '')}</td>
       <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
       <td style="text-align:center">${r.sala}</td>
+      <td>${r.quarto ? escHtml(r.quarto) + (ehGC ? ' ★' : '') : '—'}</td>
       <td>${r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'}</td>
       <td>${escHtml(r.cliente || '')}${r.cliente2 ? ' + ' + escHtml(r.cliente2) : ''}</td>
-    </tr>
-  `).join('')}</tbody></table></div>`;
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 function renderClienteAnamneses(as) {
   if (!as.length) return '<div class="empty">Cliente ainda não preencheu anamnese.</div>';
@@ -3442,6 +3512,43 @@ async function adicionarProduto(cliId) {
     showToast('Produto lançado'); selectCliente(cliId);
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Validação client-side do campo "Quarto" (Nova Reserva) + badge Gran Class.
+// Backend ainda valida e bloqueia, mas client-side dá feedback imediato.
+// ────────────────────────────────────────────────────────────────────────────
+(async function wireUpReservaQuarto() {
+  await _carregarQuartos();
+  const inp = document.getElementById('res-inp-apto');
+  const info = document.getElementById('res-quarto-info');
+  if (!inp || !info) return;
+  inp.addEventListener('input', function () {
+    // Mantém só dígitos no campo (não obrigatório, mas evita lixo)
+    const onlyDigits = this.value.replace(/\D/g, '').slice(0, 4);
+    if (onlyDigits !== this.value) this.value = onlyDigits;
+    if (!onlyDigits) { info.style.display = 'none'; return; }
+    if (onlyDigits.length < 4) {
+      info.style.color = 'var(--muted)';
+      info.textContent = 'Digite os 4 dígitos do quarto (ex: 0501, 1401)';
+      info.style.display = '';
+      return;
+    }
+    const cat = quartoCategoria(onlyDigits);
+    if (!cat) {
+      info.style.color = 'var(--danger)';
+      info.textContent = '⚠ Quarto inexistente. Confira o número.';
+      info.style.display = '';
+    } else if (cat === 'gran_class') {
+      info.style.color = '';
+      info.innerHTML = `★ ${badgeGranClassHtml('Cliente Gran Class')} <span style="color:var(--muted);margin-left:.4rem">Atendimento VIP</span>`;
+      info.style.display = '';
+    } else {
+      info.style.color = 'var(--success)';
+      info.textContent = '✓ Quarto válido';
+      info.style.display = '';
+    }
+  });
+})();
 
 // ────────────────────────────────────────────────────────────────────────────
 // MÓDULO 3: máscara + autofill do CPF na Nova Reserva.

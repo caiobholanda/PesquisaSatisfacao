@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -44,8 +44,22 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   const {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
-    cpf,
+    cpf, quarto,
   } = req.body || {};
+
+  // Quarto: obrigatório e VÁLIDO para hóspedes; opcional para passantes/externos.
+  const quartoLimpo = quarto ? String(quarto).trim().replace(/\D/g, '').padStart(4,'0').slice(-4) : '';
+  if (tipo_cliente === 'hospede') {
+    if (!quartoLimpo) return res.status(400).json({ ok: false, error: 'Quarto obrigatório para hóspedes' });
+    if (!quartoValido(quartoLimpo)) return res.status(400).json({ ok: false, error: 'Quarto inexistente. Confira o número (ex: 0501, 1401).' });
+  } else if (quartoLimpo && !quartoValido(quartoLimpo)) {
+    return res.status(400).json({ ok: false, error: 'Quarto inexistente. Deixe em branco para clientes externos.' });
+  }
+
+  // Telefone: aceita BR ou internacional; rejeita lixo.
+  if (telefone && !telefoneValido(telefone)) {
+    return res.status(400).json({ ok: false, error: 'Telefone inválido. Use formato BR (85 99999-9999) ou internacional (+33 6 12 34 56 78).' });
+  }
   if (!sala || !tipo_cliente || !cliente?.trim() || !email?.trim() || !data || !hora_inicio || !hora_fim)
     return res.status(400).json({ ok: false, error: 'Campos obrigatórios ausentes' });
   if (!massagista_id)
@@ -113,17 +127,19 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       }
     );
 
-    // Vincula cliente_id / cpf na reserva recém-criada (a inserirReserva
+    // Vincula cliente_id / cpf / quarto na reserva recém-criada (a inserirReserva
     // não conhece esses campos — gravamos via UPDATE para não mexer na
     // assinatura existente). Falha silenciosa se as colunas não existirem.
-    if (clienteIdReserva || cpfNorm) {
-      try {
-        getDb().prepare('UPDATE reservas SET cliente_id=?, cpf=? WHERE id=?')
-          .run(clienteIdReserva || null, cpfNorm || null, id);
-      } catch {}
-    }
+    try {
+      getDb().prepare('UPDATE reservas SET cliente_id=?, cpf=?, quarto=? WHERE id=?')
+        .run(clienteIdReserva || null, cpfNorm || null, quartoLimpo || null, id);
+    } catch {}
 
-    res.status(201).json({ ok: true, id, cliente_id: clienteIdReserva });
+    res.status(201).json({
+      ok: true, id, cliente_id: clienteIdReserva,
+      quarto: quartoLimpo || null,
+      gran_class: quartoLimpo ? isGranClass(quartoLimpo) : false,
+    });
   } catch (e) {
     if (e.code === 'CONFLITO_SALA') {
       return res.status(409).json({ ok: false, error: 'Sala já reservada neste horário', tipo: 'sala', conflito: e.conflito });

@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "Italiano", "code": "it" },
+  "meta": {
+    "lang": "Italiano",
+    "code": "it"
+  },
   "page_title": "Spa L'Occitane — Scheda Profilo Cliente",
   "header": {
     "title": "Scheda Profilo Cliente — Riservato",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+39 000 000 0000",
     "dob": "Data di nascita",
     "other_product": "Altro prodotto specifico",
-    "other_product_placeholder": "Descriva il prodotto…"
+    "other_product_placeholder": "Descriva il prodotto…",
+    "room": "Camera",
+    "room_hint": "— se ospite"
   },
   "doc": {
     "type_label": "Tipo di documento",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Numero passaporto"
   },
   "facial_items": [
-    "Detergente", "Tonico", "Esfoliante viso", "Maschera viso",
-    "Siero occhi", "Contorno occhi", "Siero viso",
-    "Crema giorno", "Crema notte", "Olio viso", "Protezione solare"
+    "Detergente",
+    "Tonico",
+    "Esfoliante viso",
+    "Maschera viso",
+    "Siero occhi",
+    "Contorno occhi",
+    "Siero viso",
+    "Crema giorno",
+    "Crema notte",
+    "Olio viso",
+    "Protezione solare"
   ],
   "body_items": [
-    "Lozione / Crema / Olio corpo", "Esfoliante corpo", "Crema snellente",
-    "Crema per le mani", "Crema per i piedi"
+    "Lozione / Crema / Olio corpo",
+    "Esfoliante corpo",
+    "Crema snellente",
+    "Crema per le mani",
+    "Crema per i piedi"
   ],
   "pressure": {
     "label": "Selezioni la pressione preferita",
@@ -83,12 +99,13 @@
     "doc_number": "Il numero di documento è obbligatorio.",
     "cpf_invalid": "Numero CPF non valido. Verificare e riprovare.",
     "email": "Inserire un indirizzo e-mail valido.",
-    "phone": "Il numero di telefono è obbligatorio.",
+    "phone": "Telefono non valido. Usa formato BR o internazionale (+...).",
     "medical": "Descrivere le informazioni mediche pertinenti.",
     "health_consent": "Il consenso al trattamento dei dati sanitari è obbligatorio.",
     "signature": "La firma è obbligatoria.",
     "generic": "Compilare tutti i campi obbligatori prima di inviare.",
-    "server": "Si è verificato un errore durante l'invio. Riprovare."
+    "server": "Si è verificato un errore durante l'invio. Riprovare.",
+    "room_invalid": "Camera inesistente. Controlla il numero (es: 0501, 1401)."
   },
   "success": {
     "title": "Modulo inviato con successo!",

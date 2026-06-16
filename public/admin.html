@@ -3227,8 +3227,9 @@
             <input type="text" id="res-inp-nome" placeholder="Nome completo">
           </div>
           <div class="res-fg" id="res-fg-apto" style="display:none">
-            <label>Nº do Apto</label>
-            <input type="text" id="res-inp-apto" placeholder="Ex: 301">
+            <label>Quarto <span id="res-quarto-req" style="color:var(--danger)">*</span></label>
+            <input type="text" id="res-inp-apto" placeholder="Ex: 0501, 1401" maxlength="4" autocomplete="off" inputmode="numeric">
+            <small id="res-quarto-info" style="display:none;font-size:.72rem;margin-top:.25rem"></small>
           </div>
         </div>
         <div class="res-frow">

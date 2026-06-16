@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "Español", "code": "es" },
+  "meta": {
+    "lang": "Español",
+    "code": "es"
+  },
   "page_title": "Spa L'Occitane — Ficha de Perfil del Cliente",
   "header": {
     "title": "Formulario de Perfil del Cliente — Confidencial",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+34 000 000 000",
     "dob": "Fecha de nacimiento",
     "other_product": "Otro producto específico",
-    "other_product_placeholder": "Describa el producto…"
+    "other_product_placeholder": "Describa el producto…",
+    "room": "Habitación",
+    "room_hint": "— si es huésped"
   },
   "doc": {
     "type_label": "Tipo de documento",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Número de pasaporte"
   },
   "facial_items": [
-    "Limpiador", "Tónico", "Exfoliante facial", "Mascarilla facial",
-    "Sérum de ojos", "Contorno de ojos", "Sérum facial",
-    "Crema de día", "Crema de noche", "Aceite facial", "Protector solar"
+    "Limpiador",
+    "Tónico",
+    "Exfoliante facial",
+    "Mascarilla facial",
+    "Sérum de ojos",
+    "Contorno de ojos",
+    "Sérum facial",
+    "Crema de día",
+    "Crema de noche",
+    "Aceite facial",
+    "Protector solar"
   ],
   "body_items": [
-    "Loción / Crema / Aceite corporal", "Exfoliante corporal", "Crema reductora",
-    "Crema de manos", "Crema para pies"
+    "Loción / Crema / Aceite corporal",
+    "Exfoliante corporal",
+    "Crema reductora",
+    "Crema de manos",
+    "Crema para pies"
   ],
   "pressure": {
     "label": "Seleccione la presión preferida",
@@ -83,12 +99,13 @@
     "doc_number": "El número de documento es obligatorio.",
     "cpf_invalid": "Número de CPF inválido. Verifique e inténtelo de nuevo.",
     "email": "Introduzca una dirección de correo electrónico válida.",
-    "phone": "El número de teléfono es obligatorio.",
+    "phone": "Teléfono inválido. Use formato BR o internacional (+...).",
     "medical": "Por favor, describa la información médica relevante.",
     "health_consent": "El consentimiento para el tratamiento de datos de salud es obligatorio.",
     "signature": "La firma es obligatoria.",
     "generic": "Complete todos los campos obligatorios antes de enviar.",
-    "server": "Se produjo un error al enviar. Inténtelo de nuevo."
+    "server": "Se produjo un error al enviar. Inténtelo de nuevo.",
+    "room_invalid": "Habitación inexistente. Compruebe el número (ej: 0501, 1401)."
   },
   "success": {
     "title": "¡Formulario enviado con éxito!",

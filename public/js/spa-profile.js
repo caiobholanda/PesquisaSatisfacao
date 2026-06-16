@@ -37,6 +37,38 @@ function validarEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 }
 
+/* Telefone: BR (DDD válido + 10/11 dígitos) ou internacional E.164 (+...) */
+const _DDDS_BR = new Set(['11','12','13','14','15','16','17','18','19','21','22','24','27','28','31','32','33','34','35','37','38','41','42','43','44','45','46','47','48','49','51','53','54','55','61','62','63','64','65','66','67','68','69','71','73','74','75','77','79','81','82','83','84','85','86','87','88','89','91','92','93','94','95','96','97','98','99']);
+function validarTelefoneFlex(tel) {
+  if (!tel) return false;
+  const t = String(tel).trim();
+  if (!t) return false;
+  if (t.startsWith('+')) {
+    const d = t.slice(1).replace(/\D/g, '');
+    return d.length >= 8 && d.length <= 15;
+  }
+  const d = t.replace(/\D/g, '');
+  if (d.length !== 10 && d.length !== 11) return false;
+  if (!_DDDS_BR.has(d.slice(0, 2))) return false;
+  if (d.length === 11 && d[2] !== '9') return false;
+  return true;
+}
+
+/* Quarto: cache local da lista oficial dos 230 quartos */
+let _QUARTOS_CACHE = null;
+async function _carregarQuartosCli() {
+  if (_QUARTOS_CACHE) return _QUARTOS_CACHE;
+  try {
+    const r = await fetch('/api/quartos');
+    if (!r.ok) return (_QUARTOS_CACHE = {});
+    const d = await r.json();
+    const map = {};
+    for (const q of d.items || []) map[q.numero] = q.categoria;
+    return (_QUARTOS_CACHE = map);
+  } catch { return (_QUARTOS_CACHE = {}); }
+}
+function _normQuarto(v) { return String(v||'').trim().replace(/\D/g, '').padStart(4,'0').slice(-4); }
+
 /* ─── Pill checkboxes (Facial / Corpo) ─── */
 
 function renderPills(containerId, items) {
@@ -182,8 +214,18 @@ function validateAll(showErrors) {
   }
 
   chk('f-email',    'err-email',    validarEmail(email), E.email);
-  chk('f-telefone', 'err-telefone', tel.length >= 6,     E.phone);
+  chk('f-telefone', 'err-telefone', validarTelefoneFlex(tel), E.phone);
   chk('f-medico',   'err-medico',   medico.length > 0,   E.medical);
+
+  // Quarto: opcional, mas se digitado precisa existir na lista oficial.
+  const quartoRaw = (document.getElementById('f-quarto')?.value || '').trim();
+  const quartoNorm = quartoRaw ? _normQuarto(quartoRaw) : '';
+  if (quartoNorm) {
+    const cat = _QUARTOS_CACHE ? _QUARTOS_CACHE[quartoNorm] : null;
+    chk('f-quarto', 'err-quarto', !!cat, E.room_invalid || 'Quarto inexistente');
+  } else {
+    chk('f-quarto', 'err-quarto', true, '');
+  }
 
   // Consent
   if (!consent) {
@@ -249,6 +291,7 @@ function collectData() {
     assinatura_data_url:     _sig ? _sig.getDataURL() : null,
     idioma:                  _currentLang,
     documento_token:         _docToken,
+    quarto:                  (() => { const q = (document.getElementById('f-quarto')?.value || '').trim(); return q ? _normQuarto(q) : null; })(),
   };
 }
 
@@ -350,6 +393,8 @@ function applyLocale(L) {
   setText('lbl-telefone',    L.fields.phone);
   setText('lbl-nascimento',  L.fields.dob);
   setText('lbl-outro',       L.fields.other_product);
+  setText('lbl-quarto',      L.fields.room || 'Quarto');
+  setText('lbl-quarto-hint', L.fields.room_hint || '');
 
   setPlaceholder('f-email',        L.fields.email_placeholder);
   setPlaceholder('f-telefone',     L.fields.phone_placeholder);
@@ -451,6 +496,27 @@ function init() {
   ['f-nome', 'f-sobrenome', 'f-email', 'f-telefone', 'f-medico'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => validateAll());
   });
+
+  // Quarto: carregar lista oficial + validar em tempo real + badge Gran Class
+  _carregarQuartosCli();
+  const qInp = document.getElementById('f-quarto');
+  const gcBadge = document.getElementById('quarto-gc-badge');
+  if (qInp) {
+    qInp.addEventListener('input', function () {
+      const onlyDigits = this.value.replace(/\D/g, '').slice(0, 4);
+      if (onlyDigits !== this.value) this.value = onlyDigits;
+      if (gcBadge) gcBadge.style.display = 'none';
+      if (onlyDigits.length === 4) {
+        const norm = _normQuarto(onlyDigits);
+        const cat = _QUARTOS_CACHE ? _QUARTOS_CACHE[norm] : null;
+        if (cat === 'gran_class' && gcBadge) {
+          gcBadge.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:\'Cormorant Garamond\',Georgia,serif;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">★ Gran Class</span>';
+          gcBadge.style.display = '';
+        }
+      }
+      validateAll();
+    });
+  }
 
   // Consent health checkbox
   document.getElementById('f-consent-saude')?.addEventListener('change', function () {

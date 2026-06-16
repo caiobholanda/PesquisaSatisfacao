@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken } from '../db.js';
+import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
 const router = Router();
@@ -33,6 +33,17 @@ router.post('/perfil', (req, res) => {
   if (!nome || !sobrenome) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
 
   const locale = LOCALES_VALIDOS.includes(b.idioma) ? b.idioma : 'pt-BR';
+
+  // Telefone: aceita BR e internacional; só rejeita lixo claro.
+  if (b.telefone && !telefoneValido(b.telefone)) {
+    return res.status(400).json({ ok: false, error: 'Telefone inválido' });
+  }
+
+  // Quarto: opcional, mas se vier precisa existir na lista oficial.
+  const quartoLimpo = b.quarto ? String(b.quarto).trim().replace(/\D/g, '').padStart(4,'0').slice(-4) : '';
+  if (quartoLimpo && !quartoValido(quartoLimpo)) {
+    return res.status(400).json({ ok: false, error: 'Quarto inexistente' });
+  }
 
   // Resolve reserva_id via documento_token
   let reserva_id = null;
@@ -95,7 +106,16 @@ router.post('/perfil', (req, res) => {
     } catch (errA) {
       console.error('[Anamnese] gravacao estruturada falhou (legado OK):', errA.message);
     }
-    res.json({ ok: true, id });
+    // Grava o quarto em spa_perfis (campo additive, falha silenciosa se a
+    // coluna não existir em DBs muito antigos).
+    if (quartoLimpo) {
+      try { getDb().prepare('UPDATE spa_perfis SET quarto=? WHERE id=?').run(quartoLimpo, id); } catch {}
+    }
+    res.json({
+      ok: true, id,
+      quarto: quartoLimpo || null,
+      gran_class: quartoLimpo ? isGranClass(quartoLimpo) : false,
+    });
   } catch (err) {
     console.error('spa/perfil error:', err);
     res.status(500).json({ ok: false, error: 'Erro ao salvar' });

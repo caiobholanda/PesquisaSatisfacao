@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "English", "code": "en" },
+  "meta": {
+    "lang": "English",
+    "code": "en"
+  },
   "page_title": "Spa L'Occitane — Client Profile Form",
   "header": {
     "title": "Client Profile Form — Confidential",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+1 000 000 0000",
     "dob": "Date of Birth",
     "other_product": "Other specific product",
-    "other_product_placeholder": "Describe the product…"
+    "other_product_placeholder": "Describe the product…",
+    "room": "Hotel room",
+    "room_hint": "— if hotel guest"
   },
   "doc": {
     "type_label": "Document Type",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Passport number"
   },
   "facial_items": [
-    "Cleanser", "Toner", "Scrub", "Face Mask",
-    "Eye Serum", "Eye Contour", "Face Serum",
-    "Day Cream", "Night Cream", "Face Oil", "Sun Block"
+    "Cleanser",
+    "Toner",
+    "Scrub",
+    "Face Mask",
+    "Eye Serum",
+    "Eye Contour",
+    "Face Serum",
+    "Day Cream",
+    "Night Cream",
+    "Face Oil",
+    "Sun Block"
   ],
   "body_items": [
-    "Lotion / Cream / Oil", "Body Scrub", "Slimming Cream",
-    "Hand Cream", "Foot Cream"
+    "Lotion / Cream / Oil",
+    "Body Scrub",
+    "Slimming Cream",
+    "Hand Cream",
+    "Foot Cream"
   ],
   "pressure": {
     "label": "Select your preferred pressure",
@@ -83,12 +99,13 @@
     "doc_number": "Document number is required.",
     "cpf_invalid": "Invalid CPF number. Please check and try again.",
     "email": "A valid email address is required.",
-    "phone": "Phone number is required.",
+    "phone": "Invalid phone number. Use Brazilian (85 99999-9999) or international (+...).",
     "medical": "Please describe any relevant medical information.",
     "health_consent": "Consent to health data processing is required.",
     "signature": "Signature is required.",
     "generic": "Please complete all required fields before submitting.",
-    "server": "An error occurred while submitting. Please try again."
+    "server": "An error occurred while submitting. Please try again.",
+    "room_invalid": "Room not found. Check the number (ex: 0501, 1401)."
   },
   "success": {
     "title": "Form submitted successfully!",

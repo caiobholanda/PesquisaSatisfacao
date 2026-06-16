@@ -1,5 +1,8 @@
 {
-  "meta": { "lang": "Português (Brasil)", "code": "pt-BR" },
+  "meta": {
+    "lang": "Português (Brasil)",
+    "code": "pt-BR"
+  },
   "page_title": "Spa L'Occitane — Perfil do Cliente",
   "header": {
     "title": "Formulário de Perfil do Cliente — Confidencial",
@@ -26,7 +29,9 @@
     "phone_placeholder": "+55 (00) 00000-0000",
     "dob": "Data de nascimento",
     "other_product": "Outro produto específico",
-    "other_product_placeholder": "Descreva o produto…"
+    "other_product_placeholder": "Descreva o produto…",
+    "room": "Quarto",
+    "room_hint": "— se hóspede"
   },
   "doc": {
     "type_label": "Tipo de documento",
@@ -37,13 +42,24 @@
     "passport_placeholder": "Número do passaporte"
   },
   "facial_items": [
-    "Limpeza", "Tônico", "Esfoliante", "Máscara facial",
-    "Sérum para os olhos", "Creme para contorno dos olhos", "Sérum facial",
-    "Creme de dia", "Creme de noite", "Óleo facial", "Protetor solar"
+    "Limpeza",
+    "Tônico",
+    "Esfoliante",
+    "Máscara facial",
+    "Sérum para os olhos",
+    "Creme para contorno dos olhos",
+    "Sérum facial",
+    "Creme de dia",
+    "Creme de noite",
+    "Óleo facial",
+    "Protetor solar"
   ],
   "body_items": [
-    "Loção / Creme / Óleo", "Esfoliante corporal", "Creme redutor",
-    "Creme para mãos", "Creme para pés"
+    "Loção / Creme / Óleo",
+    "Esfoliante corporal",
+    "Creme redutor",
+    "Creme para mãos",
+    "Creme para pés"
   ],
   "pressure": {
     "label": "Selecione a pressão preferida",
@@ -83,12 +99,13 @@
     "doc_number": "O número do documento é obrigatório.",
     "cpf_invalid": "CPF inválido. Verifique e tente novamente.",
     "email": "Informe um e-mail válido.",
-    "phone": "O telefone é obrigatório.",
+    "phone": "Telefone inválido. Use formato BR (85 99999-9999) ou internacional (+55...).",
     "medical": "Por favor, descreva as informações médicas relevantes.",
     "health_consent": "O consentimento para tratamento de dados de saúde é obrigatório.",
     "signature": "A assinatura é obrigatória.",
     "generic": "Preencha todos os campos obrigatórios antes de enviar.",
-    "server": "Ocorreu um erro ao enviar. Tente novamente."
+    "server": "Ocorreu um erro ao enviar. Tente novamente.",
+    "room_invalid": "Quarto inexistente. Confira o número (ex: 0501, 1401)."
   },
   "success": {
     "title": "Formulário enviado com sucesso!",

@@ -363,6 +363,18 @@ export function initDb() {
       atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Quartos do Hotel Gran Marquise (fonte da verdade).
+    -- A categoria 'gran_class' é derivada deste cadastro — nunca digitada
+    -- à mão. Andares 14 e 15 são mistos (standard + gran_class no mesmo andar).
+    CREATE TABLE IF NOT EXISTS quartos (
+      numero TEXT PRIMARY KEY,
+      andar INTEGER NOT NULL,
+      categoria TEXT NOT NULL CHECK (categoria IN ('standard','gran_class')),
+      ativo INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX IF NOT EXISTS idx_quartos_andar ON quartos(andar);
+    CREATE INDEX IF NOT EXISTS idx_quartos_categoria ON quartos(categoria);
+
     -- Auditoria: log de TODAS as ações que modificam o sistema. Alimentado
     -- automaticamente por middleware em qualquer POST/PUT/DELETE, mais
     -- eventos explícitos de login/logout.
@@ -390,7 +402,9 @@ export function initDb() {
   // Vínculos cliente_id/cpf adicionados de forma idempotente.
   try { db.exec(`ALTER TABLE reservas    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE reservas    ADD COLUMN cpf TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE reservas    ADD COLUMN quarto TEXT`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN cliente_id INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN quarto TEXT`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cpf       ON reservas(cpf)`); } catch {}
@@ -399,6 +413,7 @@ export function initDb() {
 
   seedTratamentosGranSpa();
   seedMassoterapeutasGranSpa();
+  seedQuartosGranMarquise();
   // Modulo Qualidade: seed e' chamado em server.js apos initDb() (ESM).
 
   const adminUser = process.env.ADMIN_USER || 'admin';
@@ -703,10 +718,12 @@ export function historicoMassagista(nome) {
 // ── Reservas ──
 export function listarReservasSemana(from, to) {
   return getDb().prepare(
-    `SELECT r.*, m.nome AS massagista_nome, m2.nome AS massagista_nome2
+    `SELECT r.*, m.nome AS massagista_nome, m2.nome AS massagista_nome2,
+            q.categoria AS quarto_categoria
      FROM reservas r
      LEFT JOIN massagistas m  ON m.id  = r.massagista_id
      LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
+     LEFT JOIN quartos q ON q.numero = r.quarto
      WHERE r.data >= ? AND r.data <= ?
      ORDER BY r.data, r.hora_inicio`
   ).all(from, to);
@@ -831,7 +848,7 @@ export function criarSurveyToken(reservaId) {
 export function buscarSurveyTokenAtivo() {
   return getDb().prepare(`
     SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
-           r.tipo_cliente, m.nome AS massagista_nome
+           r.tipo_cliente, r.quarto, m.nome AS massagista_nome
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
     LEFT JOIN massagistas m ON m.id = r.massagista_id
@@ -925,7 +942,7 @@ export function countSessoesSemPesquisa() {
 export function buscarSurveyToken(token) {
   return getDb().prepare(`
     SELECT st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
-           m.nome AS massagista_nome
+           r.quarto, m.nome AS massagista_nome
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
     LEFT JOIN massagistas m ON m.id = r.massagista_id
@@ -1013,6 +1030,117 @@ export function inserirSpaPerfil(dados) {
 
 export function vincularDocumentoToken(reservaId, locale) {
   try { getDb().prepare('UPDATE reservas SET idioma_documento=? WHERE id=?').run(locale, reservaId); } catch {}
+}
+
+// ── Quartos do Hotel Gran Marquise ───────────────────────────────────────
+// Fonte da verdade dos 230 quartos. Categoria 'gran_class' é derivada
+// deste cadastro — nunca digitada à mão.
+export function seedQuartosGranMarquise() {
+  const db = getDb();
+  const ins = db.prepare("INSERT OR IGNORE INTO quartos (numero, andar, categoria, ativo) VALUES (?,?,?,1)");
+  const tx = db.transaction(() => {
+    // Andares 05 a 13: XX01 a XX17 (17 quartos por andar, standard).
+    for (let a = 5; a <= 13; a++) {
+      for (let n = 1; n <= 17; n++) {
+        const num = String(a).padStart(2, '0') + String(n).padStart(2, '0');
+        ins.run(num, a, 'standard');
+      }
+    }
+    // Andar 14 — misto.
+    for (const n of ['1401','1402','1404','1405']) ins.run(n, 14, 'gran_class');
+    for (let n = 6; n <= 17; n++) ins.run('14' + String(n).padStart(2, '0'), 14, 'standard');
+    // Andar 15 — misto.
+    for (const n of ['1501','1502','1504','1505']) ins.run(n, 15, 'gran_class');
+    for (let n = 6; n <= 17; n++) ins.run('15' + String(n).padStart(2, '0'), 15, 'standard');
+    // Andar 16 — Gran Class, sem 1603.
+    for (let n = 1; n <= 17; n++) {
+      if (n === 3) continue;
+      ins.run('16' + String(n).padStart(2, '0'), 16, 'gran_class');
+    }
+    // Andar 17 — Gran Class, sem 1704 e 1705.
+    for (let n = 1; n <= 17; n++) {
+      if (n === 4 || n === 5) continue;
+      ins.run('17' + String(n).padStart(2, '0'), 17, 'gran_class');
+    }
+    // Andar 18 — Gran Class, sem 1802, 1804 e 1805.
+    for (let n = 1; n <= 17; n++) {
+      if (n === 2 || n === 4 || n === 5) continue;
+      ins.run('18' + String(n).padStart(2, '0'), 18, 'gran_class');
+    }
+  });
+  tx();
+  return true;
+}
+
+function _normQuarto(v) {
+  if (v == null) return '';
+  return String(v).trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+}
+
+export function buscarQuarto(numero) {
+  const n = _normQuarto(numero);
+  if (!n) return null;
+  return getDb().prepare("SELECT numero, andar, categoria, ativo FROM quartos WHERE numero=?").get(n) || null;
+}
+
+export function quartoValido(numero) {
+  const q = buscarQuarto(numero);
+  return !!(q && q.ativo);
+}
+
+export function isGranClass(numero) {
+  const q = buscarQuarto(numero);
+  return !!(q && q.ativo && q.categoria === 'gran_class');
+}
+
+export function categoriaQuarto(numero) {
+  const q = buscarQuarto(numero);
+  return q?.categoria || null;
+}
+
+export function listarQuartos({ categoria, andar, ativo } = {}) {
+  const where = [], args = [];
+  if (categoria) { where.push('categoria=?'); args.push(categoria); }
+  if (andar)     { where.push('andar=?');     args.push(andar); }
+  if (ativo != null) { where.push('ativo=?'); args.push(ativo ? 1 : 0); }
+  const sql = `SELECT numero, andar, categoria, ativo FROM quartos
+               ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+               ORDER BY numero`;
+  return getDb().prepare(sql).all(...args);
+}
+
+// ── Validação de telefone (BR e internacional E.164) ─────────────────────
+// CRÍTICO: hóspedes estrangeiros usam números com "+" e código de país.
+// NÃO bloquear esses telefones. Validação estrita só para números BR.
+const _DDDS_BR = new Set([
+  '11','12','13','14','15','16','17','18','19',
+  '21','22','24','27','28',
+  '31','32','33','34','35','37','38',
+  '41','42','43','44','45','46','47','48','49',
+  '51','53','54','55',
+  '61','62','63','64','65','66','67','68','69',
+  '71','73','74','75','77','79',
+  '81','82','83','84','85','86','87','88','89',
+  '91','92','93','94','95','96','97','98','99',
+]);
+
+export function telefoneValido(tel) {
+  if (!tel) return false;
+  const raw = String(tel).trim();
+  if (!raw) return false;
+  // Internacional (E.164): começa com + e tem 8 a 15 dígitos após.
+  if (raw.startsWith('+')) {
+    const digits = raw.slice(1).replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15;
+  }
+  // Brasileiro: aceita 10 ou 11 dígitos, primeiro par é DDD válido, e se
+  // for 11 dígitos o primeiro do número precisa ser 9 (celular).
+  const d = raw.replace(/\D/g, '');
+  if (d.length !== 10 && d.length !== 11) return false;
+  const ddd = d.slice(0, 2);
+  if (!_DDDS_BR.has(ddd)) return false;
+  if (d.length === 11 && d[2] !== '9') return false;
+  return true;
 }
 
 // ── Módulo 1: Cadastro de Clientes ────────────────────────────────────────
@@ -1113,12 +1241,16 @@ export function buscarCliente360(id) {
   if (!cliente) return null;
   // Tratamentos (reservas), via cliente_id direto OU CPF de match
   const reservas = db.prepare(`
-    SELECT id, data, hora_inicio, hora_fim, sala, cliente, cliente2, tratamento, tipo_cliente,
-           massagista_id, massagista_id2, tipo_massagem_id, criado_em
-    FROM reservas
-    WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)
-    ORDER BY data DESC, hora_inicio DESC
+    SELECT r.id, r.data, r.hora_inicio, r.hora_fim, r.sala, r.cliente, r.cliente2, r.tratamento, r.tipo_cliente,
+           r.massagista_id, r.massagista_id2, r.tipo_massagem_id, r.quarto, r.criado_em,
+           q.categoria AS quarto_categoria
+    FROM reservas r
+    LEFT JOIN quartos q ON q.numero = r.quarto
+    WHERE r.cliente_id=? OR (r.cpf IS NOT NULL AND r.cpf=?)
+    ORDER BY r.data DESC, r.hora_inicio DESC
   `).all(id, cliente.cpf || '');
+  // Flag agregado: cliente é Gran Class se TIVER ALGUMA reserva em quarto GC.
+  const _gcReservas = reservas.some(r => r.quarto_categoria === 'gran_class');
   // Anamneses
   const anamneses = db.prepare(`
     SELECT id, nome, sobrenome, tipo_documento, documento, email, telefone,
@@ -1142,7 +1274,12 @@ export function buscarCliente360(id) {
     FROM cliente_produto WHERE cliente_id=?
     ORDER BY data_compra DESC, criado_em DESC
   `).all(id);
-  return { cliente, reservas, anamneses, pesquisas, produtos };
+  // Flag agregado: também considera anamneses com quarto GC.
+  const _gcAnamneses = anamneses.some(a => {
+    const q = a.quarto && db.prepare("SELECT categoria FROM quartos WHERE numero=?").get(a.quarto);
+    return q?.categoria === 'gran_class';
+  });
+  return { cliente, reservas, anamneses, pesquisas, produtos, gran_class: _gcReservas || _gcAnamneses };
 }
 
 export function inserirProdutoCliente(clienteId, { produto_nome, categoria, valor, data_compra, reserva_id, observacao }) {
