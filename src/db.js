@@ -626,7 +626,7 @@ export function atualizarTipoMassagem(id, nome, duracao_min, preco, ativo, descr
 }
 
 // ── Seed: tratamentos do Gran Spa by L'Occitane ──
-function seedTratamentosGranSpa() {
+export function seedTratamentosGranSpa() {
   const db = getDb();
   // Se a tabela system_meta marca este seed como concluído, NÃO re-popular.
   // Caso o admin tenha zerado a base intencionalmente, a flag impede o
