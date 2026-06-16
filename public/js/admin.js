@@ -156,6 +156,7 @@ function showApp() {
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
   else if (view === 'view-anamnese-editor') { initAnamneseEditor(); }
+  else if (view === 'view-pesquisa-editor') { initPesquisaEditor(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -562,7 +563,7 @@ function showView(id) {
   // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
   // view-qualidade) tinham que entrar aqui — sem isso o display nunca
   // virava 'block' e a view ficava invisivel.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -4337,3 +4338,321 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
 }
 window.pedirTexto = pedirTexto;
 window.pedirOpcao = pedirOpcao;
+
+// ────────────────────────────────────────────────────────────────────────────
+// EDITOR DA PESQUISA DE SATISFAÇÃO — gerencia perguntas do spa-locc-v1.
+// Clone parametrizado do editor de anamnese: mesma lógica, IDs e slug
+// diferentes. Reusa helpers globais (_slugChave, _TIPO_LABEL_AMIGAVEL,
+// _anamTraduzirRotulo, pedirTexto, pedirOpcao, confirmarAcao, apiSend).
+// ────────────────────────────────────────────────────────────────────────────
+
+const PESQUISA_SLUG = 'spa-locc-v1';
+let _pesqPesquisaId = null;
+let _pesqEstrutura  = null;
+
+document.getElementById('btn-open-pesquisa-editor')?.addEventListener('click', () => showView('view-pesquisa-editor'));
+document.getElementById('btn-back-pesquisa-editor')?.addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-pesq-reload')?.addEventListener('click', () => initPesquisaEditor());
+
+async function initPesquisaEditor() {
+  const wrap = document.getElementById('pesq-secoes');
+  const empty = document.getElementById('pesq-empty');
+  empty.style.display = 'block';
+  empty.textContent = 'Carregando…';
+  wrap.innerHTML = '';
+
+  try {
+    const rL = await api('/api/qualidade/admin/pesquisas');
+    if (!rL) return;
+    const dL = await rL.json();
+    if (!dL.ok) return;
+    const p = dL.items.filter(x => x.slug === PESQUISA_SLUG).sort((a,b) => b.versao - a.versao)[0];
+    if (!p) { empty.textContent = `Pesquisa "${PESQUISA_SLUG}" não encontrada.`; return; }
+    _pesqPesquisaId = p.id;
+  } catch (e) { empty.textContent = 'Erro: ' + e.message; return; }
+
+  try {
+    const rC = await api(`/api/survey/config?slug=${PESQUISA_SLUG}&idioma=pt-BR`);
+    if (!rC) return;
+    const dC = await rC.json();
+    if (!dC.ok || !dC.pesquisa) { empty.textContent = 'Pesquisa não publicada. Publique em Gestão da Qualidade.'; return; }
+    _pesqEstrutura = dC.pesquisa;
+  } catch (e) { empty.textContent = 'Erro: ' + e.message; return; }
+
+  empty.style.display = 'none';
+  _renderPesqEstrutura();
+}
+
+function _renderPesqEstrutura() {
+  const wrap = document.getElementById('pesq-secoes');
+  const e = _pesqEstrutura;
+  wrap.innerHTML = e.secoes.map(s => `
+    <section class="pesq-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
+      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
+        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <div style="display:flex;gap:.4rem">
+          <button class="btn btn-outline btn-sm" data-pesq-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
+          <button class="btn btn-outline btn-sm" data-pesq-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
+        </div>
+      </header>
+      <div class="pesq-perguntas">
+        ${s.perguntas.map(q => _renderPesqPergunta(q)).join('')}
+      </div>
+      <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input data-pesq-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <select data-pesq-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.88rem;border-radius:4px">
+            ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary btn-sm" data-pesq-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
+        </div>
+      </div>
+    </section>
+  `).join('');
+  _wirePesqAcoes();
+}
+
+function _renderPesqPergunta(q) {
+  const tipoLabel = _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
+  const opcoes = q.opcoes && q.opcoes.length
+    ? `<div style="margin-top:.35rem;color:var(--muted);font-size:.82rem"><strong style="color:var(--text);font-weight:500">Opções:</strong> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
+    : '';
+  const obrigBadge = q.obrigatoria
+    ? '<span style="background:var(--danger);color:white;font-size:.66rem;padding:.1rem .4rem;border-radius:9999px;font-weight:600;letter-spacing:.04em">OBRIGATÓRIA</span>'
+    : '';
+  const tipoBadge = `<span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .5rem;border-radius:9999px">${escHtml(tipoLabel)}</span>`;
+  const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
+    ? `<button class="btn btn-outline btn-sm" data-pesq-act="edit-opcoes" data-chave="${escHtml(q.chave)}">Opções</button>`
+    : '';
+  return `
+    <div class="pesq-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
+          <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
+          ${obrigBadge}
+          ${tipoBadge}
+        </div>
+        ${opcoes}
+      </div>
+      <div style="display:flex;gap:.3rem;flex-shrink:0">
+        <button class="btn btn-outline btn-sm" data-pesq-act="edit-perg" data-chave="${escHtml(q.chave)}">Editar</button>
+        ${editOpcoesBtn}
+        <button class="btn btn-outline btn-sm" data-pesq-act="del-perg" data-chave="${escHtml(q.chave)}" style="color:var(--danger);border-color:var(--danger)" title="Remover pergunta">×</button>
+      </div>
+    </div>
+  `;
+}
+
+let _pesqAcoesWired = false;
+function _wirePesqAcoes() {
+  if (!_pesqAcoesWired) {
+    document.getElementById('btn-pesq-add-secao')?.addEventListener('click', _pesqAddSecao);
+    _pesqAcoesWired = true;
+  }
+  document.querySelectorAll('[data-pesq-act]').forEach(btn => {
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener('click', () => {
+      const act = clone.dataset.pesqAct;
+      const secaoId = clone.dataset.secaoId ? parseInt(clone.dataset.secaoId) : null;
+      const chave = clone.dataset.chave;
+      if (act === 'add-pergunta') _pesqAddPergunta(secaoId);
+      else if (act === 'edit-perg')   _pesqEditPergunta(chave);
+      else if (act === 'del-perg')    _pesqDelPergunta(chave);
+      else if (act === 'edit-opcoes') _pesqEditOpcoes(chave);
+      else if (act === 'edit-secao')  _pesqEditSecao(secaoId);
+      else if (act === 'del-secao')   _pesqDelSecao(secaoId);
+    });
+  });
+}
+
+async function _pesqAddSecao() {
+  if (!_pesqPesquisaId) return showToast('Carregando estrutura, aguarde…', 3000);
+  const tituloEl = document.getElementById('pesq-nova-secao-titulo');
+  const titulo = tituloEl?.value.trim();
+  if (!titulo) { tituloEl?.focus(); return showToast('Digite o nome da nova seção'); }
+  const chave = _slugChave(titulo, 'sec_');
+  showToast('Criando seção e traduzindo nos 7 idiomas…', 3000);
+  try {
+    const trad = await _anamTraduzirRotulo(titulo);
+    const traducoes = {};
+    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes,
+    });
+    showToast('✓ Seção criada');
+    tituloEl.value = '';
+    initPesquisaEditor();
+  } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
+}
+
+async function _pesqAddPergunta(secaoId) {
+  if (!_pesqPesquisaId) return showToast('Carregando estrutura, aguarde…');
+  const rotuloInp = document.querySelector(`[data-pesq-newperg-rotulo][data-secao-id="${secaoId}"]`);
+  const tipoSel   = document.querySelector(`[data-pesq-newperg-tipo][data-secao-id="${secaoId}"]`);
+  const rotulo = rotuloInp?.value.trim();
+  const tipo   = tipoSel?.value || 'texto_livre';
+  if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
+  const chave = _slugChave(rotulo, 'pesq_');
+  showToast('Criando e traduzindo nos 7 idiomas…', 3000);
+  try {
+    const traducoes = await _anamTraduzirRotulo(rotulo);
+    const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
+      chave, tipo, traducoes,
+    });
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
+      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
+    });
+    showToast('✓ Pergunta criada');
+    if (rotuloInp) rotuloInp.value = '';
+    initPesquisaEditor();
+  } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
+}
+
+async function _pesqEditPergunta(chave) {
+  const r = await api('/api/qualidade/admin/perguntas');
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) return;
+  const p = d.items.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+
+  const novoRotulo = await pedirTexto({
+    titulo: 'Editar pergunta',
+    mensagem: 'Texto que o hóspede vê (português). Tradução para os outros idiomas é automática.',
+    valorInicial: p.rotulo || chave,
+    placeholder: 'Escreva a pergunta…',
+  });
+  if (novoRotulo === null) return;
+
+  const novoTipo = await pedirOpcao({
+    titulo: 'Tipo de resposta',
+    mensagem: 'Como o hóspede vai responder esta pergunta?',
+    valorInicial: p.tipo,
+    opcoes: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
+  });
+  if (novoTipo === null) return;
+
+  showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
+  try {
+    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim());
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { tipo: novoTipo, traducoes });
+    showToast('✓ Pergunta atualizada');
+    initPesquisaEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _pesqDelPergunta(chave) {
+  const ok = await confirmarAcao({
+    titulo: 'Remover pergunta?',
+    mensagem: `A pergunta sai da pesquisa de satisfação. Respostas anteriores continuam preservadas.`,
+    btnConfirmar: 'Sim, remover',
+    btnCancelar: 'Voltar',
+    perigoso: true,
+  });
+  if (!ok) return;
+  const rL = await api('/api/qualidade/admin/perguntas');
+  if (!rL) return;
+  const dL = await rL.json();
+  const p = dL.items?.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+  try {
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { ativo: 0 });
+    showToast('✓ Pergunta removida');
+    initPesquisaEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _pesqEditOpcoes(chave) {
+  const r = await api('/api/qualidade/admin/perguntas');
+  if (!r) return;
+  const d = await r.json();
+  const p = d.items.find(x => x.chave === chave);
+  if (!p) return showToast('Pergunta não encontrada');
+
+  const rOp = await api(`/api/qualidade/admin/perguntas/${p.id}/opcoes`);
+  if (!rOp) return;
+  const dOp = await rOp.json();
+  const opcoes = dOp.items || [];
+  const textoAtual = opcoes.map(o => (o.traducoes?.['pt-BR'] || o.chave)).join('\n');
+
+  const novo = await pedirTexto({
+    titulo: 'Editar opções da pergunta',
+    mensagem: 'Uma opção por linha. Remova ou adicione livremente. Traduzido automaticamente nos 7 idiomas.',
+    valorInicial: textoAtual,
+    placeholder: 'Opção 1\nOpção 2\nOpção 3',
+    multilinhas: true,
+  });
+  if (novo === null) return;
+  const linhas = novo.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!linhas.length) return showToast('Pelo menos uma opção é obrigatória');
+
+  showToast('Salvando opções e traduzindo…', 3000);
+  try {
+    const novosByChave = {};
+    for (const rot of linhas) {
+      const existing = opcoes.find(o => (o.traducoes?.['pt-BR'] || o.chave) === rot);
+      const k = existing ? existing.chave : _slugChave(rot, '').replace(/_[a-z0-9]{4}$/, '');
+      novosByChave[k || rot] = rot;
+    }
+    for (const o of opcoes) {
+      if (!(o.chave in novosByChave)) {
+        await apiSend('DELETE', `/api/qualidade/admin/opcoes/${o.id}`);
+      }
+    }
+    let ordem = 1;
+    for (const [k, rot] of Object.entries(novosByChave)) {
+      const existing = opcoes.find(o => o.chave === k);
+      const trad = await _anamTraduzirRotulo(rot);
+      const traducoesOp = {};
+      for (const [idioma, v] of Object.entries(trad)) traducoesOp[idioma] = v.rotulo;
+      await apiSend('POST', `/api/qualidade/admin/perguntas/${p.id}/opcoes`, {
+        id: existing?.id || undefined,
+        chave: k, ordem: ordem++, ativo: 1,
+        traducoes: traducoesOp,
+      });
+    }
+    showToast('✓ Opções atualizadas');
+    initPesquisaEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _pesqEditSecao(secaoId) {
+  const sec = _pesqEstrutura.secoes.find(s => s.id === secaoId);
+  if (!sec) return;
+  const novoTit = await pedirTexto({
+    titulo: 'Renomear seção',
+    mensagem: 'Novo nome da seção (em português). Traduzido automaticamente nos 7 idiomas.',
+    valorInicial: sec.titulo,
+    placeholder: 'Nome da seção',
+  });
+  if (novoTit === null) return;
+  showToast('Salvando e traduzindo…', 3000);
+  try {
+    const trad = await _anamTraduzirRotulo(novoTit.trim());
+    const traducoes = {};
+    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
+    await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, { ordem: sec.ordem, traducoes });
+    showToast('✓ Seção renomeada');
+    initPesquisaEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+async function _pesqDelSecao(secaoId) {
+  const sec = _pesqEstrutura.secoes.find(s => s.id === secaoId);
+  const nome = sec ? `"${sec.titulo}"` : 'esta seção';
+  const ok = await confirmarAcao({
+    titulo: `Remover seção ${nome}?`,
+    mensagem: 'A seção e suas perguntas saem da pesquisa. Respostas anteriores continuam preservadas.',
+    btnConfirmar: 'Sim, remover',
+    btnCancelar: 'Voltar',
+    perigoso: true,
+  });
+  if (!ok) return;
+  try {
+    await apiSend('DELETE', `/api/qualidade/admin/secoes/${secaoId}`);
+    showToast('✓ Seção removida');
+    initPesquisaEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}

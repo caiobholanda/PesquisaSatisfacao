@@ -2313,6 +2313,7 @@
           <button class="dropdown-item" id="btn-open-relatorios">Relatórios</button>
           <button class="dropdown-item" id="btn-open-qualidade">Gestão da Qualidade</button>
           <button class="dropdown-item" id="btn-open-anamnese-editor">Editor de Anamnese</button>
+          <button class="dropdown-item" id="btn-open-pesquisa-editor">Editor da Pesquisa de Satisfação</button>
           <button class="dropdown-item" id="btn-open-clientes">Clientes 360</button>
           <button class="dropdown-item" id="btn-open-usuarios">Usuários</button>
         </div>
@@ -3042,6 +3043,36 @@
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
           <input id="anam-nova-secao-titulo" placeholder="Nome da seção (ex: Alergias)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
           <button class="btn btn-primary btn-sm" id="btn-anam-add-secao">+ Criar seção</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: Editor da Pesquisa de Satisfação (espelho da anamnese) ── -->
+    <div id="view-pesquisa-editor" class="view-page" style="display:none">
+      <div class="page-hero">
+        <button class="btn-back" id="btn-back-pesquisa-editor">← Voltar</button>
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Admin</span>
+            <h1 class="page-title">Perguntas da Pesquisa de Satisfação</h1>
+          </div>
+          <p class="page-sub">Edite as perguntas que o hóspede responde após o tratamento. Tudo é traduzido automaticamente em 7 idiomas.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-pesq-reload" style="margin-left:auto">↻ Atualizar</button>
+      </div>
+
+      <div id="pesq-empty" class="empty" style="display:none;margin:2rem 0">
+        Carregando…
+      </div>
+
+      <div id="pesq-secoes"></div>
+
+      <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
+        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
+        <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Serviços", "Instalações").</p>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <input id="pesq-nova-secao-titulo" placeholder="Nome da seção (ex: Recomendação)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <button class="btn btn-primary btn-sm" id="btn-pesq-add-secao">+ Criar seção</button>
         </div>
       </div>
     </div>

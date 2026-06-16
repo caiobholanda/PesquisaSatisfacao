@@ -87,9 +87,13 @@ app.use(express.json({ limit: '100kb' }));
 function isPublicPath(p) {
   if (p.startsWith('/api/')) return true;
   if (p.startsWith('/assets/')) return true;
+  if (p.startsWith('/locales/')) return true;       // i18n da anamnese
   if (p === '/sso' || p === '/health') return true;
   if (p === '/acesso-hub.html') return true;
   if (p === '/favicon.svg' || p === '/favicon.ico') return true;
+  // Form público de anamnese (cliente recebe link com ?t=TOKEN — NÃO precisa
+  // de login no Hub. A validação do token é feita pelo backend.)
+  if (p === '/spa-profile.html') return true;
   return false;
 }
 app.use((req, res, next) => {
