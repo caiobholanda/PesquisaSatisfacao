@@ -11,7 +11,6 @@ import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
 import reservasRouter from './routes/reservas.js';
-import devRouter from './routes/dev.js';
 import spaRouter from './routes/spa.js';
 import relatoriosRouter from './routes/relatorios.js';
 import qualidadeRouter from './routes/qualidade.js';
@@ -213,7 +212,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/clientes', clientesRouter);
 app.use('/api/auditoria', auditoriaRouter);
 app.use('/api/reservas', reservasRouter);
-app.use('/api/dev', devRouter);
 app.use('/api', cadastrosRouter);
 
 app.get('/sso', (req, res) => {

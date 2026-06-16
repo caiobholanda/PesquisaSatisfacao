@@ -135,9 +135,8 @@ function aplicarRoleNaUI(role) {
   // spa puro nao ve nada disso -> dropdown some por inteiro.
   const adminDrop = document.getElementById('admin-dropdown');
   if (adminDrop) adminDrop.style.display = (p.podeSatisfacao || p.podeUsuarios) ? '' : 'none';
-  // admin (read-only) nao pode usar seed
-  const btnSeed = document.getElementById('btn-seed-demo');
-  if (btnSeed) btnSeed.style.display = p.podeEscrever ? '' : 'none';
+  // botão "Resetar & Demo" foi removido (apagava todos os dados em produção
+  // sem proteção — risco alto). Endpoint /api/dev/seed-demo também removido.
 }
 
 function showApp() {
@@ -783,30 +782,8 @@ document.getElementById('btn-back-tipos').addEventListener('click', () => showVi
 // Botão "Início" no header — atalho direto pra view-main, fica visível só em subpáginas
 document.getElementById('btn-header-home')?.addEventListener('click', () => { showView('view-reservas'); loadReservas(); });
 
-// Botão de gerar dados de demonstração — só pesquisas (reservas continuam manuais)
-async function seedDemo(btnEl) {
-  const ok = confirm('⚠ Isso vai APAGAR todas as reservas e pesquisas atuais e gerar:\n• 5 reservas fictícias (próximos 3 dias)\n• 15 pesquisas de satisfação fictícias\n\nContinuar?');
-  if (!ok) return;
-  btnEl.disabled = true;
-  const txt = btnEl.textContent;
-  btnEl.textContent = '⏳ Gerando...';
-  try {
-    const res = await api('/api/dev/seed-demo', { method: 'POST', body: '{}' });
-    if (!res) return;
-    const d = await res.json();
-    if (!d.ok) { alert('Erro: ' + (d.error || 'falha ao gerar dados')); return; }
-    alert(`✓ Pronto! ${d.reservas} reservas e ${d.feedbacks} pesquisas inseridas.`);
-    loadStats();
-    loadAll();
-  } catch (e) {
-    alert('Erro de conexão: ' + e.message);
-  } finally {
-    btnEl.disabled = false;
-    btnEl.textContent = txt;
-  }
-}
-document.getElementById('btn-seed-demo-res')?.addEventListener('click', function() { seedDemo(this); });
-document.getElementById('btn-seed-demo')?.addEventListener('click', function() { seedDemo(this); });
+// "Resetar & Demo" foi removido. Para popular dados de teste, use os
+// scripts em /scripts ou as telas de cadastro convencionais.
 
 // ── Massagistas ──
 let _tabMassagistas = 'ativas';
@@ -1773,10 +1750,60 @@ function renderCalDia() {
 }
 
 window.calCancelar=async(id)=>{
-  if(!confirm('Cancelar esta reserva?'))return;
-  const res=await api(`/api/reservas/${id}`,{method:'DELETE'});
-  if(res)loadReservas();
+  const ok = await confirmarAcao({
+    titulo: 'Cancelar reserva?',
+    mensagem: 'Esta ação remove a reserva da agenda. Não é possível desfazer.',
+    btnConfirmar: 'Sim, cancelar',
+    btnCancelar: 'Voltar',
+    perigoso: true,
+  });
+  if (!ok) return;
+  const res = await api(`/api/reservas/${id}`, { method: 'DELETE' });
+  if (res) { loadReservas(); showToast('Reserva cancelada.'); }
 };
+
+// Modal universal de confirmação — visual integrado ao admin Gran Marquise.
+// Resolve com true (confirmar) ou false (cancelar/ESC/clicar fora).
+function confirmarAcao({ titulo = 'Confirmar?', mensagem = '', btnConfirmar = 'Confirmar', btnCancelar = 'Cancelar', perigoso = false } = {}) {
+  return new Promise(resolve => {
+    // Remove eventual overlay anterior
+    document.querySelectorAll('.confirm-overlay').forEach(n => n.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    const cor = perigoso ? 'var(--danger,#b85a4a)' : 'var(--gold,#bf9a55)';
+    overlay.innerHTML = `
+      <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:440px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+        <h3 style="margin:0 0 .5rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
+        <p style="margin:0 0 1.4rem 0;color:var(--text);font-size:.92rem;line-height:1.5">${escHtml(mensagem)}</p>
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <button class="btn btn-outline" data-act="cancel">${escHtml(btnCancelar)}</button>
+          <button class="btn ${perigoso ? '' : 'btn-gold'}" data-act="ok"
+            style="${perigoso ? 'background:'+cor+';border:1px solid '+cor+';color:white' : ''}">${escHtml(btnConfirmar)}</button>
+        </div>
+      </div>
+    `;
+    function close(result) {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') close(false);
+      else if (e.key === 'Enter') close(true);
+    }
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) close(false);
+      else if (e.target.dataset.act === 'ok') close(true);
+      else if (e.target.dataset.act === 'cancel') close(false);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    // Foco no botão de confirmação para acessibilidade
+    setTimeout(() => overlay.querySelector('[data-act="ok"]')?.focus(), 30);
+  });
+}
+window.confirmarAcao = confirmarAcao;
 
 let _nowLineInterval = null;
 function calUpdateNowLine(ds, scrollIntoView = false) {
