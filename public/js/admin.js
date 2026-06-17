@@ -155,8 +155,8 @@ function showApp() {
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
-  else if (view === 'view-anamnese-editor') { initAnamneseEditor(); }
-  else if (view === 'view-pesquisa-editor') { initPesquisaEditor(); }
+  // view-anamnese-editor e view-pesquisa-editor: ja sao carregadas
+  // pelo showView(view) acima — evita fetch duplicado no boot.
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -587,6 +587,8 @@ function showView(id) {
   renderTabsRelatorios(id);
   if (id === 'view-relatorio-mensal') loadRelatorioMensal();
   if (id === 'view-historico-clientes') loadHistoricoClientes();
+  if (id === 'view-anamnese-editor') initAnamneseEditor();
+  if (id === 'view-pesquisa-editor') initPesquisaEditor();
 }
 
 // ── Sub-abas de Relatórios ──
