@@ -80,6 +80,14 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
+// Trata JSON malformado em POSTs/PUTs com 400 (em vez de cair no
+// errorHandler genérico como 500 "Erro interno").
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ ok: false, error: 'JSON invalido no corpo da requisicao' });
+  }
+  next(err);
+});
 
 // Gate de acesso ao Spa: paginas HTML (incluindo /) so para quem ja passou pelo
 // Hub e recebeu cookie spa_admin_sess (admin) ou spa_user_sess (padrao).
@@ -146,6 +154,10 @@ app.get('/api/tipos-massagem-ativos', (_req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, uptime: process.uptime(), version: pkg.version });
+});
+// Alias /health (Fly.io healthcheck e isPublicPath ja liberam).
+app.get('/health', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime(), version: pkg.version });
 });
 
