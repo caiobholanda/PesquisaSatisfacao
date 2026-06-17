@@ -76,7 +76,10 @@ router.post('/', rateLimit, (req, res) => {
     submitted_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
   });
 
-  try { marcarSurveyTokenRespondido(); } catch {}
+  // BUG-U fix: usa o token especifico do hospede (vindo do body) ao inves
+  // do ultimo liberado nos ultimos 15min — preserva a separacao por pessoa
+  // em reservas casal (cada um marca SEU token, nao o do parceiro).
+  try { marcarSurveyTokenRespondido(b.survey_token || null); } catch {}
 
   // Gravacao paralela ESTRUTURADA (Gestao da Qualidade): se o body trouxer
   // pesquisa_slug, criar resposta_pesquisa + resposta_item vinculados ao

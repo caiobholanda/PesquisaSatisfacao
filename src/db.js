@@ -890,8 +890,16 @@ export function buscarSurveyTokenAtivo() {
   `).get() || null;
 }
 
-export function marcarSurveyTokenRespondido() {
-  getDb().prepare(`
+// Marca o token de pesquisa como respondido. Se 'token' for passado,
+// marca DESSE token especifico — preserva a pesquisa do casal (cada
+// pessoa tem token proprio). Sem token, marca o ultimo liberado (compat).
+export function marcarSurveyTokenRespondido(token) {
+  const db = getDb();
+  if (token) {
+    db.prepare(`UPDATE survey_tokens SET respondida_em = datetime('now') WHERE token = ?`).run(token);
+    return;
+  }
+  db.prepare(`
     UPDATE survey_tokens SET respondida_em = datetime('now')
     WHERE token = (
       SELECT token FROM survey_tokens
@@ -971,14 +979,39 @@ export function countSessoesSemPesquisa() {
 }
 
 export function buscarSurveyToken(token) {
-  return getDb().prepare(`
-    SELECT st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
-           r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
+  const row = getDb().prepare(`
+    SELECT st.liberada_em, st.pessoa,
+           r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
+           r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome,
+           r.cliente2, r.apto2, r.email2, r.telefone2, r.tratamento2, r.tipo_cliente2,
+           m2.nome AS massagista_nome2
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
-    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    LEFT JOIN massagistas m  ON m.id  = r.massagista_id
+    LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
     WHERE st.token = ?
-  `).get(token) || null;
+  `).get(token);
+  if (!row) return null;
+  // BUG-U fix: para tokens da pessoa 2 (cliente2 em reservas casal),
+  // devolve os campos do cliente2 mascarando os campos principais —
+  // pra que o link da pessoa 2 carregue os dados DELA, nao da pessoa 1.
+  if (row.pessoa === 2) {
+    return {
+      liberada_em: row.liberada_em,
+      pessoa: 2,
+      cliente:        row.cliente2 || row.cliente,
+      apto:           row.apto2     || row.apto,
+      email:          row.email2    || row.email,
+      telefone:       row.telefone2 || row.telefone,
+      data:           row.data,
+      tratamento:    row.tratamento2 || row.tratamento,
+      tipo_cliente:  row.tipo_cliente2 || row.tipo_cliente,
+      quarto:        row.quarto,
+      idioma:        row.idioma,
+      massagista_nome: row.massagista_nome2 || row.massagista_nome,
+    };
+  }
+  return row;
 }
 
 export function buscarAdmin(username) {
