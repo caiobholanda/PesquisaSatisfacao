@@ -4193,96 +4193,180 @@ async function _abrirModalHistorico({ slug, titulo }) {
   document.body.appendChild(ov);
 }
 
-// Painel "Perguntas removidas" — busca a estrutura ADMIN que inclui
-// inativas (com associacao_id pra reativar/excluir) e renderiza um
-// bloco colapsavel no fim do editor. Reativar restaura o status
-// ativo=1 da pergunta. Excluir definitivo apaga tudo (bloqueado se
-// houver respostas anteriores).
+// Botao "Perguntas" no header do editor — abre modal com abas
+// Ativas / Inativas. Substitui o antigo painel inline.
 async function _renderAnamInativas() {
-  const wrap = document.getElementById('anam-secoes');
-  if (!wrap) return;
-  // Remove painel anterior (em caso de re-render)
-  document.getElementById('anam-inativas')?.remove();
+  await _renderBotaoPerguntas({ slug: ANAMNESE_SLUG, hostId: 'anam-perguntas-btn-host', titulo: 'Perguntas — Anamnese', onChange: initAnamneseEditor });
+}
+async function _renderPesqInativas() {
+  await _renderBotaoPerguntas({ slug: PESQUISA_SLUG, hostId: 'pesq-perguntas-btn-host', titulo: 'Perguntas — Pesquisa de Satisfação', onChange: initPesquisaEditor });
+}
 
-  let inativas = [];
+async function _renderBotaoPerguntas({ slug, hostId, titulo, onChange }) {
+  // Conta ativas/inativas para o badge
+  let totalAtivas = 0, totalInativas = 0;
   try {
-    const r = await api(`/api/qualidade/admin/pesquisas/slug/${ANAMNESE_SLUG}/estrutura?_=${Date.now()}`);
-    if (!r) return;
-    const d = await r.json();
-    if (!d.ok || !d.estrutura) return;
-    for (const s of d.estrutura.secoes) {
-      for (const p of (s.perguntas || [])) {
-        if (p.ativo === 0) inativas.push({ ...p, secao_titulo: s.titulo });
+    const r = await api(`/api/qualidade/admin/pesquisas/slug/${slug}/estrutura?_=${Date.now()}`);
+    if (r) {
+      const d = await r.json();
+      if (d?.ok && d.estrutura) {
+        for (const s of d.estrutura.secoes) for (const p of (s.perguntas || [])) {
+          if (p.ativo === 0) totalInativas++; else totalAtivas++;
+        }
       }
     }
-  } catch { return; }
+  } catch {}
 
-  if (!inativas.length) return;
+  let host = document.getElementById(hostId);
+  if (!host) {
+    const view = slug === ANAMNESE_SLUG
+      ? document.getElementById('view-anamnese-editor')
+      : document.getElementById('view-pesquisa-editor');
+    if (!view) return;
+    const histHost = document.getElementById(slug === ANAMNESE_SLUG ? 'anam-historico-btn-host' : 'pesq-historico-btn-host');
+    host = document.createElement('div');
+    host.id = hostId;
+    host.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:.5rem';
+    if (histHost) histHost.parentNode.insertBefore(host, histHost);
+    else view.insertBefore(host, view.firstElementChild?.nextSibling || null);
+  }
 
-  const panel = document.createElement('section');
-  panel.id = 'anam-inativas';
-  panel.style.cssText = 'border:1px dashed var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
-  panel.innerHTML = `
-    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
-      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--muted)">Perguntas removidas <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${inativas.length}</span></h3>
-      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
-    </header>
-    <div data-body style="display:none;margin-top:.9rem">
-      ${inativas.map(p => `
-        <div data-inativa data-pid="${p.pergunta_id}" data-rotulo="${escHtml(p.rotulo || p.chave)}" style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.6rem .85rem;margin-bottom:.4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:.92rem;color:var(--text);text-decoration:line-through;text-decoration-color:var(--muted)">${escHtml(p.rotulo || p.chave)}</div>
-            <div style="font-size:.72rem;color:var(--muted);margin-top:.15rem">Seção original: ${escHtml(p.secao_titulo)} · tipo: ${escHtml(_TIPO_LABEL_AMIGAVEL[p.tipo] || p.tipo)}</div>
-          </div>
-          <div style="display:flex;gap:.3rem;flex-shrink:0">
-            <button class="btn btn-outline btn-sm" data-inativa-act="reativar">↺ Reativar</button>
-            <button class="btn btn-outline btn-sm" data-inativa-act="excluir" style="color:var(--danger);border-color:var(--danger)">Excluir definitivo</button>
-          </div>
+  host.innerHTML = `
+    <button class="btn btn-outline btn-sm" data-act="abrir-perguntas" style="display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem">
+      <span>🗂 Perguntas</span>
+      <span style="background:var(--success,#3a6b47);color:#fff;font-size:.7rem;padding:.1rem .5rem;border-radius:9999px;font-weight:600" title="Ativas">${totalAtivas}</span>
+      <span style="background:#9e3832;color:#fff;font-size:.7rem;padding:.1rem .5rem;border-radius:9999px;font-weight:600" title="Inativas">${totalInativas}</span>
+    </button>
+  `;
+  host.querySelector('[data-act="abrir-perguntas"]').addEventListener('click', () => _abrirModalPerguntas({ slug, titulo, onChange }));
+}
+
+// Modal de gerenciamento de perguntas — abas Ativas/Inativas.
+// - Ativas: lista somente (informativo). Botoes de edicao continuam nas
+//   secoes do editor (modal nao duplica esses fluxos).
+// - Inativas: cada item tem botao Reativar. Se respostas_count === 0,
+//   tambem botao 'Apagar definitivamente' que abre confirmacao integrada.
+async function _abrirModalPerguntas({ slug, titulo, onChange }) {
+  let secoes = [];
+  try {
+    const r = await api(`/api/qualidade/admin/pesquisas/slug/${slug}/estrutura?_=${Date.now()}`);
+    if (r) { const d = await r.json(); if (d?.ok && d.estrutura) secoes = d.estrutura.secoes; }
+  } catch {}
+
+  const ativas = [], inativas = [];
+  for (const s of secoes) for (const p of (s.perguntas || [])) {
+    const item = { ...p, secao_titulo: s.titulo };
+    if (p.ativo === 0) inativas.push(item); else ativas.push(item);
+  }
+
+  const _TIPO = window._TIPO_LABEL_AMIGAVEL || _TIPO_LABEL_AMIGAVEL;
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.76);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+        <div>
+          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${ativas.length} ativas · ${inativas.length} inativas</p>
         </div>
-      `).join('')}
+        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
+      </header>
+      <div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg)">
+        <button data-tab="ativas" class="tab-btn" style="flex:1;padding:.9rem;border:none;background:var(--surface);color:var(--text);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;border-bottom:2px solid var(--gold,#b8935a)">Ativas <span style="background:var(--success,#3a6b47);color:#fff;font-size:.68rem;padding:.1rem .45rem;border-radius:9999px;margin-left:.35rem">${ativas.length}</span></button>
+        <button data-tab="inativas" class="tab-btn" style="flex:1;padding:.9rem;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent">Inativas <span style="background:#9e3832;color:#fff;font-size:.68rem;padding:.1rem .45rem;border-radius:9999px;margin-left:.35rem">${inativas.length}</span></button>
+      </div>
+      <div data-lista style="flex:1;overflow-y:auto"></div>
+      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </footer>
     </div>
   `;
-  wrap.appendChild(panel);
 
-  const header = panel.querySelector('[data-act="toggle"]');
-  const body   = panel.querySelector('[data-body]');
-  const arrow  = panel.querySelector('[data-arrow]');
-  header.addEventListener('click', () => {
-    const aberto = body.style.display !== 'none';
-    body.style.display = aberto ? 'none' : '';
-    arrow.textContent  = aberto ? '▾' : '▴';
-  });
+  const lista = ov.querySelector('[data-lista]');
+  function render(tab) {
+    const arr = tab === 'inativas' ? inativas : ativas;
+    if (!arr.length) {
+      lista.innerHTML = `<div style="padding:2.5rem 1rem;text-align:center;color:var(--muted);font-size:.9rem">${tab === 'inativas' ? 'Nenhuma pergunta inativa. 🎉' : 'Nenhuma pergunta ativa.'}</div>`;
+      return;
+    }
+    lista.innerHTML = arr.map(p => {
+      const tipoLabel = _TIPO[p.tipo] || p.tipo;
+      const podeExcluir = tab === 'inativas' && p.respostas_count === 0;
+      const badgeRespostas = p.respostas_count > 0
+        ? `<span style="background:#fdf0ef;color:#9e3832;font-size:.68rem;padding:.15rem .55rem;border-radius:9999px;border:1px solid #f2c4c0;font-weight:600">${p.respostas_count} resposta${p.respostas_count > 1 ? 's' : ''} — preserva histórico</span>`
+        : '';
+      const obrigBadge = p.obrigatoria
+        ? '<span style="background:#9e3832;color:white;font-size:.66rem;padding:.1rem .4rem;border-radius:9999px;font-weight:600">OBRIGATÓRIA</span>'
+        : '';
+      return `
+        <div data-pid="${p.pergunta_id}" data-rotulo="${escHtml(p.rotulo || p.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1.4rem;border-bottom:1px solid var(--border-lt,#eee)">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
+              <span style="font-size:.95rem;color:var(--text)${tab === 'inativas' ? ';text-decoration:line-through;text-decoration-color:var(--muted)' : ''}">${escHtml(p.rotulo || p.chave)}</span>
+              ${obrigBadge}
+              <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.68rem;padding:.15rem .5rem;border-radius:9999px">${escHtml(tipoLabel)}</span>
+              ${badgeRespostas}
+            </div>
+            <div style="color:var(--muted);font-size:.72rem">Seção: ${escHtml(p.secao_titulo)}</div>
+          </div>
+          ${tab === 'inativas' ? `
+            <div style="display:flex;gap:.35rem;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn btn-outline btn-sm" data-act="reativar">↺ Reativar</button>
+              ${podeExcluir ? `<button class="btn btn-outline btn-sm" data-act="excluir" style="color:#9e3832;border-color:#9e3832">Apagar definitivamente</button>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+  render('ativas');
 
-  panel.querySelectorAll('[data-inativa-act]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const wrap = btn.closest('[data-inativa]');
-      const pid    = parseInt(wrap.dataset.pid);
-      const rotulo = wrap.dataset.rotulo;
-      const act    = btn.dataset.inativaAct;
-      if (act === 'reativar') {
-        try {
-          await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { ativo: 1 });
-          showToast(`✓ "${rotulo}" reativada`);
-          initAnamneseEditor();
-        } catch (err) { showToast('Erro: ' + err.message, 5000); }
-      } else if (act === 'excluir') {
-        const ok = await confirmarAcao({
-          titulo: `Excluir definitivamente "${rotulo}"?`,
-          mensagem: 'A pergunta sera removida PERMANENTEMENTE — apaga texto em todos os idiomas, opcoes e associacoes. So funciona se nao houver respostas anteriores (se houver, mantenha como removida).',
-          btnConfirmar: 'Sim, excluir',
-          btnCancelar: 'Voltar',
-          perigoso: true,
-        });
-        if (!ok) return;
-        try {
-          const r = await apiSend('DELETE', `/api/qualidade/admin/perguntas/${pid}`);
-          showToast(`✓ "${rotulo}" excluida`);
-          initAnamneseEditor();
-        } catch (err) { showToast('Nao foi possivel excluir: ' + err.message, 6000); }
-      }
-    });
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', async e => {
+    if (e.target === ov || e.target.dataset.act === 'close') return close();
+    if (e.target.dataset.tab) {
+      ov.querySelectorAll('.tab-btn').forEach(b => {
+        const ativo = b.dataset.tab === e.target.dataset.tab;
+        b.style.background = ativo ? 'var(--surface)' : 'transparent';
+        b.style.color = ativo ? 'var(--text)' : 'var(--muted)';
+        b.style.borderBottomColor = ativo ? 'var(--gold,#b8935a)' : 'transparent';
+      });
+      render(e.target.dataset.tab);
+      return;
+    }
+    const wrap = e.target.closest('[data-pid]');
+    if (!wrap) return;
+    const pid = parseInt(wrap.dataset.pid);
+    const rotulo = wrap.dataset.rotulo;
+    const act = e.target.dataset.act;
+    if (act === 'reativar') {
+      try {
+        await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { ativo: 1, pesquisa_slug: slug });
+        showToast(`✓ "${rotulo}" reativada`);
+        close();
+        if (typeof onChange === 'function') onChange();
+      } catch (err) { showToast('Erro: ' + err.message, 5000); }
+    } else if (act === 'excluir') {
+      const ok = await confirmarAcao({
+        titulo: `Apagar definitivamente "${rotulo}"?`,
+        mensagem: 'A pergunta será removida PERMANENTEMENTE — apaga texto em todos os idiomas, opções e associações. Esta ação não pode ser desfeita.',
+        btnConfirmar: 'Sim, apagar para sempre',
+        btnCancelar: 'Cancelar',
+        perigoso: true,
+      });
+      if (!ok) return;
+      try {
+        await apiSend('DELETE', `/api/qualidade/admin/perguntas/${pid}`);
+        showToast(`✓ "${rotulo}" apagada definitivamente`);
+        close();
+        if (typeof onChange === 'function') onChange();
+      } catch (err) { showToast('Não foi possível apagar: ' + err.message, 6000); }
+    }
   });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
 }
 
 // Helper: gera uma chave (slug) a partir de um texto pt-BR.
@@ -4827,94 +4911,6 @@ async function initPesquisaEditor() {
   _renderPesqEstrutura();
   _renderPesqInativas();
   _renderPesqHistorico();
-}
-
-// Painel de inativas — clone do _renderAnamInativas, parametrizado
-// pra spa-locc-v1. Reativa e excluir definitivo funcionam iguais.
-async function _renderPesqInativas() {
-  const wrap = document.getElementById('pesq-secoes');
-  if (!wrap) return;
-  document.getElementById('pesq-inativas')?.remove();
-
-  let inativas = [];
-  try {
-    const r = await api(`/api/qualidade/admin/pesquisas/slug/${PESQUISA_SLUG}/estrutura?_=${Date.now()}`);
-    if (!r) return;
-    const d = await r.json();
-    if (!d.ok || !d.estrutura) return;
-    for (const s of d.estrutura.secoes) {
-      for (const p of (s.perguntas || [])) {
-        if (p.ativo === 0) inativas.push({ ...p, secao_titulo: s.titulo });
-      }
-    }
-  } catch { return; }
-
-  if (!inativas.length) return;
-
-  const panel = document.createElement('section');
-  panel.id = 'pesq-inativas';
-  panel.style.cssText = 'border:1px dashed var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
-  panel.innerHTML = `
-    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
-      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--muted)">Perguntas removidas <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${inativas.length}</span></h3>
-      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
-    </header>
-    <div data-body style="display:none;margin-top:.9rem">
-      ${inativas.map(p => `
-        <div data-inativa data-pid="${p.pergunta_id}" data-rotulo="${escHtml(p.rotulo || p.chave)}" style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.6rem .85rem;margin-bottom:.4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:.92rem;color:var(--text);text-decoration:line-through;text-decoration-color:var(--muted)">${escHtml(p.rotulo || p.chave)}</div>
-            <div style="font-size:.72rem;color:var(--muted);margin-top:.15rem">Seção original: ${escHtml(p.secao_titulo)} · tipo: ${escHtml(_TIPO_LABEL_AMIGAVEL[p.tipo] || p.tipo)}</div>
-          </div>
-          <div style="display:flex;gap:.3rem;flex-shrink:0">
-            <button class="btn btn-outline btn-sm" data-inativa-act="reativar">↺ Reativar</button>
-            <button class="btn btn-outline btn-sm" data-inativa-act="excluir" style="color:var(--danger);border-color:var(--danger)">Excluir definitivo</button>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-  wrap.appendChild(panel);
-
-  const header = panel.querySelector('[data-act="toggle"]');
-  const body   = panel.querySelector('[data-body]');
-  const arrow  = panel.querySelector('[data-arrow]');
-  header.addEventListener('click', () => {
-    const aberto = body.style.display !== 'none';
-    body.style.display = aberto ? 'none' : '';
-    arrow.textContent  = aberto ? '▾' : '▴';
-  });
-
-  panel.querySelectorAll('[data-inativa-act]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const wrap = btn.closest('[data-inativa]');
-      const pid    = parseInt(wrap.dataset.pid);
-      const rotulo = wrap.dataset.rotulo;
-      const act    = btn.dataset.inativaAct;
-      if (act === 'reativar') {
-        try {
-          await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { ativo: 1, pesquisa_slug: PESQUISA_SLUG });
-          showToast(`✓ "${rotulo}" reativada`);
-          initPesquisaEditor();
-        } catch (err) { showToast('Erro: ' + err.message, 5000); }
-      } else if (act === 'excluir') {
-        const ok = await confirmarAcao({
-          titulo: `Excluir definitivamente "${rotulo}"?`,
-          mensagem: 'A pergunta sera removida PERMANENTEMENTE — apaga texto em todos os idiomas, opcoes e associacoes. So funciona se nao houver respostas anteriores.',
-          btnConfirmar: 'Sim, excluir',
-          btnCancelar: 'Voltar',
-          perigoso: true,
-        });
-        if (!ok) return;
-        try {
-          await apiSend('DELETE', `/api/qualidade/admin/perguntas/${pid}`);
-          showToast(`✓ "${rotulo}" excluida`);
-          initPesquisaEditor();
-        } catch (err) { showToast('Nao foi possivel excluir: ' + err.message, 6000); }
-      }
-    });
-  });
 }
 
 // _renderPesqHistorico foi unificado com _renderAnamHistorico via

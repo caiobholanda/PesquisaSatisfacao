@@ -435,7 +435,13 @@ export function montarEstruturaPesquisaAdmin(slug, idioma = 'pt-BR') {
     `).all(pesquisa.id, s.id);
     for (const q of s.perguntas) {
       const trQ = db.prepare("SELECT rotulo, ajuda FROM pergunta_traducao WHERE pergunta_id=? AND idioma=?").get(q.pergunta_id, idioma);
-      q.rotulo = trQ?.rotulo || q.chave;
+      // Fallback pt-BR antes da chave crua (BUG-O1 fix replicado).
+      if (trQ?.rotulo && trQ.rotulo.trim()) {
+        q.rotulo = trQ.rotulo;
+      } else {
+        const trPt = db.prepare("SELECT rotulo FROM pergunta_traducao WHERE pergunta_id=? AND idioma='pt-BR'").get(q.pergunta_id);
+        q.rotulo = (trPt?.rotulo && trPt.rotulo.trim()) ? trPt.rotulo : q.chave;
+      }
       q.ajuda = trQ?.ajuda || null;
       if (q.escala_id) {
         q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
@@ -445,6 +451,11 @@ export function montarEstruturaPesquisaAdmin(slug, idioma = 'pt-BR') {
       } else {
         q.opcoes = null;
       }
+      // Conta respostas anteriores (pra UI decidir se mostra 'Excluir
+      // definitivo' ou se preserva por historico).
+      q.respostas_count = db.prepare(
+        "SELECT COUNT(*) n FROM resposta_item WHERE pergunta_chave = ?"
+      ).get(q.chave).n;
     }
   }
   return {
