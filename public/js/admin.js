@@ -4048,78 +4048,149 @@ async function initAnamneseEditor() {
   _renderAnamHistorico();
 }
 
-// Painel "Historico de alteracoes" — bloco colapsavel no fim do editor
-// que lista quem fez o que e quando (criar pergunta, editar texto/tipo,
-// reativar, excluir definitivo, criar/remover secao, etc).
+// Botao "Histórico" no header do editor — abre modal grande com a
+// lista completa. Substitui o antigo bloco colapsavel inline.
 async function _renderAnamHistorico() {
-  const wrap = document.getElementById('anam-secoes');
-  if (!wrap) return;
-  document.getElementById('anam-historico')?.remove();
+  await _renderBotaoHistorico({ slug: ANAMNESE_SLUG, hostId: 'anam-historico-btn-host', titulo: 'Histórico — Anamnese' });
+}
+async function _renderPesqHistorico() {
+  await _renderBotaoHistorico({ slug: PESQUISA_SLUG, hostId: 'pesq-historico-btn-host', titulo: 'Histórico — Pesquisa de Satisfação' });
+}
 
-  let itens = [];
+// Encontra o melhor lugar pra colocar o botao: tenta um host
+// dedicado (#<hostId>), senao injeta no inicio da view do editor.
+async function _renderBotaoHistorico({ slug, hostId, titulo }) {
+  // Conta itens pra mostrar no badge (request leve, limite 1 — so pega count via length).
+  // Como a API nao tem endpoint de count, pega limite=200 e usa length.
+  let total = 0;
   try {
-    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${ANAMNESE_SLUG}&limite=50`);
-    if (!r) return;
-    const d = await r.json();
-    if (!d.ok) return;
-    itens = d.items || [];
-  } catch { return; }
+    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${slug}&limite=200`);
+    if (r) { const d = await r.json(); if (d?.ok) total = (d.items || []).length; }
+  } catch {}
 
-  const panel = document.createElement('section');
-  panel.id = 'anam-historico';
-  panel.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
+  // Acha host ou cria proximo ao titulo do editor.
+  let host = document.getElementById(hostId);
+  if (!host) {
+    const view = slug === ANAMNESE_SLUG
+      ? document.getElementById('view-anamnese-editor')
+      : document.getElementById('view-pesquisa-editor');
+    if (!view) return;
+    // Coloca como float-right no topo da view
+    host = document.createElement('div');
+    host.id = hostId;
+    host.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:1rem';
+    // Insere apos o primeiro filho (geralmente o header h2)
+    if (view.firstElementChild?.nextSibling) {
+      view.insertBefore(host, view.firstElementChild.nextSibling);
+    } else {
+      view.appendChild(host);
+    }
+  }
+
+  host.innerHTML = `
+    <button class="btn btn-outline btn-sm" data-act="abrir-historico" style="display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem">
+      <span>📜 Histórico</span>
+      <span style="background:var(--gold,#b8935a);color:#fff;font-size:.7rem;padding:.1rem .5rem;border-radius:9999px;font-weight:600">${total}</span>
+    </button>
+  `;
+  host.querySelector('[data-act="abrir-historico"]').addEventListener('click', () => _abrirModalHistorico({ slug, titulo }));
+}
+
+// Modal grande de historico — compartilhado por anamnese e pesquisa.
+// Filtros por tipo de acao + busca + paginacao implicita (carrega 200).
+async function _abrirModalHistorico({ slug, titulo }) {
   const ACAO_LABEL = {
-    criar: '➕ Criou',
-    editar: '✏ Editou',
-    remover: '🗑 Removeu',
-    associar: '🔗 Associou',
-    desassociar: '✂ Desassociou',
+    criar: '➕ Criou', editar: '✏ Editou', remover: '🗑 Removeu',
+    associar: '🔗 Associou', desassociar: '✂ Desassociou',
     excluir_definitivo: '💥 Excluiu definitivamente',
   };
+  const ACAO_COR = {
+    criar: '#3a6b47', editar: '#8a6b35', remover: '#9e3832',
+    associar: '#5d7555', desassociar: '#8c6f5a', excluir_definitivo: '#9e3832',
+  };
   const ENTIDADE_LABEL = {
-    pergunta: 'pergunta',
-    secao: 'seção',
-    opcao: 'opção',
+    pergunta: 'pergunta', secao: 'seção', opcao: 'opção',
     pesquisa_pergunta: 'pergunta na pesquisa',
   };
-  panel.innerHTML = `
-    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
-      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--text)">Histórico de alterações <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${itens.length}</span></h3>
-      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
-    </header>
-    <div data-body style="display:none;margin-top:.9rem;max-height:420px;overflow-y:auto">
-      ${itens.length === 0
-        ? '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">Nenhuma alteração registrada ainda.</div>'
-        : itens.map(it => {
-            const dt = new Date(it.criado_em.replace(' ', 'T') + 'Z');
-            const dtFmt = !isNaN(dt) ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : it.criado_em;
-            const acao = ACAO_LABEL[it.acao] || it.acao;
-            const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
-            const who  = it.usuario || 'sistema';
-            return `
-              <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--border-lt,#eee)">
-                <div style="flex-shrink:0;width:115px;font-size:.7rem;color:var(--muted)">${dtFmt}</div>
-                <div style="flex:1;min-width:0;font-size:.85rem;color:var(--text);line-height:1.45">
-                  <strong>${acao} ${ent}</strong> #${it.entidade_id ?? '?'}
-                  <div style="color:var(--muted);font-size:.78rem;margin-top:.1rem">${escHtml(it.descricao || '')}</div>
-                  <div style="color:var(--muted);font-size:.7rem;margin-top:.1rem">por ${escHtml(who)}</div>
-                </div>
-              </div>
-            `;
-          }).join('')
-      }
+
+  // Carrega itens
+  let itens = [];
+  try {
+    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${slug}&limite=200`);
+    if (r) { const d = await r.json(); if (d?.ok) itens = d.items || []; }
+  } catch {}
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.76);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+        <div>
+          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${itens.length} alterações registradas — mais recente primeiro</p>
+        </div>
+        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
+      </header>
+      <div style="padding:.85rem 1.4rem;border-bottom:1px solid var(--border);display:flex;gap:.4rem;flex-wrap:wrap;background:var(--bg)">
+        ${['todas','criar','editar','remover','associar','desassociar','excluir_definitivo'].map(f => `
+          <button class="btn btn-outline btn-sm" data-filtro="${f}" style="font-size:.72rem;padding:.3rem .7rem${f === 'todas' ? ';background:var(--gold,#b8935a);color:#fff;border-color:var(--gold,#b8935a)' : ''}">${f === 'todas' ? 'Todas' : (ACAO_LABEL[f] || f)}</button>
+        `).join('')}
+      </div>
+      <div data-lista style="flex:1;overflow-y:auto;padding:.5rem 0"></div>
+      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </footer>
     </div>
   `;
-  wrap.appendChild(panel);
 
-  const header = panel.querySelector('[data-act="toggle"]');
-  const body   = panel.querySelector('[data-body]');
-  const arrow  = panel.querySelector('[data-arrow]');
-  header.addEventListener('click', () => {
-    const aberto = body.style.display !== 'none';
-    body.style.display = aberto ? 'none' : '';
-    arrow.textContent  = aberto ? '▾' : '▴';
+  function renderLista(filtro) {
+    const lista = ov.querySelector('[data-lista]');
+    const filtrados = filtro === 'todas' ? itens : itens.filter(i => i.acao === filtro);
+    if (!filtrados.length) {
+      lista.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.88rem">Nenhuma alteração ${filtro === 'todas' ? 'registrada ainda' : 'com este filtro'}.</div>`;
+      return;
+    }
+    lista.innerHTML = filtrados.map(it => {
+      const dt = new Date(it.criado_em.replace(' ', 'T') + 'Z');
+      const dtFmt = !isNaN(dt) ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : it.criado_em;
+      const acaoLabel = ACAO_LABEL[it.acao] || it.acao;
+      const cor = ACAO_COR[it.acao] || '#8c6f5a';
+      const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
+      const who  = it.usuario || 'sistema';
+      return `
+        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.85rem 1.4rem;border-bottom:1px solid var(--border-lt,#eee);transition:background .12s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <div style="flex-shrink:0;width:135px;font-size:.72rem;color:var(--muted);padding-top:.15rem">${dtFmt}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
+              <span style="background:${cor};color:#fff;font-size:.7rem;padding:.18rem .55rem;border-radius:9999px;font-weight:600">${acaoLabel}</span>
+              <span style="color:var(--muted);font-size:.78rem">${ent} #${it.entidade_id ?? '?'}</span>
+            </div>
+            <div style="color:var(--text);font-size:.9rem;line-height:1.45;margin-bottom:.2rem">${escHtml(it.descricao || '—')}</div>
+            <div style="color:var(--muted);font-size:.72rem">por <strong style="color:var(--text);font-weight:500">${escHtml(who)}</strong></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  renderLista('todas');
+
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => {
+    if (e.target === ov || e.target.dataset.act === 'close') return close();
+    const f = e.target.dataset.filtro;
+    if (f) {
+      ov.querySelectorAll('[data-filtro]').forEach(b => {
+        const ativo = b.dataset.filtro === f;
+        b.style.background = ativo ? 'var(--gold,#b8935a)' : '';
+        b.style.color = ativo ? '#fff' : '';
+        b.style.borderColor = ativo ? 'var(--gold,#b8935a)' : '';
+      });
+      renderLista(f);
+    }
   });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
 }
 
 // Painel "Perguntas removidas" — busca a estrutura ADMIN que inclui
@@ -4846,72 +4917,8 @@ async function _renderPesqInativas() {
   });
 }
 
-// Painel de historico — clone do _renderAnamHistorico, slug spa-locc-v1.
-async function _renderPesqHistorico() {
-  const wrap = document.getElementById('pesq-secoes');
-  if (!wrap) return;
-  document.getElementById('pesq-historico')?.remove();
-
-  let itens = [];
-  try {
-    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${PESQUISA_SLUG}&limite=50`);
-    if (!r) return;
-    const d = await r.json();
-    if (!d.ok) return;
-    itens = d.items || [];
-  } catch { return; }
-
-  const panel = document.createElement('section');
-  panel.id = 'pesq-historico';
-  panel.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
-  const ACAO_LABEL = {
-    criar: '➕ Criou', editar: '✏ Editou', remover: '🗑 Removeu',
-    associar: '🔗 Associou', desassociar: '✂ Desassociou',
-    excluir_definitivo: '💥 Excluiu definitivamente',
-  };
-  const ENTIDADE_LABEL = {
-    pergunta: 'pergunta', secao: 'seção', opcao: 'opção',
-    pesquisa_pergunta: 'pergunta na pesquisa',
-  };
-  panel.innerHTML = `
-    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
-      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--text)">Histórico de alterações <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${itens.length}</span></h3>
-      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
-    </header>
-    <div data-body style="display:none;margin-top:.9rem;max-height:420px;overflow-y:auto">
-      ${itens.length === 0
-        ? '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">Nenhuma alteração registrada ainda.</div>'
-        : itens.map(it => {
-            const dt = new Date(it.criado_em.replace(' ', 'T') + 'Z');
-            const dtFmt = !isNaN(dt) ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : it.criado_em;
-            const acao = ACAO_LABEL[it.acao] || it.acao;
-            const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
-            const who  = it.usuario || 'sistema';
-            return `
-              <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--border-lt,#eee)">
-                <div style="flex-shrink:0;width:115px;font-size:.7rem;color:var(--muted)">${dtFmt}</div>
-                <div style="flex:1;min-width:0;font-size:.85rem;color:var(--text);line-height:1.45">
-                  <strong>${acao} ${ent}</strong> #${it.entidade_id ?? '?'}
-                  <div style="color:var(--muted);font-size:.78rem;margin-top:.1rem">${escHtml(it.descricao || '')}</div>
-                  <div style="color:var(--muted);font-size:.7rem;margin-top:.1rem">por ${escHtml(who)}</div>
-                </div>
-              </div>
-            `;
-          }).join('')
-      }
-    </div>
-  `;
-  wrap.appendChild(panel);
-
-  const header = panel.querySelector('[data-act="toggle"]');
-  const body   = panel.querySelector('[data-body]');
-  const arrow  = panel.querySelector('[data-arrow]');
-  header.addEventListener('click', () => {
-    const aberto = body.style.display !== 'none';
-    body.style.display = aberto ? 'none' : '';
-    arrow.textContent  = aberto ? '▾' : '▴';
-  });
-}
+// _renderPesqHistorico foi unificado com _renderAnamHistorico via
+// _renderBotaoHistorico — botao no header + modal grande compartilhado.
 
 function _renderPesqEstrutura() {
   const wrap = document.getElementById('pesq-secoes');
