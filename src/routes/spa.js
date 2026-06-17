@@ -25,6 +25,91 @@ router.get('/documento', (req, res) => {
   });
 });
 
+// GET /api/spa/historico?t=TOKEN  (busca pelo email da reserva)
+// GET /api/spa/historico?documento=XXX&tipo_documento=cpf  (busca direta pelo doc)
+// GET /api/spa/historico?email=XXX  (busca pelo email)
+// Busca o ULTIMO perfil ja preenchido. Retorna campos seguros pra
+// pre-preencher o form — exceto assinatura (sempre nova) e info_medica
+// (deve ser reconfirmada a cada visita).
+router.get('/historico', (req, res) => {
+  const db = getDb();
+  let ult = null;
+
+  const token = req.query.t;
+  const docNum = (req.query.documento || '').toString().trim();
+  const docTipo = (req.query.tipo_documento || '').toString().trim() || null;
+  const emailQry = (req.query.email || '').toString().trim().toLowerCase();
+
+  // 1) Busca por documento (caminho principal: quando cliente digita CPF/passaporte)
+  if (docNum) {
+    // Normaliza CPF: remove pontuacao pra fazer match insensitive de mascara
+    const docLimpo = docNum.replace(/\D/g, '');
+    if (docTipo === 'cpf' && docLimpo.length === 11) {
+      ult = db.prepare(`
+        SELECT * FROM spa_perfis
+        WHERE REPLACE(REPLACE(REPLACE(documento, '.', ''), '-', ''), ' ', '') = ?
+          AND tipo_documento = 'cpf'
+        ORDER BY criado_em DESC LIMIT 1
+      `).get(docLimpo);
+    } else {
+      // Passaporte/RG: comparacao trim case-insensitive
+      ult = db.prepare(`
+        SELECT * FROM spa_perfis
+        WHERE LOWER(TRIM(documento)) = LOWER(?) AND tipo_documento = COALESCE(?, tipo_documento)
+        ORDER BY criado_em DESC LIMIT 1
+      `).get(docNum, docTipo);
+    }
+  }
+
+  // 2) Busca por email (parametro direto ou via token)
+  if (!ult) {
+    let email = emailQry;
+    if (!email && token) {
+      const row = buscarDocumentoToken(token);
+      if (row) email = (row.hospede_email || '').trim().toLowerCase();
+    }
+    if (email) {
+      ult = db.prepare(`
+        SELECT * FROM spa_perfis
+        WHERE LOWER(TRIM(email)) = ?
+        ORDER BY criado_em DESC LIMIT 1
+      `).get(email);
+    }
+  }
+
+  if (!ult) return res.json({ ok: false });
+
+  // Helper pra parsear arrays JSON gravados como TEXT.
+  const parseArr = v => {
+    if (!v) return [];
+    try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; }
+  };
+
+  res.json({
+    ok: true,
+    perfil: {
+      nome:                ult.nome || '',
+      sobrenome:           ult.sobrenome || '',
+      tipo_documento:      ult.tipo_documento || 'cpf',
+      documento:           ult.documento || '',
+      email:               ult.email || '',
+      telefone:            ult.telefone || '',
+      data_nascimento:     ult.data_nascimento || '',
+      rotina_facial:       parseArr(ult.rotina_facial),
+      rotina_corporal:     parseArr(ult.rotina_corporal),
+      produto_especifico:  ult.produto_especifico || '',
+      pressao_massagem:    ult.pressao_massagem || '',
+      // info_medica NAO retornada por seguranca: cliente precisa
+      // reconfirmar a cada visita (pode ter mudado).
+      consentimento_marketing: !!ult.consentimento_marketing,
+      canais_marketing:    parseArr(ult.canais_marketing),
+      idioma:              ult.idioma || 'pt-BR',
+      quarto:              ult.quarto || '',
+      criado_em:           ult.criado_em,
+    },
+  });
+});
+
 // POST /api/spa/perfil
 router.post('/perfil', (req, res) => {
   const b = req.body || {};

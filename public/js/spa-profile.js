@@ -486,7 +486,7 @@ function init() {
     validateAll();
   });
 
-  // CPF masking
+  // CPF masking + pre-preenchimento via historico ao completar 11 digitos
   document.getElementById('f-doc-num')?.addEventListener('input', function () {
     if (_docType === 'cpf') {
       let v = this.value.replace(/\D/g, '').substring(0, 11);
@@ -494,6 +494,14 @@ function init() {
       else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
       else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
       this.value = v;
+      const digits = v.replace(/\D/g, '');
+      if (digits.length === 11 && validarCPF(digits)) {
+        _tentarPrePreencherHistorico({ documento: digits, tipo_documento: 'cpf' });
+      }
+    } else {
+      // Passaporte/RG: dispara quando 4+ chars (heuristica)
+      const v = this.value.trim();
+      if (v.length >= 4) _tentarPrePreencherHistorico({ documento: v, tipo_documento: _docType });
     }
     validateAll();
   });
@@ -578,6 +586,9 @@ function init() {
             }
           }
           loadLocale(lang);
+          // Tenta pre-preencher pelo email do hospede (token aponta pra
+          // reserva → reserva tem email → busca ultimo spa_perfis).
+          _tentarPrePreencherHistorico({ token });
         })
         .catch(() => loadLocale(lang));
       return;
@@ -694,6 +705,134 @@ async function applyAnamneseConfig(idioma) {
   }
 
   _renderPerguntasExtras(perguntasExtras);
+}
+
+// Pre-preenchimento via historico: chama GET /api/spa/historico
+// (via token OU via documento) e preenche os campos que ja foram
+// respondidos pelo hospede em visitas anteriores. NAO preenche
+// assinatura e info_medica (precisam ser confirmados a cada visita).
+// Idempotente: pode ser chamado varias vezes; so popula campos
+// que ainda estao vazios.
+let _historicoJaPrePreenchido = false;
+async function _tentarPrePreencherHistorico({ token, documento, tipo_documento } = {}) {
+  if (_historicoJaPrePreenchido) return;
+  let url = '/api/spa/historico?';
+  if (documento) {
+    url += 'documento=' + encodeURIComponent(documento);
+    if (tipo_documento) url += '&tipo_documento=' + encodeURIComponent(tipo_documento);
+  } else if (token) {
+    url += 't=' + encodeURIComponent(token);
+  } else {
+    return;
+  }
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d?.ok || !d.perfil) return;
+    _historicoJaPrePreenchido = true;
+    _aplicarPerfilNoForm(d.perfil);
+    _mostrarBannerHistorico(d.perfil.criado_em);
+  } catch {}
+}
+
+// Preenche o form com dados de perfil anterior, respeitando o que o
+// usuario ja digitou (so popula campos VAZIOS) e excluindo info_medica
+// e assinatura por seguranca.
+function _aplicarPerfilNoForm(p) {
+  const setIfEmpty = (id, v) => {
+    const el = document.getElementById(id);
+    if (el && !el.value && v) el.value = v;
+  };
+  setIfEmpty('f-nome', p.nome);
+  setIfEmpty('f-sobrenome', p.sobrenome);
+  setIfEmpty('f-doc-num', p.documento);
+  setIfEmpty('f-email', p.email);
+  setIfEmpty('f-telefone', p.telefone);
+  setIfEmpty('f-nascimento', p.data_nascimento);
+  setIfEmpty('f-outro-produto', p.produto_especifico);
+  setIfEmpty('f-quarto', p.quarto);
+
+  // Tipo de documento (sincroniza select + _docType)
+  if (p.tipo_documento) {
+    const sel = document.getElementById('f-doc-tipo');
+    if (sel && Array.from(sel.options).some(o => o.value === p.tipo_documento)) {
+      sel.value = p.tipo_documento;
+      _docType = p.tipo_documento;
+    }
+  }
+
+  // Pills da rotina facial e corporal (marca as que ja foram escolhidas antes)
+  const marcar = (gridId, labels) => {
+    if (!Array.isArray(labels)) return;
+    document.querySelectorAll('#' + gridId + ' .spa-pill').forEach(p => {
+      if (labels.includes(p.dataset.label)) {
+        p.classList.add('selected');
+        const inp = p.querySelector('input');
+        if (inp) inp.checked = true;
+      }
+    });
+  };
+  marcar('facial-grid', p.rotina_facial);
+  marcar('body-grid',   p.rotina_corporal);
+
+  // Pressao preferida
+  if (p.pressao_massagem) {
+    document.querySelectorAll('.spa-radio-btn').forEach(btn => {
+      if (btn.dataset.val === p.pressao_massagem) {
+        btn.classList.add('selected');
+        const inp = btn.querySelector('input');
+        if (inp) inp.checked = true;
+      }
+    });
+  }
+
+  // Marketing (canais)
+  if (Array.isArray(p.canais_marketing)) {
+    const map = { email: 'f-mkt-email', sms: 'f-mkt-sms', whatsapp: 'f-mkt-wa' };
+    p.canais_marketing.forEach(c => {
+      const id = map[c];
+      const el = id && document.getElementById(id);
+      if (el) {
+        el.checked = true;
+        el.dispatchEvent(new Event('change'));
+      }
+    });
+  }
+
+  validateAll();
+}
+
+// Banner discreto avisando que ja preenchemos com base na visita anterior
+function _mostrarBannerHistorico(criadoEm) {
+  if (document.getElementById('historico-banner')) return;
+  const form = document.getElementById('spa-form');
+  if (!form) return;
+  const dt = criadoEm ? new Date(criadoEm.replace(' ', 'T') + 'Z') : null;
+  const dataFmt = dt && !isNaN(dt) ? dt.toLocaleDateString(_currentLang || 'pt-BR', { year:'numeric', month:'long', day:'numeric' }) : '';
+  const MSG = {
+    'pt-BR': ['Bem-vindo de volta!', `Pré-preenchemos seus dados com base na visita de ${dataFmt}. Confira e ajuste se algo mudou.`],
+    'pt-PT': ['Bem-vindo de volta!', `Pré-preenchemos os seus dados com base na visita de ${dataFmt}. Confirme e ajuste se algo mudou.`],
+    'en':    ['Welcome back!',        `We pre-filled your data based on your visit on ${dataFmt}. Please review and adjust if anything has changed.`],
+    'es':    ['¡Bienvenido de nuevo!', `Hemos rellenado sus datos según su visita del ${dataFmt}. Revise y ajuste si algo cambió.`],
+    'fr':    ['Bon retour parmi nous !', `Nous avons pré-rempli vos données selon votre visite du ${dataFmt}. Vérifiez et ajustez si nécessaire.`],
+    'it':    ['Bentornato!',           `Abbiamo precompilato i suoi dati in base alla visita del ${dataFmt}. Verifichi e modifichi se necessario.`],
+    'de':    ['Willkommen zurück!',    `Wir haben Ihre Daten basierend auf Ihrem Besuch am ${dataFmt} vorausgefüllt. Bitte überprüfen Sie und passen Sie an, falls sich etwas geändert hat.`],
+  };
+  const [titulo, msg] = MSG[_currentLang] || MSG['pt-BR'];
+  const banner = document.createElement('div');
+  banner.id = 'historico-banner';
+  banner.style.cssText = 'background:#f5ead8;border:1px solid #c9a86a;color:#4a3220;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:.85rem;font-size:.88rem;line-height:1.5';
+  banner.innerHTML = `
+    <div style="font-size:1.4rem;line-height:1">✦</div>
+    <div style="flex:1">
+      <div style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:.15rem">${_escHtml(titulo)}</div>
+      <div>${_escHtml(msg)}</div>
+    </div>
+    <button type="button" aria-label="fechar" style="background:none;border:none;font-size:1.1rem;color:#8c6f5a;cursor:pointer;line-height:1">×</button>
+  `;
+  banner.querySelector('button').addEventListener('click', () => banner.remove());
+  form.parentNode.insertBefore(banner, form);
 }
 
 // Renderiza perguntas customizadas (sem mapeia_campo_legado) numa seção
