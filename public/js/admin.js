@@ -1,5 +1,11 @@
 const TOKEN_KEY = 'granspa_token';
 const LIMIT = 30;
+// Slugs hoisted para o topo — antes ficavam perto dos editores
+// (linhas 3874/4408) e a IIFE de init na linha 764 (showApp→showView→
+// initAnamneseEditor/initPesquisaEditor) acessava-os em TDZ quando
+// o usuario recarregava com a view restaurada no sessionStorage.
+const ANAMNESE_SLUG = 'spa-anamnese-v1';
+const PESQUISA_SLUG = 'spa-locc-v1';
 let _token = null;
 let _offset = 0;
 let _total = 0;
@@ -3871,7 +3877,7 @@ async function loadAuditoria() {
 // 'unica'/'multipla'). Reusa os endpoints CRUD do módulo Qualidade.
 // ────────────────────────────────────────────────────────────────────────────
 
-const ANAMNESE_SLUG = 'spa-anamnese-v1';
+// ANAMNESE_SLUG hoisted pro topo do arquivo (TDZ fix).
 let _anamPesquisaId = null;
 let _anamEstrutura  = null;
 
@@ -4041,23 +4047,41 @@ function _wireAnamAcoes() {
   });
 }
 
-// Tradução pt-BR → 6 idiomas. Falha silenciosa devolve só pt-BR.
+// Tradução pt-BR → 6 idiomas via Anthropic. Se a chamada falhar
+// (ou se as traduções voltarem iguais ao pt-BR, indicando que o
+// backend caiu no fallback por API key invalida/saldo zerado),
+// mostra um toast warning para o admin saber.
 async function _anamTraduzirRotulo(rotuloPtBR) {
   try {
     const r = await api('/api/qualidade/admin/traduzir', {
       method: 'POST',
       body: JSON.stringify({ texto: rotuloPtBR, idiomas: ['pt-PT','en','es','fr','it','de'] }),
     });
-    if (!r) return { 'pt-BR': { rotulo: rotuloPtBR } };
+    if (!r) {
+      showToast('⚠ Traducao automatica indisponivel — salvando so em pt-BR', 5000);
+      return { 'pt-BR': { rotulo: rotuloPtBR } };
+    }
     const d = await r.json();
     const out = { 'pt-BR': { rotulo: rotuloPtBR } };
     if (d?.ok && d.traducoes) {
+      let traduziuAlgum = false;
       for (const [idioma, texto] of Object.entries(d.traducoes)) {
         out[idioma] = { rotulo: texto };
+        if (texto && texto.trim() !== rotuloPtBR.trim()) traduziuAlgum = true;
       }
+      // Heuristica: se nenhuma traducao mudou o texto, backend caiu no
+      // fallback (sem credito/erro na API). Alerta admin.
+      if (!traduziuAlgum && Object.keys(d.traducoes).length > 0) {
+        showToast('⚠ Traducao automatica falhou (sem credito Anthropic?) — salvando so pt-BR', 6000);
+      }
+    } else {
+      showToast('⚠ Traducao automatica indisponivel — salvando so em pt-BR', 5000);
     }
     return out;
-  } catch { return { 'pt-BR': { rotulo: rotuloPtBR } }; }
+  } catch {
+    showToast('⚠ Erro na traducao automatica — salvando so em pt-BR', 5000);
+    return { 'pt-BR': { rotulo: rotuloPtBR } };
+  }
 }
 
 async function _anamAddSecao() {
@@ -4405,7 +4429,7 @@ window.pedirPergunta = pedirPergunta;
 // _anamTraduzirRotulo, pedirTexto, pedirOpcao, confirmarAcao, apiSend).
 // ────────────────────────────────────────────────────────────────────────────
 
-const PESQUISA_SLUG = 'spa-locc-v1';
+// PESQUISA_SLUG hoisted pro topo do arquivo (TDZ fix).
 let _pesqPesquisaId = null;
 let _pesqEstrutura  = null;
 
