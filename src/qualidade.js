@@ -398,6 +398,54 @@ export function listarPesquisas() {
 export function buscarPesquisaPorId(id) {
   return getDb().prepare("SELECT * FROM pesquisa WHERE id=?").get(id) || null;
 }
+
+// Estrutura completa para o EDITOR admin: ignora publicada_em e traz
+// associacao_id em cada pergunta (necessário pra DELETE de pesquisa_pergunta
+// sem desativar a pergunta global da biblioteca).
+export function montarEstruturaPesquisaAdmin(slug, idioma = 'pt-BR') {
+  const db = getDb();
+  const pesquisa = db.prepare(
+    "SELECT id, slug, titulo, descricao, versao, app_escopo, publicada_em, ativo FROM pesquisa WHERE slug=? ORDER BY versao DESC LIMIT 1"
+  ).get(slug);
+  if (!pesquisa) return null;
+  const tr = db.prepare("SELECT titulo, descricao FROM pesquisa_traducao WHERE pesquisa_id=? AND idioma=?").get(pesquisa.id, idioma);
+  if (tr) { pesquisa.titulo = tr.titulo; pesquisa.descricao = tr.descricao; }
+
+  const secoes = db.prepare(
+    "SELECT id, chave, ordem, ativo FROM pesquisa_secao WHERE pesquisa_id=? ORDER BY ordem, id"
+  ).all(pesquisa.id);
+  for (const s of secoes) {
+    const trS = db.prepare("SELECT titulo FROM pesquisa_secao_traducao WHERE pesquisa_secao_id=? AND idioma=?").get(s.id, idioma);
+    s.titulo = trS?.titulo || s.chave;
+    s.perguntas = db.prepare(`
+      SELECT pp.id AS associacao_id, pp.ordem, pp.obrigatoria, pp.ativo AS associacao_ativo,
+             p.id AS pergunta_id, p.chave, p.tipo, p.escala_id, p.ativo
+      FROM pesquisa_pergunta pp
+      JOIN pergunta_satisfacao p ON p.id = pp.pergunta_id
+      WHERE pp.pesquisa_id=? AND pp.secao_id=? AND pp.ativo=1
+      ORDER BY pp.ordem, pp.id
+    `).all(pesquisa.id, s.id);
+    for (const q of s.perguntas) {
+      const trQ = db.prepare("SELECT rotulo, ajuda FROM pergunta_traducao WHERE pergunta_id=? AND idioma=?").get(q.pergunta_id, idioma);
+      q.rotulo = trQ?.rotulo || q.chave;
+      q.ajuda = trQ?.ajuda || null;
+      if (q.escala_id) {
+        q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
+      } else if (q.tipo === 'unica' || q.tipo === 'multipla') {
+        q.opcoes = montarOpcoesPergunta(q.pergunta_id, idioma);
+        if (!q.opcoes.length) q.opcoes = null;
+      } else {
+        q.opcoes = null;
+      }
+    }
+  }
+  return {
+    id: pesquisa.id, slug: pesquisa.slug, titulo: pesquisa.titulo,
+    descricao: pesquisa.descricao, versao: pesquisa.versao,
+    app_escopo: pesquisa.app_escopo, publicada: !!pesquisa.publicada_em,
+    secoes,
+  };
+}
 export function listarPerguntasBiblioteca() {
   return getDb().prepare(`
     SELECT p.id, p.chave, p.tipo, p.escala_id, e.chave AS escala_chave, p.mapeia_campo_legado, p.ativo,

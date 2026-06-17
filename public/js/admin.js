@@ -4362,21 +4362,12 @@ async function initPesquisaEditor() {
   wrap.innerHTML = '';
 
   try {
-    const rL = await api('/api/qualidade/admin/pesquisas');
-    if (!rL) return;
-    const dL = await rL.json();
-    if (!dL.ok) return;
-    const p = dL.items.filter(x => x.slug === PESQUISA_SLUG).sort((a,b) => b.versao - a.versao)[0];
-    if (!p) { empty.textContent = `Pesquisa "${PESQUISA_SLUG}" não encontrada.`; return; }
-    _pesqPesquisaId = p.id;
-  } catch (e) { empty.textContent = 'Erro: ' + e.message; return; }
-
-  try {
-    const rC = await api(`/api/survey/config?slug=${PESQUISA_SLUG}&idioma=pt-BR`);
-    if (!rC) return;
-    const dC = await rC.json();
-    if (!dC.ok || !dC.pesquisa) { empty.textContent = 'Pesquisa não publicada. Publique em Gestão da Qualidade.'; return; }
-    _pesqEstrutura = dC.pesquisa;
+    const rE = await api(`/api/qualidade/admin/pesquisas/slug/${PESQUISA_SLUG}/estrutura?_=${Date.now()}`);
+    if (!rE) return;
+    const dE = await rE.json();
+    if (!dE.ok || !dE.estrutura) { empty.textContent = `Pesquisa "${PESQUISA_SLUG}" não encontrada.`; return; }
+    _pesqPesquisaId = dE.estrutura.id;
+    _pesqEstrutura  = dE.estrutura;
   } catch (e) { empty.textContent = 'Erro: ' + e.message; return; }
 
   empty.style.display = 'none';
@@ -4423,10 +4414,10 @@ function _renderPesqPergunta(q) {
     : '';
   const tipoBadge = `<span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .5rem;border-radius:9999px">${escHtml(tipoLabel)}</span>`;
   const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
-    ? `<button class="btn btn-outline btn-sm" data-pesq-act="edit-opcoes" data-chave="${escHtml(q.chave)}">Opções</button>`
+    ? `<button class="btn btn-outline btn-sm" data-pesq-act="edit-opcoes" data-pid="${q.pergunta_id}">Opções</button>`
     : '';
   return `
-    <div class="pesq-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+    <div class="pesq-pergunta" data-perg-id="${q.pergunta_id}" data-assoc-id="${q.associacao_id}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
           <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
@@ -4436,9 +4427,9 @@ function _renderPesqPergunta(q) {
         ${opcoes}
       </div>
       <div style="display:flex;gap:.3rem;flex-shrink:0">
-        <button class="btn btn-outline btn-sm" data-pesq-act="edit-perg" data-chave="${escHtml(q.chave)}">Editar</button>
+        <button class="btn btn-outline btn-sm" data-pesq-act="edit-perg" data-pid="${q.pergunta_id}">Editar</button>
         ${editOpcoesBtn}
-        <button class="btn btn-outline btn-sm" data-pesq-act="del-perg" data-chave="${escHtml(q.chave)}" style="color:var(--danger);border-color:var(--danger)" title="Remover pergunta">×</button>
+        <button class="btn btn-outline btn-sm" data-pesq-act="del-perg" data-assoc-id="${q.associacao_id}" data-rotulo="${escHtml(q.rotulo)}" style="color:var(--danger);border-color:var(--danger)" title="Remover pergunta">×</button>
       </div>
     </div>
   `;
@@ -4456,11 +4447,13 @@ function _wirePesqAcoes() {
     clone.addEventListener('click', () => {
       const act = clone.dataset.pesqAct;
       const secaoId = clone.dataset.secaoId ? parseInt(clone.dataset.secaoId) : null;
-      const chave = clone.dataset.chave;
+      const pid = clone.dataset.pid ? parseInt(clone.dataset.pid) : null;
+      const assocId = clone.dataset.assocId ? parseInt(clone.dataset.assocId) : null;
+      const rotulo = clone.dataset.rotulo;
       if (act === 'add-pergunta') _pesqAddPergunta(secaoId);
-      else if (act === 'edit-perg')   _pesqEditPergunta(chave);
-      else if (act === 'del-perg')    _pesqDelPergunta(chave);
-      else if (act === 'edit-opcoes') _pesqEditOpcoes(chave);
+      else if (act === 'edit-perg')   _pesqEditPergunta(pid);
+      else if (act === 'del-perg')    _pesqDelPergunta(assocId, rotulo);
+      else if (act === 'edit-opcoes') _pesqEditOpcoes(pid);
       else if (act === 'edit-secao')  _pesqEditSecao(secaoId);
       else if (act === 'del-secao')   _pesqDelSecao(secaoId);
     });
@@ -4510,18 +4503,22 @@ async function _pesqAddPergunta(secaoId) {
   } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
 }
 
-async function _pesqEditPergunta(chave) {
-  const r = await api('/api/qualidade/admin/perguntas');
-  if (!r) return;
-  const d = await r.json();
-  if (!d.ok) return;
-  const p = d.items.find(x => x.chave === chave);
+function _pesqFindPerg(pid) {
+  for (const s of (_pesqEstrutura?.secoes || [])) {
+    const q = s.perguntas.find(x => x.pergunta_id === pid);
+    if (q) return q;
+  }
+  return null;
+}
+
+async function _pesqEditPergunta(pid) {
+  const p = _pesqFindPerg(pid);
   if (!p) return showToast('Pergunta não encontrada');
 
   const novoRotulo = await pedirTexto({
     titulo: 'Editar pergunta',
     mensagem: 'Texto que o hóspede vê (português). Tradução para os outros idiomas é automática.',
-    valorInicial: p.rotulo || chave,
+    valorInicial: p.rotulo || p.chave,
     placeholder: 'Escreva a pergunta…',
   });
   if (novoRotulo === null) return;
@@ -4537,41 +4534,34 @@ async function _pesqEditPergunta(chave) {
   showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
   try {
     const traducoes = await _anamTraduzirRotulo(novoRotulo.trim());
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { tipo: novoTipo, traducoes });
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: novoTipo, traducoes });
     showToast('✓ Pergunta atualizada');
     initPesquisaEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
-async function _pesqDelPergunta(chave) {
+async function _pesqDelPergunta(assocId, rotulo) {
+  if (!assocId) return showToast('ID de associação ausente');
   const ok = await confirmarAcao({
     titulo: 'Remover pergunta?',
-    mensagem: `A pergunta sai da pesquisa de satisfação. Respostas anteriores continuam preservadas.`,
+    mensagem: `A pergunta ${rotulo ? `"${rotulo}" ` : ''}sai da pesquisa de satisfação. Respostas anteriores continuam preservadas e a pergunta continua disponível em outras pesquisas.`,
     btnConfirmar: 'Sim, remover',
     btnCancelar: 'Voltar',
     perigoso: true,
   });
   if (!ok) return;
-  const rL = await api('/api/qualidade/admin/perguntas');
-  if (!rL) return;
-  const dL = await rL.json();
-  const p = dL.items?.find(x => x.chave === chave);
-  if (!p) return showToast('Pergunta não encontrada');
   try {
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { ativo: 0 });
-    showToast('✓ Pergunta removida');
+    await apiSend('DELETE', `/api/qualidade/admin/pesquisa-pergunta/${assocId}`);
+    showToast('✓ Pergunta removida da pesquisa');
     initPesquisaEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
-async function _pesqEditOpcoes(chave) {
-  const r = await api('/api/qualidade/admin/perguntas');
-  if (!r) return;
-  const d = await r.json();
-  const p = d.items.find(x => x.chave === chave);
+async function _pesqEditOpcoes(pid) {
+  const p = _pesqFindPerg(pid);
   if (!p) return showToast('Pergunta não encontrada');
 
-  const rOp = await api(`/api/qualidade/admin/perguntas/${p.id}/opcoes`);
+  const rOp = await api(`/api/qualidade/admin/perguntas/${pid}/opcoes`);
   if (!rOp) return;
   const dOp = await rOp.json();
   const opcoes = dOp.items || [];
@@ -4607,7 +4597,7 @@ async function _pesqEditOpcoes(chave) {
       const trad = await _anamTraduzirRotulo(rot);
       const traducoesOp = {};
       for (const [idioma, v] of Object.entries(trad)) traducoesOp[idioma] = v.rotulo;
-      await apiSend('POST', `/api/qualidade/admin/perguntas/${p.id}/opcoes`, {
+      await apiSend('POST', `/api/qualidade/admin/perguntas/${pid}/opcoes`, {
         id: existing?.id || undefined,
         chave: k, ordem: ordem++, ativo: 1,
         traducoes: traducoesOp,

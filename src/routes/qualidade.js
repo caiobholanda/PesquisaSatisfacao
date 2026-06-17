@@ -8,6 +8,7 @@ import {
   listarPesquisasPublicadasPorApp,
   listarPesquisas,
   buscarPesquisaPorId,
+  montarEstruturaPesquisaAdmin,
   listarPerguntasBiblioteca,
   listarEscalas,
   listarMetasPorPesquisa,
@@ -55,6 +56,18 @@ router.get('/published', (req, res) => {
 // ── ADMIN ─────────────────────────────────────────────────────────────────
 router.get('/admin/pesquisas', requireAuth, (_req, res) => {
   res.json({ ok: true, items: listarPesquisas() });
+});
+
+// Estrutura completa para o editor admin (sem filtro publicada_em,
+// com associacao_id pra DELETE correto). Cache-Control desligado pra
+// evitar staleness pós-edição.
+router.get('/admin/pesquisas/slug/:slug/estrutura', requireAuth, (req, res) => {
+  const slug = (req.params.slug || '').toString();
+  const idioma = (req.query.idioma || 'pt-BR').toString();
+  const estrutura = montarEstruturaPesquisaAdmin(slug, idioma);
+  if (!estrutura) return res.status(404).json({ ok: false, error: 'Pesquisa nao encontrada' });
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, estrutura });
 });
 
 router.get('/admin/pesquisas/:id', requireAuth, (req, res) => {
