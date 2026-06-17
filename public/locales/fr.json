@@ -18,7 +18,8 @@
     "medical": "5. Informations médicales",
     "data_notice": "6. Notice de protection des données",
     "consents": "7. Consentements",
-    "signature": "8. Signature"
+    "signature": "8. Signature",
+    "additional_questions": "Questions supplémentaires"
   },
   "fields": {
     "first_name": "Prénom",

@@ -453,6 +453,11 @@ async function loadLocale(lang) {
     try { localStorage.setItem('spa_lang', lang); } catch {}
 
     applyLocale(L);
+    // BUG-O fix: re-aplicar config dinamica no novo idioma. Antes, ao
+    // trocar de idioma, as perguntas extras ficavam congeladas em pt-BR
+    // (titulo da secao, rotulo da pergunta e pills) porque so o IIFE
+    // do boot chamava applyAnamneseConfig.
+    applyAnamneseConfig(lang);
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === lang);
@@ -706,8 +711,10 @@ function _renderPerguntasExtras(perguntas) {
   sec = document.createElement('div');
   sec.className = 'spa-section';
   sec.id = wrapId;
+  // Titulo traduzivel: pega do locale se disponivel, senao usa pt-BR.
+  const tituloSecao = (_locale?.sections?.additional_questions) || 'Perguntas adicionais';
   sec.innerHTML = `
-    <h2 class="spa-section-title">Perguntas adicionais</h2>
+    <h2 class="spa-section-title">${_escHtml(tituloSecao)}</h2>
     <div id="perguntas-extras-grid" style="display:flex;flex-direction:column;gap:1.2rem"></div>
   `;
   secSig.parentNode.insertBefore(sec, secSig);
@@ -727,11 +734,18 @@ function _renderPerguntasExtras(perguntas) {
     } else if (q.tipo === 'unica' || q.tipo === 'escala' || q.tipo === 'sim_nao') {
       // BUG-H: pergunta 'Sim ou Não' do editor salva como tipo='escala'
       // SEM opcoes na biblioteca de perguntas. Fallback Sim/Não default
-      // para escala/sim_nao quando q.opcoes vier vazio — antes ficava
-      // um <div> sem nenhum pill e o cliente nao tinha como responder.
+      // para escala/sim_nao quando q.opcoes vier vazio.
+      // BUG-O: Sim/Não nos 7 idiomas (antes ficava sempre em PT).
+      const SIM_NAO = {
+        'pt-BR': ['Sim','Não'], 'pt-PT': ['Sim','Não'],
+        'en':    ['Yes','No'],  'es':    ['Sí','No'],
+        'fr':    ['Oui','Non'], 'it':    ['Sì','No'],
+        'de':    ['Ja','Nein'],
+      };
+      const sn = SIM_NAO[_currentLang] || SIM_NAO['pt-BR'];
       const opcoes = q.opcoes && q.opcoes.length ? q.opcoes
         : ((q.tipo === 'sim_nao' || q.tipo === 'escala')
-            ? [{ chave: 'sim', rotulo: 'Sim' }, { chave: 'nao', rotulo: 'Não' }]
+            ? [{ chave: 'sim', rotulo: sn[0] }, { chave: 'nao', rotulo: sn[1] }]
             : []);
       const pills = opcoes.map(o => `
         <label class="spa-pill" data-extra-val="${_escHtml(o.chave)}">
