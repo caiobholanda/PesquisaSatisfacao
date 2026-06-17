@@ -560,14 +560,17 @@ function init() {
       fetch('/api/spa/documento?t=' + encodeURIComponent(token))
         .then(r => r.ok ? r.json() : null)
         .then(d => {
-          if (!d) return;
-          if (d.locale) lang = d.locale;
-          if (d.hospede_nome) {
-            const parts = d.hospede_nome.trim().split(/\s+/);
-            const nomeEl = document.getElementById('f-nome');
-            const sobEl  = document.getElementById('f-sobrenome');
-            if (nomeEl) nomeEl.value = parts[0] || '';
-            if (sobEl)  sobEl.value  = parts.slice(1).join(' ') || '';
+          // BUG-A fix: token invalido/expirado nao pode TRAVAR a pagina
+          // sem locale. Sempre chama loadLocale, mesmo quando d=null.
+          if (d) {
+            if (d.locale) lang = d.locale;
+            if (d.hospede_nome) {
+              const parts = d.hospede_nome.trim().split(/\s+/);
+              const nomeEl = document.getElementById('f-nome');
+              const sobEl  = document.getElementById('f-sobrenome');
+              if (nomeEl) nomeEl.value = parts[0] || '';
+              if (sobEl)  sobEl.value  = parts.slice(1).join(' ') || '';
+            }
           }
           loadLocale(lang);
         })
@@ -632,7 +635,7 @@ async function applyAnamneseConfig(idioma) {
     cfg = d.pesquisa;
   } catch { return; }
 
-  // Achata perguntas mapeadas: { campo_legado: { ativo, obrigatoria, rotulo } }
+  // Achata perguntas mapeadas: { campo_legado: { ativo, obrigatoria, rotulo, opcoes } }
   // E coleta perguntas SEM mapeia_campo_legado (criadas pelo admin no editor):
   // essas vão para uma seção dinâmica "Perguntas adicionais".
   const map = {};
@@ -641,10 +644,27 @@ async function applyAnamneseConfig(idioma) {
     for (const q of (sec.perguntas || [])) {
       const legado = q.mapeia_campo_legado;
       if (legado) {
-        map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria };
+        map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria, opcoes: q.opcoes || null };
       } else {
         perguntasExtras.push(q);
       }
+    }
+  }
+
+  // BUG-B fix: o <select #f-doc-tipo> era HTML estatico com 2 opcoes
+  // hardcoded (cpf/passport). A config traz N opcoes (cpf/passaporte/rg)
+  // — reescreve o select a partir da config quando ela existe.
+  const docCfg = map['tipo_documento'];
+  if (docCfg && Array.isArray(docCfg.opcoes) && docCfg.opcoes.length) {
+    const sel = document.getElementById('f-doc-tipo');
+    if (sel) {
+      const prev = sel.value;
+      sel.innerHTML = docCfg.opcoes.map(o =>
+        `<option value="${o.chave}">${(o.rotulo || o.chave).replace(/[<>"']/g, '')}</option>`
+      ).join('');
+      // Mantem selecao anterior se ainda existir; senao escolhe a primeira
+      if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+      else { sel.value = sel.options[0].value; _docType = sel.value; }
     }
   }
 
