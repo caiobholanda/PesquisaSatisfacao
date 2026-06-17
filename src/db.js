@@ -177,6 +177,12 @@ export function initDb() {
   for (const col of ['documento_token TEXT', 'documento_token_expiry TEXT', 'idioma_documento TEXT', 'documento_enviado_em TEXT', 'documento_perfil_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
   }
+  // Migration: token separado para o 2o hospede em reservas casal
+  // (cliente2). Antes o token era unico por reserva e os dois hospedes
+  // de uma massagem casal acabavam compartilhando o mesmo link.
+  for (const col of ['documento_token2 TEXT', 'documento_token_expiry2 TEXT', 'documento_perfil_id2 INTEGER']) {
+    try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
+  }
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
 
@@ -989,22 +995,51 @@ export function exportarCsv({ origem, tipo_cliente, from, to } = {}) {
 }
 
 // ── SPA Pre-treatment form ──
-export function gerarDocumentoToken(reservaId) {
+// pessoa: 1 (cliente principal) | 2 (cliente2 — segunda pessoa da reserva casal)
+// Para reservas individuais, sempre usar pessoa=1.
+export function gerarDocumentoToken(reservaId, pessoa = 1) {
   const token = randomBytes(24).toString('hex');
   const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-  getDb().prepare(
-    `UPDATE reservas SET documento_token=?, documento_token_expiry=?, documento_enviado_em=datetime('now') WHERE id=?`
-  ).run(token, expiry, reservaId);
+  const p = pessoa === 2 ? 2 : 1;
+  if (p === 2) {
+    getDb().prepare(
+      `UPDATE reservas SET documento_token2=?, documento_token_expiry2=?, documento_enviado_em=datetime('now') WHERE id=?`
+    ).run(token, expiry, reservaId);
+  } else {
+    getDb().prepare(
+      `UPDATE reservas SET documento_token=?, documento_token_expiry=?, documento_enviado_em=datetime('now') WHERE id=?`
+    ).run(token, expiry, reservaId);
+  }
   return token;
 }
 
+// Busca por QUALQUER um dos dois tokens da reserva (cliente principal
+// ou cliente2). Retorna o nome/email do hospede CERTO conforme o token
+// usado, e o campo 'pessoa' (1 ou 2) pra rastreabilidade.
 export function buscarDocumentoToken(token) {
-  return getDb().prepare(`
-    SELECT r.id AS reserva_id, r.cliente AS hospede_nome, r.email AS hospede_email,
-           r.tratamento AS servico, r.idioma_documento AS locale
+  const row = getDb().prepare(`
+    SELECT r.id AS reserva_id, r.cliente, r.email, r.tratamento AS servico,
+           r.idioma_documento AS locale,
+           r.cliente2, r.email2,
+           r.documento_token, r.documento_token2,
+           r.documento_token_expiry, r.documento_token_expiry2
     FROM reservas r
-    WHERE r.documento_token = ? AND (r.documento_token_expiry IS NULL OR r.documento_token_expiry > datetime('now'))
-  `).get(token) || null;
+    WHERE (
+      r.documento_token  = ? AND (r.documento_token_expiry  IS NULL OR r.documento_token_expiry  > datetime('now'))
+    ) OR (
+      r.documento_token2 = ? AND (r.documento_token_expiry2 IS NULL OR r.documento_token_expiry2 > datetime('now'))
+    )
+  `).get(token, token);
+  if (!row) return null;
+  const pessoa = (row.documento_token2 === token) ? 2 : 1;
+  return {
+    reserva_id:    row.reserva_id,
+    hospede_nome:  pessoa === 2 ? (row.cliente2 || '') : (row.cliente || ''),
+    hospede_email: pessoa === 2 ? (row.email2 || '')   : (row.email || ''),
+    servico:       row.servico,
+    locale:        row.locale,
+    pessoa,
+  };
 }
 
 export function inserirSpaPerfil(dados) {

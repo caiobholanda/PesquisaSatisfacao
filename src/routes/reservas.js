@@ -182,12 +182,28 @@ router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
 router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
-  const token = gerarDocumentoToken(reserva.id);
   const origin = process.env.NODE_ENV === 'production'
     ? `https://${req.get('host')}`
     : `${req.protocol}://${req.get('host')}`;
-  res.json({ ok: true, token, nome: reserva.cliente, telefone: reserva.telefone,
-    baseUrl: `${origin}/spa-profile.html` });
+  const baseUrl = `${origin}/spa-profile.html`;
+
+  // Reserva CASAL (cliente2 preenchido): gera 2 tokens distintos, um por
+  // hospede. Cada um recebe seu proprio link e nao da bagunca no preenchimento.
+  if (reserva.cliente2 && reserva.cliente2.trim()) {
+    const token1 = gerarDocumentoToken(reserva.id, 1);
+    const token2 = gerarDocumentoToken(reserva.id, 2);
+    return res.json({
+      ok: true, casal: true,
+      hospede1: { nome: reserva.cliente,  telefone: reserva.telefone,  token: token1, url: `${baseUrl}?t=${token1}` },
+      hospede2: { nome: reserva.cliente2, telefone: reserva.telefone2, token: token2, url: `${baseUrl}?t=${token2}` },
+      baseUrl,
+    });
+  }
+
+  // Reserva individual: 1 token so (compat com clients que ja consomem esse shape)
+  const token = gerarDocumentoToken(reserva.id, 1);
+  res.json({ ok: true, casal: false, token, nome: reserva.cliente, telefone: reserva.telefone,
+    baseUrl, url: `${baseUrl}?t=${token}` });
 });
 
 router.delete('/:id', ...podeEscreverSpa, (req, res) => {

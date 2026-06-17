@@ -130,12 +130,17 @@ router.post('/perfil', (req, res) => {
     return res.status(400).json({ ok: false, error: 'Quarto inexistente' });
   }
 
-  // Resolve reserva_id via documento_token
+  // Resolve reserva_id via documento_token. Token identifica unica e
+  // exclusivamente uma (reserva, pessoa) — pessoa 1 (cliente principal)
+  // ou pessoa 2 (cliente2 em reservas casal). Cada hospede preenche
+  // sua propria anamnese sem sobrescrever a do outro.
   let reserva_id = null;
+  let _pessoaReserva = 1;
   if (b.documento_token) {
     const row = buscarDocumentoToken(b.documento_token);
     if (row) {
       reserva_id = row.reserva_id;
+      _pessoaReserva = row.pessoa === 2 ? 2 : 1;
       if (locale) vincularDocumentoToken(reserva_id, locale);
     }
   }
@@ -208,6 +213,11 @@ router.post('/perfil', (req, res) => {
     // coluna não existir em DBs muito antigos).
     if (quartoLimpo) {
       try { getDb().prepare('UPDATE spa_perfis SET quarto=? WHERE id=?').run(quartoLimpo, id); } catch {}
+    }
+    // Amarra o spa_perfil ao slot certo da reserva (hospede 1 ou 2).
+    if (reserva_id) {
+      const col = _pessoaReserva === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
+      try { getDb().prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(id, reserva_id); } catch {}
     }
     res.json({
       ok: true, id,

@@ -2314,19 +2314,74 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { alert('Erro ao gerar ficha: ' + (d.error || '')); return; }
-    const url = `${d.baseUrl}?t=${d.token}&lang=${_langSelected}`;
-    const raw = (r.telefone || '').replace(/\D/g, '');
-    const phone = raw.startsWith('55') ? raw : '55' + raw;
-    const msg = `Olá, *${r.cliente || 'hóspede'}*! 😊\n\nPara prepararmos sua experiência no *Gran SPA by L'Occitane*, pedimos que preencha a ficha de saúde antes do seu tratamento:\n\n👉 ${url}\n\n*Hotel Gran Marquise* 🌿`;
+
+    const baseMsg = (nome, url) =>
+      `Olá, *${nome || 'hóspede'}*! 😊\n\nPara prepararmos sua experiência no *Gran SPA by L'Occitane*, pedimos que preencha a ficha de saúde antes do seu tratamento:\n\n👉 ${url}\n\n*Hotel Gran Marquise* 🌿`;
+
     _fichasEnviadas.add(r.id);
     _closeLangOverlay();
     const btnFicha = document.getElementById('resdet-ficha');
     _aplicarEstadoBtnFicha(btnFicha, 'enviada');
-    if (raw) {
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+
+    if (d.casal) {
+      // RESERVA CASAL: 2 links distintos, 1 por hospede. Cada um tem seu
+      // proprio token amarrado ao slot (cliente1 ou cliente2) — nao
+      // sobrescrevem a anamnese um do outro.
+      const h1 = d.hospede1, h2 = d.hospede2;
+      const url1 = `${h1.url}&lang=${_langSelected}`;
+      const url2 = `${h2.url}&lang=${_langSelected}`;
+      const msg1 = baseMsg(h1.nome, url1);
+      const msg2 = baseMsg(h2.nome, url2);
+      // Modal simples: 2 botoes WhatsApp + 2 copiar
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      ov.innerHTML = `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+          <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Reserva CASAL — 2 links</h3>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">Cada hóspede tem seu próprio link de anamnese. Envie um para cada pessoa.</p>
+          ${[
+            { idx: 1, h: h1, url: url1, msg: msg1, tel: h1.telefone },
+            { idx: 2, h: h2, url: url2, msg: msg2, tel: h2.telefone },
+          ].map(({ idx, h, url, msg, tel }) => {
+            const tRaw = (tel || '').replace(/\\D/g, '');
+            const tPhone = tRaw.startsWith('55') ? tRaw : '55' + tRaw;
+            return `
+              <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
+                <div style="font-weight:600;margin-bottom:.4rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
+                <div style="font-size:.78rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.4rem .6rem;border-radius:4px;margin-bottom:.55rem">${escHtml(url)}</div>
+                <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+                  ${tRaw ? `<button class="btn btn-gold btn-sm" data-zap="${tPhone}" data-msg="${escHtml(msg)}">📱 WhatsApp</button>` : ''}
+                  <button class="btn btn-outline btn-sm" data-copy="${escHtml(url)}">📋 Copiar link</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+          <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
+            <button class="btn btn-outline" data-act="close">Fechar</button>
+          </div>
+        </div>
+      `;
+      ov.addEventListener('click', e => {
+        if (e.target === ov || e.target.dataset.act === 'close') ov.remove();
+        else if (e.target.dataset.zap) {
+          window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
+        } else if (e.target.dataset.copy) {
+          try { navigator.clipboard.writeText(e.target.dataset.copy); showToast('Link copiado!'); } catch {}
+        }
+      });
+      document.body.appendChild(ov);
     } else {
-      try { navigator.clipboard.writeText(url); } catch {}
-      showToast(`Link copiado! ${url}`);
+      // RESERVA INDIVIDUAL: 1 link
+      const url = `${d.baseUrl}?t=${d.token}&lang=${_langSelected}`;
+      const raw = (r.telefone || '').replace(/\D/g, '');
+      const phone = raw.startsWith('55') ? raw : '55' + raw;
+      const msg = baseMsg(r.cliente, url);
+      if (raw) {
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+      } else {
+        try { navigator.clipboard.writeText(url); } catch {}
+        showToast(`Link copiado! ${url}`);
+      }
     }
   } finally {
     btn.disabled = false; btn.textContent = 'Enviar via WhatsApp';
