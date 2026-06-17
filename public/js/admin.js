@@ -4027,7 +4027,7 @@ async function _renderAnamHistorico() {
     pergunta: 'pergunta',
     secao: 'seção',
     opcao: 'opção',
-    pesquisa_pergunta: 'associação',
+    pesquisa_pergunta: 'pergunta na pesquisa',
   };
   panel.innerHTML = `
     <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
@@ -4341,7 +4341,7 @@ async function _anamAddPergunta(secaoId) {
   try {
     const traducoes = await _anamTraduzirRotulo(rotulo);
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes,
+      chave, tipo, traducoes, pesquisa_slug: ANAMNESE_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
@@ -4821,7 +4821,7 @@ async function _pesqAddPergunta(secaoId) {
   try {
     const traducoes = await _anamTraduzirRotulo(rotulo);
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes,
+      chave, tipo, traducoes, pesquisa_slug: PESQUISA_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,

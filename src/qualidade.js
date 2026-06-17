@@ -686,7 +686,11 @@ export function criarPergunta({ chave, tipo, escala_id, mapeia_campo_legado, tra
 export function registrarHistoricoAnamnese({ usuario, acao, entidade, entidade_id, descricao, dados_antes, dados_depois, pesquisa_slug }) {
   try {
     const db = getDb();
-    const u = typeof usuario === 'string' ? usuario : (usuario?.email || usuario?.login || null);
+    // JWT payload pode ter qualquer um destes campos (login direto vs SSO):
+    // sub, username, email, login, nome. Pega o primeiro nao-vazio.
+    const u = typeof usuario === 'string'
+      ? usuario
+      : (usuario?.email || usuario?.username || usuario?.login || usuario?.nome || (usuario?.sub ? String(usuario.sub) : null));
     db.prepare(`
       INSERT INTO anamnese_auditoria
         (usuario, acao, entidade, entidade_id, descricao, dados_antes, dados_depois, pesquisa_slug)
@@ -706,8 +710,10 @@ export function registrarHistoricoAnamnese({ usuario, acao, entidade, entidade_i
   }
 }
 
-// Resolve slug da pesquisa a partir de id direto / associacao / secao.
-export function resolverSlugPesquisa({ pesquisaId, assocId, secaoId } = {}) {
+// Resolve slug da pesquisa a partir de id direto / associacao / secao /
+// pergunta (lookup via pesquisa_pergunta — pega a 1a pesquisa que tem
+// essa pergunta associada, suficiente para o historico).
+export function resolverSlugPesquisa({ pesquisaId, assocId, secaoId, perguntaId, opcaoId } = {}) {
   const db = getDb();
   try {
     if (pesquisaId) {
@@ -720,6 +726,25 @@ export function resolverSlugPesquisa({ pesquisaId, assocId, secaoId } = {}) {
     }
     if (secaoId) {
       const r = db.prepare('SELECT p.slug FROM pesquisa_secao s JOIN pesquisa p ON p.id=s.pesquisa_id WHERE s.id=?').get(parseInt(secaoId));
+      if (r?.slug) return r.slug;
+    }
+    if (perguntaId) {
+      const r = db.prepare(`
+        SELECT p.slug FROM pesquisa_pergunta pp
+        JOIN pesquisa p ON p.id = pp.pesquisa_id
+        WHERE pp.pergunta_id = ?
+        ORDER BY pp.id LIMIT 1
+      `).get(parseInt(perguntaId));
+      if (r?.slug) return r.slug;
+    }
+    if (opcaoId) {
+      const r = db.prepare(`
+        SELECT p.slug FROM pergunta_opcao po
+        JOIN pesquisa_pergunta pp ON pp.pergunta_id = po.pergunta_id
+        JOIN pesquisa p ON p.id = pp.pesquisa_id
+        WHERE po.id = ?
+        ORDER BY pp.id LIMIT 1
+      `).get(parseInt(opcaoId));
       if (r?.slug) return r.slug;
     }
   } catch {}

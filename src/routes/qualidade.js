@@ -213,10 +213,14 @@ router.delete('/admin/pesquisa-pergunta/:id', writeChain, (req, res) => {
 router.post('/admin/perguntas', writeChain, (req, res) => {
   try {
     const id = criarPergunta(req.body || {});
+    // Front pode informar `pesquisa_slug` no body pra que a criacao
+    // ja apareca na timeline da pesquisa certa (antes de existir
+    // associacao no DB). Fallback: lookup posterior na 1a associacao.
     registrarHistoricoAnamnese({
       usuario: req.user, acao: 'criar', entidade: 'pergunta', entidade_id: id,
       descricao: `Pergunta criada: "${(req.body?.traducoes?.['pt-BR']?.rotulo || req.body?.traducoes?.['pt-BR'] || req.body?.chave || '')}" — tipo ${req.body?.tipo || '?'}`,
       dados_depois: req.body,
+      pesquisa_slug: req.body?.pesquisa_slug || null,
     });
     res.json({ ok: true, id });
   } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
@@ -234,6 +238,7 @@ router.put('/admin/perguntas/:id', writeChain, (req, res) => {
     registrarHistoricoAnamnese({
       usuario: req.user, acao: 'editar', entidade: 'pergunta', entidade_id: id,
       descricao, dados_depois: req.body,
+      pesquisa_slug: req.body?.pesquisa_slug || resolverSlugPesquisa({ perguntaId: id }),
     });
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
@@ -242,11 +247,14 @@ router.put('/admin/perguntas/:id', writeChain, (req, res) => {
 // Bloqueia se houver respostas, pra nao quebrar historico.
 router.delete('/admin/perguntas/:id', writeChain, (req, res) => {
   const id = parseInt(req.params.id);
+  // Captura slug ANTES de excluir (apos delete nao tem mais associacao).
+  const slug = resolverSlugPesquisa({ perguntaId: id });
   const r = excluirPerguntaDefinitivo(id);
   if (!r.ok) return res.status(400).json(r);
   registrarHistoricoAnamnese({
     usuario: req.user, acao: 'excluir_definitivo', entidade: 'pergunta', entidade_id: id,
     descricao: 'Pergunta excluída permanentemente do banco',
+    pesquisa_slug: slug,
   });
   res.json(r);
 });
@@ -295,16 +303,18 @@ router.post('/admin/perguntas/:id/opcoes', writeChain, (req, res) => {
       usuario: req.user, acao: 'criar', entidade: 'opcao', entidade_id: id,
       descricao: `Opção adicionada na pergunta #${perguntaId}: "${(req.body?.traducoes?.['pt-BR'] || req.body?.chave || '')}"`,
       dados_depois: req.body,
+      pesquisa_slug: resolverSlugPesquisa({ perguntaId }),
     });
     res.json({ ok: true, id });
   } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.delete('/admin/opcoes/:id', writeChain, (req, res) => {
   const id = parseInt(req.params.id);
+  const slug = resolverSlugPesquisa({ opcaoId: id });
   removerOpcaoPergunta(id);
   registrarHistoricoAnamnese({
     usuario: req.user, acao: 'remover', entidade: 'opcao', entidade_id: id,
-    descricao: 'Opção removida',
+    descricao: 'Opção removida', pesquisa_slug: slug,
   });
   res.json({ ok: true });
 });
