@@ -140,6 +140,19 @@
       .spa-section { padding: 1.5rem 1.25rem 1.25rem; }
       .spa-grid-2  { grid-template-columns: 1fr; }
       .spa-field-full { grid-column: 1; }
+      /* Tipografia mobile: nada abaixo de 14px (legibilidade em iPhone/Android) */
+      .lang-bar-label        { font-size: .8rem; }
+      .lang-btn              { font-size: .8rem; padding: .35rem .75rem; }
+      .spa-label             { font-size: .8rem; letter-spacing: .06em; }
+      .spa-required-notice   { font-size: .85rem; }
+      .spa-radio-btn .radio-val { font-size: .82rem; }
+      .spa-sig-date-label    { font-size: .78rem; }
+      .spa-btn-clear         { font-size: .82rem; padding: .45rem 1rem; }
+      .spa-sig-instruction   { font-size: .85rem; }
+      .spa-input, .spa-select, .spa-textarea { font-size: 1rem; } /* evita zoom no iOS */
+      .spa-pill              { font-size: .92rem; padding: .55rem 1rem; }
+      .spa-pressure-group .spa-radio-btn { flex: 1 1 30%; min-width: 0; padding: .85rem .4rem; }
+      .spa-btn-submit        { font-size: .88rem; padding: 1.1rem 1.5rem; letter-spacing: .14em; }
     }
 
     /* ─── Form fields ─── */
@@ -310,7 +323,12 @@
     }
     .spa-btn-submit:hover:not(:disabled) { background: var(--deep); transform: translateY(-1px); }
     .spa-btn-submit:active:not(:disabled) { transform: translateY(0); }
-    .spa-btn-submit:disabled { opacity: .38; cursor: not-allowed; }
+    /* Disabled: cor sólida com contraste (WCAG AA), sem opacity baixa que
+       deixa o botão com cara de quebrado. */
+    .spa-btn-submit:disabled {
+      background: #a39181; color: #f0e9df; cursor: not-allowed;
+      opacity: 1;
+    }
 
     /* ─── Success screen ─── */
     .spa-success {
