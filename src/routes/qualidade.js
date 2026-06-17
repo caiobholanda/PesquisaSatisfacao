@@ -17,6 +17,7 @@ import {
   criarSecao, editarSecao, removerSecao,
   associarPergunta, editarAssociacaoPergunta, desassociarPergunta,
   criarPergunta, editarPergunta, excluirPerguntaDefinitivo,
+  registrarHistoricoAnamnese, listarHistoricoAnamnese, resolverSlugPesquisa,
   criarEscala,
   salvarMetaPergunta, salvarMetaQuestionario, removerMeta,
   listarOpcoesPergunta, salvarOpcaoPergunta, removerOpcaoPergunta,
@@ -104,6 +105,16 @@ router.get('/admin/visao-geral', requireAuth, (req, res) => {
 // requireWrite (bloqueia admin read-only). master e satisfacao podem escrever.
 const writeChain = [requireAuth, requireSatisfacao, requireWrite];
 
+// Historico — somente leitura
+router.get('/admin/anamnese/historico', requireAuth, (req, res) => {
+  const items = listarHistoricoAnamnese({
+    pesquisa_slug: req.query.slug || null,
+    limite: req.query.limite,
+    offset: req.query.offset,
+  });
+  res.json({ ok: true, items });
+});
+
 // Pesquisa
 router.post('/admin/pesquisas', writeChain, (req, res) => {
   try { res.json({ ok: true, id: criarPesquisa(req.body || {}) }); }
@@ -128,43 +139,115 @@ router.post('/admin/pesquisas/:id/clonar', writeChain, (req, res) => {
 
 // Seções
 router.post('/admin/pesquisas/:id/secoes', writeChain, (req, res) => {
-  try { res.json({ ok: true, id: criarSecao(parseInt(req.params.id), req.body || {}) }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const pesquisaId = parseInt(req.params.id);
+    const id = criarSecao(pesquisaId, req.body || {});
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'criar', entidade: 'secao', entidade_id: id,
+      descricao: `Seção criada: "${(req.body?.traducoes?.['pt-BR']?.titulo || req.body?.traducoes?.['pt-BR'] || req.body?.chave || '')}"`,
+      dados_depois: req.body, pesquisa_slug: resolverSlugPesquisa({ pesquisaId }),
+    });
+    res.json({ ok: true, id });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.put('/admin/secoes/:id', writeChain, (req, res) => {
-  try { editarSecao(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const id = parseInt(req.params.id);
+    const slug = resolverSlugPesquisa({ secaoId: id });
+    editarSecao(id, req.body || {});
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'editar', entidade: 'secao', entidade_id: id,
+      descricao: `Seção renomeada/editada: "${(req.body?.traducoes?.['pt-BR']?.titulo || req.body?.traducoes?.['pt-BR'] || '')}"`,
+      dados_depois: req.body, pesquisa_slug: slug,
+    });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.delete('/admin/secoes/:id', writeChain, (req, res) => {
-  removerSecao(parseInt(req.params.id)); res.json({ ok: true });
+  const id = parseInt(req.params.id);
+  const slug = resolverSlugPesquisa({ secaoId: id });
+  removerSecao(id);
+  registrarHistoricoAnamnese({
+    usuario: req.user, acao: 'remover', entidade: 'secao', entidade_id: id,
+    descricao: 'Seção removida (com suas perguntas)', pesquisa_slug: slug,
+  });
+  res.json({ ok: true });
 });
 
 // Associação pesquisa_pergunta
 router.post('/admin/pesquisas/:id/perguntas', writeChain, (req, res) => {
-  try { res.json({ ok: true, id: associarPergunta(parseInt(req.params.id), req.body || {}) }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const pesquisaId = parseInt(req.params.id);
+    const id = associarPergunta(pesquisaId, req.body || {});
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'associar', entidade: 'pesquisa_pergunta', entidade_id: id,
+      descricao: `Pergunta #${req.body?.pergunta_id} associada à pesquisa`,
+      dados_depois: req.body, pesquisa_slug: resolverSlugPesquisa({ pesquisaId }),
+    });
+    res.json({ ok: true, id });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.put('/admin/pesquisa-pergunta/:id', writeChain, (req, res) => {
-  editarAssociacaoPergunta(parseInt(req.params.id), req.body || {}); res.json({ ok: true });
+  const id = parseInt(req.params.id);
+  const slug = resolverSlugPesquisa({ assocId: id });
+  editarAssociacaoPergunta(id, req.body || {});
+  registrarHistoricoAnamnese({
+    usuario: req.user, acao: 'editar', entidade: 'pesquisa_pergunta', entidade_id: id,
+    descricao: 'Associação pergunta-pesquisa editada (ordem/obrigatoria/ativo)',
+    dados_depois: req.body, pesquisa_slug: slug,
+  });
+  res.json({ ok: true });
 });
 router.delete('/admin/pesquisa-pergunta/:id', writeChain, (req, res) => {
-  desassociarPergunta(parseInt(req.params.id)); res.json({ ok: true });
+  const id = parseInt(req.params.id);
+  const slug = resolverSlugPesquisa({ assocId: id });
+  desassociarPergunta(id);
+  registrarHistoricoAnamnese({
+    usuario: req.user, acao: 'desassociar', entidade: 'pesquisa_pergunta', entidade_id: id,
+    descricao: 'Pergunta removida da pesquisa', pesquisa_slug: slug,
+  });
+  res.json({ ok: true });
 });
 
 // Biblioteca de perguntas
 router.post('/admin/perguntas', writeChain, (req, res) => {
-  try { res.json({ ok: true, id: criarPergunta(req.body || {}) }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const id = criarPergunta(req.body || {});
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'criar', entidade: 'pergunta', entidade_id: id,
+      descricao: `Pergunta criada: "${(req.body?.traducoes?.['pt-BR']?.rotulo || req.body?.traducoes?.['pt-BR'] || req.body?.chave || '')}" — tipo ${req.body?.tipo || '?'}`,
+      dados_depois: req.body,
+    });
+    res.json({ ok: true, id });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.put('/admin/perguntas/:id', writeChain, (req, res) => {
-  try { editarPergunta(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const id = parseInt(req.params.id);
+    editarPergunta(id, req.body || {});
+    const novo = (req.body?.traducoes?.['pt-BR']?.rotulo || req.body?.traducoes?.['pt-BR'] || null);
+    let descricao = 'Pergunta editada';
+    if (req.body?.ativo === 0) descricao = 'Pergunta DESATIVADA (oculta da anamnese)';
+    else if (req.body?.ativo === 1) descricao = 'Pergunta REATIVADA';
+    else if (novo) descricao = `Pergunta editada: novo texto "${novo}"` + (req.body?.tipo ? ` — tipo ${req.body.tipo}` : '');
+    else if (req.body?.tipo) descricao = `Pergunta editada: novo tipo ${req.body.tipo}`;
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'editar', entidade: 'pergunta', entidade_id: id,
+      descricao, dados_depois: req.body,
+    });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 // Exclusao DEFINITIVA — apaga a pergunta + traducoes + opcoes + associacoes.
 // Bloqueia se houver respostas, pra nao quebrar historico.
 router.delete('/admin/perguntas/:id', writeChain, (req, res) => {
-  const r = excluirPerguntaDefinitivo(parseInt(req.params.id));
+  const id = parseInt(req.params.id);
+  const r = excluirPerguntaDefinitivo(id);
   if (!r.ok) return res.status(400).json(r);
+  registrarHistoricoAnamnese({
+    usuario: req.user, acao: 'excluir_definitivo', entidade: 'pergunta', entidade_id: id,
+    descricao: 'Pergunta excluída permanentemente do banco',
+  });
   res.json(r);
 });
 
@@ -205,11 +288,25 @@ router.get('/admin/perguntas/:id/opcoes', requireAuth, (req, res) => {
   res.json({ ok: true, items: listarOpcoesPergunta(parseInt(req.params.id)) });
 });
 router.post('/admin/perguntas/:id/opcoes', writeChain, (req, res) => {
-  try { res.json({ ok: true, id: salvarOpcaoPergunta(parseInt(req.params.id), req.body || {}) }); }
-  catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+  try {
+    const perguntaId = parseInt(req.params.id);
+    const id = salvarOpcaoPergunta(perguntaId, req.body || {});
+    registrarHistoricoAnamnese({
+      usuario: req.user, acao: 'criar', entidade: 'opcao', entidade_id: id,
+      descricao: `Opção adicionada na pergunta #${perguntaId}: "${(req.body?.traducoes?.['pt-BR'] || req.body?.chave || '')}"`,
+      dados_depois: req.body,
+    });
+    res.json({ ok: true, id });
+  } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
 router.delete('/admin/opcoes/:id', writeChain, (req, res) => {
-  removerOpcaoPergunta(parseInt(req.params.id)); res.json({ ok: true });
+  const id = parseInt(req.params.id);
+  removerOpcaoPergunta(id);
+  registrarHistoricoAnamnese({
+    usuario: req.user, acao: 'remover', entidade: 'opcao', entidade_id: id,
+    descricao: 'Opção removida',
+  });
+  res.json({ ok: true });
 });
 
 export default router;

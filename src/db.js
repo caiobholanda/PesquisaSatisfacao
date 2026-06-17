@@ -183,6 +183,26 @@ export function initDb() {
   for (const col of ['documento_token2 TEXT', 'documento_token_expiry2 TEXT', 'documento_perfil_id2 INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
   }
+
+  // Tabela de auditoria das mudancas no editor de anamnese / pesquisa
+  // de satisfacao. Registra criar/editar/remover/excluir/reativar de
+  // perguntas, secoes, opcoes e associacoes pesquisa_pergunta.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS anamnese_auditoria (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      usuario TEXT,
+      acao TEXT NOT NULL,
+      entidade TEXT NOT NULL,
+      entidade_id INTEGER,
+      descricao TEXT,
+      dados_antes TEXT,
+      dados_depois TEXT,
+      pesquisa_slug TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_anamnese_auditoria_criado ON anamnese_auditoria(criado_em DESC);
+    CREATE INDEX IF NOT EXISTS idx_anamnese_auditoria_pesquisa ON anamnese_auditoria(pesquisa_slug);
+  `);
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
 

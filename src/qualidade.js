@@ -680,6 +680,87 @@ export function criarPergunta({ chave, tipo, escala_id, mapeia_campo_legado, tra
   return id;
 }
 
+// Registra uma acao no historico de auditoria da anamnese/pesquisa.
+// Falha silenciosa pra nao quebrar o CRUD principal. Usuario pode ser
+// passado como string (email/login) ou objeto {email, role}.
+export function registrarHistoricoAnamnese({ usuario, acao, entidade, entidade_id, descricao, dados_antes, dados_depois, pesquisa_slug }) {
+  try {
+    const db = getDb();
+    const u = typeof usuario === 'string' ? usuario : (usuario?.email || usuario?.login || null);
+    db.prepare(`
+      INSERT INTO anamnese_auditoria
+        (usuario, acao, entidade, entidade_id, descricao, dados_antes, dados_depois, pesquisa_slug)
+      VALUES (?,?,?,?,?,?,?,?)
+    `).run(
+      u || null,
+      acao,
+      entidade,
+      entidade_id ?? null,
+      descricao || null,
+      dados_antes ? JSON.stringify(dados_antes) : null,
+      dados_depois ? JSON.stringify(dados_depois) : null,
+      pesquisa_slug || null,
+    );
+  } catch (e) {
+    console.warn('[historico-anamnese] falha ao registrar:', e.message);
+  }
+}
+
+// Resolve slug da pesquisa a partir de id direto / associacao / secao.
+export function resolverSlugPesquisa({ pesquisaId, assocId, secaoId } = {}) {
+  const db = getDb();
+  try {
+    if (pesquisaId) {
+      const r = db.prepare('SELECT slug FROM pesquisa WHERE id=?').get(parseInt(pesquisaId));
+      if (r?.slug) return r.slug;
+    }
+    if (assocId) {
+      const r = db.prepare('SELECT p.slug FROM pesquisa_pergunta pp JOIN pesquisa p ON p.id=pp.pesquisa_id WHERE pp.id=?').get(parseInt(assocId));
+      if (r?.slug) return r.slug;
+    }
+    if (secaoId) {
+      const r = db.prepare('SELECT p.slug FROM pesquisa_secao s JOIN pesquisa p ON p.id=s.pesquisa_id WHERE s.id=?').get(parseInt(secaoId));
+      if (r?.slug) return r.slug;
+    }
+  } catch {}
+  return null;
+}
+
+export function listarHistoricoAnamnese({ pesquisa_slug, limite = 100, offset = 0 } = {}) {
+  const db = getDb();
+  const args = [];
+  let where = '';
+  if (pesquisa_slug) { where = 'WHERE pesquisa_slug = ?'; args.push(pesquisa_slug); }
+  args.push(Math.min(500, parseInt(limite) || 100), parseInt(offset) || 0);
+  return db.prepare(`
+    SELECT id, criado_em, usuario, acao, entidade, entidade_id,
+           descricao, dados_antes, dados_depois, pesquisa_slug
+    FROM anamnese_auditoria
+    ${where}
+    ORDER BY criado_em DESC, id DESC
+    LIMIT ? OFFSET ?
+  `).all(...args);
+}
+
+// Helper interno: tira snapshot de uma pergunta (rotulo+tipo+opcoes em pt-BR)
+function _snapshotPergunta(id) {
+  try {
+    const db = getDb();
+    const p = db.prepare(`
+      SELECT p.id, p.chave, p.tipo, p.ativo, p.mapeia_campo_legado,
+        (SELECT rotulo FROM pergunta_traducao WHERE pergunta_id=p.id AND idioma='pt-BR') AS rotulo
+      FROM pergunta_satisfacao p WHERE p.id=?
+    `).get(id);
+    if (!p) return null;
+    const opcoes = db.prepare(`
+      SELECT po.chave,
+        (SELECT rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=po.id AND idioma='pt-BR') AS rotulo
+      FROM pergunta_opcao po WHERE po.pergunta_id=? AND po.ativo=1 ORDER BY po.ordem
+    `).all(id);
+    return { ...p, opcoes };
+  } catch { return null; }
+}
+
 // Exclusao definitiva de uma pergunta + tudo que depende dela.
 // Idempotente. Falha se a pergunta tiver respostas (resposta_item.chave),
 // porque apagar perderia historico. Nesse caso, mantenha ativo=0.

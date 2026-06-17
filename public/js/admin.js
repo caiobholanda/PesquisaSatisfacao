@@ -3992,6 +3992,81 @@ async function initAnamneseEditor() {
   empty.style.display = 'none';
   _renderAnamEstrutura();
   _renderAnamInativas();
+  _renderAnamHistorico();
+}
+
+// Painel "Historico de alteracoes" — bloco colapsavel no fim do editor
+// que lista quem fez o que e quando (criar pergunta, editar texto/tipo,
+// reativar, excluir definitivo, criar/remover secao, etc).
+async function _renderAnamHistorico() {
+  const wrap = document.getElementById('anam-secoes');
+  if (!wrap) return;
+  document.getElementById('anam-historico')?.remove();
+
+  let itens = [];
+  try {
+    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${ANAMNESE_SLUG}&limite=50`);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) return;
+    itens = d.items || [];
+  } catch { return; }
+
+  const panel = document.createElement('section');
+  panel.id = 'anam-historico';
+  panel.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
+  const ACAO_LABEL = {
+    criar: '➕ Criou',
+    editar: '✏ Editou',
+    remover: '🗑 Removeu',
+    associar: '🔗 Associou',
+    desassociar: '✂ Desassociou',
+    excluir_definitivo: '💥 Excluiu definitivamente',
+  };
+  const ENTIDADE_LABEL = {
+    pergunta: 'pergunta',
+    secao: 'seção',
+    opcao: 'opção',
+    pesquisa_pergunta: 'associação',
+  };
+  panel.innerHTML = `
+    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
+      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--text)">Histórico de alterações <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${itens.length}</span></h3>
+      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
+    </header>
+    <div data-body style="display:none;margin-top:.9rem;max-height:420px;overflow-y:auto">
+      ${itens.length === 0
+        ? '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">Nenhuma alteração registrada ainda.</div>'
+        : itens.map(it => {
+            const dt = new Date(it.criado_em.replace(' ', 'T') + 'Z');
+            const dtFmt = !isNaN(dt) ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : it.criado_em;
+            const acao = ACAO_LABEL[it.acao] || it.acao;
+            const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
+            const who  = it.usuario || 'sistema';
+            return `
+              <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--border-lt,#eee)">
+                <div style="flex-shrink:0;width:115px;font-size:.7rem;color:var(--muted)">${dtFmt}</div>
+                <div style="flex:1;min-width:0;font-size:.85rem;color:var(--text);line-height:1.45">
+                  <strong>${acao} ${ent}</strong> #${it.entidade_id ?? '?'}
+                  <div style="color:var(--muted);font-size:.78rem;margin-top:.1rem">${escHtml(it.descricao || '')}</div>
+                  <div style="color:var(--muted);font-size:.7rem;margin-top:.1rem">por ${escHtml(who)}</div>
+                </div>
+              </div>
+            `;
+          }).join('')
+      }
+    </div>
+  `;
+  wrap.appendChild(panel);
+
+  const header = panel.querySelector('[data-act="toggle"]');
+  const body   = panel.querySelector('[data-body]');
+  const arrow  = panel.querySelector('[data-arrow]');
+  header.addEventListener('click', () => {
+    const aberto = body.style.display !== 'none';
+    body.style.display = aberto ? 'none' : '';
+    arrow.textContent  = aberto ? '▾' : '▴';
+  });
 }
 
 // Painel "Perguntas removidas" — busca a estrutura ADMIN que inclui
