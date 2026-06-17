@@ -292,6 +292,7 @@ function collectData() {
     idioma:                  _currentLang,
     documento_token:         _docToken,
     quarto:                  (() => { const q = (document.getElementById('f-quarto')?.value || '').trim(); return q ? _normQuarto(q) : null; })(),
+    respostas_extras:        (typeof _coletarRespostasExtras === 'function') ? _coletarRespostasExtras() : {},
   };
 }
 
@@ -631,13 +632,19 @@ async function applyAnamneseConfig(idioma) {
     cfg = d.pesquisa;
   } catch { return; }
 
-  // Achata perguntas: { campo_legado: { ativo, obrigatoria, rotulo } }
+  // Achata perguntas mapeadas: { campo_legado: { ativo, obrigatoria, rotulo } }
+  // E coleta perguntas SEM mapeia_campo_legado (criadas pelo admin no editor):
+  // essas vão para uma seção dinâmica "Perguntas adicionais".
   const map = {};
+  const perguntasExtras = [];
   for (const sec of (cfg.secoes || [])) {
     for (const q of (sec.perguntas || [])) {
       const legado = q.mapeia_campo_legado;
-      if (!legado) continue;
-      map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria };
+      if (legado) {
+        map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria };
+      } else {
+        perguntasExtras.push(q);
+      }
     }
   }
 
@@ -646,25 +653,136 @@ async function applyAnamneseConfig(idioma) {
     if (!bloco) continue;
     const cfgItem = map[legado];
     if (!cfgItem) {
-      // Pergunta NÃO retornada pela config → considera inativa, oculta o bloco.
-      // (assinatura é exceção: nunca ocultar o canvas pela config)
       if (legado !== 'assinatura_data_url') bloco.style.display = 'none';
       continue;
     }
     bloco.style.display = '';
-    // Sobrescreve rótulo se a config trouxer um custom
     if (spec.labelId && cfgItem.rotulo) {
       const lbl = document.getElementById(spec.labelId);
       if (lbl && cfgItem.rotulo.trim()) lbl.textContent = cfgItem.rotulo;
     }
-    // Remove "*" visual quando não obrigatoria (apenas no label de campo)
     if (spec.labelId) {
       const lbl = document.getElementById(spec.labelId);
       const req = lbl?.parentElement?.querySelector('.req');
       if (req) req.style.display = cfgItem.obrigatoria ? '' : 'none';
     }
   }
+
+  _renderPerguntasExtras(perguntasExtras);
 }
+
+// Renderiza perguntas customizadas (sem mapeia_campo_legado) numa seção
+// dinâmica injetada ANTES da seção de assinatura. Tipos suportados:
+// texto_livre, unica/escala (radio), multipla (checkbox), sim_nao.
+function _renderPerguntasExtras(perguntas) {
+  const wrapId = 'sec-perguntas-extras';
+  let sec = document.getElementById(wrapId);
+  if (sec) sec.remove();
+  if (!perguntas || !perguntas.length) return;
+
+  const secSig = document.getElementById('sec-sig')?.closest('.spa-section');
+  if (!secSig) return;
+
+  sec = document.createElement('div');
+  sec.className = 'spa-section';
+  sec.id = wrapId;
+  sec.innerHTML = `
+    <h2 class="spa-section-title">Perguntas adicionais</h2>
+    <div id="perguntas-extras-grid" style="display:flex;flex-direction:column;gap:1.2rem"></div>
+  `;
+  secSig.parentNode.insertBefore(sec, secSig);
+
+  const grid = sec.querySelector('#perguntas-extras-grid');
+  for (const q of perguntas) {
+    const wrap = document.createElement('div');
+    wrap.className = 'spa-field';
+    wrap.dataset.extra = q.chave;
+    wrap.dataset.tipo  = q.tipo;
+    const reqMark = q.obrigatoria ? ' <span class="req">*</span>' : '';
+    if (q.tipo === 'texto_livre') {
+      wrap.innerHTML = `
+        <label class="spa-label">${_escHtml(q.rotulo)}${reqMark}</label>
+        <textarea class="spa-textarea" rows="3" data-extra-input></textarea>
+      `;
+    } else if (q.tipo === 'unica' || q.tipo === 'escala' || q.tipo === 'sim_nao') {
+      const opcoes = q.opcoes && q.opcoes.length ? q.opcoes
+        : (q.tipo === 'sim_nao' ? [{ chave: 'sim', rotulo: 'Sim' }, { chave: 'nao', rotulo: 'Não' }] : []);
+      const pills = opcoes.map(o => `
+        <label class="spa-pill" data-extra-val="${_escHtml(o.chave)}">
+          <input type="radio" name="extra_${_escHtml(q.chave)}" value="${_escHtml(o.chave)}">
+          <span class="pill-dot"></span>
+          <span>${_escHtml(o.rotulo)}</span>
+        </label>
+      `).join('');
+      wrap.innerHTML = `
+        <label class="spa-label">${_escHtml(q.rotulo)}${reqMark}</label>
+        <div class="spa-checkbox-grid" data-extra-input>${pills}</div>
+      `;
+    } else if (q.tipo === 'multipla') {
+      const opcoes = q.opcoes || [];
+      const pills = opcoes.map(o => `
+        <label class="spa-pill" data-extra-val="${_escHtml(o.chave)}">
+          <input type="checkbox" value="${_escHtml(o.chave)}">
+          <span class="pill-dot"></span>
+          <span>${_escHtml(o.rotulo)}</span>
+        </label>
+      `).join('');
+      wrap.innerHTML = `
+        <label class="spa-label">${_escHtml(q.rotulo)}${reqMark}</label>
+        <div class="spa-checkbox-grid" data-extra-input>${pills}</div>
+      `;
+    } else {
+      wrap.innerHTML = `
+        <label class="spa-label">${_escHtml(q.rotulo)}${reqMark}</label>
+        <input class="spa-input" type="text" data-extra-input>
+      `;
+    }
+    grid.appendChild(wrap);
+  }
+
+  // Wire pills (click → toggle selected + check input)
+  grid.querySelectorAll('.spa-pill').forEach(p => {
+    p.addEventListener('click', e => {
+      e.preventDefault();
+      const inp = p.querySelector('input');
+      if (!inp) return;
+      if (inp.type === 'radio') {
+        grid.querySelectorAll(`input[name="${inp.name}"]`).forEach(i => {
+          i.checked = false; i.closest('.spa-pill')?.classList.remove('selected');
+        });
+        inp.checked = true; p.classList.add('selected');
+      } else {
+        inp.checked = !inp.checked;
+        p.classList.toggle('selected', inp.checked);
+      }
+    });
+  });
+}
+
+function _escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Helper público: coleta respostas das perguntas extras para o submit.
+function _coletarRespostasExtras() {
+  const out = {};
+  document.querySelectorAll('#perguntas-extras-grid [data-extra]').forEach(wrap => {
+    const chave = wrap.dataset.extra;
+    const tipo  = wrap.dataset.tipo;
+    if (tipo === 'texto_livre') {
+      const t = wrap.querySelector('textarea')?.value.trim() || '';
+      if (t) out[chave] = t;
+    } else if (tipo === 'multipla') {
+      const vals = Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value);
+      if (vals.length) out[chave] = vals;
+    } else {
+      const v = wrap.querySelector('input:checked')?.value;
+      if (v) out[chave] = v;
+    }
+  });
+  return out;
+}
+window._coletarRespostasExtras = _coletarRespostasExtras;
 
 // Wire-up: aplicar config após init/loadLocale ter rodado. Faz fallback
 // silencioso se backend não responder — form estático original aparece.

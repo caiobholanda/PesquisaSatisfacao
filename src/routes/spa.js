@@ -97,6 +97,19 @@ router.post('/perfil', (req, res) => {
         { chave: 'anamnese_canais_marketing',       valor_texto: b.canais_marketing ? JSON.stringify(b.canais_marketing) : null },
         { chave: 'anamnese_assinatura',             valor_texto: b.assinatura_data_url ? '[assinatura presente]' : null },
       ];
+      // Perguntas customizadas criadas pelo admin no editor (sem
+      // mapeia_campo_legado) chegam como { chave: valor }.
+      if (b.respostas_extras && typeof b.respostas_extras === 'object') {
+        for (const [chave, valor] of Object.entries(b.respostas_extras)) {
+          if (Array.isArray(valor)) {
+            itens.push({ chave, valor_texto: JSON.stringify(valor) });
+          } else if (typeof valor === 'object' && valor !== null) {
+            itens.push({ chave, valor_texto: JSON.stringify(valor) });
+          } else {
+            itens.push({ chave, valor_texto: String(valor) });
+          }
+        }
+      }
       inserirRespostaPesquisa({
         pesquisa_slug: 'spa-anamnese-v1',
         app_origem: 'spa-anamnese',
