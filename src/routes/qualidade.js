@@ -16,7 +16,7 @@ import {
   criarPesquisa, editarPesquisa, publicarPesquisa, despublicarPesquisa, clonarPesquisa,
   criarSecao, editarSecao, removerSecao,
   associarPergunta, editarAssociacaoPergunta, desassociarPergunta,
-  criarPergunta, editarPergunta,
+  criarPergunta, editarPergunta, excluirPerguntaDefinitivo,
   criarEscala,
   salvarMetaPergunta, salvarMetaQuestionario, removerMeta,
   listarOpcoesPergunta, salvarOpcaoPergunta, removerOpcaoPergunta,
@@ -159,6 +159,13 @@ router.post('/admin/perguntas', writeChain, (req, res) => {
 router.put('/admin/perguntas/:id', writeChain, (req, res) => {
   try { editarPergunta(parseInt(req.params.id), req.body || {}); res.json({ ok: true }); }
   catch (e) { res.status(400).json({ ok: false, error: e.message }); }
+});
+// Exclusao DEFINITIVA — apaga a pergunta + traducoes + opcoes + associacoes.
+// Bloqueia se houver respostas, pra nao quebrar historico.
+router.delete('/admin/perguntas/:id', writeChain, (req, res) => {
+  const r = excluirPerguntaDefinitivo(parseInt(req.params.id));
+  if (!r.ok) return res.status(400).json(r);
+  res.json(r);
 });
 
 // Escalas

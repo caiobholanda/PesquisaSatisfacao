@@ -680,6 +680,31 @@ export function criarPergunta({ chave, tipo, escala_id, mapeia_campo_legado, tra
   return id;
 }
 
+// Exclusao definitiva de uma pergunta + tudo que depende dela.
+// Idempotente. Falha se a pergunta tiver respostas (resposta_item.chave),
+// porque apagar perderia historico. Nesse caso, mantenha ativo=0.
+export function excluirPerguntaDefinitivo(perguntaId) {
+  const db = getDb();
+  const p = db.prepare('SELECT id, chave FROM pergunta_satisfacao WHERE id=?').get(perguntaId);
+  if (!p) return { ok: false, error: 'Pergunta nao encontrada' };
+
+  const usadas = db.prepare("SELECT COUNT(*) n FROM resposta_item WHERE pergunta_chave=?").get(p.chave).n;
+  if (usadas > 0) {
+    return { ok: false, error: `Pergunta tem ${usadas} respostas anteriores. Mantenha como inativa para preservar o historico.` };
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM pergunta_traducao        WHERE pergunta_id=?').run(perguntaId);
+    db.prepare('DELETE FROM pergunta_opcao_traducao  WHERE pergunta_opcao_id IN (SELECT id FROM pergunta_opcao WHERE pergunta_id=?)').run(perguntaId);
+    db.prepare('DELETE FROM pergunta_opcao           WHERE pergunta_id=?').run(perguntaId);
+    db.prepare('DELETE FROM pesquisa_pergunta        WHERE pergunta_id=?').run(perguntaId);
+    db.prepare('DELETE FROM meta_pergunta            WHERE pergunta_id=?').run(perguntaId);
+    db.prepare('DELETE FROM pergunta_satisfacao      WHERE id=?').run(perguntaId);
+  });
+  tx();
+  return { ok: true };
+}
+
 export function editarPergunta(id, { tipo, escala_id, mapeia_campo_legado, ativo, traducoes }) {
   const db = getDb();
   const sets = [], args = [];
