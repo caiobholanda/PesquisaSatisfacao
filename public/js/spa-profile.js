@@ -459,6 +459,14 @@ async function loadLocale(lang) {
     // do boot chamava applyAnamneseConfig.
     applyAnamneseConfig(lang);
 
+    // BUG-S fix: se banner de historico ja existe, re-renderiza no
+    // novo idioma (antes ficava cristalizado no idioma da primeira
+    // carga, mesmo apos trocar pra outro idioma).
+    if (document.getElementById('historico-banner') && _ultimoCriadoEm) {
+      document.getElementById('historico-banner').remove();
+      _mostrarBannerHistorico(_ultimoCriadoEm);
+    }
+
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === lang);
     });
@@ -466,6 +474,7 @@ async function loadLocale(lang) {
     if (lang !== 'pt-BR') loadLocale('pt-BR');
   }
 }
+let _ultimoCriadoEm = null;
 
 /* ─── Init ─── */
 
@@ -731,6 +740,7 @@ async function _tentarPrePreencherHistorico({ token, documento, tipo_documento }
     const d = await r.json();
     if (!d?.ok || !d.perfil) return;
     _historicoJaPrePreenchido = true;
+    _ultimoCriadoEm = d.perfil.criado_em;
     _aplicarPerfilNoForm(d.perfil);
     _mostrarBannerHistorico(d.perfil.criado_em);
   } catch {}

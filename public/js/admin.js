@@ -4123,12 +4123,35 @@ async function _anamAddPergunta(secaoId) {
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
     });
+    // BUG-R: pergunta 'Sim ou Não' do editor salva como tipo='escala'.
+    // Aqui criamos as opcoes Sim/Não no backend pra evitar o caso de
+    // opcoes=null no front (que cai no fallback frágil).
+    if (tipo === 'escala') {
+      try {
+        await _criarOpcoesSimNao(r1.id);
+      } catch (e) { console.warn('Falha ao criar opcoes Sim/Nao:', e.message); }
+    }
     showToast('✓ Pergunta criada');
     if (rotuloInp) rotuloInp.value = '';
     initAnamneseEditor();
   } catch (e) {
     showToast('Não foi possível criar: ' + e.message, 5000);
   }
+}
+
+// Cria as opcoes 'Sim' e 'Nao' traduzidas nos 7 idiomas para uma pergunta
+// do tipo 'Sim ou Não'. Usado por _anamAddPergunta e _pesqAddPergunta.
+async function _criarOpcoesSimNao(perguntaId) {
+  const TRAD = {
+    sim: { 'pt-BR': 'Sim', 'pt-PT': 'Sim', en: 'Yes', es: 'Sí', fr: 'Oui', it: 'Sì', de: 'Ja' },
+    nao: { 'pt-BR': 'Não', 'pt-PT': 'Não', en: 'No',  es: 'No', fr: 'Non', it: 'No', de: 'Nein' },
+  };
+  await apiSend('POST', `/api/qualidade/admin/perguntas/${perguntaId}/opcoes`, {
+    chave: 'sim', ordem: 1, ativo: 1, traducoes: TRAD.sim,
+  });
+  await apiSend('POST', `/api/qualidade/admin/perguntas/${perguntaId}/opcoes`, {
+    chave: 'nao', ordem: 2, ativo: 1, traducoes: TRAD.nao,
+  });
 }
 
 async function _anamEditPergunta(chave) {
@@ -4580,6 +4603,9 @@ async function _pesqAddPergunta(secaoId) {
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
     });
+    if (tipo === 'escala') {
+      try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha opcoes Sim/Nao:', e.message); }
+    }
     showToast('✓ Pergunta criada');
     if (rotuloInp) rotuloInp.value = '';
     initPesquisaEditor();

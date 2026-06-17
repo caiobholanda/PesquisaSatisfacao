@@ -296,7 +296,15 @@ function montarConfigPesquisa(pesquisaId, idioma) {
     `).all(pesquisaId, s.id);
     for (const q of s.perguntas) {
       const trQ = db.prepare("SELECT rotulo, ajuda FROM pergunta_traducao WHERE pergunta_id=? AND idioma=?").get(q.pergunta_id, idioma);
-      q.rotulo = trQ?.rotulo || q.chave;
+      // BUG-O1 fix: se a traducao do idioma alvo nao existir/estiver vazia,
+      // tenta pt-BR antes de cair na chave tecnica (que aparece feia na
+      // UI do hospede como 'anamnese_nome').
+      if (trQ?.rotulo && trQ.rotulo.trim()) {
+        q.rotulo = trQ.rotulo;
+      } else {
+        const trPt = db.prepare("SELECT rotulo FROM pergunta_traducao WHERE pergunta_id=? AND idioma='pt-BR'").get(q.pergunta_id);
+        q.rotulo = (trPt?.rotulo && trPt.rotulo.trim()) ? trPt.rotulo : q.chave;
+      }
       q.ajuda = trQ?.ajuda || null;
       if (q.escala_id) {
         q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
