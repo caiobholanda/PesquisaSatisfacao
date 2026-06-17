@@ -1,83 +1,77 @@
 'use strict';
 
 // Tradução automática pt-BR → demais idiomas suportados na anamnese.
-// Usa Anthropic Claude (haiku) — leve, barato e bom o suficiente para
-// rótulos curtos. Falha silenciosa: se a tradução não vier, devolve
-// o texto original como fallback (nunca quebra o fluxo de salvar).
-
-import Anthropic from '@anthropic-ai/sdk';
+// Usa MyMemory Translation API (gratuito, sem chave). Limite: 1000
+// palavras/dia/IP anonimo; 50000/dia se passar email valido no parametro 'de'.
+// Falha silenciosa: se a tradução não vier, devolve o texto original como
+// fallback (nunca quebra o fluxo de salvar).
+//
+// Por que MyMemory:
+// - Sem cadastro, sem chave, sem cartao de credito.
+// - Suporta os 7 idiomas que precisamos (pt-PT, en, es, fr, it, de).
+// - Latencia baixa (~200-400ms por idioma) e qualidade boa pra rotulos
+//   curtos (tipo "Nome", "Você tem alergia?").
+// - Trocavel facil por LibreTranslate/DeepL/Argos no futuro sem mexer
+//   na assinatura externa (traduzirParaTodos).
 
 const IDIOMAS = {
-  'pt-PT': 'Português europeu',
-  'en':    'English',
-  'es':    'Español',
-  'fr':    'Français',
-  'it':    'Italiano',
-  'de':    'Deutsch',
+  'pt-PT': 'pt-PT',
+  'en':    'en-GB',
+  'es':    'es-ES',
+  'fr':    'fr-FR',
+  'it':    'it-IT',
+  'de':    'de-DE',
 };
+const FONTE = 'pt-BR';
+// Email para subir o limite de 1000 -> 50000 palavras/dia.
+const DE_EMAIL = process.env.MYMEMORY_EMAIL || 'caiobholanda2007@gmail.com';
 
-let _client = null;
-function _getClient() {
-  if (_client) return _client;
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return _client;
+async function _traduzirUm(texto, alvo) {
+  const langpair = `${FONTE}|${IDIOMAS[alvo]}`;
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${encodeURIComponent(langpair)}&de=${encodeURIComponent(DE_EMAIL)}`;
+  try {
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'PesquisaSatisfacaoSPA-GranMarquise/1.0' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) {
+      console.warn('[traduzir]', alvo, 'http', r.status);
+      return null;
+    }
+    const j = await r.json();
+    const traduzido = j?.responseData?.translatedText;
+    if (typeof traduzido !== 'string' || !traduzido.trim()) return null;
+    // MyMemory as vezes devolve mensagens em CAPS como "MYMEMORY WARNING:"
+    // ou "PLEASE SELECT TWO DISTINCT LANGUAGES" quando algo deu errado.
+    if (/^(MYMEMORY|PLEASE SELECT|INVALID)/i.test(traduzido.trim())) {
+      console.warn('[traduzir]', alvo, 'mensagem do servico:', traduzido.slice(0, 80));
+      return null;
+    }
+    return traduzido.trim();
+  } catch (e) {
+    console.warn('[traduzir]', alvo, 'erro:', e.message);
+    return null;
+  }
 }
 
 /**
- * Traduz um texto em português brasileiro para os idiomas pedidos.
+ * Traduz um texto em pt-BR para os idiomas pedidos via MyMemory.
+ * Requests paralelas (Promise.all), uma por idioma.
  * @param {string} ptBR - texto fonte
- * @param {string[]} idiomas - subconjunto de Object.keys(IDIOMAS); default: todos
+ * @param {string[]} [idiomas] - subconjunto de Object.keys(IDIOMAS); default: todos
  * @returns {Promise<Record<string,string>>} mapa { 'pt-PT': '...', 'en': '...', ... }
  */
 export async function traduzirParaTodos(ptBR, idiomas) {
   const fonte = String(ptBR || '').trim();
   const alvos = (idiomas && idiomas.length) ? idiomas.filter(i => i in IDIOMAS) : Object.keys(IDIOMAS);
-  if (!fonte) {
-    return Object.fromEntries(alvos.map(i => [i, '']));
-  }
-  // Fallback inicial: sempre devolve o texto original em todos os idiomas
-  // caso a chamada falhe.
+  if (!fonte) return Object.fromEntries(alvos.map(i => [i, '']));
+
+  // Fallback inicial: se algum idioma falhar, fica com pt-BR.
   const out = Object.fromEntries(alvos.map(i => [i, fonte]));
 
-  const client = _getClient();
-  if (!client) {
-    console.warn('[traduzir] ANTHROPIC_API_KEY ausente — devolvendo texto original');
-    return out;
-  }
-
-  const lista = alvos.map(c => `- ${c} (${IDIOMAS[c]})`).join('\n');
-  const prompt = `Você é tradutor profissional para um SPA de luxo. Traduza o texto abaixo do português brasileiro para os idiomas listados, preservando o tom formal/cordial e mantendo a mesma intenção. NÃO adicione comentários, NÃO mude pontuação além do necessário.
-
-Texto fonte:
-"${fonte}"
-
-Idiomas-alvo:
-${lista}
-
-Responda APENAS um JSON com as chaves dos idiomas e os valores traduzidos, exemplo:
-{"pt-PT":"...","en":"...","es":"...","fr":"...","it":"...","de":"..."}`;
-
-  try {
-    const resp = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 600,
-      temperature: 0,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const txt = (resp?.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
-      .trim();
-    // Remove cercas de bloco de código se Claude as adicionar.
-    const limpo = txt.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    const obj = JSON.parse(limpo);
-    for (const k of alvos) {
-      if (typeof obj[k] === 'string' && obj[k].trim()) out[k] = obj[k].trim();
-    }
-  } catch (e) {
-    console.warn('[traduzir] falha — devolvendo fallback:', e.message);
+  const resultados = await Promise.all(alvos.map(async a => [a, await _traduzirUm(fonte, a)]));
+  for (const [alvo, texto] of resultados) {
+    if (texto) out[alvo] = texto;
   }
   return out;
 }
