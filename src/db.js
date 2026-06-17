@@ -170,6 +170,9 @@ export function initDb() {
   try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN liberada_em TEXT`); } catch {}
   // Migration: add respondida_em to survey_tokens
   try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN respondida_em TEXT`); } catch {}
+  // Migration: pessoa do token (1=cliente principal, 2=cliente2 do casal).
+  // Default NULL = compat com tokens antigos (tratados como pessoa=1).
+  try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN pessoa INTEGER`); } catch {}
   // Migration: idioma detectado por IA no feedback
   try { db.exec(`ALTER TABLE feedback ADD COLUMN idioma_detectado TEXT`); } catch {}
 
@@ -855,19 +858,21 @@ export function buscarReservaById(id) {
   `).get(id) || null;
 }
 
-export function criarSurveyToken(reservaId) {
+export function criarSurveyToken(reservaId, pessoa = 1) {
   const db = getDb();
+  const p = pessoa === 2 ? 2 : 1;
+  // Reusa token existente DESTA pessoa nesta reserva (idempotente).
   const existente = db.prepare(
-    `SELECT token FROM survey_tokens WHERE reserva_id = ? ORDER BY criado_em DESC LIMIT 1`
-  ).get(reservaId);
+    `SELECT token FROM survey_tokens WHERE reserva_id = ? AND COALESCE(pessoa,1) = ? AND respondida_em IS NULL ORDER BY criado_em DESC LIMIT 1`
+  ).get(reservaId, p);
   if (existente) {
     db.prepare(`UPDATE survey_tokens SET liberada_em = datetime('now') WHERE token = ?`).run(existente.token);
     return existente.token;
   }
   const token = randomBytes(24).toString('hex');
   db.prepare(
-    `INSERT INTO survey_tokens (token, reserva_id, liberada_em) VALUES (?, ?, datetime('now'))`
-  ).run(token, reservaId);
+    `INSERT INTO survey_tokens (token, reserva_id, pessoa, liberada_em) VALUES (?, ?, ?, datetime('now'))`
+  ).run(token, reservaId, p);
   return token;
 }
 

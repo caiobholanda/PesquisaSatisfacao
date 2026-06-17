@@ -714,10 +714,63 @@ async function liberarPesquisaReserva(id) {
     if (!d.ok) { alert('Erro ao liberar pesquisa: ' + (d.error || '')); _aplicarEstadoLiberada(btn, false); return; }
     _pesquisasLiberadas.add(id);
     _aplicarEstadoLiberada(btn, true);
-    showToast('✓ Pesquisa liberada — o botão já apareceu na tela do hóspede');
+
+    // Reserva CASAL: mostra modal com os 2 links de pesquisa, um por hospede.
+    if (d.casal) {
+      _modalLinksCasal({
+        titulo: 'Pesquisa liberada — 2 links (casal)',
+        descricao: 'Cada hóspede recebe seu próprio link de pesquisa. Envie um para cada pessoa.',
+        h1: d.hospede1, h2: d.hospede2,
+        msgFn: (nome, url) => `Olá, *${nome || 'hóspede'}*! 🌿\n\nObrigado pelo seu tratamento no *Gran SPA by L'Occitane*. Sua opinião é muito importante — leva menos de 1 minuto:\n\n👉 ${url}\n\n*Hotel Gran Marquise*`,
+      });
+    } else {
+      showToast('✓ Pesquisa liberada — o botão já apareceu na tela do hóspede');
+    }
   } catch {
     _aplicarEstadoLiberada(btn, false);
   }
+}
+
+// Modal generico de 2 links para reservas casal. Compartilhado por
+// liberarPesquisaReserva e o fluxo de Gerar Ficha (anamnese).
+function _modalLinksCasal({ titulo, descricao, h1, h2, msgFn }) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  const card = ({ idx, h }) => {
+    const tRaw = (h.telefone || '').replace(/\D/g, '');
+    const tPhone = tRaw.startsWith('55') ? tRaw : '55' + tRaw;
+    const msg = msgFn(h.nome, h.url);
+    return `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
+        <div style="font-weight:600;margin-bottom:.4rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
+        <div style="font-size:.78rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.4rem .6rem;border-radius:4px;margin-bottom:.55rem">${escHtml(h.url)}</div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+          ${tRaw ? `<button class="btn btn-gold btn-sm" data-zap="${tPhone}" data-msg="${escHtml(msg)}">📱 WhatsApp</button>` : ''}
+          <button class="btn btn-outline btn-sm" data-copy="${escHtml(h.url)}">📋 Copiar link</button>
+        </div>
+      </div>
+    `;
+  };
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+      <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">${escHtml(titulo)}</h3>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">${escHtml(descricao)}</p>
+      ${card({ idx: 1, h: h1 })}
+      ${card({ idx: 2, h: h2 })}
+      <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </div>
+    </div>
+  `;
+  ov.addEventListener('click', e => {
+    if (e.target === ov || e.target.dataset.act === 'close') ov.remove();
+    else if (e.target.dataset.zap) {
+      window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
+    } else if (e.target.dataset.copy) {
+      try { navigator.clipboard.writeText(e.target.dataset.copy); showToast('Link copiado!'); } catch {}
+    }
+  });
+  document.body.appendChild(ov);
 }
 
 function enviarPreMassagemReserva() {
@@ -4701,6 +4754,163 @@ async function initPesquisaEditor() {
 
   empty.style.display = 'none';
   _renderPesqEstrutura();
+  _renderPesqInativas();
+  _renderPesqHistorico();
+}
+
+// Painel de inativas — clone do _renderAnamInativas, parametrizado
+// pra spa-locc-v1. Reativa e excluir definitivo funcionam iguais.
+async function _renderPesqInativas() {
+  const wrap = document.getElementById('pesq-secoes');
+  if (!wrap) return;
+  document.getElementById('pesq-inativas')?.remove();
+
+  let inativas = [];
+  try {
+    const r = await api(`/api/qualidade/admin/pesquisas/slug/${PESQUISA_SLUG}/estrutura?_=${Date.now()}`);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok || !d.estrutura) return;
+    for (const s of d.estrutura.secoes) {
+      for (const p of (s.perguntas || [])) {
+        if (p.ativo === 0) inativas.push({ ...p, secao_titulo: s.titulo });
+      }
+    }
+  } catch { return; }
+
+  if (!inativas.length) return;
+
+  const panel = document.createElement('section');
+  panel.id = 'pesq-inativas';
+  panel.style.cssText = 'border:1px dashed var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
+  panel.innerHTML = `
+    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
+      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--muted)">Perguntas removidas <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${inativas.length}</span></h3>
+      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
+    </header>
+    <div data-body style="display:none;margin-top:.9rem">
+      ${inativas.map(p => `
+        <div data-inativa data-pid="${p.pergunta_id}" data-rotulo="${escHtml(p.rotulo || p.chave)}" style="display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.6rem .85rem;margin-bottom:.4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.92rem;color:var(--text);text-decoration:line-through;text-decoration-color:var(--muted)">${escHtml(p.rotulo || p.chave)}</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:.15rem">Seção original: ${escHtml(p.secao_titulo)} · tipo: ${escHtml(_TIPO_LABEL_AMIGAVEL[p.tipo] || p.tipo)}</div>
+          </div>
+          <div style="display:flex;gap:.3rem;flex-shrink:0">
+            <button class="btn btn-outline btn-sm" data-inativa-act="reativar">↺ Reativar</button>
+            <button class="btn btn-outline btn-sm" data-inativa-act="excluir" style="color:var(--danger);border-color:var(--danger)">Excluir definitivo</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  wrap.appendChild(panel);
+
+  const header = panel.querySelector('[data-act="toggle"]');
+  const body   = panel.querySelector('[data-body]');
+  const arrow  = panel.querySelector('[data-arrow]');
+  header.addEventListener('click', () => {
+    const aberto = body.style.display !== 'none';
+    body.style.display = aberto ? 'none' : '';
+    arrow.textContent  = aberto ? '▾' : '▴';
+  });
+
+  panel.querySelectorAll('[data-inativa-act]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const wrap = btn.closest('[data-inativa]');
+      const pid    = parseInt(wrap.dataset.pid);
+      const rotulo = wrap.dataset.rotulo;
+      const act    = btn.dataset.inativaAct;
+      if (act === 'reativar') {
+        try {
+          await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { ativo: 1, pesquisa_slug: PESQUISA_SLUG });
+          showToast(`✓ "${rotulo}" reativada`);
+          initPesquisaEditor();
+        } catch (err) { showToast('Erro: ' + err.message, 5000); }
+      } else if (act === 'excluir') {
+        const ok = await confirmarAcao({
+          titulo: `Excluir definitivamente "${rotulo}"?`,
+          mensagem: 'A pergunta sera removida PERMANENTEMENTE — apaga texto em todos os idiomas, opcoes e associacoes. So funciona se nao houver respostas anteriores.',
+          btnConfirmar: 'Sim, excluir',
+          btnCancelar: 'Voltar',
+          perigoso: true,
+        });
+        if (!ok) return;
+        try {
+          await apiSend('DELETE', `/api/qualidade/admin/perguntas/${pid}`);
+          showToast(`✓ "${rotulo}" excluida`);
+          initPesquisaEditor();
+        } catch (err) { showToast('Nao foi possivel excluir: ' + err.message, 6000); }
+      }
+    });
+  });
+}
+
+// Painel de historico — clone do _renderAnamHistorico, slug spa-locc-v1.
+async function _renderPesqHistorico() {
+  const wrap = document.getElementById('pesq-secoes');
+  if (!wrap) return;
+  document.getElementById('pesq-historico')?.remove();
+
+  let itens = [];
+  try {
+    const r = await api(`/api/qualidade/admin/anamnese/historico?slug=${PESQUISA_SLUG}&limite=50`);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) return;
+    itens = d.items || [];
+  } catch { return; }
+
+  const panel = document.createElement('section');
+  panel.id = 'pesq-historico';
+  panel.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:1rem 1.3rem;margin-top:1.5rem;background:var(--surface)';
+  const ACAO_LABEL = {
+    criar: '➕ Criou', editar: '✏ Editou', remover: '🗑 Removeu',
+    associar: '🔗 Associou', desassociar: '✂ Desassociou',
+    excluir_definitivo: '💥 Excluiu definitivamente',
+  };
+  const ENTIDADE_LABEL = {
+    pergunta: 'pergunta', secao: 'seção', opcao: 'opção',
+    pesquisa_pergunta: 'pergunta na pesquisa',
+  };
+  panel.innerHTML = `
+    <header style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-act="toggle">
+      <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--text)">Histórico de alterações <span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .55rem;border-radius:9999px;margin-left:.4rem">${itens.length}</span></h3>
+      <span data-arrow style="color:var(--muted);font-size:1.1rem">▾</span>
+    </header>
+    <div data-body style="display:none;margin-top:.9rem;max-height:420px;overflow-y:auto">
+      ${itens.length === 0
+        ? '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">Nenhuma alteração registrada ainda.</div>'
+        : itens.map(it => {
+            const dt = new Date(it.criado_em.replace(' ', 'T') + 'Z');
+            const dtFmt = !isNaN(dt) ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : it.criado_em;
+            const acao = ACAO_LABEL[it.acao] || it.acao;
+            const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
+            const who  = it.usuario || 'sistema';
+            return `
+              <div style="display:flex;gap:.7rem;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--border-lt,#eee)">
+                <div style="flex-shrink:0;width:115px;font-size:.7rem;color:var(--muted)">${dtFmt}</div>
+                <div style="flex:1;min-width:0;font-size:.85rem;color:var(--text);line-height:1.45">
+                  <strong>${acao} ${ent}</strong> #${it.entidade_id ?? '?'}
+                  <div style="color:var(--muted);font-size:.78rem;margin-top:.1rem">${escHtml(it.descricao || '')}</div>
+                  <div style="color:var(--muted);font-size:.7rem;margin-top:.1rem">por ${escHtml(who)}</div>
+                </div>
+              </div>
+            `;
+          }).join('')
+      }
+    </div>
+  `;
+  wrap.appendChild(panel);
+
+  const header = panel.querySelector('[data-act="toggle"]');
+  const body   = panel.querySelector('[data-body]');
+  const arrow  = panel.querySelector('[data-arrow]');
+  header.addEventListener('click', () => {
+    const aberto = body.style.display !== 'none';
+    body.style.display = aberto ? 'none' : '';
+    arrow.textContent  = aberto ? '▾' : '▴';
+  });
 }
 
 function _renderPesqEstrutura() {

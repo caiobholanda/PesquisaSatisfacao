@@ -172,11 +172,24 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
 router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
-  const token = criarSurveyToken(reserva.id);
   const origin = process.env.NODE_ENV === 'production'
     ? `https://${req.get('host')}`
     : `${req.protocol}://${req.get('host')}`;
-  res.json({ ok: true, token, url: `${origin}/?token=${token}`, nome: reserva.cliente, telefone: reserva.telefone });
+
+  // Reserva CASAL: 2 tokens distintos pra que cada hospede responda
+  // sua propria pesquisa sem sobrescrever a do outro.
+  if (reserva.cliente2 && reserva.cliente2.trim()) {
+    const token1 = criarSurveyToken(reserva.id, 1);
+    const token2 = criarSurveyToken(reserva.id, 2);
+    return res.json({
+      ok: true, casal: true,
+      hospede1: { nome: reserva.cliente,  telefone: reserva.telefone,  token: token1, url: `${origin}/?token=${token1}` },
+      hospede2: { nome: reserva.cliente2, telefone: reserva.telefone2, token: token2, url: `${origin}/?token=${token2}` },
+    });
+  }
+
+  const token = criarSurveyToken(reserva.id, 1);
+  res.json({ ok: true, casal: false, token, url: `${origin}/?token=${token}`, nome: reserva.cliente, telefone: reserva.telefone });
 });
 
 router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
