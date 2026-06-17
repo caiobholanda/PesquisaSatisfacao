@@ -4115,27 +4115,24 @@ async function _anamEditPergunta(chave) {
   const p = d.items.find(x => x.chave === chave);
   if (!p) return showToast('Pergunta não encontrada');
 
-  const novoRotulo = await pedirTexto({
+  // Modal UNICO (texto + tipo). Antes era um modal de texto seguido
+  // de outro modal de tipo — usuario clicava Salvar no primeiro
+  // achando que tinha terminado e o segundo ficava orfao, resultando
+  // em zero requests dispatched.
+  const resp = await pedirPergunta({
     titulo: 'Editar pergunta',
-    mensagem: 'Texto que o cliente vê (português). A tradução para os outros idiomas é automática.',
-    valorInicial: p.rotulo || chave,
-    placeholder: 'Escreva a pergunta…',
+    mensagem: 'Atualize o texto e/ou o tipo de resposta.',
+    valorRotulo: p.rotulo || chave,
+    valorTipo: p.tipo,
+    tipos: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
   });
-  if (novoRotulo === null) return;
-
-  const novoTipo = await pedirOpcao({
-    titulo: 'Tipo de resposta',
-    mensagem: 'Como o cliente vai responder esta pergunta?',
-    valorInicial: p.tipo,
-    opcoes: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
-  });
-  if (novoTipo === null) return;
+  if (!resp) return;
 
   showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim());
+    const traducoes = await _anamTraduzirRotulo(resp.rotulo);
     await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, {
-      tipo: novoTipo,
+      tipo: resp.tipo,
       traducoes,
     });
     showToast('✓ Pergunta atualizada');
@@ -4144,10 +4141,18 @@ async function _anamEditPergunta(chave) {
 }
 
 async function _anamDelPergunta(chave) {
-  // Encontra a associação via /api/survey/config (já temos em _anamEstrutura)
+  // Pega o rotulo amigavel da estrutura local em vez de derivar da
+  // chave tecnica (que tinha sufixo aleatorio do _slugChave).
+  let rotuloAmigavel = chave.replace(/^anamnese_/,'').replace(/_[a-z0-9]{4}$/,'').replace(/_/g,' ');
+  try {
+    for (const s of (_anamEstrutura?.secoes || [])) {
+      const q = (s.perguntas || []).find(x => x.chave === chave);
+      if (q?.rotulo) { rotuloAmigavel = q.rotulo; break; }
+    }
+  } catch {}
   const ok = await confirmarAcao({
     titulo: 'Remover pergunta?',
-    mensagem: `A pergunta "${chave.replace(/^anamnese_/,'').replace(/_/g,' ')}" sai da anamnese. Os dados já respondidos por clientes anteriores continuam preservados.`,
+    mensagem: `A pergunta "${rotuloAmigavel}" sai da anamnese. Os dados já respondidos por clientes anteriores continuam preservados.`,
     btnConfirmar: 'Sim, remover',
     btnCancelar: 'Voltar',
     perigoso: true,
@@ -4341,6 +4346,58 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
 window.pedirTexto = pedirTexto;
 window.pedirOpcao = pedirOpcao;
 
+// Modal unificado para editar/criar pergunta: texto + tipo num so dialog
+// (evita o fluxo confuso de 2 modais sequenciais que o usuario fechava
+// achando que tinha salvado).
+// Retorna { rotulo, tipo } ou null se cancelado.
+function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', valorTipo = 'texto_livre', tipos = [] } = {}) {
+  return new Promise(resolve => {
+    document.querySelectorAll('.confirm-overlay').forEach(n => n.remove());
+    const ov = document.createElement('div');
+    ov.className = 'confirm-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    ov.innerHTML = `
+      <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
+        <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Texto da pergunta (português)</label>
+        <input id="_pq-rot" value="${escHtml(valorRotulo)}" placeholder="Escreva a pergunta..." style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px;margin-bottom:1rem">
+        <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Tipo de resposta</label>
+        <select id="_pq-tipo" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">
+          ${tipos.map(o => `<option value="${escHtml(o.value)}"${o.value === valorTipo ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
+        </select>
+        <p style="margin:.8rem 0 0 0;color:var(--muted);font-size:.78rem;line-height:1.5">A tradução para os outros 6 idiomas é automática ao salvar.</p>
+        <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem">
+          <button class="btn btn-outline" data-act="cancel">Cancelar</button>
+          <button class="btn btn-gold" data-act="ok">Salvar pergunta</button>
+        </div>
+      </div>
+    `;
+    function close(r) { ov.remove(); document.removeEventListener('keydown', onKey); resolve(r); }
+    function onKey(e) {
+      if (e.key === 'Escape') close(null);
+      else if (e.key === 'Enter' && e.target?.id === '_pq-rot') {
+        const rot = ov.querySelector('#_pq-rot').value.trim();
+        const tip = ov.querySelector('#_pq-tipo').value;
+        if (rot) close({ rotulo: rot, tipo: tip });
+      }
+    }
+    ov.addEventListener('click', e => {
+      if (e.target === ov || e.target.dataset.act === 'cancel') close(null);
+      else if (e.target.dataset.act === 'ok') {
+        const rot = ov.querySelector('#_pq-rot').value.trim();
+        const tip = ov.querySelector('#_pq-tipo').value;
+        if (!rot) { ov.querySelector('#_pq-rot').focus(); return; }
+        close({ rotulo: rot, tipo: tip });
+      }
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    setTimeout(() => { const i = ov.querySelector('#_pq-rot'); i?.focus(); i?.select(); }, 30);
+  });
+}
+window.pedirPergunta = pedirPergunta;
+
 // ────────────────────────────────────────────────────────────────────────────
 // EDITOR DA PESQUISA DE SATISFAÇÃO — gerencia perguntas do spa-locc-v1.
 // Clone parametrizado do editor de anamnese: mesma lógica, IDs e slug
@@ -4517,26 +4574,19 @@ async function _pesqEditPergunta(pid) {
   const p = _pesqFindPerg(pid);
   if (!p) return showToast('Pergunta não encontrada');
 
-  const novoRotulo = await pedirTexto({
+  const resp = await pedirPergunta({
     titulo: 'Editar pergunta',
-    mensagem: 'Texto que o hóspede vê (português). Tradução para os outros idiomas é automática.',
-    valorInicial: p.rotulo || p.chave,
-    placeholder: 'Escreva a pergunta…',
+    mensagem: 'Atualize o texto e/ou o tipo de resposta.',
+    valorRotulo: p.rotulo || p.chave,
+    valorTipo: p.tipo,
+    tipos: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
   });
-  if (novoRotulo === null) return;
-
-  const novoTipo = await pedirOpcao({
-    titulo: 'Tipo de resposta',
-    mensagem: 'Como o hóspede vai responder esta pergunta?',
-    valorInicial: p.tipo,
-    opcoes: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
-  });
-  if (novoTipo === null) return;
+  if (!resp) return;
 
   showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(novoRotulo.trim());
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: novoTipo, traducoes });
+    const traducoes = await _anamTraduzirRotulo(resp.rotulo);
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: resp.tipo, traducoes });
     showToast('✓ Pergunta atualizada');
     initPesquisaEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }

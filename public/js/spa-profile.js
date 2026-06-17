@@ -725,8 +725,14 @@ function _renderPerguntasExtras(perguntas) {
         <textarea class="spa-textarea" rows="3" data-extra-input></textarea>
       `;
     } else if (q.tipo === 'unica' || q.tipo === 'escala' || q.tipo === 'sim_nao') {
+      // BUG-H: pergunta 'Sim ou Não' do editor salva como tipo='escala'
+      // SEM opcoes na biblioteca de perguntas. Fallback Sim/Não default
+      // para escala/sim_nao quando q.opcoes vier vazio — antes ficava
+      // um <div> sem nenhum pill e o cliente nao tinha como responder.
       const opcoes = q.opcoes && q.opcoes.length ? q.opcoes
-        : (q.tipo === 'sim_nao' ? [{ chave: 'sim', rotulo: 'Sim' }, { chave: 'nao', rotulo: 'Não' }] : []);
+        : ((q.tipo === 'sim_nao' || q.tipo === 'escala')
+            ? [{ chave: 'sim', rotulo: 'Sim' }, { chave: 'nao', rotulo: 'Não' }]
+            : []);
       const pills = opcoes.map(o => `
         <label class="spa-pill" data-extra-val="${_escHtml(o.chave)}">
           <input type="radio" name="extra_${_escHtml(q.chave)}" value="${_escHtml(o.chave)}">
