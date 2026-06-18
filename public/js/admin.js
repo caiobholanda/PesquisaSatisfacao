@@ -4796,6 +4796,28 @@ const _TIPO_LABEL_AMIGAVEL = {
   escala:      'Sim ou Não',
 };
 
+// Tipos especificos da PESQUISA de satisfacao. O 'rostos' usa a mesma escala
+// (4pt_qualitativa: Ótimo/Bom/Regular/Ruim) das perguntas nativas s0-s3/f0-f2
+// — visualmente renderiza com os rostinhos (smileys) no FormScreen.
+const _TIPO_LABEL_PESQUISA = {
+  ..._TIPO_LABEL_AMIGAVEL,
+  rostos: 'Avaliação com rostinhos (Ótimo · Bom · Regular · Ruim)',
+};
+
+// Cache do escala_id de 4pt_qualitativa — busca uma vez do backend.
+let _ESCALA_ID_ROSTOS = null;
+async function _getEscalaIdRostos() {
+  if (_ESCALA_ID_ROSTOS) return _ESCALA_ID_ROSTOS;
+  try {
+    const r = await api('/api/qualidade/admin/escalas');
+    if (!r) return null;
+    const d = await r.json();
+    const esc = (d?.items || []).find(e => e.chave === '4pt_qualitativa');
+    _ESCALA_ID_ROSTOS = esc?.id || null;
+    return _ESCALA_ID_ROSTOS;
+  } catch { return null; }
+}
+
 function _renderAnamEstrutura() {
   const wrap = document.getElementById('anam-secoes');
   const e = _anamEstrutura;
@@ -5375,7 +5397,7 @@ function _renderPesqEstrutura() {
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <input data-pesq-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
           <select data-pesq-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;border-radius:4px">
-            ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
+            ${Object.entries(_TIPO_LABEL_PESQUISA).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
           </select>
           <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
             <input type="checkbox" data-pesq-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
@@ -5390,7 +5412,14 @@ function _renderPesqEstrutura() {
 }
 
 function _renderPesqPergunta(q) {
-  const tipoLabel = _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
+  // Detecta tipo 'rostos' por heuristica: tipo='escala' com escala_id setada
+  // (4 opcoes otimo/bom/regular/ruim vindas da escala). Sim/Nao tem opcoes
+  // sim/nao sem escala_id.
+  let tipoEffective = q.tipo;
+  if (q.tipo === 'escala' && q.opcoes?.length === 4 && q.opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave))) {
+    tipoEffective = 'rostos';
+  }
+  const tipoLabel = _TIPO_LABEL_PESQUISA[tipoEffective] || _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
   const opcoes = q.opcoes && q.opcoes.length
     ? `<div style="margin-top:.35rem;color:var(--muted);font-size:.82rem"><strong style="color:var(--text);font-weight:500">Opções:</strong> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
     : '';
@@ -5468,18 +5497,33 @@ async function _pesqAddPergunta(secaoId) {
   const tipoSel   = document.querySelector(`[data-pesq-newperg-tipo][data-secao-id="${secaoId}"]`);
   const obrigInp  = document.querySelector(`[data-pesq-newperg-obrig][data-secao-id="${secaoId}"]`);
   const rotulo = rotuloInp?.value.trim();
-  const tipo   = tipoSel?.value || 'texto_livre';
+  let tipo     = tipoSel?.value || 'texto_livre';
   const obrigatoria = !!obrigInp?.checked;
   if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
   const chave = _slugChave(rotulo, 'pesq_');
+
+  // Tipo especial 'rostos': salva como 'escala' atrelada a escala 4pt_qualitativa
+  // (mesma das perguntas nativas s0-s3/f0-f2). O FormScreen detecta e renderiza
+  // com smileys ao inves de pills.
+  let escala_id = null;
+  if (tipo === 'rostos') {
+    escala_id = await _getEscalaIdRostos();
+    if (!escala_id) {
+      return showToast('Erro: escala "Ótimo→Ruim" não encontrada no backend.', 5000);
+    }
+    tipo = 'escala';
+  }
+
   try {
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: PESQUISA_SLUG,
+      chave, tipo, escala_id, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: PESQUISA_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
     });
-    if (tipo === 'escala') {
+    // Cria opcoes Sim/Nao APENAS quando tipo='escala' SEM escala_id (Sim/Não puro).
+    // Se escala_id ja foi setado (caso 'rostos'), as opcoes vem da escala_opcao.
+    if (tipo === 'escala' && !escala_id) {
       try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha opcoes Sim/Nao:', e.message); }
     }
     showToast('✓ Pergunta criada (traduzindo nos 7 idiomas em segundo plano…)');

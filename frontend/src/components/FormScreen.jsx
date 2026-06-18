@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   RATINGS, SERVICES, FACILITIES,
   FieldLabel, SectionHeading, ScaleBar, RatingRow, RadioOption,
-  AutoTextarea, MassagistaAutocomplete,
+  AutoTextarea, MassagistaAutocomplete, Smiley,
 } from './shared.jsx';
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -59,6 +59,25 @@ function ExtrasSecao({ perguntas, valores, setValor, errors = {}, sectionPrefix 
           const opcoes = (p.opcoes && p.opcoes.length) ? p.opcoes
             : (_OPCOES_FALLBACK[p.tipo] || _OPCOES_FALLBACK.sim_nao);
           const cur = valores[p.chave]?.valor || '';
+          // SMILEYS: detecta tipo 'rostos' (tipo='escala' com opcoes
+          // otimo/bom/regular/ruim). Renderiza com a mesma UI das perguntas
+          // nativas (RatingRow).
+          const ehRostos = p.tipo === 'escala'
+            && opcoes.length === 4
+            && opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave));
+          if (ehRostos) {
+            const fakeQ = { id: p.chave, pt: p.rotulo, en: '' };
+            return (
+              <div key={p.chave} data-extra-chave={p.chave} className={err ? 'extras-rostos-err' : ''}>
+                <RatingRow
+                  q={fakeQ}
+                  value={cur}
+                  onPick={(v) => setValor(p.chave, { tipo: 'escala', valor: v })}
+                />
+                {err && <p id={errId} className="field-err" role="alert" style={{marginTop:8}}>{err}</p>}
+              </div>
+            );
+          }
           return (
             <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
               <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
