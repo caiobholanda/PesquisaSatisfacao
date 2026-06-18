@@ -4866,7 +4866,7 @@ function _renderAnamPergunta(q, idx = 0, total = 1) {
     : '';
   const moveBtns = _renderMoveBtns('anam', q.chave, idx, total);
   return `
-    <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+    <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" data-assoc-id="${q.associacao_id || ''}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
       ${moveBtns}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
@@ -4885,19 +4885,16 @@ function _renderAnamPergunta(q, idx = 0, total = 1) {
   `;
 }
 
-// Botoes ↑↓ para reordenar perguntas dentro de uma secao.
+// Handle de arrastar (3 traços horizontais) para reordenar perguntas.
 // Compartilhado entre editores de anamnese ('anam') e pesquisa ('pesq').
-// Param `chaveOrId` e' a chave (anam) ou pergunta_id (pesq).
-function _renderMoveBtns(prefix, chaveOrId, idx, total) {
-  const isFirst = idx === 0;
-  const isLast  = idx === total - 1;
-  const baseStyle = 'min-width:1.8rem;padding:.18rem .4rem;font-size:.95rem;line-height:1;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:4px';
-  const disStyle = ';opacity:.35;pointer-events:none;cursor:not-allowed';
-  const dataAttr = prefix === 'anam' ? `data-chave="${escHtml(chaveOrId)}"` : `data-pid="${chaveOrId}"`;
+// Funciona com pointer events — touch (tablet/celular) E mouse (desktop).
+function _renderMoveBtns(prefix /*, chaveOrId, idx, total */) {
   return `
-    <div style="display:flex;flex-direction:column;gap:.18rem;flex-shrink:0;justify-content:flex-start;padding-top:.1rem">
-      <button type="button" data-${prefix}-act="move-up"   ${dataAttr} title="Subir" style="${baseStyle}${isFirst ? disStyle : ''}" aria-label="Mover pergunta para cima" ${isFirst ? 'disabled' : ''}>▲</button>
-      <button type="button" data-${prefix}-act="move-down" ${dataAttr} title="Descer" style="${baseStyle}${isLast  ? disStyle : ''}" aria-label="Mover pergunta para baixo" ${isLast  ? 'disabled' : ''}>▼</button>
+    <div class="drag-handle" data-drag-prefix="${prefix}" title="Arrastar para reordenar" aria-label="Arrastar para reordenar"
+         style="display:flex;flex-direction:column;justify-content:center;gap:3px;flex-shrink:0;padding:.55rem .5rem;margin-right:.1rem;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:5px;transition:background .15s">
+      <span style="display:block;width:18px;height:2px;background:var(--muted);border-radius:1px"></span>
+      <span style="display:block;width:18px;height:2px;background:var(--muted);border-radius:1px"></span>
+      <span style="display:block;width:18px;height:2px;background:var(--muted);border-radius:1px"></span>
     </div>
   `;
 }
@@ -4926,10 +4923,9 @@ function _wireAnamAcoes() {
       else if (act === 'edit-opcoes') _anamEditOpcoes(chave);
       else if (act === 'edit-secao')  _anamEditSecao(secaoId);
       else if (act === 'del-secao')   _anamDelSecao(secaoId);
-      else if (act === 'move-up')     _anamMovePergunta(chave, -1);
-      else if (act === 'move-down')   _anamMovePergunta(chave,  1);
     });
   });
+  _wireDragReorder('anam');
 }
 
 // Tradução pt-BR → 6 idiomas via Anthropic. Se a chamada falhar
@@ -5092,37 +5088,160 @@ async function _anamEditPergunta(chave) {
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
-// Reordena uma pergunta dentro da secao. direction = -1 (sobe) ou +1 (desce).
-// Normaliza TODAS as ordens da secao em sequencia (i*10) — robustez maxima
-// contra colisoes de ordem 99 das adicoes recentes.
-let _anamMoveBusy = false;
-async function _anamMovePergunta(chave, direction) {
-  if (_anamMoveBusy) return;
-  if (!_anamEstrutura) return;
-  let secao = null, idx = -1;
-  for (const sec of (_anamEstrutura.secoes || [])) {
-    const i = (sec.perguntas || []).findIndex(p => p.chave === chave);
-    if (i >= 0) { secao = sec; idx = i; break; }
+// Setup de drag-and-drop por seção. prefix = 'anam' | 'pesq'.
+// Cada handle (.drag-handle) escuta pointerdown; ao arrastar, a row
+// vira position:fixed e segue o pointer; um placeholder mantem o espaço
+// e indica onde a pergunta vai parar. Funciona com mouse + touch.
+let _dragBusy = false;
+function _wireDragReorder(prefix) {
+  const containerSel = prefix === 'anam' ? '.anam-perguntas' : '.pesq-perguntas';
+  document.querySelectorAll(containerSel).forEach(container => {
+    container.querySelectorAll('.drag-handle').forEach(handle => {
+      if (handle.dataset.dragWired === '1') return;
+      handle.dataset.dragWired = '1';
+      handle.addEventListener('pointerdown', (e) => _onDragStart(e, prefix, container, handle));
+    });
+  });
+}
+
+function _onDragStart(ev, prefix, container, handle) {
+  if (_dragBusy) return;
+  if (ev.button !== undefined && ev.button !== 0) return; // só left-click
+  const row = handle.closest('[data-perg-chave],[data-perg-id]');
+  if (!row) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+
+  const rect = row.getBoundingClientRect();
+  const offsetY = ev.clientY - rect.top;
+  const offsetX = ev.clientX - rect.left;
+  const width = rect.width;
+  const height = rect.height;
+  handle.style.cursor = 'grabbing';
+
+  // Placeholder no lugar original (com glow dourado pulsando)
+  const placeholder = document.createElement('div');
+  placeholder.style.cssText = `height:${height}px;background:linear-gradient(180deg, rgba(201,168,106,.14), rgba(201,168,106,.06));border:2px dashed var(--gold,#c9a86a);border-radius:8px;margin-bottom:.5rem;box-sizing:border-box;pointer-events:none;transition:height .18s ease,opacity .18s ease;animation:_dragPulse 1.2s ease-in-out infinite`;
+  container.insertBefore(placeholder, row);
+
+  // "Sai da tela" — flutua, escala leve, rotaciona, sombra dramática.
+  const origCss = row.style.cssText;
+  const left = rect.left;
+  row.style.cssText = origCss + `;position:fixed;top:${rect.top}px;left:${left}px;width:${width}px;z-index:9999;pointer-events:none;opacity:.96;background:var(--surface,#fff);box-shadow:0 22px 48px rgba(0,0,0,.32),0 6px 12px rgba(0,0,0,.18);transform:scale(1.03) rotate(-.6deg);transform-origin:${offsetX}px ${offsetY}px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s ease;will-change:transform,top,left`;
+  document.body.appendChild(row);
+
+  // Insere CSS de pulse e transitions nas siblings se ainda nao existir.
+  if (!document.getElementById('_drag-style')) {
+    const st = document.createElement('style');
+    st.id = '_drag-style';
+    st.textContent = `
+      @keyframes _dragPulse {
+        0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,168,106,.0); }
+        50%     { opacity: .88; box-shadow: 0 0 0 6px rgba(201,168,106,.18); }
+      }
+      .anam-pergunta, .pesq-pergunta {
+        transition: transform .26s cubic-bezier(.16,1,.3,1);
+      }
+    `;
+    document.head.appendChild(st);
   }
-  if (!secao || idx < 0) return;
-  const arr = [...secao.perguntas];
-  const target = idx + direction;
-  if (target < 0 || target >= arr.length) return;
-  // Swap
-  [arr[idx], arr[target]] = [arr[target], arr[idx]];
-  _anamMoveBusy = true;
-  try {
-    // PUTs em paralelo — normaliza com gap de 10 (permite inserts futuros).
-    await Promise.all(arr.map((p, i) => {
-      if (!p.associacao_id) return Promise.resolve();
-      return apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.associacao_id}`, { ordem: (i + 1) * 10 });
-    }));
-    await initAnamneseEditor();
-  } catch (e) {
-    showToast('Erro ao reordenar: ' + e.message, 4000);
-  } finally {
-    _anamMoveBusy = false;
-  }
+
+  // Cache de posicao das siblings para FLIP animation.
+  const _captureSiblingTops = () => {
+    const sibs = Array.from(container.children).filter(c => c !== placeholder && c !== row);
+    return new Map(sibs.map(s => [s, s.getBoundingClientRect().top]));
+  };
+  let beforeMap = _captureSiblingTops();
+
+  const _animateFlip = (oldMap) => {
+    // FLIP: para cada sibling, calcula delta entre old e new e anima
+    requestAnimationFrame(() => {
+      oldMap.forEach((oldTop, sib) => {
+        if (!sib.isConnected) return;
+        const newTop = sib.getBoundingClientRect().top;
+        const dy = oldTop - newTop;
+        if (Math.abs(dy) > 0.5) {
+          sib.style.transition = 'none';
+          sib.style.transform = `translateY(${dy}px)`;
+          requestAnimationFrame(() => {
+            sib.style.transition = 'transform .28s cubic-bezier(.16,1,.3,1)';
+            sib.style.transform = '';
+          });
+        }
+      });
+    });
+  };
+
+  let lastY = ev.clientY;
+  const onMove = (e) => {
+    const y = e.clientY;
+    const x = e.clientX;
+    lastY = y;
+    row.style.top = (y - offsetY) + 'px';
+    row.style.left = (x - offsetX) + 'px';
+    // Decide se precisa mover placeholder
+    const siblings = Array.from(container.children).filter(c => c !== placeholder && c !== row);
+    let targetSibling = null;
+    for (const sib of siblings) {
+      const r = sib.getBoundingClientRect();
+      if (y < r.top + r.height / 2) { targetSibling = sib; break; }
+    }
+    const currentNext = placeholder.nextElementSibling;
+    if (targetSibling && targetSibling !== currentNext) {
+      const oldMap = _captureSiblingTops();
+      container.insertBefore(placeholder, targetSibling);
+      _animateFlip(oldMap);
+    } else if (!targetSibling && currentNext !== null) {
+      const oldMap = _captureSiblingTops();
+      container.appendChild(placeholder);
+      _animateFlip(oldMap);
+    }
+  };
+
+  const onEnd = async () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onEnd);
+    window.removeEventListener('pointercancel', onEnd);
+    handle.style.cursor = 'grab';
+
+    // Anima a row de volta ao "chão" suavemente antes de soltar
+    const phRect = placeholder.getBoundingClientRect();
+    row.style.transition = 'top .18s cubic-bezier(.16,1,.3,1), left .18s cubic-bezier(.16,1,.3,1), transform .18s ease, box-shadow .18s ease';
+    row.style.top = phRect.top + 'px';
+    row.style.left = phRect.left + 'px';
+    row.style.transform = 'scale(1) rotate(0)';
+    row.style.boxShadow = '0 2px 6px rgba(0,0,0,.08)';
+    await new Promise(r => setTimeout(r, 170));
+
+    row.style.cssText = origCss;
+    container.insertBefore(row, placeholder);
+    placeholder.remove();
+
+    // Coleta nova ordem
+    const ids = Array.from(container.children)
+      .map(el => el.dataset.assocId)
+      .filter(Boolean);
+    if (!ids.length) return;
+
+    _dragBusy = true;
+    try {
+      await Promise.all(ids.map((assocId, i) =>
+        apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${assocId}`, { ordem: (i + 1) * 10 })
+      ));
+      if (prefix === 'anam') await initAnamneseEditor();
+      else                    await initPesquisaEditor();
+    } catch (e) {
+      showToast('Erro ao reordenar: ' + (e?.message || e), 4000);
+      if (prefix === 'anam') initAnamneseEditor();
+      else                    initPesquisaEditor();
+    } finally {
+      _dragBusy = false;
+    }
+  };
+
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onEnd);
+  window.addEventListener('pointercancel', onEnd);
 }
 
 async function _anamDelPergunta(chave) {
@@ -5526,38 +5645,9 @@ function _wirePesqAcoes() {
       else if (act === 'edit-opcoes') _pesqEditOpcoes(pid);
       else if (act === 'edit-secao')  _pesqEditSecao(secaoId);
       else if (act === 'del-secao')   _pesqDelSecao(secaoId);
-      else if (act === 'move-up')     _pesqMovePergunta(pid, -1);
-      else if (act === 'move-down')   _pesqMovePergunta(pid,  1);
     });
   });
-}
-
-let _pesqMoveBusy = false;
-async function _pesqMovePergunta(perguntaId, direction) {
-  if (_pesqMoveBusy) return;
-  if (!_pesqEstrutura) return;
-  let secao = null, idx = -1;
-  for (const sec of (_pesqEstrutura.secoes || [])) {
-    const i = (sec.perguntas || []).findIndex(p => p.pergunta_id === perguntaId);
-    if (i >= 0) { secao = sec; idx = i; break; }
-  }
-  if (!secao || idx < 0) return;
-  const arr = [...secao.perguntas];
-  const target = idx + direction;
-  if (target < 0 || target >= arr.length) return;
-  [arr[idx], arr[target]] = [arr[target], arr[idx]];
-  _pesqMoveBusy = true;
-  try {
-    await Promise.all(arr.map((p, i) => {
-      if (!p.associacao_id) return Promise.resolve();
-      return apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.associacao_id}`, { ordem: (i + 1) * 10 });
-    }));
-    await initPesquisaEditor();
-  } catch (e) {
-    showToast('Erro ao reordenar: ' + e.message, 4000);
-  } finally {
-    _pesqMoveBusy = false;
-  }
+  _wireDragReorder('pesq');
 }
 
 async function _pesqAddSecao() {
