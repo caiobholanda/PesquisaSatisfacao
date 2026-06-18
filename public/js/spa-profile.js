@@ -698,19 +698,22 @@ async function applyAnamneseConfig(idioma) {
   } catch { return; }
 
   // Achata perguntas mapeadas: { campo_legado: { ativo, obrigatoria, rotulo, opcoes } }
-  // E coleta perguntas SEM mapeia_campo_legado (criadas pelo admin no editor):
-  // essas vão para uma seção dinâmica "Perguntas adicionais".
+  // Perguntas SEM mapeia_campo_legado (adicionadas pelo admin) sao agrupadas
+  // por secao para serem renderizadas DENTRO da secao original — sem revelar
+  // que foram adicionadas depois da criacao da pesquisa.
   const map = {};
-  const perguntasExtras = [];
+  const extrasPorSecao = [];
   for (const sec of (cfg.secoes || [])) {
+    const extras = [];
     for (const q of (sec.perguntas || [])) {
       const legado = q.mapeia_campo_legado;
       if (legado) {
         map[legado] = { rotulo: q.rotulo, obrigatoria: !!q.obrigatoria, opcoes: q.opcoes || null };
       } else {
-        perguntasExtras.push(q);
+        extras.push(q);
       }
     }
+    if (extras.length) extrasPorSecao.push({ chave: sec.chave, titulo: sec.titulo, perguntas: extras });
   }
 
   // BUG-B fix: o <select #f-doc-tipo> era HTML estatico com 2 opcoes
@@ -750,7 +753,7 @@ async function applyAnamneseConfig(idioma) {
     }
   }
 
-  _renderPerguntasExtras(perguntasExtras);
+  _renderPerguntasExtras(extrasPorSecao);
 }
 
 // Pre-preenchimento via historico: chama GET /api/spa/historico
@@ -885,27 +888,55 @@ function _mostrarBannerHistorico(criadoEm) {
 // Renderiza perguntas customizadas (sem mapeia_campo_legado) numa seção
 // dinâmica injetada ANTES da seção de assinatura. Tipos suportados:
 // texto_livre, unica/escala (radio), multipla (checkbox), sim_nao.
-function _renderPerguntasExtras(perguntas) {
-  const wrapId = 'sec-perguntas-extras';
-  let sec = document.getElementById(wrapId);
-  if (sec) sec.remove();
-  if (!perguntas || !perguntas.length) return;
+// Mapeia secao.chave (DB) para o container HTML onde os extras devem
+// aparecer (renderizados DENTRO da secao, ao final). Para secoes criadas
+// pelo admin (sem match), criamos uma secao nova posicionada antes da
+// assinatura — mas com titulo da propria secao (sem rotulo "adicionais").
+const _SECAO_DB_PARA_HTML = {
+  dados_pessoais: 'sec-personal',
+  saude_rotinas:  'sec-medico',   // ultima sub-secao do grupo de saude/rotinas
+  consentimentos: 'sec-consents',
+};
+
+function _renderPerguntasExtras(extrasPorSecao) {
+  // Remove qualquer secao extra renderizada anteriormente
+  document.querySelectorAll('[data-extras-secao]').forEach(n => n.remove());
+  document.querySelectorAll('[data-extras-grid]').forEach(n => n.remove());
+  if (!extrasPorSecao || !extrasPorSecao.length) return;
 
   const secSig = document.getElementById('sec-sig')?.closest('.spa-section');
-  if (!secSig) return;
 
-  sec = document.createElement('div');
-  sec.className = 'spa-section';
-  sec.id = wrapId;
-  // Titulo traduzivel: pega do locale se disponivel, senao usa pt-BR.
-  const tituloSecao = (_locale?.sections?.additional_questions) || 'Perguntas adicionais';
-  sec.innerHTML = `
-    <h2 class="spa-section-title">${_escHtml(tituloSecao)}</h2>
-    <div id="perguntas-extras-grid" style="display:flex;flex-direction:column;gap:1.2rem"></div>
-  `;
-  secSig.parentNode.insertBefore(sec, secSig);
+  for (const grupo of extrasPorSecao) {
+    const htmlId = _SECAO_DB_PARA_HTML[grupo.chave];
+    let grid;
+    if (htmlId) {
+      // Anexa dentro da secao legacy correspondente, no final.
+      const secEl = document.getElementById(htmlId)?.closest('.spa-section');
+      if (!secEl) continue;
+      grid = document.createElement('div');
+      grid.dataset.extrasGrid = grupo.chave;
+      grid.style.cssText = 'display:flex;flex-direction:column;gap:1.2rem;margin-top:1.2rem';
+      secEl.appendChild(grid);
+    } else {
+      // Secao criada pelo admin: cria nova secao com o proprio titulo
+      // (sem rotulo "Perguntas adicionais"), posicionada antes da assinatura.
+      const novaSec = document.createElement('div');
+      novaSec.className = 'spa-section';
+      novaSec.dataset.extrasSecao = grupo.chave;
+      novaSec.innerHTML = `
+        <h2 class="spa-section-title">${_escHtml(grupo.titulo || '')}</h2>
+        <div data-extras-grid="${_escHtml(grupo.chave)}" style="display:flex;flex-direction:column;gap:1.2rem"></div>
+      `;
+      if (secSig) secSig.parentNode.insertBefore(novaSec, secSig);
+      else document.querySelector('.spa-page')?.appendChild(novaSec);
+      grid = novaSec.querySelector(`[data-extras-grid]`);
+    }
 
-  const grid = sec.querySelector('#perguntas-extras-grid');
+    _appendPerguntasNoGrid(grid, grupo.perguntas);
+  }
+}
+
+function _appendPerguntasNoGrid(grid, perguntas) {
   for (const q of perguntas) {
     const wrap = document.createElement('div');
     wrap.className = 'spa-field';
@@ -992,7 +1023,7 @@ function _escHtml(s) {
 // Helper público: coleta respostas das perguntas extras para o submit.
 function _coletarRespostasExtras() {
   const out = {};
-  document.querySelectorAll('#perguntas-extras-grid [data-extra]').forEach(wrap => {
+  document.querySelectorAll('[data-extras-grid] [data-extra]').forEach(wrap => {
     const chave = wrap.dataset.extra;
     const tipo  = wrap.dataset.tipo;
     if (tipo === 'texto_livre') {
