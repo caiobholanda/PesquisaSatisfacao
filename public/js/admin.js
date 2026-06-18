@@ -5059,15 +5059,30 @@ async function _anamEditPergunta(chave) {
   });
   if (!resp) return;
 
-  showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
+  // Skip total se nada mudou — evita re-traducao inutil e chamadas extras.
+  const _assocId = _assoc?.associacao_id;
+  const rotuloOriginal = (p.rotulo || chave).trim();
+  const rotuloChanged  = (resp.rotulo || '').trim() !== rotuloOriginal;
+  const tipoChanged    = resp.tipo !== p.tipo;
+  const obrigChanged   = _assocId && resp.obrigatoria !== !!_assoc.obrigatoria;
+  if (!rotuloChanged && !tipoChanged && !obrigChanged) {
+    return showToast('Nada para salvar — nenhuma alteração detectada', 2500);
+  }
+
+  const msgs = [];
+  if (rotuloChanged) msgs.push('traduzindo nos 7 idiomas');
+  if (tipoChanged)   msgs.push('atualizando tipo');
+  if (obrigChanged)  msgs.push('atualizando obrigatoriedade');
+  showToast(`Salvando (${msgs.join(', ')})…`, 3000);
+
   try {
-    const traducoes = await _anamTraduzirRotulo(resp.rotulo);
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, {
-      tipo: resp.tipo,
-      traducoes,
-    });
-    const _assocId = _assoc?.associacao_id;
-    if (_assocId && resp.obrigatoria !== !!_assoc.obrigatoria) {
+    if (rotuloChanged || tipoChanged) {
+      const payload = {};
+      if (tipoChanged)   payload.tipo = resp.tipo;
+      if (rotuloChanged) payload.traducoes = await _anamTraduzirRotulo(resp.rotulo);
+      await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, payload);
+    }
+    if (obrigChanged) {
       try {
         await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assocId}`, { obrigatoria: resp.obrigatoria ? 1 : 0 });
       } catch (e) { console.warn('[obrig assoc anam]', e.message); }
@@ -5119,7 +5134,7 @@ function _onDragStart(ev, prefix, container, handle) {
   row.style.cssText = origCss + `;position:fixed;top:${rect.top}px;left:${left}px;width:${width}px;z-index:9999;pointer-events:none;opacity:.96;background:var(--surface,#fff);box-shadow:0 22px 48px rgba(0,0,0,.32),0 6px 12px rgba(0,0,0,.18);transform:scale(1.03) rotate(-.6deg);transform-origin:${offsetX}px ${offsetY}px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s ease;will-change:transform,top,left`;
   document.body.appendChild(row);
 
-  // Insere CSS de pulse e transitions nas siblings se ainda nao existir.
+  // Insere CSS de pulse, transitions nas siblings e alerta fora-da-secao.
   if (!document.getElementById('_drag-style')) {
     const st = document.createElement('style');
     st.id = '_drag-style';
@@ -5128,12 +5143,49 @@ function _onDragStart(ev, prefix, container, handle) {
         0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,168,106,.0); }
         50%     { opacity: .88; box-shadow: 0 0 0 6px rgba(201,168,106,.18); }
       }
+      @keyframes _dragShake {
+        0%,100% { transform: translateX(0); }
+        20%     { transform: translateX(-4px); }
+        40%     { transform: translateX(4px); }
+        60%     { transform: translateX(-3px); }
+        80%     { transform: translateX(3px); }
+      }
       .anam-pergunta, .pesq-pergunta {
         transition: transform .26s cubic-bezier(.16,1,.3,1);
+      }
+      .drag-out-bounds {
+        outline: 2px solid var(--danger,#d86862) !important;
+        outline-offset: -2px;
+        box-shadow: 0 0 0 6px rgba(216,104,98,.16), 0 22px 48px rgba(0,0,0,.32) !important;
+        animation: _dragShake .35s ease-in-out !important;
+        transition: box-shadow .15s ease, outline-color .15s ease !important;
+      }
+      .drag-zone-warn {
+        position: relative;
+        outline: 2px dashed var(--danger,#d86862);
+        outline-offset: 3px;
+        border-radius: 10px;
+        transition: outline-color .15s ease;
+      }
+      .drag-zone-warn::after {
+        content: 'Solte dentro desta seção';
+        position: absolute;
+        top: -.6rem; right: 1rem;
+        background: var(--danger,#d86862);
+        color: #fff;
+        font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+        padding: .18rem .55rem;
+        border-radius: 9999px;
+        box-shadow: 0 4px 12px rgba(216,104,98,.35);
+        pointer-events: none;
+        animation: _dragShake .35s ease-in-out;
       }
     `;
     document.head.appendChild(st);
   }
+
+  // Descobre a SEÇÃO pai (.anam-secao ou .pesq-secao) para checar limites.
+  const secaoEl = container.closest('.anam-secao, .pesq-secao');
 
   // Cache de posicao das siblings para FLIP animation.
   const _captureSiblingTops = () => {
@@ -5161,14 +5213,34 @@ function _onDragStart(ev, prefix, container, handle) {
     });
   };
 
-  let lastY = ev.clientY;
+  let outOfBounds = false;
+  const _checkBounds = (x, y) => {
+    if (!secaoEl) return true;
+    const sr = secaoEl.getBoundingClientRect();
+    const margin = 20; // tolerância em px
+    return x >= sr.left - margin && x <= sr.right + margin
+        && y >= sr.top - margin  && y <= sr.bottom + margin;
+  };
+  const _setOutOfBounds = (out) => {
+    if (out === outOfBounds) return;
+    outOfBounds = out;
+    if (out) {
+      row.classList.add('drag-out-bounds');
+      secaoEl?.classList.add('drag-zone-warn');
+    } else {
+      row.classList.remove('drag-out-bounds');
+      secaoEl?.classList.remove('drag-zone-warn');
+    }
+  };
+
   const onMove = (e) => {
     const y = e.clientY;
     const x = e.clientX;
-    lastY = y;
     row.style.top = (y - offsetY) + 'px';
     row.style.left = (x - offsetX) + 'px';
-    // Decide se precisa mover placeholder
+    _setOutOfBounds(!_checkBounds(x, y));
+    // Só move placeholder quando dentro dos limites da seção
+    if (outOfBounds) return;
     const siblings = Array.from(container.children).filter(c => c !== placeholder && c !== row);
     let targetSibling = null;
     for (const sib of siblings) {
@@ -5192,6 +5264,25 @@ function _onDragStart(ev, prefix, container, handle) {
     window.removeEventListener('pointerup', onEnd);
     window.removeEventListener('pointercancel', onEnd);
     handle.style.cursor = 'grab';
+
+    // Se soltou FORA dos limites da seção: cancela — volta ao lugar original
+    // (que e' a posicao do placeholder, mantida durante o drag), sem PUT.
+    if (outOfBounds) {
+      const phRect = placeholder.getBoundingClientRect();
+      row.style.transition = 'top .22s cubic-bezier(.16,1,.3,1), left .22s cubic-bezier(.16,1,.3,1), transform .22s ease, box-shadow .22s ease, outline-color .22s ease';
+      row.style.top = phRect.top + 'px';
+      row.style.left = phRect.left + 'px';
+      row.style.transform = 'scale(1) rotate(0)';
+      row.style.boxShadow = '0 2px 6px rgba(0,0,0,.08)';
+      row.classList.remove('drag-out-bounds');
+      secaoEl?.classList.remove('drag-zone-warn');
+      await new Promise(r => setTimeout(r, 220));
+      row.style.cssText = origCss;
+      container.insertBefore(row, placeholder);
+      placeholder.remove();
+      showToast('Operação cancelada — solte dentro da seção', 2200);
+      return;
+    }
 
     // Anima a row de volta ao "chão" suavemente antes de soltar
     const phRect = placeholder.getBoundingClientRect();
@@ -5725,14 +5816,30 @@ async function _pesqEditPergunta(pid) {
   });
   if (!resp) return;
 
-  showToast('Salvando e traduzindo nos 7 idiomas…', 3000);
+  // Skip total se nada mudou — evita re-traducao inutil.
+  const _assocId = p.associacao_id;
+  const rotuloOriginal = (p.rotulo || p.chave).trim();
+  const rotuloChanged  = (resp.rotulo || '').trim() !== rotuloOriginal;
+  const tipoChanged    = resp.tipo !== p.tipo;
+  const obrigChanged   = _assocId && resp.obrigatoria !== !!p.obrigatoria;
+  if (!rotuloChanged && !tipoChanged && !obrigChanged) {
+    return showToast('Nada para salvar — nenhuma alteração detectada', 2500);
+  }
+
+  const msgs = [];
+  if (rotuloChanged) msgs.push('traduzindo nos 7 idiomas');
+  if (tipoChanged)   msgs.push('atualizando tipo');
+  if (obrigChanged)  msgs.push('atualizando obrigatoriedade');
+  showToast(`Salvando (${msgs.join(', ')})…`, 3000);
+
   try {
-    const traducoes = await _anamTraduzirRotulo(resp.rotulo);
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: resp.tipo, traducoes });
-    // Atualiza obrigatoria na ASSOCIACAO (pesquisa_pergunta) — esse campo
-    // vive na tabela de associacao, nao na pergunta global.
-    const _assocId = p.associacao_id;
-    if (_assocId && resp.obrigatoria !== !!p.obrigatoria) {
+    if (rotuloChanged || tipoChanged) {
+      const payload = {};
+      if (tipoChanged)   payload.tipo = resp.tipo;
+      if (rotuloChanged) payload.traducoes = await _anamTraduzirRotulo(resp.rotulo);
+      await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, payload);
+    }
+    if (obrigChanged) {
       try {
         await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assocId}`, { obrigatoria: resp.obrigatoria ? 1 : 0 });
       } catch (e) { console.warn('[obrig assoc]', e.message); }
