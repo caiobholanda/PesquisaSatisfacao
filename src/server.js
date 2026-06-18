@@ -96,6 +96,8 @@ function isPublicPath(p) {
   if (p.startsWith('/api/')) return true;
   if (p.startsWith('/assets/')) return true;
   if (p.startsWith('/locales/')) return true;       // i18n da anamnese
+  if (p.startsWith('/js/')) return true;            // scripts publicos (anamnese)
+  if (p.startsWith('/css/')) return true;           // estilos publicos
   if (p === '/sso' || p === '/health') return true;
   if (p === '/acesso-hub.html') return true;
   if (p === '/favicon.svg' || p === '/favicon.ico') return true;
