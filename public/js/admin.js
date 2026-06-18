@@ -4886,6 +4886,21 @@ function _wireAnamAcoes() {
 // (ou se as traduções voltarem iguais ao pt-BR, indicando que o
 // backend caiu no fallback por API key invalida/saldo zerado),
 // mostra um toast warning para o admin saber.
+// Dispara traducao + PUT em background para nao bloquear UI. tipo='secao' ou 'pergunta'.
+function _traduzirEAtualizarBg(tipo, id, rotulo) {
+  (async () => {
+    try {
+      const trad = await _anamTraduzirRotulo(rotulo);
+      const traducoes = {};
+      for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
+      const ep = tipo === 'secao'
+        ? `/api/qualidade/admin/secoes/${id}`
+        : `/api/qualidade/admin/perguntas/${id}`;
+      await apiSend('PUT', ep, { traducoes });
+    } catch (e) { console.warn('[traduzir bg]', e.message); }
+  })();
+}
+
 async function _anamTraduzirRotulo(rotuloPtBR) {
   try {
     const r = await api('/api/qualidade/admin/traduzir', {
@@ -4925,17 +4940,14 @@ async function _anamAddSecao() {
   const titulo = tituloEl?.value.trim();
   if (!titulo) { tituloEl?.focus(); return showToast('Digite o nome da nova seção'); }
   const chave = _slugChave(titulo, 'sec_');
-  showToast('Criando seção e traduzindo nos 7 idiomas…', 3000);
   try {
-    const trad = await _anamTraduzirRotulo(titulo); // { idioma: {rotulo: '...'} }
-    const traducoes = {};
-    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
-    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
-      chave, ordem: 99, traducoes,
+    const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes: { 'pt-BR': titulo },
     });
-    showToast('✓ Seção criada');
+    showToast('✓ Seção criada (traduzindo nos 7 idiomas em segundo plano…)');
     tituloEl.value = '';
     initAnamneseEditor();
+    if (resp?.id) _traduzirEAtualizarBg('secao', resp.id, titulo);
   } catch (e) {
     showToast('Não foi possível criar: ' + e.message, 5000);
   }
@@ -4949,26 +4961,20 @@ async function _anamAddPergunta(secaoId) {
   const tipo   = tipoSel?.value || 'texto_livre';
   if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
   const chave = _slugChave(rotulo);
-  showToast('Criando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(rotulo);
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes, pesquisa_slug: ANAMNESE_SLUG,
+      chave, tipo, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: ANAMNESE_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
     });
-    // BUG-R: pergunta 'Sim ou Não' do editor salva como tipo='escala'.
-    // Aqui criamos as opcoes Sim/Não no backend pra evitar o caso de
-    // opcoes=null no front (que cai no fallback frágil).
     if (tipo === 'escala') {
-      try {
-        await _criarOpcoesSimNao(r1.id);
-      } catch (e) { console.warn('Falha ao criar opcoes Sim/Nao:', e.message); }
+      try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha ao criar opcoes Sim/Nao:', e.message); }
     }
-    showToast('✓ Pergunta criada');
+    showToast('✓ Pergunta criada (traduzindo nos 7 idiomas em segundo plano…)');
     if (rotuloInp) rotuloInp.value = '';
     initAnamneseEditor();
+    if (r1?.id) _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
   } catch (e) {
     showToast('Não foi possível criar: ' + e.message, 5000);
   }
@@ -5165,8 +5171,8 @@ function pedirTexto({ titulo = 'Digite', mensagem = '', valorInicial = '', place
     ov.className = 'confirm-overlay';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
     const inputHtml = multilinhas
-      ? `<textarea id="_pedir-inp" rows="8" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;border-radius:4px;font-family:inherit;resize:vertical">${escHtml(valorInicial)}</textarea>`
-      : `<input id="_pedir-inp" value="${escHtml(valorInicial)}" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">`;
+      ? `<textarea id="_pedir-inp" rows="8" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.92rem;border-radius:4px;font-family:inherit;resize:vertical">${escHtml(valorInicial)}</textarea>`
+      : `<input id="_pedir-inp" value="${escHtml(valorInicial)}" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">`;
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
         <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
@@ -5205,7 +5211,7 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:460px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
         <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
-        <select id="_pedir-sel" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">
+        <select id="_pedir-sel" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">
           ${opcoes.map(o => `<option value="${escHtml(o.value)}"${o.value === valorInicial ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
         </select>
         <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem">
@@ -5412,17 +5418,14 @@ async function _pesqAddSecao() {
   const titulo = tituloEl?.value.trim();
   if (!titulo) { tituloEl?.focus(); return showToast('Digite o nome da nova seção'); }
   const chave = _slugChave(titulo, 'sec_');
-  showToast('Criando seção e traduzindo nos 7 idiomas…', 3000);
   try {
-    const trad = await _anamTraduzirRotulo(titulo);
-    const traducoes = {};
-    for (const [k, v] of Object.entries(trad)) traducoes[k] = v.rotulo;
-    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/secoes`, {
-      chave, ordem: 99, traducoes,
+    const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes: { 'pt-BR': titulo },
     });
-    showToast('✓ Seção criada');
+    showToast('✓ Seção criada (traduzindo nos 7 idiomas em segundo plano…)');
     tituloEl.value = '';
     initPesquisaEditor();
+    if (resp?.id) _traduzirEAtualizarBg('secao', resp.id, titulo);
   } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
 }
 
@@ -5434,11 +5437,9 @@ async function _pesqAddPergunta(secaoId) {
   const tipo   = tipoSel?.value || 'texto_livre';
   if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
   const chave = _slugChave(rotulo, 'pesq_');
-  showToast('Criando e traduzindo nos 7 idiomas…', 3000);
   try {
-    const traducoes = await _anamTraduzirRotulo(rotulo);
     const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, traducoes, pesquisa_slug: PESQUISA_SLUG,
+      chave, tipo, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: PESQUISA_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
       pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
@@ -5446,9 +5447,10 @@ async function _pesqAddPergunta(secaoId) {
     if (tipo === 'escala') {
       try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha opcoes Sim/Nao:', e.message); }
     }
-    showToast('✓ Pergunta criada');
+    showToast('✓ Pergunta criada (traduzindo nos 7 idiomas em segundo plano…)');
     if (rotuloInp) rotuloInp.value = '';
     initPesquisaEditor();
+    if (r1?.id) _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
   } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
 }
 

@@ -103,6 +103,13 @@
       transition: background-color .3s ease, color .3s ease, border-color .3s ease;
     }
 
+    /* Garante que inputs/textareas/selects herdem cor de texto do tema —
+       muitos campos usam inline style background:var(--bg) sem color,
+       o que no dark mode resultava em texto preto ilegivel. */
+    input, textarea, select { color: var(--text); }
+    input::placeholder, textarea::placeholder { color: var(--muted); opacity: .75; }
+    :root[data-theme="dark"] select option { background: var(--surface); color: var(--text); }
+
     body {
       font-family: var(--font);
       background-color: var(--bg);
@@ -3619,6 +3626,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=50"></script>
+<script src="/js/admin.js?v=51"></script>
 </body>
 </html>
