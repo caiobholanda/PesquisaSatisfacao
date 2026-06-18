@@ -3343,10 +3343,15 @@
         </div>
       </div><!-- /#res-pessoa1-wrap -->
 
-      <!-- ── Seção Pessoa 2 (Casal) ── -->
+      <!-- ── Seção Pessoa 2 (Casal — opcional) ── -->
       <div id="res-sec-pessoa2" style="display:none">
-        <div class="res-pessoa2-sep"><span>✦ Pessoa 2</span></div>
+        <div class="res-pessoa2-sep"><span>✦ Pessoa 2 <small style="color:var(--muted);font-weight:400;font-size:.72rem;letter-spacing:0;text-transform:none;margin-left:.4rem">(opcional — preencha apenas se houver acompanhante)</small></span></div>
         <div class="res-pessoa2-container">
+          <div class="res-fg">
+            <label>CPF <small style="color:var(--muted);font-weight:400">— informe para autopreencher se já cadastrado</small></label>
+            <input type="text" id="res2-inp-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off">
+            <small id="res2-cpf-info" style="display:none;font-size:.78rem;margin-top:.25rem"></small>
+          </div>
           <div class="res-fg">
             <label>Tipo de cliente</label>
             <div class="res-tipo-grid">
@@ -3356,13 +3361,18 @@
           </div>
           <div class="res-frow">
             <div class="res-fg">
-              <label>Nome <span style="color:var(--danger)">*</span></label>
+              <label>Nome</label>
               <input type="text" id="res2-inp-nome" placeholder="Nome completo">
             </div>
             <div class="res-fg" id="res2-fg-apto" style="display:none">
               <label>Nº do Apto</label>
               <input type="text" id="res2-inp-apto" placeholder="Ex: 301">
             </div>
+          </div>
+          <div class="res-fg" id="res2-fg-quarto" style="display:none">
+            <label>Nº do Quarto <small style="color:var(--muted);font-weight:400">— se hóspede</small></label>
+            <input type="text" id="res2-inp-quarto" placeholder="Ex: 0501" inputmode="numeric" maxlength="4">
+            <small id="res2-quarto-info" style="display:none;font-size:.78rem;margin-top:.25rem"></small>
           </div>
           <div class="res-frow">
             <div class="res-fg">
@@ -3375,7 +3385,7 @@
             </div>
           </div>
           <div class="res-fg">
-            <label>Tratamento <span style="color:var(--danger)">*</span></label>
+            <label>Tratamento</label>
             <div class="res-cb" id="res-cb-trat2">
               <div class="res-cb-wrap">
                 <input type="text" class="res-cb-inp" id="res-cb-trat2-inp" placeholder="— Pesquisar tratamento —" autocomplete="off" spellcheck="false">
@@ -3386,7 +3396,7 @@
             <input type="hidden" id="res-inp-tratamento2">
           </div>
           <div class="res-fg">
-            <label>Massoterapeuta <span style="color:var(--danger)">*</span></label>
+            <label>Massoterapeuta</label>
             <div class="res-cb" id="res-cb-mass2">
               <div class="res-cb-wrap">
                 <input type="text" class="res-cb-inp" id="res-cb-mass2-inp" placeholder="— Pesquisar profissional —" autocomplete="off" spellcheck="false">
@@ -3594,6 +3604,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=42"></script>
+<script src="/js/admin.js?v=43"></script>
 </body>
 </html>

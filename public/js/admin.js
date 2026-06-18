@@ -1531,10 +1531,18 @@ function calSetTipo2(tipo) {
   document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.toggle('active', b.dataset.tipo2 === tipo));
   const isHospede = tipo === 'hospede';
   const apto2El = document.getElementById('res2-fg-apto');
-  apto2El.style.display = isHospede ? '' : 'none';
-  const nome2Fg = apto2El.previousElementSibling;
-  if (nome2Fg) nome2Fg.style.gridColumn = isHospede ? '' : '1 / -1';
-  if (!isHospede) document.getElementById('res2-inp-apto').value = '';
+  if (apto2El) {
+    apto2El.style.display = isHospede ? '' : 'none';
+    const nome2Fg = apto2El.previousElementSibling;
+    if (nome2Fg) nome2Fg.style.gridColumn = isHospede ? '' : '1 / -1';
+    if (!isHospede) document.getElementById('res2-inp-apto').value = '';
+  }
+  // Mostra/esconde campo Quarto2 conforme tipo de cliente
+  const quarto2El = document.getElementById('res2-fg-quarto');
+  if (quarto2El) {
+    quarto2El.style.display = isHospede ? '' : 'none';
+    if (!isHospede) document.getElementById('res2-inp-quarto').value = '';
+  }
 }
 document.querySelectorAll('[data-tipo2]').forEach(btn => btn.addEventListener('click', () => calSetTipo2(btn.dataset.tipo2)));
 
@@ -1952,9 +1960,15 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res2-fg-apto').style.display = 'none';
   const _nome2Fg = document.getElementById('res2-fg-apto')?.previousElementSibling;
   if (_nome2Fg) _nome2Fg.style.gridColumn = '1 / -1';
-  ['res2-inp-nome','res2-inp-apto','res2-inp-email','res2-inp-tel'].forEach(id => {
+  ['res2-inp-cpf','res2-inp-nome','res2-inp-apto','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const _cpf2Info = document.getElementById('res2-cpf-info');
+  if (_cpf2Info) { _cpf2Info.style.display = 'none'; _cpf2Info.textContent = ''; }
+  const _quarto2Info = document.getElementById('res2-quarto-info');
+  if (_quarto2Info) { _quarto2Info.style.display = 'none'; _quarto2Info.textContent = ''; }
+  const _quarto2Fg = document.getElementById('res2-fg-quarto');
+  if (_quarto2Fg) _quarto2Fg.style.display = 'none';
   const sec2 = document.getElementById('res-sec-pessoa2');
   if (sec2) sec2.style.display = _isCasal() ? '' : 'none';
   const _sep1 = document.getElementById('res-sep-pessoa1');
@@ -2615,29 +2629,55 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const massagistaId = document.getElementById('res-inp-massagista')?.value ? +document.getElementById('res-inp-massagista').value : null;
   if (!massagistaId) { err.textContent = 'Selecione a massoterapeuta que vai atender.'; return; }
 
-  // Casal: campos pessoa 2
-  let nome2 = null, tipo2 = null, apto2 = null, email2 = null, tel2 = null, tratamento2 = null, tratObj2 = null, massagistaId2 = null;
+  // Casal: campos pessoa 2 — TODOS OPCIONAIS. Se NADA estiver preenchido,
+  // pessoa 2 e' ignorada (sala 3 pode ser usada por uma pessoa so).
+  // Se ALGUM campo for preenchido, valida o restante coerentemente.
+  let cpf2 = null, nome2 = null, tipo2 = null, apto2 = null, quarto2 = null, email2 = null, tel2 = null;
+  let tratamento2 = null, tratObj2 = null, massagistaId2 = null, _p2Preenchida = false;
   if (_isCasal()) {
+    const cpf2InpVal = (document.getElementById('res2-inp-cpf')?.value || '').replace(/\D/g, '');
     nome2       = document.getElementById('res2-inp-nome')?.value.trim() || '';
     tipo2       = _resTipo2;
     apto2       = document.getElementById('res2-inp-apto')?.value.trim() || null;
+    const quarto2Raw = (document.getElementById('res2-inp-quarto')?.value || '').trim();
+    quarto2     = quarto2Raw ? _normNumQuarto(quarto2Raw) : null;
     email2      = document.getElementById('res2-inp-email')?.value.trim() || null;
     tel2        = document.getElementById('res2-inp-tel')?.value.trim() || null;
     tratamento2 = document.getElementById('res-inp-tratamento2')?.value.trim() || '';
     tratObj2    = _tratamentos.find(t => t.nome === tratamento2) || null;
     massagistaId2 = document.getElementById('res-inp-massagista2')?.value ? +document.getElementById('res-inp-massagista2').value : null;
-    if (!nome2)       { err.textContent = 'Informe o nome da Pessoa 2.'; return; }
-    if (!tratamento2) { err.textContent = 'Selecione o tratamento da Pessoa 2.'; return; }
-    if (!massagistaId2) { err.textContent = 'Selecione a massoterapeuta da Pessoa 2.'; return; }
-    if (massagistaId2 === massagistaId) { err.textContent = 'As duas pessoas não podem ter a mesma massoterapeuta.'; return; }
+    _p2Preenchida = !!(cpf2InpVal || nome2 || email2 || tel2 || tratamento2 || massagistaId2 || quarto2);
+    if (_p2Preenchida) {
+      // Pessoa 2 preenchida → exige coerencia
+      if (!cpf2InpVal) { err.textContent = 'Pessoa 2: informe o CPF (autopreenche se ja cadastrado).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (!validarCpfMod11(cpf2InpVal)) { err.textContent = 'Pessoa 2: CPF invalido.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (!nome2)       { err.textContent = 'Pessoa 2: informe o nome.'; return; }
+      if (!tipo2)       { err.textContent = 'Pessoa 2: selecione tipo de cliente (Hospede ou Passante).'; return; }
+      if (tipo2 === 'hospede' && !quarto2) { err.textContent = 'Pessoa 2: informe o quarto (obrigatorio para hospede).'; document.getElementById('res2-inp-quarto')?.focus(); return; }
+      if (quarto2 && !quartoCategoria(quarto2)) { err.textContent = 'Pessoa 2: quarto inexistente.'; document.getElementById('res2-inp-quarto')?.focus(); return; }
+      if (tel2) {
+        const t = tel2.trim();
+        let ok;
+        if (t.startsWith('+')) ok = t.slice(1).replace(/\D/g,'').length >= 8;
+        else { const d = t.replace(/\D/g,''); ok = d.length === 10 || d.length === 11; }
+        if (!ok) { err.textContent = 'Pessoa 2: telefone invalido.'; document.getElementById('res2-inp-tel')?.focus(); return; }
+      }
+      if (!tratamento2)   { err.textContent = 'Pessoa 2: selecione o tratamento.'; return; }
+      if (!massagistaId2) { err.textContent = 'Pessoa 2: selecione a massoterapeuta.'; return; }
+      if (massagistaId2 === massagistaId) { err.textContent = 'As duas pessoas nao podem ter a mesma massoterapeuta.'; return; }
+      cpf2 = cpf2InpVal;
+    } else {
+      // Nada preenchido: zera tudo (limpa null)
+      cpf2 = null; nome2 = null; tipo2 = null; apto2 = null; quarto2 = null;
+      email2 = null; tel2 = null; tratamento2 = null; tratObj2 = null; massagistaId2 = null;
+    }
   }
 
   // Verificação local de conflito antes de bater no servidor
   const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim);
   if (conflitoLocal) { calMostrarConflito(conflitoLocal); return; }
-  if (massagistaId2) {
+  if (_p2Preenchida && massagistaId2) {
     const c2 = calDetectarConflito(sala, massagistaId2, data, horaInicio, _resHoraFim, null);
-    // Ignora conflito de sala (já verificado) — só profissional
     if (c2 && c2.tipo === 'massagista') { calMostrarConflito(c2); return; }
   }
 
@@ -2652,10 +2692,11 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       cpf: cpfInpVal,
       quarto: quartoInp || null,
     };
-    if (_isCasal()) {
+    if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {
         cliente2: nome2, tipo_cliente2: tipo2 || null, apto2, email2, telefone2: tel2,
         tratamento2, tipo_massagem_id2: tratObj2?.id || null, massagista_id2: massagistaId2,
+        cpf2, quarto2,
       });
     }
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify(body)});
@@ -3957,24 +3998,23 @@ async function adicionarProduto(cliId) {
 // Ao digitar 11 dígitos válidos, busca cliente existente e preenche
 // nome/email/telefone. Não bloqueia o submit se for cliente novo.
 // ────────────────────────────────────────────────────────────────────────────
-(function wireUpReservaCpf() {
-  const inp = document.getElementById('res-inp-cpf');
+// Wire generico de CPF (mascara + autofill) — usado por pessoa 1 e pessoa 2
+function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId }) {
+  const inp = document.getElementById(inpId);
   if (!inp) return;
   inp.addEventListener('input', async function () {
-    // máscara
     let v = this.value.replace(/\D/g, '').slice(0, 11);
     if (v.length > 9)      v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
     else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
     else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
     this.value = v;
-    const info = document.getElementById('res-cpf-info');
+    const info = document.getElementById(infoId);
     const digits = v.replace(/\D/g, '');
     if (digits.length !== 11) { if (info) info.style.display = 'none'; return; }
     if (!validarCpfMod11(digits)) {
       if (info) { info.style.color = 'var(--danger)'; info.textContent = '⚠ CPF inválido'; info.style.display = ''; }
       return;
     }
-    // CPF válido: tenta autofill
     try {
       const r = await api('/api/clientes/buscar?cpf=' + digits);
       if (!r) return;
@@ -3982,16 +4022,18 @@ async function adicionarProduto(cliId) {
       if (d.ok && d.cliente) {
         const c = d.cliente;
         const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
-        set('res-inp-nome',  c.nome);
-        set('res-inp-email', c.email);
-        set('res-inp-tel',   c.telefone);
-        if (info) { info.style.color = 'var(--success)'; info.textContent = `✓ Cliente já cadastrado — dados preenchidos (editáveis)`; info.style.display = ''; }
+        set(nomeId,  c.nome);
+        set(emailId, c.email);
+        set(telId,   c.telefone);
+        if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
       } else {
         if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
       }
     } catch {}
   });
-})();
+}
+_wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel'  });
+_wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel' });
 
 // ────────────────────────────────────────────────────────────────────────────
 // Máscara automática do TELEFONE na Nova Reserva.
@@ -4014,19 +4056,36 @@ function _formatarTelefoneBR(raw) {
 }
 window._formatarTelefoneBR = _formatarTelefoneBR;
 
-(function wireUpReservaTelefone() {
-  const inp = document.getElementById('res-inp-tel');
+function _wireTelefoneMascara(inpId) {
+  const inp = document.getElementById(inpId);
   if (!inp) return;
   inp.addEventListener('input', function () {
     const before = this.value;
-    const cursor = this.selectionStart;
-    // Preserva '+' inicial (internacional)
     if (before.trim().startsWith('+')) return;
     const formatted = _formatarTelefoneBR(before);
     if (formatted === before) return;
     this.value = formatted;
-    // Tenta reposicionar cursor no final (mais simples e previsível)
     try { this.setSelectionRange(formatted.length, formatted.length); } catch {}
+  });
+}
+_wireTelefoneMascara('res-inp-tel');
+_wireTelefoneMascara('res2-inp-tel');
+
+// Mascara numerica simples pro quarto da pessoa 2 (4 digitos)
+(function wireUpQuarto2() {
+  const inp = document.getElementById('res2-inp-quarto');
+  if (!inp) return;
+  inp.addEventListener('input', function () {
+    const digits = this.value.replace(/\D/g, '').slice(0, 4);
+    if (this.value !== digits) this.value = digits;
+    const info = document.getElementById('res2-quarto-info');
+    if (digits.length === 4) {
+      const cat = quartoCategoria(_normNumQuarto(digits));
+      if (cat && info) { info.style.color = 'var(--success)'; info.textContent = cat === 'gran_class' ? '✓ Quarto Gran Class' : '✓ Quarto válido'; info.style.display = ''; }
+      else if (info) { info.style.color = 'var(--danger)'; info.textContent = '⚠ Quarto inexistente'; info.style.display = ''; }
+    } else if (info) {
+      info.style.display = 'none';
+    }
   });
 }());
 

@@ -45,6 +45,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
     cpf, quarto,
+    cpf2, quarto2,
   } = req.body || {};
 
   // Quarto: obrigatório e VÁLIDO para hóspedes; opcional para passantes/externos.
@@ -66,12 +67,30 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     return res.status(400).json({ ok: false, error: 'Selecione uma massoterapeuta para o atendimento' });
   if (!['hospede', 'passante'].includes(tipo_cliente))
     return res.status(400).json({ ok: false, error: 'Tipo de cliente inválido' });
-  // Casal: validar pessoa 2
-  if (+sala === 3) {
-    if (!cliente2?.trim()) return res.status(400).json({ ok: false, error: 'Informe o nome da Pessoa 2 (Casal)' });
-    if (!massagista_id2)   return res.status(400).json({ ok: false, error: 'Selecione a massoterapeuta da Pessoa 2' });
+  // Casal: pessoa 2 é OPCIONAL. Só valida coerencia SE algum campo foi
+  // preenchido (cliente2, cpf2, tratamento2 ou massagista_id2 disparam
+  // a validacao do bloco inteiro).
+  const _p2Presente = +sala === 3 && !!(cliente2?.trim() || cpf2 || tratamento2?.trim() || massagista_id2);
+  if (_p2Presente) {
+    if (!cliente2?.trim())  return res.status(400).json({ ok: false, error: 'Pessoa 2: informe o nome' });
+    if (!massagista_id2)    return res.status(400).json({ ok: false, error: 'Pessoa 2: selecione a massoterapeuta' });
     if (massagista_id2 === massagista_id || +massagista_id2 === +massagista_id)
       return res.status(400).json({ ok: false, error: 'As duas pessoas não podem ter a mesma massoterapeuta' });
+    if (cpf2) {
+      const c2 = String(cpf2).replace(/\D/g, '');
+      if (c2 && !validarCpfMod11(c2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: CPF inválido' });
+    }
+    if (telefone2 && !telefoneValido(telefone2)) {
+      return res.status(400).json({ ok: false, error: 'Pessoa 2: telefone inválido' });
+    }
+  }
+  // Quarto pessoa 2 (opcional, mesmas regras)
+  const quarto2Limpo = quarto2 ? String(quarto2).trim().replace(/\D/g, '').padStart(4,'0').slice(-4) : '';
+  if (_p2Presente && tipo_cliente2 === 'hospede') {
+    if (!quarto2Limpo) return res.status(400).json({ ok: false, error: 'Pessoa 2: quarto obrigatório para hóspedes' });
+    if (!quartoValido(quarto2Limpo)) return res.status(400).json({ ok: false, error: 'Pessoa 2: quarto inexistente' });
+  } else if (quarto2Limpo && !quartoValido(quarto2Limpo)) {
+    return res.status(400).json({ ok: false, error: 'Pessoa 2: quarto inexistente' });
   }
 
   const iniMin = _hhmmToMin(hora_inicio);
@@ -124,6 +143,25 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         email: email.trim() || null,
         telefone: telefone?.trim() || null,
       });
+    }
+
+    // Pessoa 2: se CPF foi fornecido, upserta o cliente tambem
+    // (cadastro central serve para os dois hospedes em reservas casal).
+    if (_p2Presente && cpf2) {
+      const cpf2Norm = String(cpf2).replace(/\D/g, '');
+      if (cpf2Norm && validarCpfMod11(cpf2Norm)) {
+        const ex2 = buscarClientePorCpf(cpf2Norm);
+        if (!ex2) {
+          try {
+            inserirCliente({
+              cpf: cpf2Norm,
+              nome: cliente2.trim(),
+              email: email2?.trim() || null,
+              telefone: telefone2?.trim() || null,
+            });
+          } catch {}
+        }
+      }
     }
 
     const id = inserirReserva(
