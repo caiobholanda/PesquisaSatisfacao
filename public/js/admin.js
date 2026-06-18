@@ -662,10 +662,15 @@ const _pesquisasLiberadas = new Set();
 const _fichasEnviadas = new Set();
 
 function _estadoBtnFicha(r) {
+  // ⚠️ MODO TEMPORARIO: anamnese enviavel a qualquer hora e quantas vezes
+  // quiser. Reverter quando user disser "volte o tempo como era antes".
+  return 'ok';
+  /* VERSAO ORIGINAL:
   if (_fichasEnviadas.has(r.id)) return 'enviada';
   const inicio = new Date(`${r.data}T${r.hora_inicio}:00`).getTime();
   if (Date.now() > inicio) return 'fora_prazo';
   return 'ok';
+  */
 }
 
 function _aplicarEstadoBtnFicha(btn, estado) {
@@ -703,25 +708,33 @@ function _aplicarEstadoLiberada(btn, estado) {
 }
 
 function _estadoBtnLiberar(r) {
+  // ⚠️ MODO TEMPORARIO: pesquisa liberavel a qualquer hora e quantas vezes
+  // o usuario quiser. Reverter quando user disser "volte o tempo como era antes".
+  return 'ok';
+  /* VERSAO ORIGINAL (com janela de fim+30min):
   if (_pesquisasLiberadas.has(r.id)) return 'liberada';
   const now = Date.now();
   const fim = new Date(`${r.data}T${r.hora_fim}:00`).getTime();
   if (now < fim) return 'antes_fim';
   if (now > fim + 30 * 60 * 1000) return 'fora_prazo';
   return 'ok';
+  */
 }
 
 async function liberarPesquisaReserva(id) {
   const btn = document.getElementById('resdet-liberar');
-  if (btn?.dataset.estado === 'fora_prazo' || btn?.dataset.estado === 'liberada' || btn?.dataset.estado === 'antes_fim') return;
+  // ⚠️ MODO TEMPORARIO: gate de estados removido (permite reenvio).
+  // Reverter quando user disser "volte o tempo como era antes".
+  // if (btn?.dataset.estado === 'fora_prazo' || btn?.dataset.estado === 'liberada' || btn?.dataset.estado === 'antes_fim') return;
   if (btn) { btn.disabled = true; btn.textContent = 'Liberando…'; }
   try {
     const res = await api(`/api/reservas/${id}/liberar-pesquisa`, { method: 'POST', body: '{}' });
     if (!res) { _aplicarEstadoLiberada(btn, false); return; }
     const d = await res.json();
     if (!d.ok) { alert('Erro ao liberar pesquisa: ' + (d.error || '')); _aplicarEstadoLiberada(btn, false); return; }
-    _pesquisasLiberadas.add(id);
-    _aplicarEstadoLiberada(btn, true);
+    // ⚠️ MODO TEMPORARIO: nao adiciona ao Set para permitir reenvio.
+    // _pesquisasLiberadas.add(id);
+    _aplicarEstadoLiberada(btn, 'ok');
 
     // Reserva CASAL: mostra modal com os 2 links de pesquisa, um por hospede.
     if (d.casal) {
@@ -2528,7 +2541,8 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     const baseMsg = (nome, url) =>
       `Olá, *${nome || 'hóspede'}*! 😊\n\nPara prepararmos sua experiência no *Gran SPA by L'Occitane*, pedimos que preencha a ficha de saúde antes do seu tratamento:\n\n👉 ${url}\n\n*Hotel Gran Marquise* 🌿`;
 
-    _fichasEnviadas.add(r.id);
+    // ⚠️ MODO TEMPORARIO: nao marca para permitir reenvio.
+    // _fichasEnviadas.add(r.id);
     _closeLangOverlay();
     const btnFicha = document.getElementById('resdet-ficha');
     _aplicarEstadoBtnFicha(btnFicha, 'enviada');
@@ -2573,12 +2587,12 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
       `;
       const _confirmarFechar = () => {
         const cf = document.createElement('div');
-        cf.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem';
+        cf.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:10000;display:grid;place-items:center;padding:1rem;margin:0;box-sizing:border-box';
         cf.innerHTML = `
-          <div style="background:var(--surface);border:1px solid var(--gold);border-radius:10px;max-width:420px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 14px 44px rgba(0,0,0,.5)">
-            <h4 style="margin:0 0 .6rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.25rem;color:var(--text)">Tem certeza que deseja fechar?</h4>
-            <p style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 1.2rem 0">Os links de anamnese desta reserva não poderão ser reabertos depois. Recomendamos enviar os dois antes de sair.</p>
-            <div style="display:flex;gap:.5rem;justify-content:flex-end">
+          <div style="background:var(--surface);border:1px solid var(--gold);border-radius:10px;max-width:420px;width:calc(100% - 2rem);padding:1.5rem 1.7rem;box-shadow:0 14px 44px rgba(0,0,0,.5);margin:auto;box-sizing:border-box">
+            <h4 style="margin:0 0 .6rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.25rem;color:var(--text);text-align:center">Tem certeza que deseja fechar?</h4>
+            <p style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 1.2rem 0;text-align:center">Os links de anamnese desta reserva não poderão ser reabertos depois. Recomendamos enviar os dois antes de sair.</p>
+            <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
               <button class="btn btn-outline" data-cf="cancel">Continuar enviando</button>
               <button class="btn btn-danger" data-cf="ok">Fechar mesmo assim</button>
             </div>
