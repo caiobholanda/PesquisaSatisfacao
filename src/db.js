@@ -1344,14 +1344,32 @@ export function buscarCliente360(id) {
   `).all(id, cliente.cpf || '');
   // Flag agregado: cliente é Gran Class se TIVER ALGUMA reserva em quarto GC.
   const _gcReservas = reservas.some(r => r.quarto_categoria === 'gran_class');
-  // Anamneses
-  const anamneses = db.prepare(`
+  // Anamneses (formato unificado): vem de duas fontes:
+  // 1) spa_perfis (anamnese tradicional com assinatura + info_medica)
+  // 2) resposta_pesquisa com slug spa-anamnese* (anamnese estruturada)
+  // Faz UNION e deduplica por reserva_id quando existir spa_perfil.
+  const anamPerfis = db.prepare(`
     SELECT id, nome, sobrenome, tipo_documento, documento, email, telefone,
-           idioma, reserva_id, criado_em
+           idioma, reserva_id, criado_em, 'spa_perfil' AS fonte
     FROM spa_perfis
     WHERE cliente_id=? OR (documento IS NOT NULL AND documento=?)
     ORDER BY criado_em DESC
   `).all(id, cliente.cpf || '');
+  // Reservas onde JA existe spa_perfil (pra nao duplicar a entrada da
+  // resposta_pesquisa quando a anamnese tradicional foi gravada normal).
+  const _reservasComPerfil = new Set(anamPerfis.map(a => a.reserva_id).filter(Boolean));
+  const anamRespostas = db.prepare(`
+    SELECT rp.id, rp.submitted_at AS criado_em, rp.reserva_id,
+           p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte
+    FROM resposta_pesquisa rp
+    JOIN pesquisa p ON p.id = rp.pesquisa_id
+    WHERE p.slug LIKE 'spa-anamnese%'
+      AND (rp.cliente_id=? OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
+    ORDER BY rp.submitted_at DESC
+  `).all(id, id, cliente.cpf || '');
+  const anamRespostasFiltrado = anamRespostas.filter(a => !a.reserva_id || !_reservasComPerfil.has(a.reserva_id));
+  const anamneses = [...anamPerfis, ...anamRespostasFiltrado]
+    .sort((a, b) => (b.criado_em || '').localeCompare(a.criado_em || ''));
   // Pesquisas de SATISFAÇÃO respondidas — exclui slugs de anamnese
   // (anamnese tem sua propria aba via spa_perfis). Tambem inclui titulo
   // amigavel pra nao expor slug tecnico no front.

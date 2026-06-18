@@ -3609,8 +3609,8 @@ async function loadClientesLista() {
   }
   wrap.innerHTML = d.items.map(c => `
     <button class="cli-card${c.id === _cliSelId ? ' is-active' : ''}" data-id="${c.id}"
-      style="display:block;width:100%;text-align:left;padding:.6rem .7rem;border:1px solid var(--border);background:${c.id === _cliSelId ? 'var(--surface2)' : 'var(--bg)'};border-radius:6px;cursor:pointer">
-      <div style="font-weight:600;font-size:.92rem">${escHtml(c.nome)}</div>
+      style="display:block;width:100%;text-align:left;padding:.6rem .7rem;border:1px solid var(--border);background:${c.id === _cliSelId ? 'var(--surface2)' : 'var(--bg)'};color:var(--text);border-radius:6px;cursor:pointer">
+      <div style="font-weight:600;font-size:.92rem;color:var(--text)">${escHtml(c.nome)}</div>
       <div style="font-size:.74rem;color:var(--muted)">${escHtml(fmtCpfMask(c.cpf) || c.email || c.telefone || '—')}</div>
     </button>
   `).join('');
@@ -3653,7 +3653,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
 
     <!-- abas -->
     <div class="cli-tabs" style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
-      <button class="cli-tab is-active" data-t="trat"  style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600">Tratamentos <span class="badge">${reservas.length}</span></button>
+      <button class="cli-tab is-active" data-t="trat"  style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600;color:var(--text)">Tratamentos <span class="badge">${reservas.length}</span></button>
       <button class="cli-tab" data-t="anam" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Anamneses <span class="badge">${anamneses.length}</span></button>
       <button class="cli-tab" data-t="pesq" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Pesquisas <span class="badge">${pesquisas.length}</span></button>
       <button class="cli-tab" data-t="prod" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Produtos <span class="badge">${produtos.length}</span></button>
@@ -3668,7 +3668,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
     det.querySelectorAll('.cli-tab').forEach(t => {
       t.classList.remove('is-active'); t.style.borderBottomColor = 'transparent'; t.style.color = 'var(--muted)';
     });
-    b.classList.add('is-active'); b.style.borderBottomColor = 'var(--accent)'; b.style.color = '';
+    b.classList.add('is-active'); b.style.borderBottomColor = 'var(--accent)'; b.style.color = 'var(--text)';
     const t = b.dataset.t;
     det.querySelectorAll('.cli-pane').forEach(p => p.style.display = 'none');
     document.getElementById('cli-pane-' + t).style.display = '';
@@ -3713,16 +3713,19 @@ function renderClienteAnamneses(as) {
   return `<div style="color:var(--muted);font-size:.78rem;margin-bottom:.5rem">Cada linha é uma anamnese preenchida — pode ter mudado entre visitas. Clique "Ver" para conferir as respostas daquele momento.</div>
   <div class="table-wrap"><table style="font-size:.88rem"><thead>
     <tr><th>Data</th><th>Idioma</th><th>Reserva</th><th>Email</th><th>Telefone</th><th></th></tr>
-  </thead><tbody>${as.map(a => `
-    <tr>
+  </thead><tbody>${as.map(a => {
+    const ehResposta = a.fonte === 'resposta_pesquisa';
+    // Modal correto conforme fonte: spa_perfil → modal completo; resposta_pesquisa → modal de respostas estruturadas
+    const act = ehResposta ? 'ver-pesquisa' : 'ver-anamnese';
+    return `<tr>
       <td>${escHtml((a.criado_em || '').slice(0,10))}</td>
-      <td>${escHtml(a.idioma || '')}</td>
+      <td>${escHtml(a.idioma || '—')}</td>
       <td>${a.reserva_id ? '#' + a.reserva_id : '—'}</td>
-      <td>${escHtml(a.email || '')}</td>
-      <td>${escHtml(a.telefone || '')}</td>
-      <td><button class="btn btn-outline btn-sm" data-act="ver-anamnese" data-id="${a.id}">Ver</button></td>
-    </tr>
-  `).join('')}</tbody></table></div>`;
+      <td>${escHtml(a.email || '—')}</td>
+      <td>${escHtml(a.telefone || '—')}</td>
+      <td><button class="btn btn-outline btn-sm" data-act="${act}" data-id="${a.id}">Ver</button></td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 function _nomeAmigavelPesquisa(slug, titulo) {
   if (titulo && !slug?.match(/^spa-(anamnese|locc)/)) return titulo;
