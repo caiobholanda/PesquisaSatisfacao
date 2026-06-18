@@ -707,11 +707,11 @@ function _aplicarEstadoBtnFicha(btn, estado) {
   btn.disabled = estado !== 'ok';
   btn.dataset.estadoFicha = estado;
   if (estado === 'enviada') {
-    btn.textContent = 'Ficha já enviada';
+    btn.textContent = 'Anamnese já enviada';
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
   } else {
-    btn.textContent = 'Enviar Ficha';
+    btn.textContent = 'Enviar anamnese';
   }
 }
 
