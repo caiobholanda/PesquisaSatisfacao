@@ -626,10 +626,16 @@ function init() {
 
   // Determine initial language and handle token
   let lang = 'pt-BR';
+  // BUG-LANG fix: se admin escolheu idioma especifico no modal "Enviar Ficha"
+  // (passado como ?lang=XX), respeita ESSA escolha — antes era sobrescrita
+  // pelo locale gravado na reserva, ignorando a decisao do admin.
+  let _langForcadoNaURL = false;
   try {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get('t');
-    lang = params.get('lang') || localStorage.getItem('spa_lang') || 'pt-BR';
+    const urlLang = params.get('lang');
+    _langForcadoNaURL = !!urlLang;
+    lang = urlLang || localStorage.getItem('spa_lang') || 'pt-BR';
 
     if (token) {
       _docToken = token;
@@ -639,7 +645,8 @@ function init() {
           // BUG-A fix: token invalido/expirado nao pode TRAVAR a pagina
           // sem locale. Sempre chama loadLocale, mesmo quando d=null.
           if (d) {
-            if (d.locale) lang = d.locale;
+            // So aplica locale do documento se admin NAO forcou um lang na URL
+            if (d.locale && !_langForcadoNaURL) lang = d.locale;
             if (d.hospede_nome) {
               const parts = d.hospede_nome.trim().split(/\s+/);
               const nomeEl = document.getElementById('f-nome');
