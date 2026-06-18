@@ -14,7 +14,130 @@ function FieldErr({ msg }) {
 
 const TIME_LIMIT = 15 * 60 * 1000;
 
-export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null }) {
+// Fallbacks de opcoes quando o admin nao definiu — coerentes com o tipo.
+const _OPCOES_FALLBACK = {
+  sim_nao: [{ chave: 'sim', rotulo: 'Sim' }, { chave: 'nao', rotulo: 'Não' }],
+  escala:  [
+    { chave: 'otimo',    rotulo: 'Ótimo' },
+    { chave: 'bom',      rotulo: 'Bom' },
+    { chave: 'regular',  rotulo: 'Regular' },
+    { chave: 'ruim',     rotulo: 'Ruim' },
+  ],
+};
+
+// Renderiza perguntas extras (adicionadas pelo admin no editor) para uma
+// secao especifica. O estado fica em FormScreen via setExtras.
+function ExtrasSecao({ perguntas, valores, setValor, errors = {}, sectionPrefix = 'x' }) {
+  if (!perguntas || !perguntas.length) return null;
+  return (
+    <div className="extras-block">
+      {perguntas.map((p, idx) => {
+        const reqMark = p.obrigatoria ? <span className="req-star"> *</span> : null;
+        const err = errors[p.chave];
+        const fieldId = `xf-${sectionPrefix}-${idx}-${p.chave}`;
+        const errId = err ? `${fieldId}-err` : undefined;
+        if (p.tipo === 'texto_livre') {
+          return (
+            <div key={p.chave} className={'field comment-field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+              <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
+              <textarea
+                id={fieldId}
+                value={valores[p.chave]?.valor || ''}
+                onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
+                rows={3}
+                placeholder="..."
+                aria-required={p.obrigatoria || undefined}
+                aria-invalid={!!err || undefined}
+                aria-describedby={errId}
+              />
+              <span className="fill"></span>
+              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+            </div>
+          );
+        }
+        if (p.tipo === 'unica' || p.tipo === 'sim_nao' || p.tipo === 'escala') {
+          const opcoes = (p.opcoes && p.opcoes.length) ? p.opcoes
+            : (_OPCOES_FALLBACK[p.tipo] || _OPCOES_FALLBACK.sim_nao);
+          const cur = valores[p.chave]?.valor || '';
+          return (
+            <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+              <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
+              <div className="radio-list extras-opts" role="radiogroup" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+                {opcoes.map(o => (
+                  <label key={o.chave} className={'radio-opt' + (cur === o.chave ? ' selected' : '')}>
+                    <input
+                      type="radio"
+                      name={'x_' + p.chave}
+                      checked={cur === o.chave}
+                      onChange={() => setValor(p.chave, { tipo: p.tipo, valor: o.chave })}
+                    />
+                    <span>{o.rotulo}</span>
+                  </label>
+                ))}
+              </div>
+              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+            </div>
+          );
+        }
+        if (p.tipo === 'multipla') {
+          const opcoes = p.opcoes || [];
+          const cur = Array.isArray(valores[p.chave]?.valor) ? valores[p.chave].valor : [];
+          if (!opcoes.length) {
+            // Admin esqueceu de definir opcoes — degrada graciosamente.
+            return (
+              <div key={p.chave} className="field" data-extra-chave={p.chave}>
+                <span className="field-label">{p.rotulo}{reqMark}</span>
+                <p style={{ fontSize: 13, color: '#9B9B9B', fontStyle: 'italic' }}>
+                  (sem opções configuradas)
+                </p>
+              </div>
+            );
+          }
+          // Toggle com setState funcional pra evitar race com cliques rapidos.
+          const toggle = (k) => {
+            setValor(p.chave, (prev) => {
+              const prevArr = Array.isArray(prev?.valor) ? prev.valor : [];
+              const next = prevArr.includes(k) ? prevArr.filter(x => x !== k) : [...prevArr, k];
+              return { tipo: 'multipla', valor: next };
+            });
+          };
+          return (
+            <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+              <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
+              <div className="radio-list extras-opts" role="group" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+                {opcoes.map(o => (
+                  <label key={o.chave} className={'radio-opt' + (cur.includes(o.chave) ? ' selected' : '')}>
+                    <input type="checkbox" checked={cur.includes(o.chave)} onChange={() => toggle(o.chave)} />
+                    <span>{o.rotulo}</span>
+                  </label>
+                ))}
+              </div>
+              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+            </div>
+          );
+        }
+        // fallback: texto curto
+        return (
+          <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+            <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
+            <input
+              id={fieldId}
+              value={valores[p.chave]?.valor || ''}
+              onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
+              aria-required={p.obrigatoria || undefined}
+              aria-invalid={!!err || undefined}
+              aria-describedby={errId}
+            />
+            <span className="fill"></span>
+            {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null, extrasPorSecao = [], pesquisaVersao = null }) {
   // Quando a reserva está num idioma diferente de pt-BR, sobrescrevemos os
   // rótulos das perguntas e os nomes das classificações com o que veio do
   // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
@@ -43,6 +166,16 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
   const [recommendText, setRecommendText] = useState('');
   const [clientType,    setClientType]    = useState(prefill?.tipo_cliente || '');
   const [errors,        setErrors]        = useState({});
+  // extras: { chave_pergunta: { tipo, valor } } — para perguntas adicionadas
+  // pelo admin no editor. Renderizadas dentro da secao original sem rotulo
+  // de "adicional".
+  const [extras, setExtras] = useState({});
+  const [extrasErrors, setExtrasErrors] = useState({});
+  const setExtraVal = (chave, payloadOrUpdater) => setExtras(prev => {
+    const next = typeof payloadOrUpdater === 'function' ? payloadOrUpdater(prev[chave]) : payloadOrUpdater;
+    return { ...prev, [chave]: next };
+  });
+  const extrasDe = (secaoChave) => (extrasPorSecao || []).find(s => s.chave === secaoChave)?.perguntas || [];
   const [fills,         setFills]         = useState([0, 0, 0, 0]);
   const [submitting,    setSubmitting]    = useState(false);
   const [submitError,   setSubmitError]   = useState('');
@@ -106,8 +239,31 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
     const errs = {};
     if (fields.tel.trim() && !isTel(fields.tel)) errs.tel = 'Telefone inválido.';
     if (fields.email.trim() && !isEmail(fields.email)) errs.email = 'E-mail inválido.';
+
+    // Valida extras obrigatorias
+    const extErrs = {};
+    for (const grupo of (extrasPorSecao || [])) {
+      for (const p of grupo.perguntas) {
+        if (!p.obrigatoria) continue;
+        const v = extras[p.chave]?.valor;
+        const vazio = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+        if (vazio) extErrs[p.chave] = 'Responda esta pergunta.';
+      }
+    }
+    setExtrasErrors(extErrs);
+
     setErrors(errs);
-    if (Object.keys(errs).length) {
+    if (Object.keys(errs).length || Object.keys(extErrs).length) {
+      // Se so' tem erro de extras, scroll para o primeiro extra com erro.
+      if (!Object.keys(errs).length && Object.keys(extErrs).length) {
+        const firstChave = Object.keys(extErrs)[0];
+        const el = document.querySelector(`[data-extra-chave="${firstChave}"]`);
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 130;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+        return;
+      }
       const refs = [['email', refEmail]];
       const first = refs.find(([k]) => errs[k]);
       if (first?.[1].current) {
@@ -140,6 +296,9 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
       recomenda_qual:   recommend === 'sim' ? (recommendText || null) : null,
       recomenda_porque: recommend === 'nao' ? (recommendText || null) : null,
       tipo_cliente: clientType,
+      pesquisa_slug: 'spa-locc-v1',
+      pesquisa_versao: pesquisaVersao || undefined,
+      extras: Object.keys(extras).length ? extras : undefined,
     };
     try {
       const res = await fetch('/api/feedback', {
@@ -303,6 +462,7 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
             <AutoTextarea id="f-com-serv" value={comentarioServicos} onChange={setComentarioServicos} placeholder="Opcional..." />
             <span className="fill"></span>
           </div>
+          <ExtrasSecao perguntas={extrasDe('servicos')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="servicos" />
         </section>
 
         <section ref={secRefs[1]} className="enter">
@@ -318,6 +478,7 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
             <AutoTextarea id="f-com-inst" value={comentarioInstalacoes} onChange={setComentarioInstalacoes} placeholder="Opcional..." />
             <span className="fill"></span>
           </div>
+          <ExtrasSecao perguntas={extrasDe('instalacoes')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="instalacoes" />
         </section>
 
         <section ref={secRefs[2]}>
@@ -346,6 +507,19 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
             <RadioOption checked={clientType === 'evento'}   onClick={() => setClientType('evento')}   pt="Evento"   en="Event" />
           </div>
         </section>
+
+        {/* Secoes adicionais criadas pelo admin no editor — aparecem como
+            secoes regulares (sem rotulo de "adicional"), com o titulo da
+            propria secao definido pelo admin. Tambem skipa secao 'recomenda'
+            (renderizada pelos componentes hardcoded acima). */}
+        {(extrasPorSecao || [])
+          .filter(g => !['servicos','instalacoes','recomenda'].includes(g.chave) && g.perguntas?.length)
+          .map((g, idx) => (
+            <section key={g.chave || idx} className="enter" style={{ animationDelay: `${360 + idx * 90}ms` }}>
+              <SectionHeading num={5 + idx} pt={g.titulo || ''} en="" />
+              <ExtrasSecao perguntas={g.perguntas} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix={g.chave || 'sec'} />
+            </section>
+          ))}
 
         <footer className="form-foot">
           <p style={{ marginBottom: 18 }}>

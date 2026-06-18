@@ -24,32 +24,74 @@ export default function App() {
   const [i18n,         setI18n]         = useState(null);
   const pollRef = useRef(null);
 
-  // Busca config da pesquisa no idioma da reserva e monta o mapa de
-  // rótulos para sobrescrever os hardcoded.
-  const carregarI18n = useCallback(async (idioma) => {
-    const lang = idioma && idioma !== 'pt-BR' ? idioma : null;
-    if (!lang) { setI18n(null); return; }
+  const [extrasPorSecao, setExtrasPorSecao] = useState([]);
+  const [pesquisaVersao, setPesquisaVersao] = useState(null);
+
+  const configCacheRef = useRef(new Set());
+  // Busca config da pesquisa e monta:
+  // - mapa de rotulos i18n (sobrescreve hardcoded quando idioma != pt-BR)
+  // - extras por secao (perguntas adicionadas pelo admin no editor)
+  // Sempre carrega, mesmo em pt-BR, para coletar os extras. Faz cache por
+  // idioma para nao re-fetch enquanto o usuario continua na welcome.
+  const carregarConfig = useCallback(async (idioma) => {
+    const lang = idioma || 'pt-BR';
+    if (configCacheRef.current.has(lang)) return;
+    configCacheRef.current.add(lang);
     try {
       const r = await fetch('/api/survey/config?slug=spa-locc-v1&idioma=' + encodeURIComponent(lang));
       if (!r.ok) return;
       const d = await r.json();
       if (!d?.ok || !d.pesquisa) return;
-      const labels = {};         // { s0: 'Your expectations.', ... }
-      const ratings = {};        // { otimo: 'Excellent', bom: 'Good', ... }
-      const sectionTitles = {};  // { servicos: 'Services', ... }
+      const labels = {};
+      const ratings = {};
+      const sectionTitles = {};
+      const extras = [];
       for (const sec of d.pesquisa.secoes || []) {
         if (sec.chave) sectionTitles[sec.chave] = sec.titulo;
+        const extrasDaSecao = [];
         for (const q of sec.perguntas || []) {
           const id = _MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave];
           if (id) labels[id] = q.rotulo;
           if (Array.isArray(q.opcoes)) {
             for (const o of q.opcoes) if (o.chave && o.rotulo) ratings[o.chave] = o.rotulo;
           }
+          // Pergunta nao mapeada = extra (adicionada pelo admin).
+          // Exclui todas as perguntas legacy (s0-s3, f0-f2 + comentarios +
+          // recomenda/recomenda_qual/recomenda_porque) que ja sao renderizadas
+          // pelos componentes hardcoded do React.
+          const LEGACY_CHAVES = new Set([
+            'recomenda', 'recomenda_qual', 'recomenda_porque',
+            'servicos_comentario', 'instalacoes_comentario',
+          ]);
+          const refChave = q.mapeia_campo_legado || q.chave;
+          const ehLegado = !!(_MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave]
+            || LEGACY_CHAVES.has(refChave));
+          if (!ehLegado) extrasDaSecao.push({
+            chave: q.chave,
+            rotulo: q.rotulo,
+            tipo: q.tipo,
+            obrigatoria: !!q.obrigatoria,
+            opcoes: Array.isArray(q.opcoes) ? q.opcoes : null,
+          });
         }
+        if (extrasDaSecao.length) extras.push({
+          chave: sec.chave,
+          titulo: sec.titulo,
+          perguntas: extrasDaSecao,
+        });
       }
-      setI18n({ lang, labels, ratings, sectionTitles });
-    } catch {}
+      setExtrasPorSecao(extras);
+      setPesquisaVersao(d.pesquisa.versao || null);
+      // i18n so' aplica quando idioma != pt-BR (mantem hardcoded em pt-BR)
+      if (lang && lang !== 'pt-BR') setI18n({ lang, labels, ratings, sectionTitles });
+      else setI18n(null);
+    } catch {
+      // libera o cache pra permitir retry quando o usuario interagir
+      configCacheRef.current.delete(lang);
+    }
   }, []);
+
+  const carregarI18n = carregarConfig;
 
   const startPolling = useCallback(() => {
     clearInterval(pollRef.current);
@@ -110,7 +152,7 @@ export default function App() {
   return (
     <div className="app-root">
       {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
-      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} />}
+      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} pesquisaVersao={pesquisaVersao} />}
       {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
     </div>
   );

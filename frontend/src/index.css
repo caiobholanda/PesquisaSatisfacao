@@ -141,6 +141,19 @@ body {
 .radio-dot.on::after { content: ''; position: absolute; inset: 3px; border-radius: 9999px; background: var(--ui); animation: dotIn 0.25s cubic-bezier(0.16,1,0.3,1); }
 @keyframes dotIn { from { transform: scale(0); } to { transform: scale(1); } }
 .client-type { display: flex; gap: 44px; }
+
+/* Perguntas extras (adicionadas pelo admin no editor) */
+.extras-block { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; }
+.extras-block .field-label { font-size: 14px; font-weight: 500; color: #1A1A1A; margin-bottom: 8px; display: block; letter-spacing: .01em; }
+.extras-block .req-star { color: #B85042; font-weight: 600; }
+.extras-block textarea { width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid #E4DAC6; border-radius: 6px; font: inherit; resize: vertical; background: #fff; color: #1A1A1A; }
+.extras-block textarea:focus { outline: none; border-color: var(--ui); }
+.extras-block input[type="text"], .extras-block input:not([type]) { width: 100%; padding: 10px 12px; border: 1px solid #E4DAC6; border-radius: 6px; font: inherit; background: #fff; color: #1A1A1A; }
+.extras-block .extras-opts { gap: 10px; }
+.extras-block .radio-opt input { margin-right: 4px; }
+.extras-block .radio-opt.selected { color: #B8924A; font-weight: 500; }
+.extras-block .field-err { color: #B85042; font-size: 13px; margin-top: 6px; }
+.extras-block .field.error textarea, .extras-block .field.error input { border-color: #B85042; }
 @media (max-width: 600px) { .client-type { flex-direction: column; gap: 12px; } }
 .err-msg { color: #B85450; font-size: 13px; margin-top: 14px; }
 

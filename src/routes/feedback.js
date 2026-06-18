@@ -98,6 +98,83 @@ router.post('/', rateLimit, (req, res) => {
       for (const tx of ['servicos_comentario', 'instalacoes_comentario', 'recomenda_qual', 'recomenda_porque']) {
         if (b[tx]) itens.push({ chave: tx, valor_texto: b[tx] });
       }
+      // Perguntas EXTRAS adicionadas pelo admin no editor.
+      // Formato esperado do frontend: b.extras = { chave_pergunta: { tipo, valor } }
+      // Aceita tambem fallbacks (string, array, numero, boolean).
+      // Limites de seguranca (endpoint publico):
+      const CHAVE_RE   = /^[a-z0-9_]{1,64}$/i;
+      const MAX_EXTRAS = 60;          // max perguntas extras por submissao
+      const MAX_TEXTO  = 4000;        // max chars por valor_texto
+      const MAX_OPCOES = 50;          // max opcoes (multipla) por pergunta
+      if (b.extras && typeof b.extras === 'object' && !Array.isArray(b.extras)) {
+        let count = 0;
+        const pushItem = (chave, item) => {
+          if (count >= MAX_EXTRAS) return;
+          itens.push({ chave, ...item });
+          count++;
+        };
+        const normChave = (k) => {
+          if (typeof k !== 'string') return null;
+          return CHAVE_RE.test(k) ? k : null;
+        };
+        const normTexto = (v) => {
+          if (v === null || v === undefined) return null;
+          const s = String(v);
+          if (!s.length) return null;
+          return s.slice(0, MAX_TEXTO);
+        };
+        const normOpcao = (v) => {
+          if (v === null || v === undefined || v === '') return null;
+          const s = String(v);
+          return CHAVE_RE.test(s) ? s : null;
+        };
+        for (const [chaveRaw, raw] of Object.entries(b.extras)) {
+          const chave = normChave(chaveRaw);
+          if (!chave) continue;
+          if (raw === null || raw === undefined || raw === '') continue;
+
+          // Forma estruturada: { tipo, valor }
+          if (typeof raw === 'object' && !Array.isArray(raw) && 'valor' in raw) {
+            const tipo = raw.tipo;
+            const v = raw.valor;
+            if (v === null || v === undefined || v === '') continue;
+            if (tipo === 'texto_livre') {
+              const t = normTexto(v);
+              if (t) pushItem(chave, { valor_texto: t });
+            } else if (tipo === 'multipla' || Array.isArray(v)) {
+              if (Array.isArray(v)) {
+                let opcao = 0;
+                for (const x of v) {
+                  if (opcao >= MAX_OPCOES) break;
+                  const k = normOpcao(x);
+                  if (k) { pushItem(chave, { escala_opcao_chave: k }); opcao++; }
+                }
+              } else {
+                const k = normOpcao(v);
+                if (k) pushItem(chave, { escala_opcao_chave: k });
+              }
+            } else {
+              // unica/sim_nao/escala
+              const k = normOpcao(v);
+              if (k) pushItem(chave, { escala_opcao_chave: k });
+            }
+          } else if (Array.isArray(raw)) {
+            let opcao = 0;
+            for (const x of raw) {
+              if (opcao >= MAX_OPCOES) break;
+              const k = normOpcao(x);
+              if (k) { pushItem(chave, { escala_opcao_chave: k }); opcao++; }
+            }
+          } else if (typeof raw === 'string') {
+            const t = normTexto(raw);
+            if (t) pushItem(chave, { valor_texto: t });
+          } else if (typeof raw === 'number' || typeof raw === 'boolean') {
+            const t = normTexto(raw);
+            if (t) pushItem(chave, { valor_texto: t });
+          }
+          if (count >= MAX_EXTRAS) break;
+        }
+      }
       inserirRespostaPesquisa({
         pesquisa_slug: b.pesquisa_slug,
         pesquisa_versao: b.pesquisa_versao,
