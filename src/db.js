@@ -1104,12 +1104,14 @@ export function buscarDocumentoToken(token) {
   // ⚠️ MODO TEMPORARIO: validacao de expiracao da anamnese desativada.
   // Para restaurar, troque pelo bloco comentado abaixo.
   const row = getDb().prepare(`
-    SELECT r.id AS reserva_id, r.cliente, r.email, r.tratamento AS servico,
-           r.idioma_documento AS locale,
-           r.cliente2, r.email2,
+    SELECT r.id AS reserva_id, r.cliente, r.email, r.telefone, r.tratamento AS servico,
+           r.idioma_documento AS locale, r.cpf, r.quarto, r.cliente_id,
+           r.cliente2, r.email2, r.telefone2, r.apto2 AS quarto2,
+           c.data_nascimento AS cli_nascimento,
            r.documento_token, r.documento_token2,
            r.documento_token_expiry, r.documento_token_expiry2
     FROM reservas r
+    LEFT JOIN clientes c ON c.id = r.cliente_id
     WHERE r.documento_token = ? OR r.documento_token2 = ?
   `).get(token, token);
   /* VERSAO ORIGINAL (com validacao de expiracao):
@@ -1131,8 +1133,12 @@ export function buscarDocumentoToken(token) {
   const pessoa = (row.documento_token2 === token) ? 2 : 1;
   return {
     reserva_id:    row.reserva_id,
-    hospede_nome:  pessoa === 2 ? (row.cliente2 || '') : (row.cliente || ''),
-    hospede_email: pessoa === 2 ? (row.email2 || '')   : (row.email || ''),
+    hospede_nome:  pessoa === 2 ? (row.cliente2  || '') : (row.cliente  || ''),
+    hospede_email: pessoa === 2 ? (row.email2    || '') : (row.email    || ''),
+    hospede_telefone: pessoa === 2 ? (row.telefone2 || '') : (row.telefone || ''),
+    hospede_cpf:      pessoa === 2 ? '' : (row.cpf || ''),
+    hospede_quarto:   pessoa === 2 ? (row.quarto2 || '') : (row.quarto || ''),
+    hospede_data_nascimento: pessoa === 2 ? '' : (row.cli_nascimento || ''),
     servico:       row.servico,
     locale:        row.locale,
     pessoa,

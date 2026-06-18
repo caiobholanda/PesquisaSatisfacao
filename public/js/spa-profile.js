@@ -254,6 +254,19 @@ function validateAll(showErrors) {
 
   const btn = document.getElementById('btn-submit');
   if (btn) btn.disabled = errs.length > 0;
+
+  const panel = document.getElementById('spa-missing-panel');
+  const list  = document.getElementById('spa-missing-list');
+  if (panel && list) {
+    if (errs.length > 0) {
+      const unique = Array.from(new Set(errs));
+      list.innerHTML = unique.map(e => `<li>${String(e).replace(/</g,'&lt;')}</li>`).join('');
+      panel.style.display = '';
+    } else {
+      list.innerHTML = '';
+      panel.style.display = 'none';
+    }
+  }
   return errs;
 }
 
@@ -401,14 +414,16 @@ function applyLocale(L) {
   setPlaceholder('f-telefone',     L.fields.phone_placeholder);
   setPlaceholder('f-outro-produto', L.fields.other_product_placeholder);
 
-  // Default doc type per language
+  // Default doc type per language. Se ja existe valor preenchido
+  // (vindo do prefill da reserva), respeita o que esta la — nao limpa.
   const defaultDoc = L.meta.code === 'pt-BR' ? 'cpf' : 'passport';
-  if (_docType !== defaultDoc) {
+  const docInpCur = document.getElementById('f-doc-num');
+  const _jaPreenchido = !!(docInpCur && docInpCur.value);
+  if (!_jaPreenchido && _docType !== defaultDoc) {
     _docType = defaultDoc;
     const sel = document.getElementById('f-doc-tipo');
     if (sel) sel.value = _docType;
-    const docInp = document.getElementById('f-doc-num');
-    if (docInp) docInp.value = '';
+    if (docInpCur) docInpCur.value = '';
   }
   updateDocPlaceholder();
 
@@ -592,6 +607,28 @@ function init() {
               const sobEl  = document.getElementById('f-sobrenome');
               if (nomeEl) nomeEl.value = parts[0] || '';
               if (sobEl)  sobEl.value  = parts.slice(1).join(' ') || '';
+            }
+            const setIfEmpty = (id, v) => {
+              const el = document.getElementById(id);
+              if (el && !el.value && v) el.value = v;
+            };
+            setIfEmpty('f-email',    d.hospede_email);
+            setIfEmpty('f-telefone', d.hospede_telefone);
+            setIfEmpty('f-quarto',   d.hospede_quarto);
+            setIfEmpty('f-nascimento', d.hospede_data_nascimento);
+            if (d.hospede_cpf) {
+              const docSel = document.getElementById('f-doc-tipo');
+              if (docSel && Array.from(docSel.options).some(o => o.value === 'cpf')) {
+                docSel.value = 'cpf';
+                _docType = 'cpf';
+              }
+              const docInp = document.getElementById('f-doc-num');
+              if (docInp && !docInp.value) {
+                const digits = String(d.hospede_cpf).replace(/\D/g, '').slice(0, 11);
+                docInp.value = digits.length === 11
+                  ? digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
+                  : d.hospede_cpf;
+              }
             }
           }
           loadLocale(lang);

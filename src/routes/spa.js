@@ -18,10 +18,14 @@ router.get('/documento', (req, res) => {
   const row = buscarDocumentoToken(token);
   if (!row) return res.status(404).json({ ok: false, error: 'Token inválido ou expirado' });
   res.json({
-    hospede_nome:  row.hospede_nome  || '',
-    hospede_email: row.hospede_email || '',
-    servico:       row.servico       || '',
-    locale:        LOCALES_VALIDOS.includes(row.locale) ? row.locale : 'pt-BR',
+    hospede_nome:     row.hospede_nome     || '',
+    hospede_email:    row.hospede_email    || '',
+    hospede_telefone: row.hospede_telefone || '',
+    hospede_cpf:      row.hospede_cpf      || '',
+    hospede_quarto:   row.hospede_quarto   || '',
+    hospede_data_nascimento: row.hospede_data_nascimento || '',
+    servico:          row.servico          || '',
+    locale:           LOCALES_VALIDOS.includes(row.locale) ? row.locale : 'pt-BR',
   });
 });
 

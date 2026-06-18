@@ -567,6 +567,13 @@
     <!-- Submit -->
     <div class="spa-submit-area">
       <div class="spa-generic-error" id="generic-error" style="display:none"></div>
+      <div id="spa-missing-panel" style="display:none;background:var(--surface,#fff8ee);border:1px solid var(--gold,#c9a86a);border-radius:10px;padding:.85rem 1rem;margin-bottom:.9rem;font-size:.86rem;line-height:1.55">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;font-weight:600;color:var(--deep,#5b3d10)">
+          <span style="font-size:1.05rem">⚠️</span>
+          <span id="spa-missing-title">Falta preencher para liberar o atendimento</span>
+        </div>
+        <ul id="spa-missing-list" style="margin:.2rem 0 0 1.25rem;padding:0;color:var(--deep,#5b3d10)"></ul>
+      </div>
       <button type="submit" class="spa-btn-submit" id="btn-submit" disabled>
         <span id="btn-submit-txt">Enviar / Liberar atendimento</span>
       </button>
@@ -586,6 +593,6 @@
 
 </div><!-- /spa-page -->
 
-<script src="/js/spa-profile.js"></script>
+<script src="/js/spa-profile.js?v=2"></script>
 </body>
 </html>
