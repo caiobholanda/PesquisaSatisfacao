@@ -4831,7 +4831,7 @@ function _renderAnamEstrutura() {
         </div>
       </header>
       <div class="anam-perguntas">
-        ${s.perguntas.map(q => _renderAnamPergunta(q)).join('')}
+        ${s.perguntas.map((q, i) => _renderAnamPergunta(q, i, s.perguntas.length)).join('')}
       </div>
       <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
         <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
@@ -4852,7 +4852,7 @@ function _renderAnamEstrutura() {
   _wireAnamAcoes();
 }
 
-function _renderAnamPergunta(q) {
+function _renderAnamPergunta(q, idx = 0, total = 1) {
   const tipoLabel = _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
   const opcoes = q.opcoes && q.opcoes.length
     ? `<div style="margin-top:.35rem;color:var(--muted);font-size:.82rem"><strong style="color:var(--text);font-weight:500">Opções:</strong> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
@@ -4864,8 +4864,10 @@ function _renderAnamPergunta(q) {
   const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
     ? `<button class="btn btn-outline btn-sm" data-anam-act="edit-opcoes" data-chave="${escHtml(q.chave)}">Opções</button>`
     : '';
+  const moveBtns = _renderMoveBtns('anam', q.chave, idx, total);
   return `
     <div class="anam-pergunta" data-perg-chave="${escHtml(q.chave)}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      ${moveBtns}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
           <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
@@ -4879,6 +4881,23 @@ function _renderAnamPergunta(q) {
         ${editOpcoesBtn}
         <button class="btn btn-outline btn-sm" data-anam-act="del-perg" data-chave="${escHtml(q.chave)}" style="color:var(--danger);border-color:var(--danger)" title="Remover esta pergunta">×</button>
       </div>
+    </div>
+  `;
+}
+
+// Botoes ↑↓ para reordenar perguntas dentro de uma secao.
+// Compartilhado entre editores de anamnese ('anam') e pesquisa ('pesq').
+// Param `chaveOrId` e' a chave (anam) ou pergunta_id (pesq).
+function _renderMoveBtns(prefix, chaveOrId, idx, total) {
+  const isFirst = idx === 0;
+  const isLast  = idx === total - 1;
+  const baseStyle = 'min-width:1.8rem;padding:.18rem .4rem;font-size:.95rem;line-height:1;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:4px';
+  const disStyle = ';opacity:.35;pointer-events:none;cursor:not-allowed';
+  const dataAttr = prefix === 'anam' ? `data-chave="${escHtml(chaveOrId)}"` : `data-pid="${chaveOrId}"`;
+  return `
+    <div style="display:flex;flex-direction:column;gap:.18rem;flex-shrink:0;justify-content:flex-start;padding-top:.1rem">
+      <button type="button" data-${prefix}-act="move-up"   ${dataAttr} title="Subir" style="${baseStyle}${isFirst ? disStyle : ''}" aria-label="Mover pergunta para cima" ${isFirst ? 'disabled' : ''}>▲</button>
+      <button type="button" data-${prefix}-act="move-down" ${dataAttr} title="Descer" style="${baseStyle}${isLast  ? disStyle : ''}" aria-label="Mover pergunta para baixo" ${isLast  ? 'disabled' : ''}>▼</button>
     </div>
   `;
 }
@@ -4907,6 +4926,8 @@ function _wireAnamAcoes() {
       else if (act === 'edit-opcoes') _anamEditOpcoes(chave);
       else if (act === 'edit-secao')  _anamEditSecao(secaoId);
       else if (act === 'del-secao')   _anamDelSecao(secaoId);
+      else if (act === 'move-up')     _anamMovePergunta(chave, -1);
+      else if (act === 'move-down')   _anamMovePergunta(chave,  1);
     });
   });
 }
@@ -5069,6 +5090,39 @@ async function _anamEditPergunta(chave) {
     showToast('✓ Pergunta atualizada');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+// Reordena uma pergunta dentro da secao. direction = -1 (sobe) ou +1 (desce).
+// Normaliza TODAS as ordens da secao em sequencia (i*10) — robustez maxima
+// contra colisoes de ordem 99 das adicoes recentes.
+let _anamMoveBusy = false;
+async function _anamMovePergunta(chave, direction) {
+  if (_anamMoveBusy) return;
+  if (!_anamEstrutura) return;
+  let secao = null, idx = -1;
+  for (const sec of (_anamEstrutura.secoes || [])) {
+    const i = (sec.perguntas || []).findIndex(p => p.chave === chave);
+    if (i >= 0) { secao = sec; idx = i; break; }
+  }
+  if (!secao || idx < 0) return;
+  const arr = [...secao.perguntas];
+  const target = idx + direction;
+  if (target < 0 || target >= arr.length) return;
+  // Swap
+  [arr[idx], arr[target]] = [arr[target], arr[idx]];
+  _anamMoveBusy = true;
+  try {
+    // PUTs em paralelo — normaliza com gap de 10 (permite inserts futuros).
+    await Promise.all(arr.map((p, i) => {
+      if (!p.associacao_id) return Promise.resolve();
+      return apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.associacao_id}`, { ordem: (i + 1) * 10 });
+    }));
+    await initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro ao reordenar: ' + e.message, 4000);
+  } finally {
+    _anamMoveBusy = false;
+  }
 }
 
 async function _anamDelPergunta(chave) {
@@ -5390,7 +5444,7 @@ function _renderPesqEstrutura() {
         </div>
       </header>
       <div class="pesq-perguntas">
-        ${s.perguntas.map(q => _renderPesqPergunta(q)).join('')}
+        ${s.perguntas.map((q, i) => _renderPesqPergunta(q, i, s.perguntas.length)).join('')}
       </div>
       <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
         <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
@@ -5411,7 +5465,7 @@ function _renderPesqEstrutura() {
   _wirePesqAcoes();
 }
 
-function _renderPesqPergunta(q) {
+function _renderPesqPergunta(q, idx = 0, total = 1) {
   // Detecta tipo 'rostos' por heuristica: tipo='escala' com escala_id setada
   // (4 opcoes otimo/bom/regular/ruim vindas da escala). Sim/Nao tem opcoes
   // sim/nao sem escala_id.
@@ -5430,8 +5484,10 @@ function _renderPesqPergunta(q) {
   const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
     ? `<button class="btn btn-outline btn-sm" data-pesq-act="edit-opcoes" data-pid="${q.pergunta_id}">Opções</button>`
     : '';
+  const moveBtns = _renderMoveBtns('pesq', q.pergunta_id, idx, total);
   return `
     <div class="pesq-pergunta" data-perg-id="${q.pergunta_id}" data-assoc-id="${q.associacao_id}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      ${moveBtns}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
           <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
@@ -5470,8 +5526,38 @@ function _wirePesqAcoes() {
       else if (act === 'edit-opcoes') _pesqEditOpcoes(pid);
       else if (act === 'edit-secao')  _pesqEditSecao(secaoId);
       else if (act === 'del-secao')   _pesqDelSecao(secaoId);
+      else if (act === 'move-up')     _pesqMovePergunta(pid, -1);
+      else if (act === 'move-down')   _pesqMovePergunta(pid,  1);
     });
   });
+}
+
+let _pesqMoveBusy = false;
+async function _pesqMovePergunta(perguntaId, direction) {
+  if (_pesqMoveBusy) return;
+  if (!_pesqEstrutura) return;
+  let secao = null, idx = -1;
+  for (const sec of (_pesqEstrutura.secoes || [])) {
+    const i = (sec.perguntas || []).findIndex(p => p.pergunta_id === perguntaId);
+    if (i >= 0) { secao = sec; idx = i; break; }
+  }
+  if (!secao || idx < 0) return;
+  const arr = [...secao.perguntas];
+  const target = idx + direction;
+  if (target < 0 || target >= arr.length) return;
+  [arr[idx], arr[target]] = [arr[target], arr[idx]];
+  _pesqMoveBusy = true;
+  try {
+    await Promise.all(arr.map((p, i) => {
+      if (!p.associacao_id) return Promise.resolve();
+      return apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.associacao_id}`, { ordem: (i + 1) * 10 });
+    }));
+    await initPesquisaEditor();
+  } catch (e) {
+    showToast('Erro ao reordenar: ' + e.message, 4000);
+  } finally {
+    _pesqMoveBusy = false;
+  }
 }
 
 async function _pesqAddSecao() {
