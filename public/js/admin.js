@@ -4414,36 +4414,19 @@ async function initAnamneseEditor() {
   empty.textContent = 'Carregando…';
   wrap.innerHTML = '';
 
-  // 1) Descobre o id da pesquisa anamnese (slug fixo)
+  // Usa endpoint ADMIN (montarEstruturaPesquisaAdmin) — retorna `associacao_id`
+  // necessario para reordenacao via drag-and-drop. O endpoint publico
+  // `/api/survey/config` nao expoe esse campo (BUG-DRAG-ANAM fix).
   try {
-    const rL = await api('/api/qualidade/admin/pesquisas');
-    if (!rL) return;
-    const dL = await rL.json();
-    if (!dL.ok) return;
-    const p = dL.items
-      .filter(x => x.slug === ANAMNESE_SLUG)
-      .sort((a,b) => b.versao - a.versao)[0];
-    if (!p) {
+    const rE = await api(`/api/qualidade/admin/pesquisas/slug/${ANAMNESE_SLUG}/estrutura?_=${Date.now()}`);
+    if (!rE) return;
+    const dE = await rE.json();
+    if (!dE.ok || !dE.estrutura) {
       empty.textContent = `Pesquisa "${ANAMNESE_SLUG}" não encontrada. Reinicie o servidor para rodar o seed.`;
       return;
     }
-    _anamPesquisaId = p.id;
-  } catch (e) {
-    empty.textContent = 'Erro ao carregar lista de pesquisas: ' + e.message;
-    return;
-  }
-
-  // 2) Busca a config pública (já agrupa seções + perguntas + opções traduzidas)
-  try {
-    const rC = await api(`/api/survey/config?slug=${ANAMNESE_SLUG}&idioma=pt-BR`);
-    if (!rC) return;
-    const dC = await rC.json();
-    if (!dC.ok || !dC.pesquisa) {
-      // Pesquisa pode estar despublicada — usa endpoint admin para montar estrutura
-      empty.textContent = 'Anamnese não publicada. Publique-a em Gestão da Qualidade para editar.';
-      return;
-    }
-    _anamEstrutura = dC.pesquisa;
+    _anamPesquisaId = dE.estrutura.id;
+    _anamEstrutura  = dE.estrutura;
   } catch (e) {
     empty.textContent = 'Erro ao carregar estrutura: ' + e.message;
     return;
