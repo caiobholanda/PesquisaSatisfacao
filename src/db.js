@@ -877,6 +877,19 @@ export function criarSurveyToken(reservaId, pessoa = 1) {
 }
 
 export function buscarSurveyTokenAtivo() {
+  // ⚠️ MODO TEMPORARIO: janela de 15min desativada a pedido do usuario.
+  // Para restaurar a rigorosidade de tempo, troque pelo bloco comentado abaixo.
+  return getDb().prepare(`
+    SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
+           r.tipo_cliente, r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
+    FROM survey_tokens st
+    JOIN reservas r ON r.id = st.reserva_id
+    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    WHERE st.liberada_em IS NOT NULL
+      AND st.respondida_em IS NULL
+    ORDER BY st.liberada_em DESC LIMIT 1
+  `).get() || null;
+  /* VERSAO ORIGINAL (com janela de 15min):
   return getDb().prepare(`
     SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
            r.tipo_cliente, r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
@@ -888,6 +901,7 @@ export function buscarSurveyTokenAtivo() {
       AND st.liberada_em >= datetime('now', '-15 minutes')
     ORDER BY st.liberada_em DESC LIMIT 1
   `).get() || null;
+  */
 }
 
 // Marca o token de pesquisa como respondido. Se 'token' for passado,
@@ -899,6 +913,17 @@ export function marcarSurveyTokenRespondido(token) {
     db.prepare(`UPDATE survey_tokens SET respondida_em = datetime('now') WHERE token = ?`).run(token);
     return;
   }
+  // ⚠️ MODO TEMPORARIO: janela de 15min desativada.
+  db.prepare(`
+    UPDATE survey_tokens SET respondida_em = datetime('now')
+    WHERE token = (
+      SELECT token FROM survey_tokens
+      WHERE respondida_em IS NULL
+        AND liberada_em IS NOT NULL
+      ORDER BY liberada_em DESC LIMIT 1
+    )
+  `).run();
+  /* VERSAO ORIGINAL (com janela de 15min):
   db.prepare(`
     UPDATE survey_tokens SET respondida_em = datetime('now')
     WHERE token = (
@@ -909,6 +934,7 @@ export function marcarSurveyTokenRespondido(token) {
       ORDER BY liberada_em DESC LIMIT 1
     )
   `).run();
+  */
 }
 
 export function atualizarIdiomaFeedback(id, idioma) {
@@ -1075,6 +1101,18 @@ export function gerarDocumentoToken(reservaId, pessoa = 1) {
 // ou cliente2). Retorna o nome/email do hospede CERTO conforme o token
 // usado, e o campo 'pessoa' (1 ou 2) pra rastreabilidade.
 export function buscarDocumentoToken(token) {
+  // ⚠️ MODO TEMPORARIO: validacao de expiracao da anamnese desativada.
+  // Para restaurar, troque pelo bloco comentado abaixo.
+  const row = getDb().prepare(`
+    SELECT r.id AS reserva_id, r.cliente, r.email, r.tratamento AS servico,
+           r.idioma_documento AS locale,
+           r.cliente2, r.email2,
+           r.documento_token, r.documento_token2,
+           r.documento_token_expiry, r.documento_token_expiry2
+    FROM reservas r
+    WHERE r.documento_token = ? OR r.documento_token2 = ?
+  `).get(token, token);
+  /* VERSAO ORIGINAL (com validacao de expiracao):
   const row = getDb().prepare(`
     SELECT r.id AS reserva_id, r.cliente, r.email, r.tratamento AS servico,
            r.idioma_documento AS locale,
@@ -1088,6 +1126,7 @@ export function buscarDocumentoToken(token) {
       r.documento_token2 = ? AND (r.documento_token_expiry2 IS NULL OR r.documento_token_expiry2 > datetime('now'))
     )
   `).get(token, token);
+  */
   if (!row) return null;
   const pessoa = (row.documento_token2 === token) ? 2 : 1;
   return {
