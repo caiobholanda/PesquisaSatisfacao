@@ -46,19 +46,24 @@
     }
     .lang-bar-inner {
       max-width: 720px; margin: 0 auto;
-      display: flex; align-items: center; gap: .9rem; flex-wrap: wrap;
+      display: flex; align-items: center; gap: .9rem;
     }
     .lang-bar-label {
       font-size: .6rem; font-weight: 700; letter-spacing: .14em;
-      text-transform: uppercase; color: #a08060;
+      text-transform: uppercase; color: #a08060; flex-shrink: 0;
     }
-    .lang-options { display: flex; gap: .35rem; flex-wrap: wrap; }
+    .lang-options {
+      display: flex; gap: .35rem; flex: 1; min-width: 0;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .lang-options::-webkit-scrollbar { display: none; }
     .lang-btn {
       font-family: 'Raleway', sans-serif;
       font-size: .62rem; font-weight: 700; letter-spacing: .1em;
       padding: .25rem .6rem; border-radius: 3px; cursor: pointer;
-      border: 1px solid #3d2810; background: transparent; color: #8a7060;
-      transition: all .18s;
+      border: 1px solid #3d2810; background: transparent; color: #c9a86a;
+      transition: all .18s; flex-shrink: 0; white-space: nowrap;
     }
     .lang-btn:hover  { border-color: var(--gold); color: var(--gold); }
     .lang-btn.active { border-color: var(--gold); background: var(--gold); color: var(--deep); }
@@ -187,7 +192,11 @@
     .spa-error-msg::before { content: '⚠'; font-size: .7rem; }
 
     /* ─── Checkbox pills ─── */
-    .spa-checkbox-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .spa-checkbox-grid { display: flex; flex-wrap: wrap; gap: .5rem; min-height: 1px; }
+    .spa-checkbox-grid:empty::before {
+      content: 'Carregando opções…';
+      color: var(--taupe); font-style: italic; font-size: .82rem; padding: .5rem 0;
+    }
 
     .spa-pill {
       display: inline-flex; align-items: center; gap: .4rem;
@@ -212,23 +221,27 @@
     .spa-pressure-group { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .25rem; }
     .spa-radio-btn {
       flex: 1; min-width: 90px; text-align: center;
-      padding: .75rem .5rem; border-radius: 7px; cursor: pointer;
-      border: 1px solid var(--border); background: #faf7f3;
-      font-size: .82rem; font-weight: 500; color: var(--taupe);
+      padding: .85rem .5rem; border-radius: 7px; cursor: pointer;
+      border: 1px solid var(--border); background: #fff;
+      font-size: .92rem; font-weight: 600; color: var(--brown);
       transition: all .18s; user-select: none;
     }
     .spa-radio-btn input { position: absolute; opacity: 0; pointer-events: none; }
     .spa-radio-btn:hover { border-color: var(--gold); color: var(--brown); }
     .spa-radio-btn.selected {
-      border-color: var(--gold); background: var(--gold-lt); color: var(--brown); font-weight: 600;
+      border-color: var(--gold); background: var(--gold-lt); color: var(--brown); font-weight: 700;
     }
-    .spa-radio-btn .radio-val { font-size: .65rem; letter-spacing: .06em; text-transform: uppercase; display: block; margin-bottom: .15rem; opacity: .6; }
+    .spa-radio-btn .radio-val { font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; display: block; color: var(--brown); opacity: 1; }
 
     /* ─── Legal section ─── */
     .spa-legal-text {
-      font-size: .78rem; color: var(--taupe); line-height: 1.7;
-      background: #faf7f3; border: 1px solid var(--border-lt);
+      font-size: .82rem; color: var(--deep); line-height: 1.7;
+      background: #fff; border: 1px solid var(--border);
       border-radius: 7px; padding: 1rem 1.1rem;
+    }
+    .spa-legal-text:empty::before {
+      content: 'Carregando aviso de privacidade…';
+      color: var(--taupe); font-style: italic;
     }
 
     /* ─── Consent ─── */
@@ -301,10 +314,16 @@
     /* ─── Submit area ─── */
     .spa-submit-area {
       padding: 1.5rem 2rem;
+      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
       background: #faf7f3;
       border-top: 1px solid var(--border-lt);
     }
-    @media (max-width: 540px) { .spa-submit-area { padding: 1.25rem; } }
+    @media (max-width: 540px) {
+      .spa-submit-area {
+        padding: 1.25rem;
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + .5rem);
+      }
+    }
 
     .spa-generic-error {
       font-size: .78rem; color: var(--err); background: var(--err-bg);
@@ -448,7 +467,7 @@
 
         <div class="spa-field">
           <label class="spa-label" for="f-quarto"><span id="lbl-quarto">Quarto do hotel</span> <span style="color:var(--taupe);font-size:.72rem" id="lbl-quarto-hint">— se hóspede</span></label>
-          <input class="spa-input" id="f-quarto" type="text" inputmode="numeric" maxlength="4" placeholder="0501" style="max-width:160px">
+          <input class="spa-input" id="f-quarto" type="text" inputmode="numeric" maxlength="4" placeholder="Ex: 0501" style="max-width:160px">
           <span class="spa-error-msg" id="err-quarto" style="display:none"></span>
           <small id="quarto-gc-badge" style="display:none;margin-top:.4rem"></small>
         </div>
@@ -593,6 +612,6 @@
 
 </div><!-- /spa-page -->
 
-<script src="/js/spa-profile.js?v=3"></script>
+<script src="/js/spa-profile.js?v=4"></script>
 </body>
 </html>
