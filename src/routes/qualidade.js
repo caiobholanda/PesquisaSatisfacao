@@ -31,6 +31,12 @@ const router = Router();
 // Retorna o questionario ativo publicado. Se nao houver, {ok:false} ->
 // o front cai no fallback hardcoded (compat total).
 router.get('/config', (req, res) => {
+  // CACHE FIX: edicoes do admin no editor (reordenar, adicionar pergunta,
+  // criar secao) precisam refletir imediatamente. Sem este header, o
+  // browser cacheava o JSON via ETag/304 e mostrava estrutura antiga.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const slug = (req.query.slug || '').toString().trim();
   const idioma = (req.query.idioma || 'pt-BR').toString();
   if (!slug) {

@@ -237,6 +237,11 @@ router.post('/perfil', (req, res) => {
 // GET /api/spa/anamnese/config — questionario configuravel (para uso futuro
 // do frontend Vite renderizar dinamico). Mantem fallback se nao publicado.
 router.get('/anamnese/config', (req, res) => {
+  // CACHE FIX: edicoes do admin (reordenar, adicionar pergunta, criar secao)
+  // precisam refletir imediatamente para o hospede que abrir o link.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const idioma = (req.query.idioma || 'pt-BR').toString();
   const pesquisa = buscarPesquisaPublicada('spa-anamnese-v1', idioma);
   if (!pesquisa) return res.json({ ok: false });

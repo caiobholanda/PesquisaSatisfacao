@@ -754,7 +754,9 @@ function _blocoDe(spec) {
 async function applyAnamneseConfig(idioma) {
   let cfg = null;
   try {
-    const r = await fetch('/api/spa/anamnese/config?idioma=' + encodeURIComponent(idioma || 'pt-BR'));
+    // Cache-bust + no-store — edicoes no editor (reordenar, nova pergunta,
+    // nova secao) precisam refletir na proxima abertura do link.
+    const r = await fetch('/api/spa/anamnese/config?idioma=' + encodeURIComponent(idioma || 'pt-BR') + '&_=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     const d = await r.json();
     if (!d || !d.ok || !d.pesquisa) return;

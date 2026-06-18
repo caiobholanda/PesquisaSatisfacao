@@ -38,7 +38,9 @@ export default function App() {
     if (configCacheRef.current.has(lang)) return;
     configCacheRef.current.add(lang);
     try {
-      const r = await fetch('/api/survey/config?slug=spa-locc-v1&idioma=' + encodeURIComponent(lang));
+      // Cache-bust + cache:'no-store' — admin pode ter editado a estrutura
+      // (reordenar, criar pergunta/secao) e o hospede precisa ver as mudanças.
+      const r = await fetch('/api/survey/config?slug=spa-locc-v1&idioma=' + encodeURIComponent(lang) + '&_=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
       if (!d?.ok || !d.pesquisa) return;
