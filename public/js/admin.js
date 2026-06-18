@@ -2760,7 +2760,7 @@ async function loadQualidade() {
             if (!porSlug[p.slug] || porSlug[p.slug].versao < p.versao) porSlug[p.slug] = p;
           }
           const opts = Object.values(porSlug);
-          sel.innerHTML = opts.map(p => `<option value="${p.slug}">${escHtml(p.slug)} — ${escHtml(p.titulo)}</option>`).join('');
+          sel.innerHTML = opts.map(p => `<option value="${p.slug}">${escHtml(_nomeAmigavelPesquisa(p.slug, p.titulo))}</option>`).join('');
           sel.addEventListener('change', () => loadQualidadeVisao());
         }
       }
@@ -2785,7 +2785,7 @@ async function loadQualidadeVisao() {
   } catch { return; }
   if (!d || !d.ok) return;
   const { stats, metas } = d;
-  document.getElementById('ql-kpi-pesquisa').textContent = slug;
+  document.getElementById('ql-kpi-pesquisa').textContent = _nomeAmigavelPesquisa(slug);
   document.getElementById('ql-kpi-versao').textContent = 'período: ' + (stats.periodo?.from || '—') + ' a ' + (stats.periodo?.to || '—');
   document.getElementById('ql-kpi-total').textContent = stats.total ?? '—';
   document.getElementById('ql-kpi-media').textContent = _mediaPct(stats.mediaGeral);
@@ -3683,16 +3683,22 @@ function renderClienteAnamneses(as) {
     </tr>
   `).join('')}</tbody></table></div>`;
 }
+function _nomeAmigavelPesquisa(slug, titulo) {
+  if (titulo && !slug?.match(/^spa-(anamnese|locc)/)) return titulo;
+  if (!slug) return titulo || '—';
+  if (slug.startsWith('spa-anamnese')) return 'Anamnese';
+  if (slug.startsWith('spa-locc')) return 'Pesquisa de Satisfação';
+  return titulo || slug;
+}
 function renderClientePesquisas(ps) {
-  if (!ps.length) return '<div class="empty">Nenhuma pesquisa respondida.</div>';
+  if (!ps.length) return '<div class="empty">Nenhuma pesquisa de satisfação respondida.</div>';
   return `<div style="color:var(--muted);font-size:.78rem;margin-bottom:.5rem">Cada pesquisa respondida ao final de um tratamento. Clique "Ver" para conferir as notas e comentários.</div>
   <div class="table-wrap"><table style="font-size:.88rem"><thead>
-    <tr><th>Data</th><th>Pesquisa</th><th>App</th><th>Reserva</th><th></th></tr>
+    <tr><th>Data</th><th>Pesquisa</th><th>Reserva</th><th></th></tr>
   </thead><tbody>${ps.map(p => `
     <tr>
       <td>${escHtml((p.submitted_at || '').slice(0,16))}</td>
-      <td><code style="font-size:.78rem">${escHtml(p.slug || '')}</code></td>
-      <td><span class="badge">${escHtml(p.app_origem || '')}</span></td>
+      <td>${escHtml(_nomeAmigavelPesquisa(p.slug, p.pesquisa_titulo))}</td>
       <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
       <td><button class="btn btn-outline btn-sm" data-act="ver-pesquisa" data-id="${p.id}">Ver</button></td>
     </tr>
@@ -3719,7 +3725,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
     </div>`;
   const linhaLista = (label, arr) => {
     const items = (arr || []).filter(Boolean);
-    const v = items.length ? items.map(i => `<span class="badge" style="background:var(--gold-lt,#f5ead8);color:var(--brown,#4a3220);font-size:.78rem;padding:.15rem .55rem;border-radius:9999px">${escHtml(i)}</span>`).join(' ') : '<em style="color:var(--muted)">— vazio —</em>';
+    const v = items.length ? items.map(i => `<span class="badge" style="background:var(--gold-lt,#f5ead8);color:var(--text);font-size:.78rem;padding:.15rem .55rem;border-radius:9999px">${escHtml(i)}</span>`).join(' ') : '<em style="color:var(--muted)">— vazio —</em>';
     return `<div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
       <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
       <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap">${v}</div>
@@ -3730,7 +3736,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
       <div style="flex:1">${b ? '<span style="color:var(--success,#3a6b47);font-weight:600">✓ Sim</span>' : '<span style="color:var(--danger,#9e3832);font-weight:600">✗ Não</span>'}</div>
     </div>`;
-  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:500;color:var(--brown,#4a3220);border-bottom:1px solid var(--gold,#b8935a);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:500;color:var(--text);border-bottom:1px solid var(--gold,#b8935a);padding-bottom:.3rem">${escHtml(t)}</h3>`;
   const assinaturaHtml = a.assinatura_data_url
     ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:280px;max-height:120px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:.3rem">`
     : '<em style="color:var(--muted)">— sem assinatura —</em>';
@@ -3808,7 +3814,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
           <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(resp.pesquisa_titulo || resp.pesquisa_slug)} · ${escHtml((resp.submitted_at || '').slice(0,16))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml((resp.submitted_at || '').slice(0,16))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
       </header>

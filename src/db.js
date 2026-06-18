@@ -1352,13 +1352,17 @@ export function buscarCliente360(id) {
     WHERE cliente_id=? OR (documento IS NOT NULL AND documento=?)
     ORDER BY criado_em DESC
   `).all(id, cliente.cpf || '');
-  // Pesquisas respondidas — via cliente_id direto OU via reserva_id matched
+  // Pesquisas de SATISFAÇÃO respondidas — exclui slugs de anamnese
+  // (anamnese tem sua propria aba via spa_perfis). Tambem inclui titulo
+  // amigavel pra nao expor slug tecnico no front.
   const pesquisas = db.prepare(`
-    SELECT rp.id, rp.pesquisa_id, p.slug, rp.app_origem, rp.submitted_at, rp.reserva_id, rp.feedback_id
+    SELECT rp.id, rp.pesquisa_id, p.slug, p.titulo AS pesquisa_titulo,
+           rp.app_origem, rp.submitted_at, rp.reserva_id, rp.feedback_id
     FROM resposta_pesquisa rp
     LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
-    WHERE rp.cliente_id=?
-       OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=?)
+    WHERE (rp.cliente_id=?
+       OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=?))
+      AND (p.slug IS NULL OR p.slug NOT LIKE 'spa-anamnese%')
     ORDER BY rp.submitted_at DESC
   `).all(id, id);
   // Produtos
