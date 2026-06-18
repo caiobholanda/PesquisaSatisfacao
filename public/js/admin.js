@@ -3583,6 +3583,13 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
     document.getElementById('cli-pane-' + t).style.display = '';
   }));
   // Botão "Editar" removido — tela é somente leitura.
+  // Wire dos botoes "Ver anamnese" e "Ver pesquisa"
+  det.querySelectorAll('button[data-act="ver-anamnese"]').forEach(b =>
+    b.addEventListener('click', () => _abrirModalAnamnesePreenchida(parseInt(b.dataset.id)))
+  );
+  det.querySelectorAll('button[data-act="ver-pesquisa"]').forEach(b =>
+    b.addEventListener('click', () => _abrirModalPesquisaRespondida(parseInt(b.dataset.id)))
+  );
   // Wire up botões dos produtos
   document.getElementById('btn-prod-add')?.addEventListener('click', () => adicionarProduto(c.id));
   det.querySelectorAll('button[data-prod-del]').forEach(b =>
@@ -3612,8 +3619,9 @@ function renderClienteReservas(rs) {
 }
 function renderClienteAnamneses(as) {
   if (!as.length) return '<div class="empty">Cliente ainda não preencheu anamnese.</div>';
-  return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
-    <tr><th>Data</th><th>Idioma</th><th>Reserva</th><th>Email</th><th>Telefone</th></tr>
+  return `<div style="color:var(--muted);font-size:.78rem;margin-bottom:.5rem">Cada linha é uma anamnese preenchida — pode ter mudado entre visitas. Clique "Ver" para conferir as respostas daquele momento.</div>
+  <div class="table-wrap"><table style="font-size:.88rem"><thead>
+    <tr><th>Data</th><th>Idioma</th><th>Reserva</th><th>Email</th><th>Telefone</th><th></th></tr>
   </thead><tbody>${as.map(a => `
     <tr>
       <td>${escHtml((a.criado_em || '').slice(0,10))}</td>
@@ -3621,21 +3629,172 @@ function renderClienteAnamneses(as) {
       <td>${a.reserva_id ? '#' + a.reserva_id : '—'}</td>
       <td>${escHtml(a.email || '')}</td>
       <td>${escHtml(a.telefone || '')}</td>
+      <td><button class="btn btn-outline btn-sm" data-act="ver-anamnese" data-id="${a.id}">Ver</button></td>
     </tr>
   `).join('')}</tbody></table></div>`;
 }
 function renderClientePesquisas(ps) {
   if (!ps.length) return '<div class="empty">Nenhuma pesquisa respondida.</div>';
-  return `<div class="table-wrap"><table style="font-size:.88rem"><thead>
-    <tr><th>Data</th><th>Pesquisa</th><th>App</th><th>Reserva</th></tr>
+  return `<div style="color:var(--muted);font-size:.78rem;margin-bottom:.5rem">Cada pesquisa respondida ao final de um tratamento. Clique "Ver" para conferir as notas e comentários.</div>
+  <div class="table-wrap"><table style="font-size:.88rem"><thead>
+    <tr><th>Data</th><th>Pesquisa</th><th>App</th><th>Reserva</th><th></th></tr>
   </thead><tbody>${ps.map(p => `
     <tr>
       <td>${escHtml((p.submitted_at || '').slice(0,16))}</td>
       <td><code style="font-size:.78rem">${escHtml(p.slug || '')}</code></td>
       <td><span class="badge">${escHtml(p.app_origem || '')}</span></td>
       <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
+      <td><button class="btn btn-outline btn-sm" data-act="ver-pesquisa" data-id="${p.id}">Ver</button></td>
     </tr>
   `).join('')}</tbody></table></div>`;
+}
+
+// Modal de visualizacao completa de uma anamnese preenchida (spa_perfil)
+async function _abrirModalAnamnesePreenchida(perfilId) {
+  let dados = null;
+  try {
+    const r = await api('/api/clientes/anamnese/' + perfilId);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) { showToast('Erro ao carregar anamnese: ' + (d.error || ''), 5000); return; }
+    dados = d.anamnese;
+  } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
+
+  const a = dados;
+  const dt = a.criado_em ? a.criado_em.slice(0, 16) : '';
+  const linhaCampo = (label, valor) => `
+    <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
+      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem">${escHtml(label)}</div>
+      <div style="flex:1;color:var(--text);line-height:1.5">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:var(--muted)">— vazio —</em>'}</div>
+    </div>`;
+  const linhaLista = (label, arr) => {
+    const items = (arr || []).filter(Boolean);
+    const v = items.length ? items.map(i => `<span class="badge" style="background:var(--gold-lt,#f5ead8);color:var(--brown,#4a3220);font-size:.78rem;padding:.15rem .55rem;border-radius:9999px">${escHtml(i)}</span>`).join(' ') : '<em style="color:var(--muted)">— vazio —</em>';
+    return `<div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
+      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
+      <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap">${v}</div>
+    </div>`;
+  };
+  const linhaBool = (label, b) => `
+    <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
+      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
+      <div style="flex:1">${b ? '<span style="color:var(--success,#3a6b47);font-weight:600">✓ Sim</span>' : '<span style="color:var(--danger,#9e3832);font-weight:600">✗ Não</span>'}</div>
+    </div>`;
+  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:500;color:var(--brown,#4a3220);border-bottom:1px solid var(--gold,#b8935a);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const assinaturaHtml = a.assinatura_data_url
+    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:280px;max-height:120px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:.3rem">`
+    : '<em style="color:var(--muted)">— sem assinatura —</em>';
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+        <div>
+          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(a.nome + ' ' + a.sobrenome)} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
+        </div>
+        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
+      </header>
+      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
+        ${secaoTitulo('1. Dados pessoais')}
+        ${linhaCampo('Nome', a.nome)}
+        ${linhaCampo('Sobrenome', a.sobrenome)}
+        ${linhaCampo('Tipo de documento', a.tipo_documento)}
+        ${linhaCampo('Número do documento', a.documento)}
+        ${linhaCampo('E-mail', a.email)}
+        ${linhaCampo('Telefone', a.telefone)}
+        ${linhaCampo('Data de nascimento', a.data_nascimento)}
+        ${linhaCampo('Quarto', a.quarto)}
+
+        ${secaoTitulo('2. Rotina facial')}
+        ${linhaLista('Itens usados', a.rotina_facial)}
+
+        ${secaoTitulo('3. Rotina corporal')}
+        ${linhaLista('Itens usados', a.rotina_corporal)}
+        ${linhaCampo('Produto específico', a.produto_especifico)}
+
+        ${secaoTitulo('4. Preferência de massagem')}
+        ${linhaCampo('Pressão preferida', a.pressao_massagem)}
+
+        ${secaoTitulo('5. Informações médicas')}
+        ${linhaCampo('Info médica relevante', a.info_medica)}
+
+        ${secaoTitulo('6. Consentimentos')}
+        ${linhaBool('Apto a realizar tratamento', a.consentimento_saude)}
+        ${linhaBool('Marketing autorizado', a.consentimento_marketing)}
+        ${linhaLista('Canais autorizados', a.canais_marketing)}
+
+        ${secaoTitulo('7. Assinatura')}
+        <div style="padding:.6rem 0">${assinaturaHtml}</div>
+      </div>
+      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </footer>
+    </div>
+  `;
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+}
+
+// Modal de visualizacao das respostas de uma pesquisa de satisfacao
+async function _abrirModalPesquisaRespondida(respostaId) {
+  let resp = null, itens = [];
+  try {
+    const r = await api('/api/clientes/pesquisa/' + respostaId);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) { showToast('Erro ao carregar pesquisa: ' + (d.error || ''), 5000); return; }
+    resp = d.resposta; itens = d.itens || [];
+  } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+        <div>
+          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(resp.pesquisa_titulo || resp.pesquisa_slug)} · ${escHtml((resp.submitted_at || '').slice(0,16))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
+        </div>
+        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
+      </header>
+      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
+        ${itens.length === 0
+          ? '<div style="padding:2rem;text-align:center;color:var(--muted)">Nenhuma resposta registrada.</div>'
+          : itens.map(it => {
+              let valor = '';
+              if (it.escala_opcao_chave) {
+                const cor = (it.valor_numerico >= 7) ? 'var(--success,#3a6b47)' : (it.valor_numerico >= 4 ? 'var(--gold-dark,#8a6b35)' : 'var(--danger,#9e3832)');
+                valor = `<span style="background:${cor}1A;color:${cor};border:1px solid ${cor}40;font-size:.82rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo || it.escala_opcao_chave)}</span>`;
+              } else if (it.valor_texto) {
+                valor = `<div style="background:var(--bg);border-left:3px solid var(--gold,#b8935a);padding:.5rem .8rem;font-style:italic;color:var(--text);font-size:.88rem;line-height:1.5">"${escHtml(it.valor_texto)}"</div>`;
+              } else if (it.valor_numerico != null) {
+                valor = `<strong>${escHtml(String(it.valor_numerico))}</strong>`;
+              } else {
+                valor = '<em style="color:var(--muted)">— sem resposta —</em>';
+              }
+              return `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(it.pergunta_chave)}</div>
+                <div style="font-size:.92rem;color:var(--text);margin-bottom:.45rem;line-height:1.4">${escHtml(it.rotulo)}</div>
+                <div>${valor}</div>
+              </div>`;
+            }).join('')
+        }
+      </div>
+      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </footer>
+    </div>
+  `;
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
 }
 function renderClienteProdutos(cliId, prods) {
   return `

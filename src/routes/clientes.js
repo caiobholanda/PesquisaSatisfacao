@@ -4,7 +4,7 @@ import {
   listarClientes, buscarClientePorId, buscarClientePorCpf,
   inserirCliente, atualizarCliente, buscarCliente360,
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
-  validarCpfMod11,
+  validarCpfMod11, getDb,
 } from '../db.js';
 
 const router = Router();
@@ -35,6 +35,81 @@ router.get('/:id', (req, res) => {
   const data = buscarCliente360(parseInt(req.params.id));
   if (!data) return res.status(404).json({ ok: false, error: 'Cliente nao encontrado' });
   res.json({ ok: true, ...data });
+});
+
+// GET /api/clientes/anamnese/:perfilId
+// Retorna o registro completo da anamnese (spa_perfis) — TODOS os campos
+// preenchidos para visualizacao admin (info_medica, rotinas, consentimentos,
+// assinatura). Usado no modal "Ver anamnese preenchida" no Cliente 360.
+router.get('/anamnese/:perfilId', (req, res) => {
+  const id = parseInt(req.params.perfilId);
+  if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
+  const db = getDb();
+  const perfil = db.prepare(`
+    SELECT sp.*, r.cliente AS reserva_cliente, r.cliente2 AS reserva_cliente2,
+           r.data AS reserva_data, r.hora_inicio AS reserva_hora_inicio,
+           r.tratamento AS reserva_tratamento, r.tratamento2 AS reserva_tratamento2
+    FROM spa_perfis sp
+    LEFT JOIN reservas r ON r.id = sp.reserva_id
+    WHERE sp.id = ?
+  `).get(id);
+  if (!perfil) return res.status(404).json({ ok: false, error: 'Anamnese nao encontrada' });
+
+  // Parseia arrays JSON gravados como TEXT
+  const parseArr = v => { if (!v) return []; try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } };
+  res.json({
+    ok: true,
+    anamnese: {
+      ...perfil,
+      rotina_facial: parseArr(perfil.rotina_facial),
+      rotina_corporal: parseArr(perfil.rotina_corporal),
+      canais_marketing: parseArr(perfil.canais_marketing),
+      consentimento_saude: !!perfil.consentimento_saude,
+      consentimento_marketing: !!perfil.consentimento_marketing,
+    },
+  });
+});
+
+// GET /api/clientes/pesquisa/:respostaId
+// Retorna respostas estruturadas de uma resposta_pesquisa (todos os itens
+// com pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave).
+// Usado no modal "Ver respostas da pesquisa" no Cliente 360.
+router.get('/pesquisa/:respostaId', (req, res) => {
+  const id = parseInt(req.params.respostaId);
+  if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
+  const db = getDb();
+  const resposta = db.prepare(`
+    SELECT rp.id, rp.pesquisa_id, rp.pesquisa_versao, rp.app_origem,
+           rp.reserva_id, rp.feedback_id, rp.submitted_at,
+           p.slug AS pesquisa_slug, p.titulo AS pesquisa_titulo
+    FROM resposta_pesquisa rp
+    LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
+    WHERE rp.id = ?
+  `).get(id);
+  if (!resposta) return res.status(404).json({ ok: false, error: 'Resposta nao encontrada' });
+  const itens = db.prepare(`
+    SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave
+    FROM resposta_item WHERE resposta_pesquisa_id = ?
+  `).all(id);
+  // Enriquece com rotulo pt-BR da pergunta
+  for (const it of itens) {
+    const trad = db.prepare(`
+      SELECT rotulo FROM pergunta_traducao pt
+      JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
+      WHERE p.chave = ? AND pt.idioma = 'pt-BR'
+    `).get(it.pergunta_chave);
+    it.rotulo = trad?.rotulo || it.pergunta_chave;
+    if (it.escala_opcao_chave) {
+      const opt = db.prepare(`
+        SELECT eot.rotulo FROM escala_opcao eo
+        JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma = 'pt-BR'
+        WHERE eo.chave = ?
+        ORDER BY eo.escala_id LIMIT 1
+      `).get(it.escala_opcao_chave);
+      it.escala_opcao_rotulo = opt?.rotulo || it.escala_opcao_chave;
+    }
+  }
+  res.json({ ok: true, resposta, itens });
 });
 
 // POST /api/clientes
