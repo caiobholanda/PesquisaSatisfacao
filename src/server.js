@@ -104,6 +104,10 @@ function isPublicPath(p) {
   // Form público de anamnese (cliente recebe link com ?t=TOKEN — NÃO precisa
   // de login no Hub. A validação do token é feita pelo backend.)
   if (p === '/spa-profile.html') return true;
+  // Pesquisa de satisfacao publica (cliente recebe link via WhatsApp com
+  // ?token=XXX). Hospede/passante NUNCA tem login no Hub — autenticacao
+  // e' via token validado pelo backend em /api/survey/:token.
+  if (p === '/' || p === '/index.html') return true;
   return false;
 }
 app.use((req, res, next) => {
