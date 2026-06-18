@@ -4804,7 +4804,13 @@ async function _getEscalaIdRostos() {
 function _renderAnamEstrutura() {
   const wrap = document.getElementById('anam-secoes');
   const e = _anamEstrutura;
-  wrap.innerHTML = e.secoes.map(s => `
+  // Filtra secoes ativas e perguntas globalmente ativas (admin endpoint
+  // retorna todas, incluindo as desativadas via PUT ativo=0).
+  const secoesAtivas = (e.secoes || []).filter(s => s.ativo !== 0 && s.ativo !== false);
+  for (const s of secoesAtivas) {
+    s.perguntas = (s.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
+  }
+  wrap.innerHTML = secoesAtivas.map(s => `
     <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
         <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
@@ -5245,16 +5251,16 @@ async function _anamDelPergunta(chave) {
     perigoso: true,
   });
   if (!ok) return;
-  // Busca id da pergunta
-  const rL = await api('/api/qualidade/admin/perguntas');
-  if (!rL) return;
-  const dL = await rL.json();
-  const p = dL.items?.find(x => x.chave === chave);
-  if (!p) return showToast('Pergunta não encontrada');
-  // Busca pp_id (associação pesquisa_pergunta) — não temos endpoint direto,
-  // então marcamos a pergunta como ativo=0 (deixa de aparecer no formulário).
+  // Busca associacao_id direto na estrutura local (mais robusto que
+  // marcar a pergunta global como ativo=0, que afetaria outras pesquisas).
+  let assocId = null;
+  for (const sec of (_anamEstrutura?.secoes || [])) {
+    const q = (sec.perguntas || []).find(x => x.chave === chave);
+    if (q?.associacao_id) { assocId = q.associacao_id; break; }
+  }
+  if (!assocId) return showToast('Associação não encontrada');
   try {
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { ativo: 0 });
+    await apiSend('DELETE', `/api/qualidade/admin/pesquisa-pergunta/${assocId}`);
     showToast('✓ Pergunta removida');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
@@ -5536,7 +5542,12 @@ async function initPesquisaEditor() {
 function _renderPesqEstrutura() {
   const wrap = document.getElementById('pesq-secoes');
   const e = _pesqEstrutura;
-  wrap.innerHTML = e.secoes.map(s => `
+  // Filtra secoes/perguntas inativas (consistencia com fluxo de delete).
+  const secoesAtivas = (e.secoes || []).filter(s => s.ativo !== 0 && s.ativo !== false);
+  for (const s of secoesAtivas) {
+    s.perguntas = (s.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
+  }
+  wrap.innerHTML = secoesAtivas.map(s => `
     <section class="pesq-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
         <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
