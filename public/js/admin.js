@@ -5038,9 +5038,10 @@ async function _anamEditPergunta(chave) {
       tipo: resp.tipo,
       traducoes,
     });
-    if (_assoc?.id && resp.obrigatoria !== !!_assoc.obrigatoria) {
+    const _assocId = _assoc?.associacao_id;
+    if (_assocId && resp.obrigatoria !== !!_assoc.obrigatoria) {
       try {
-        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assoc.id}`, { obrigatoria: resp.obrigatoria });
+        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assocId}`, { obrigatoria: resp.obrigatoria ? 1 : 0 });
       } catch (e) { console.warn('[obrig assoc anam]', e.message); }
     }
     showToast('✓ Pergunta atualizada');
@@ -5516,9 +5517,10 @@ async function _pesqEditPergunta(pid) {
     await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: resp.tipo, traducoes });
     // Atualiza obrigatoria na ASSOCIACAO (pesquisa_pergunta) — esse campo
     // vive na tabela de associacao, nao na pergunta global.
-    if (p.id && resp.obrigatoria !== !!p.obrigatoria) {
+    const _assocId = p.associacao_id;
+    if (_assocId && resp.obrigatoria !== !!p.obrigatoria) {
       try {
-        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.id}`, { obrigatoria: resp.obrigatoria });
+        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assocId}`, { obrigatoria: resp.obrigatoria ? 1 : 0 });
       } catch (e) { console.warn('[obrig assoc]', e.message); }
     }
     showToast('✓ Pergunta atualizada');
