@@ -456,6 +456,37 @@ function _fbRadio(ptLabel, enLabel, checked, sub) {
   return `<div class="fb-radio-row"><div class="fb-radio-circle${checked?' sel':''}"></div><div class="fb-radio-text">${ptLabel}<span class="en">${enLabel}</span>${sub?`<div class="fb-radio-sub">"${escHtml(sub)}"</div>`:''}</div></div>`;
 }
 
+// Renderiza secao de perguntas EXTRAS adicionadas pelo admin no editor.
+// Recebe array de itens vindos de /api/feedback/item/:id (.extras).
+// Agrupa por chave (multipla pode ter N itens com a mesma chave).
+function _renderExtrasFb(extras) {
+  if (!Array.isArray(extras) || !extras.length) return '';
+  const byChave = {};
+  for (const it of extras) {
+    const k = it.pergunta_chave;
+    if (!byChave[k]) byChave[k] = { rotulo: it.rotulo, valores: [] };
+    if (it.valor_texto != null && it.valor_texto !== '') byChave[k].valores.push(escHtml(it.valor_texto));
+    else if (it.escala_opcao_rotulo) byChave[k].valores.push(escHtml(it.escala_opcao_rotulo));
+    else if (it.escala_opcao_chave) byChave[k].valores.push(escHtml(it.escala_opcao_chave));
+    else if (it.valor_numerico != null) byChave[k].valores.push(String(it.valor_numerico));
+  }
+  const linhas = Object.entries(byChave).map(([_k, info]) => `
+    <div style="margin-bottom:.85rem">
+      <div class="fb-field-lbl" style="margin-bottom:.25rem">${escHtml(info.rotulo)}</div>
+      <div style="font-size:.92rem;color:var(--text)">${info.valores.length ? info.valores.join(', ') : '<span style="color:var(--muted);font-style:italic">— sem resposta</span>'}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="fb-section">
+      <div class="fb-sec-head">
+        <span class="fb-sec-num">5</span>
+        <span class="fb-sec-title">Perguntas adicionais <span class="fb-sec-en">Additional questions</span></span>
+      </div>
+      ${linhas}
+    </div>
+  `;
+}
+
 async function openDrawer(id) {
   const drawerEl = document.getElementById('drawer');
   const content  = document.getElementById('drawer-content');
@@ -536,6 +567,8 @@ async function openDrawer(id) {
           ${_fbRadio('Evento', 'Event', r.tipo_cliente === 'evento')}
         </div>
       </div>
+
+      ${_renderExtrasFb(d.extras)}
 
       <div class="fb-view-footer">
         <div class="fb-view-footer-sig">Atenciosamente,</div>
@@ -4781,10 +4814,14 @@ function _renderAnamEstrutura() {
       <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
         <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-          <input data-anam-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
-          <select data-anam-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.88rem;border-radius:4px">
+          <input data-anam-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <select data-anam-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;border-radius:4px">
             ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
           </select>
+          <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
+            <input type="checkbox" data-anam-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
+            Obrigatória
+          </label>
           <button class="btn btn-primary btn-sm" data-anam-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
         </div>
       </div>
@@ -4927,8 +4964,10 @@ async function _anamAddPergunta(secaoId) {
   if (!_anamPesquisaId) return showToast('Carregando estrutura, aguarde…');
   const rotuloInp = document.querySelector(`[data-anam-newperg-rotulo][data-secao-id="${secaoId}"]`);
   const tipoSel   = document.querySelector(`[data-anam-newperg-tipo][data-secao-id="${secaoId}"]`);
+  const obrigInp  = document.querySelector(`[data-anam-newperg-obrig][data-secao-id="${secaoId}"]`);
   const rotulo = rotuloInp?.value.trim();
   const tipo   = tipoSel?.value || 'texto_livre';
+  const obrigatoria = !!obrigInp?.checked;
   if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
   const chave = _slugChave(rotulo);
   try {
@@ -4936,7 +4975,7 @@ async function _anamAddPergunta(secaoId) {
       chave, tipo, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: ANAMNESE_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
-      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
+      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
     });
     if (tipo === 'escala') {
       try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha ao criar opcoes Sim/Nao:', e.message); }
@@ -4973,15 +5012,21 @@ async function _anamEditPergunta(chave) {
   const p = d.items.find(x => x.chave === chave);
   if (!p) return showToast('Pergunta não encontrada');
 
-  // Modal UNICO (texto + tipo). Antes era um modal de texto seguido
-  // de outro modal de tipo — usuario clicava Salvar no primeiro
-  // achando que tinha terminado e o segundo ficava orfao, resultando
-  // em zero requests dispatched.
+  // Localiza a associacao desta pergunta na estrutura (pesquisa_pergunta.id +
+  // flag obrigatoria) para que o usuario possa toggla-la no modal.
+  let _assoc = null;
+  for (const sec of (_anamEstrutura?.secoes || [])) {
+    const q = (sec.perguntas || []).find(x => x.chave === chave);
+    if (q) { _assoc = q; break; }
+  }
+
+  // Modal UNICO (texto + tipo + obrigatoria).
   const resp = await pedirPergunta({
     titulo: 'Editar pergunta',
-    mensagem: 'Atualize o texto e/ou o tipo de resposta.',
+    mensagem: 'Atualize o texto, tipo e/ou obrigatoriedade.',
     valorRotulo: p.rotulo || chave,
     valorTipo: p.tipo,
+    valorObrigatoria: !!_assoc?.obrigatoria,
     tipos: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
   });
   if (!resp) return;
@@ -4993,6 +5038,11 @@ async function _anamEditPergunta(chave) {
       tipo: resp.tipo,
       traducoes,
     });
+    if (_assoc?.id && resp.obrigatoria !== !!_assoc.obrigatoria) {
+      try {
+        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${_assoc.id}`, { obrigatoria: resp.obrigatoria });
+      } catch (e) { console.warn('[obrig assoc anam]', e.message); }
+    }
     showToast('✓ Pergunta atualizada');
     initAnamneseEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
@@ -5204,11 +5254,11 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
 window.pedirTexto = pedirTexto;
 window.pedirOpcao = pedirOpcao;
 
-// Modal unificado para editar/criar pergunta: texto + tipo num so dialog
+// Modal unificado para editar/criar pergunta: texto + tipo + obrigatoria
 // (evita o fluxo confuso de 2 modais sequenciais que o usuario fechava
 // achando que tinha salvado).
-// Retorna { rotulo, tipo } ou null se cancelado.
-function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', valorTipo = 'texto_livre', tipos = [] } = {}) {
+// Retorna { rotulo, tipo, obrigatoria } ou null se cancelado.
+function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', valorTipo = 'texto_livre', valorObrigatoria = false, tipos = [] } = {}) {
   return new Promise(resolve => {
     document.querySelectorAll('.confirm-overlay').forEach(n => n.remove());
     const ov = document.createElement('div');
@@ -5219,11 +5269,15 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
         <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Texto da pergunta (português)</label>
-        <input id="_pq-rot" value="${escHtml(valorRotulo)}" placeholder="Escreva a pergunta..." style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px;margin-bottom:1rem">
+        <input id="_pq-rot" value="${escHtml(valorRotulo)}" placeholder="Escreva a pergunta..." style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px;margin-bottom:1rem">
         <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Tipo de resposta</label>
-        <select id="_pq-tipo" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);font-size:.95rem;border-radius:4px">
+        <select id="_pq-tipo" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">
           ${tipos.map(o => `<option value="${escHtml(o.value)}"${o.value === valorTipo ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
         </select>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.95rem;padding:.55rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;user-select:none">
+          <input type="checkbox" id="_pq-obrig"${valorObrigatoria ? ' checked' : ''} style="width:1.05rem;height:1.05rem;accent-color:var(--gold,#c9a86a)">
+          <span style="font-size:.88rem;color:var(--text)"><strong>Obrigatória</strong> — bloqueia o envio se nao for respondida</span>
+        </label>
         <p style="margin:.8rem 0 0 0;color:var(--muted);font-size:.78rem;line-height:1.5">A tradução para os outros 6 idiomas é automática ao salvar.</p>
         <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem">
           <button class="btn btn-outline" data-act="cancel">Cancelar</button>
@@ -5232,21 +5286,25 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
       </div>
     `;
     function close(r) { ov.remove(); document.removeEventListener('keydown', onKey); resolve(r); }
+    function _collect() {
+      const rot = ov.querySelector('#_pq-rot').value.trim();
+      const tip = ov.querySelector('#_pq-tipo').value;
+      const obr = !!ov.querySelector('#_pq-obrig')?.checked;
+      return { rotulo: rot, tipo: tip, obrigatoria: obr };
+    }
     function onKey(e) {
       if (e.key === 'Escape') close(null);
       else if (e.key === 'Enter' && e.target?.id === '_pq-rot') {
-        const rot = ov.querySelector('#_pq-rot').value.trim();
-        const tip = ov.querySelector('#_pq-tipo').value;
-        if (rot) close({ rotulo: rot, tipo: tip });
+        const r = _collect();
+        if (r.rotulo) close(r);
       }
     }
     ov.addEventListener('click', e => {
       if (e.target === ov || e.target.dataset.act === 'cancel') close(null);
       else if (e.target.dataset.act === 'ok') {
-        const rot = ov.querySelector('#_pq-rot').value.trim();
-        const tip = ov.querySelector('#_pq-tipo').value;
-        if (!rot) { ov.querySelector('#_pq-rot').focus(); return; }
-        close({ rotulo: rot, tipo: tip });
+        const r = _collect();
+        if (!r.rotulo) { ov.querySelector('#_pq-rot').focus(); return; }
+        close(r);
       }
     });
     document.addEventListener('keydown', onKey);
@@ -5314,10 +5372,14 @@ function _renderPesqEstrutura() {
       <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
         <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-          <input data-pesq-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
-          <select data-pesq-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.88rem;border-radius:4px">
+          <input data-pesq-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <select data-pesq-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;border-radius:4px">
             ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
           </select>
+          <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
+            <input type="checkbox" data-pesq-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
+            Obrigatória
+          </label>
           <button class="btn btn-primary btn-sm" data-pesq-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
         </div>
       </div>
@@ -5403,8 +5465,10 @@ async function _pesqAddPergunta(secaoId) {
   if (!_pesqPesquisaId) return showToast('Carregando estrutura, aguarde…');
   const rotuloInp = document.querySelector(`[data-pesq-newperg-rotulo][data-secao-id="${secaoId}"]`);
   const tipoSel   = document.querySelector(`[data-pesq-newperg-tipo][data-secao-id="${secaoId}"]`);
+  const obrigInp  = document.querySelector(`[data-pesq-newperg-obrig][data-secao-id="${secaoId}"]`);
   const rotulo = rotuloInp?.value.trim();
   const tipo   = tipoSel?.value || 'texto_livre';
+  const obrigatoria = !!obrigInp?.checked;
   if (!rotulo) { rotuloInp?.focus(); return showToast('Escreva a pergunta antes'); }
   const chave = _slugChave(rotulo, 'pesq_');
   try {
@@ -5412,7 +5476,7 @@ async function _pesqAddPergunta(secaoId) {
       chave, tipo, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: PESQUISA_SLUG,
     });
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
-      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria: false, ativo: 1,
+      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
     });
     if (tipo === 'escala') {
       try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha opcoes Sim/Nao:', e.message); }
@@ -5438,9 +5502,10 @@ async function _pesqEditPergunta(pid) {
 
   const resp = await pedirPergunta({
     titulo: 'Editar pergunta',
-    mensagem: 'Atualize o texto e/ou o tipo de resposta.',
+    mensagem: 'Atualize o texto, tipo de resposta e/ou obrigatoriedade.',
     valorRotulo: p.rotulo || p.chave,
     valorTipo: p.tipo,
+    valorObrigatoria: !!p.obrigatoria,
     tipos: Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => ({ value: v, label: l })),
   });
   if (!resp) return;
@@ -5449,6 +5514,13 @@ async function _pesqEditPergunta(pid) {
   try {
     const traducoes = await _anamTraduzirRotulo(resp.rotulo);
     await apiSend('PUT', `/api/qualidade/admin/perguntas/${pid}`, { tipo: resp.tipo, traducoes });
+    // Atualiza obrigatoria na ASSOCIACAO (pesquisa_pergunta) — esse campo
+    // vive na tabela de associacao, nao na pergunta global.
+    if (p.id && resp.obrigatoria !== !!p.obrigatoria) {
+      try {
+        await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${p.id}`, { obrigatoria: resp.obrigatoria });
+      } catch (e) { console.warn('[obrig assoc]', e.message); }
+    }
     showToast('✓ Pergunta atualizada');
     initPesquisaEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }

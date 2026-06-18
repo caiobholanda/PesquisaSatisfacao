@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcarSurveyTokenRespondido, atualizarIdiomaFeedback } from '../db.js';
+import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcarSurveyTokenRespondido, atualizarIdiomaFeedback, buscarSurveyToken, getDb } from '../db.js';
 import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { inserirRespostaPesquisa, aplicarMetasEmStats } from '../qualidade.js';
@@ -80,6 +80,29 @@ router.post('/', rateLimit, (req, res) => {
   // do ultimo liberado nos ultimos 15min — preserva a separacao por pessoa
   // em reservas casal (cada um marca SEU token, nao o do parceiro).
   try { marcarSurveyTokenRespondido(b.survey_token || null); } catch {}
+
+  // BUG-CLI360: resolve cliente_id/reserva_id a partir do survey_token (fonte
+  // autoritaria) — frontend publico nao manda esses ids no body. Sem isso,
+  // Clientes 360 nao consegue vincular a pesquisa ao cliente.
+  let _resolvedClienteId = null, _resolvedReservaId = null;
+  if (b.survey_token) {
+    try {
+      const tokRow = buscarSurveyToken(b.survey_token);
+      if (tokRow) {
+        _resolvedReservaId = tokRow.reserva_id || null;
+        _resolvedClienteId = tokRow.cliente_id || null;
+      }
+    } catch {}
+  }
+  // Tambem persiste cliente_id/reserva_id na tabela feedback (colunas ja
+  // existem via ALTER em db.js). Se a primary insert nao tem essas colunas,
+  // fazemos UPDATE direto.
+  if (_resolvedClienteId || _resolvedReservaId) {
+    try {
+      getDb().prepare('UPDATE feedback SET cliente_id=?, reserva_id=? WHERE id=?')
+        .run(_resolvedClienteId, _resolvedReservaId, id);
+    } catch {}
+  }
 
   // Gravacao paralela ESTRUTURADA (Gestao da Qualidade): se o body trouxer
   // pesquisa_slug, criar resposta_pesquisa + resposta_item vinculados ao
@@ -179,8 +202,8 @@ router.post('/', rateLimit, (req, res) => {
         pesquisa_slug: b.pesquisa_slug,
         pesquisa_versao: b.pesquisa_versao,
         app_origem: b.app_origem || 'spa',
-        cliente_id: b.cliente_id || null,
-        reserva_id: b.reserva_id || null,
+        cliente_id: _resolvedClienteId || b.cliente_id || null,
+        reserva_id: _resolvedReservaId || b.reserva_id || null,
         feedback_id: id,
         itens,
       });
@@ -230,7 +253,47 @@ router.get('/item/:id', requireAuth, (req, res) => {
   if (isNaN(id)) return res.status(400).json({ ok: false, error: 'ID inválido' });
   const item = getFeedbackById(id);
   if (!item) return res.status(404).json({ ok: false, error: 'Não encontrado' });
-  res.json({ ok: true, item });
+
+  // Anexa perguntas EXTRAS (admin-added) via resposta_pesquisa+resposta_item.
+  // Sem isso, painel "Detalhes da avaliacao" mostra so as 4 secoes nativas.
+  const extras = [];
+  try {
+    const db = getDb();
+    // Lista CHAVES legacy que NAO sao extras (s0-s3, f0-f2, recomenda* + comentarios).
+    const LEGACY = new Set([
+      'servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica',
+      'instalacoes_conforto','instalacoes_organizacao','instalacoes_conveniencia',
+      'recomenda','recomenda_qual','recomenda_porque',
+      'servicos_comentario','instalacoes_comentario',
+    ]);
+    const resp = db.prepare('SELECT id FROM resposta_pesquisa WHERE feedback_id=? LIMIT 1').get(id);
+    if (resp?.id) {
+      const itens = db.prepare(
+        'SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave FROM resposta_item WHERE resposta_pesquisa_id=?'
+      ).all(resp.id);
+      for (const it of itens) {
+        if (LEGACY.has(it.pergunta_chave)) continue;
+        // Enriquece com rotulo pt-BR da pergunta (se existir)
+        const trad = db.prepare(`
+          SELECT rotulo FROM pergunta_traducao pt
+          JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
+          WHERE p.chave = ? AND pt.idioma='pt-BR'
+        `).get(it.pergunta_chave);
+        it.rotulo = trad?.rotulo || it.pergunta_chave;
+        if (it.escala_opcao_chave) {
+          const opt = db.prepare(`
+            SELECT eot.rotulo FROM escala_opcao eo
+            JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma='pt-BR'
+            WHERE eo.chave = ? ORDER BY eo.escala_id LIMIT 1
+          `).get(it.escala_opcao_chave);
+          it.escala_opcao_rotulo = opt?.rotulo || it.escala_opcao_chave;
+        }
+        extras.push(it);
+      }
+    }
+  } catch (e) { console.warn('[feedback/item extras]', e?.message); }
+
+  res.json({ ok: true, item, extras });
 });
 
 export default router;

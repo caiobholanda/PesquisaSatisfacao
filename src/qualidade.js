@@ -308,7 +308,10 @@ function montarConfigPesquisa(pesquisaId, idioma) {
       q.ajuda = trQ?.ajuda || null;
       if (q.escala_id) {
         q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
-      } else if (q.tipo === 'unica' || q.tipo === 'multipla') {
+      } else if (q.tipo === 'unica' || q.tipo === 'multipla' || q.tipo === 'escala' || q.tipo === 'sim_nao') {
+        // Inclui 'escala'/'sim_nao' — perguntas criadas pelo admin no editor
+        // (tipo='escala' com opcoes via _criarOpcoesSimNao) sem escala_id
+        // precisam usar opcoes_pergunta, nao o fallback hardcoded.
         q.opcoes = montarOpcoesPergunta(q.pergunta_id, idioma);
         if (!q.opcoes.length) q.opcoes = null;
       } else {
@@ -445,7 +448,10 @@ export function montarEstruturaPesquisaAdmin(slug, idioma = 'pt-BR') {
       q.ajuda = trQ?.ajuda || null;
       if (q.escala_id) {
         q.opcoes = montarOpcoesEscala(q.escala_id, idioma);
-      } else if (q.tipo === 'unica' || q.tipo === 'multipla') {
+      } else if (q.tipo === 'unica' || q.tipo === 'multipla' || q.tipo === 'escala' || q.tipo === 'sim_nao') {
+        // Inclui 'escala'/'sim_nao' — perguntas criadas pelo admin no editor
+        // (tipo='escala' com opcoes via _criarOpcoesSimNao) sem escala_id
+        // precisam usar opcoes_pergunta, nao o fallback hardcoded.
         q.opcoes = montarOpcoesPergunta(q.pergunta_id, idioma);
         if (!q.opcoes.length) q.opcoes = null;
       } else {

@@ -1006,7 +1006,8 @@ export function countSessoesSemPesquisa() {
 
 export function buscarSurveyToken(token) {
   const row = getDb().prepare(`
-    SELECT st.liberada_em, st.pessoa,
+    SELECT st.liberada_em, st.pessoa, st.reserva_id AS reserva_id,
+           r.cliente_id AS cliente_id,
            r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
            r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome,
            r.cliente2, r.apto2, r.email2, r.telefone2, r.tratamento2, r.tipo_cliente2,
@@ -1025,6 +1026,8 @@ export function buscarSurveyToken(token) {
     return {
       liberada_em: row.liberada_em,
       pessoa: 2,
+      reserva_id: row.reserva_id,
+      cliente_id: row.cliente_id,
       cliente:        row.cliente2 || row.cliente,
       apto:           row.apto2     || row.apto,
       email:          row.email2    || row.email,

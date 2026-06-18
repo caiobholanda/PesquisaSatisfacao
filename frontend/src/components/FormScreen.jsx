@@ -237,8 +237,22 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
 
   const handleSubmit = async () => {
     const errs = {};
+    // Campos basicos obrigatorios:
+    if (!fields.nome.trim()) errs.nome = 'Informe seu nome.';
+    if (!fields.email.trim()) errs.email = 'Informe seu e-mail.';
+    else if (!isEmail(fields.email)) errs.email = 'E-mail inválido.';
     if (fields.tel.trim() && !isTel(fields.tel)) errs.tel = 'Telefone inválido.';
-    if (fields.email.trim() && !isEmail(fields.email)) errs.email = 'E-mail inválido.';
+
+    // Ratings obrigatorios (7 notas das secoes Servicos e Instalacoes)
+    const ratingIds = ['s0','s1','s2','s3','f0','f1','f2'];
+    const ratingsMissing = ratingIds.filter(id => !ratings[id]);
+    if (ratingsMissing.length) errs.ratings = `Avalie todas as ${ratingIds.length} perguntas de Serviços e Instalações.`;
+
+    // Recomendacao
+    if (!recommend) errs.recommend = 'Indique se recomendaria nossos serviços.';
+
+    // Tipo de cliente
+    if (!clientType) errs.clientType = 'Selecione o tipo de cliente.';
 
     // Valida extras obrigatorias
     const extErrs = {};
@@ -251,25 +265,33 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
       }
     }
     setExtrasErrors(extErrs);
-
     setErrors(errs);
+
     if (Object.keys(errs).length || Object.keys(extErrs).length) {
-      // Se so' tem erro de extras, scroll para o primeiro extra com erro.
-      if (!Object.keys(errs).length && Object.keys(extErrs).length) {
+      // Pega o PRIMEIRO erro na ordem visual da pagina e rola ate ele.
+      // Prioridade: nome/email > ratings > recommend > clientType > extras.
+      let target = null;
+      if (errs.nome) target = refNome?.current;
+      else if (errs.email) target = refEmail?.current;
+      else if (errs.ratings) target = secRefs[0]?.current; // Secao Servicos
+      else if (errs.recommend) target = secRefs[2]?.current;
+      else if (errs.clientType) target = refClient?.current;
+      else if (Object.keys(extErrs).length) {
         const firstChave = Object.keys(extErrs)[0];
-        const el = document.querySelector(`[data-extra-chave="${firstChave}"]`);
-        if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 130;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-        return;
+        target = document.querySelector(`[data-extra-chave="${firstChave}"]`);
       }
-      const refs = [['email', refEmail]];
-      const first = refs.find(([k]) => errs[k]);
-      if (first?.[1].current) {
-        const y = first[1].current.getBoundingClientRect().top + window.scrollY - 130;
+      if (target?.getBoundingClientRect) {
+        const y = target.getBoundingClientRect().top + window.scrollY - 130;
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
+      // Mostra resumo geral no topo via submitError (alem dos campos)
+      const msgs = [];
+      if (errs.nome || errs.email || errs.tel) msgs.push('Preencha seu nome e e-mail corretamente.');
+      if (errs.ratings) msgs.push(errs.ratings);
+      if (errs.recommend) msgs.push(errs.recommend);
+      if (errs.clientType) msgs.push(errs.clientType);
+      if (Object.keys(extErrs).length) msgs.push('Responda as perguntas obrigatórias destacadas.');
+      setSubmitError(msgs.join(' '));
       return;
     }
     setSubmitting(true);
