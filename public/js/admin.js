@@ -1970,8 +1970,14 @@ function calOpenModal(salaId, data, hora) {
   const _agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
   const _hojeFt = _agoraFt.getFullYear() + '-' + String(_agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(_agoraFt.getDate()).padStart(2,'0');
   const dataInp = document.getElementById('res-inp-data');
-  if (dataInp) dataInp.min = _hojeFt;
-  if(data) document.getElementById('res-inp-data').value=data;
+  if (dataInp) {
+    dataInp.min = _hojeFt;
+    // Sempre pre-preenche com a data passada OU hoje (nunca em branco).
+    // Continua editavel: usuario clica no campo e escolhe qualquer dia futuro.
+    dataInp.value = data || _hojeFt;
+  }
+  // Wire atalhos rapidos "Hoje / Amanha / +7 dias" (idempotente)
+  _wireAtalhosData(_hojeFt);
   document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
   loadTratamentosModal();
   loadMassagistasModal();
@@ -1981,6 +1987,50 @@ function calOpenModal(salaId, data, hora) {
   setTimeout(()=>document.getElementById('res-inp-cpf')?.focus(),50);
 }
 window.calOpenModal=calOpenModal;
+
+// Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
+// Insere chips logo abaixo do input data, atualiza o value e dispara change
+// (pra _renderMassagistasModal* recalcular disponibilidade).
+let _atalhosDataWired = false;
+function _wireAtalhosData(hojeStr) {
+  const dataInp = document.getElementById('res-inp-data');
+  if (!dataInp) return;
+  let host = document.getElementById('res-atalhos-data');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'res-atalhos-data';
+    host.style.cssText = 'display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.45rem';
+    dataInp.parentNode.appendChild(host);
+  }
+  function ymd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  const hoje = new Date(hojeStr + 'T12:00:00');
+  const amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
+  const dep = new Date(hoje); dep.setDate(dep.getDate() + 2);
+  const semana = new Date(hoje); semana.setDate(semana.getDate() + 7);
+  const opts = [
+    { label: 'Hoje', val: ymd(hoje) },
+    { label: 'Amanhã', val: ymd(amanha) },
+    { label: 'Depois de amanhã', val: ymd(dep) },
+    { label: '+7 dias', val: ymd(semana) },
+  ];
+  host.innerHTML = opts.map(o => `
+    <button type="button" class="btn btn-outline btn-sm" data-atalho-data="${o.val}" style="font-size:.72rem;padding:.25rem .6rem">${escHtml(o.label)}</button>
+  `).join('') + `<span style="font-size:.72rem;color:var(--muted);padding:.3rem 0 0 .3rem">ou clique no campo acima para escolher outra data</span>`;
+  // Listener (idempotente via flag)
+  if (!_atalhosDataWired) {
+    document.addEventListener('click', e => {
+      const b = e.target.closest('[data-atalho-data]');
+      if (!b) return;
+      const inp = document.getElementById('res-inp-data');
+      if (!inp) return;
+      inp.value = b.dataset.atalhoData;
+      inp.dispatchEvent(new Event('change'));
+    });
+    _atalhosDataWired = true;
+  }
+}
 
 // Recalcula hora_fim sempre que hora_inicio ou tratamento mudam
 function calAtualizarHoraFim() {
