@@ -64,7 +64,7 @@ function isGranClassCli(num) {
 }
 // HTML do badge — sutil, dourado, padronizado.
 function badgeGranClassHtml(label = 'GRAN CLASS') {
-  return `<span class="gc-badge" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase">★ ${label}</span>`;
+  return `<button type="button" class="gc-badge" data-action="gc-info" title="Ver benefícios Gran Class" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">★ ${label}</button>`;
 }
 window.isGranClassCli = isGranClassCli;
 window.badgeGranClassHtml = badgeGranClassHtml;
@@ -813,6 +813,7 @@ function setupDelegation() {
     else if (action === 'cal-day')     { calSelectDay(el.dataset.ds); }
     else if (action === 'cal-ver')     { calVerDetalhes(+el.dataset.id); }
     else if (action === 'cal-cancelar'){ e.stopPropagation(); calCancelar(+el.dataset.id); }
+    else if (action === 'gc-info')     { e.stopPropagation(); _abrirModalGranClass(); }
     else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
     else if (action === 'page')        { goPage(+el.dataset.off); }
     else if (action === 'hc-page')     { loadHistoricoClientes(+el.dataset.p); }
@@ -1797,16 +1798,56 @@ function renderCalDia() {
           const topPx=((rs-slotS)/SLOT_MIN)*CAL_SLOT_PX+2;
           const ht=((re-rs)/SLOT_MIN)*CAL_SLOT_PX-4;
           const ehGC = res.quarto_categoria === 'gran_class';
-          html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px${ehGC ? ';box-shadow:inset 0 0 0 2px #d4a64a' : ''}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(res.cliente)}${res.tratamento?' · '+escHtml(res.tratamento):''} · ${res.hora_inicio}–${res.hora_fim}${ehGC ? ' · GRAN CLASS' : ''}">
-              <div class="cal-res-name">${ehGC ? '★ ' : ''}${escHtml(res.cliente)}${res.cliente2 ? ` & ${escHtml(res.cliente2)}` : ''}</div>
+          // Layout adaptativo conforme altura disponivel:
+          // - compacto (ht < 70): so nome + horario inline + GC dot
+          // - medio (ht 70-130): nome + tratamento truncado + horario
+          // - completo (ht >= 130): tudo (nome, tratamento, horario, mass, por)
+          const modo = ht < 70 ? 'compact' : (ht < 130 ? 'medium' : 'full');
+          const titleParts = [
+            res.cliente + (res.cliente2 ? ' & ' + res.cliente2 : ''),
+            res.tratamento ? res.tratamento + (res.tratamento2 ? ' / ' + res.tratamento2 : '') : null,
+            res.hora_inicio + '–' + res.hora_fim,
+            res.massagista_nome ? 'Profissional: ' + res.massagista_nome + (res.massagista_nome2 ? ' & ' + res.massagista_nome2 : '') : null,
+            res.quarto ? 'Quarto ' + res.quarto : null,
+            ehGC ? '★ Gran Class' : null,
+            res.criado_por ? 'criado por ' + res.criado_por : null,
+          ].filter(Boolean).join(' · ');
+          const gcStyle = ehGC ? ';box-shadow:inset 0 0 0 2px #d4a64a' : '';
+          const cancelBtn = `<button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>`;
+          const gcBadge = ehGC
+            ? `<button type="button" data-action="gc-info" title="Ver benefícios Gran Class" style="background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;border:1px solid #c9a86a;border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.04em;line-height:1.3;cursor:pointer;flex-shrink:0">★ GC</button>`
+            : '';
+          let inner = '';
+          if (modo === 'compact') {
+            // Ultra compacto: nome + GC badge + horario na mesma linha
+            inner = `
+              <div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                ${gcBadge}
+                <span style="overflow:hidden;text-overflow:ellipsis">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span>
+              </div>
+              <div style="font-size:.7rem;opacity:.85;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.hora_inicio}–${res.hora_fim}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''}</div>
+            `;
+          } else if (modo === 'medium') {
+            inner = `
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
-              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ` · qto ${escHtml(res.quarto)}` : ''}</div>
-              ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' & '+escHtml(res.massagista_nome2):''}</div>`:''}
+              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
+            `;
+          } else {
+            inner = `
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
+              <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
+              ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' &amp; '+escHtml(res.massagista_nome2):''}</div>`:''}
               <div class="cal-res-by">por ${res.criado_por ? escHtml(res.criado_por) : '—'}</div>
-              <button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+            `;
+          }
+          html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
+            <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyle}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(titleParts)}">
+              ${inner}
+              ${cancelBtn}
             </div>
           </div>`;
         } else {
@@ -2227,42 +2268,93 @@ function _massagistaDetHtml2(r) {
   return `<span class="resdet-kv-val">${escHtml(m.nome)}${badges.join('')}</span>`;
 }
 
+// Helper: bloco de preco com taxa 15% e, se r.quarto_categoria='gran_class',
+// aplica 10% de desconto antes da taxa. Compartilhado pessoa 1 e pessoa 2.
+function _precoBloco(tm, ehGC) {
+  if (!tm?.preco) return '';
+  const sub = Number(tm.preco);
+  const desconto = ehGC ? sub * 0.10 : 0;
+  const subDescontado = sub - desconto;
+  const taxa = subDescontado * 0.15;
+  const total = subDescontado + taxa;
+  const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let h = `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
+  h += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
+  if (ehGC) {
+    h += `<div class="resdet-kv"><div class="resdet-kv-label" style="color:#bf9a55">★ Gran Class (−10%)</div><div class="resdet-kv-val mono" style="color:#bf9a55">−R$ ${fmt(desconto)}</div></div>`;
+  }
+  h += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
+  h += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
+  h += `</div>`;
+  return h;
+}
+
 function _precoDetHtml(r) {
   const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id || t.nome === r.tratamento);
+  const ehGC = r.quarto_categoria === 'gran_class';
   let out = '';
   if (tm?.tipo === 'combo' && tm.componentes_nomes?.length) {
     out += `<div class="resdet-kv"><div class="resdet-kv-label">Inclusos</div><div class="resdet-kv-val">${tm.componentes_nomes.map(n => `<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.75rem;font-weight:500;margin:.1rem .2rem .1rem 0">${n}</span>`).join('')}</div></div>`;
   }
-  if (tm?.preco) {
-    const sub = Number(tm.preco);
-    const taxa = sub * 0.15;
-    const total = sub + taxa;
-    const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    out += `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
-    out += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
-    out += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
-    out += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
-    out += `</div>`;
-  }
+  out += _precoBloco(tm, ehGC);
   return out;
 }
 
 function _precoDetHtml2(r) {
   const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id2 || t.nome === r.tratamento2);
-  let out = '';
-  if (tm?.preco) {
-    const sub = Number(tm.preco);
-    const taxa = sub * 0.15;
-    const total = sub + taxa;
-    const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    out += `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
-    out += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
-    out += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
-    out += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
-    out += `</div>`;
-  }
-  return out;
+  // GC vale tanto pra pessoa 1 quanto 2 (quarto e' do casal)
+  const ehGC = r.quarto_categoria === 'gran_class';
+  return _precoBloco(tm, ehGC);
 }
+
+// Modal de beneficios Gran Class — popup ao clicar no badge na agenda
+// ou nos detalhes da reserva.
+function _abrirModalGranClass() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid #bf9a55;border-radius:12px;max-width:480px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative">
+      <button data-act="close" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
+      <div style="text-align:center;margin-bottom:1.2rem">
+        <div style="font-size:2rem;color:#bf9a55;margin-bottom:.2rem">★</div>
+        <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
+        <p style="margin:.3rem 0 0 0;color:var(--muted);font-size:.8rem;letter-spacing:.04em;text-transform:uppercase">Cortesia exclusiva para hóspedes Gran Class</p>
+      </div>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem">
+        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">💆</div>
+          <div style="flex:1">
+            <div style="font-weight:600;color:var(--text);font-size:.95rem">10% de desconto em todas as massagens</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Aplicado automaticamente sobre o subtotal antes da taxa de serviço.</div>
+          </div>
+        </li>
+        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">🔥</div>
+          <div style="flex:1">
+            <div style="font-weight:600;color:var(--text);font-size:.95rem">Sauna liberada gratuitamente</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
+          </div>
+        </li>
+        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">💧</div>
+          <div style="flex:1">
+            <div style="font-weight:600;color:var(--text);font-size:.95rem">Jacuzzi liberada gratuitamente</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
+          </div>
+        </li>
+      </ul>
+      <div style="display:flex;justify-content:flex-end;margin-top:1.2rem">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </div>
+    </div>
+  `;
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+}
+window._abrirModalGranClass = _abrirModalGranClass;
 
 function calFmtData(ymd) {
   if (!ymd) return '—';
