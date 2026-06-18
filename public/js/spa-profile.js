@@ -459,11 +459,12 @@ function applyLocale(L) {
 
 /* ─── Load locale file ─── */
 
-async function loadLocale(lang) {
+async function loadLocale(lang, _retry = 0) {
   try {
-    const res = await fetch('/locales/' + lang + '.json');
-    if (!res.ok) throw new Error();
+    const res = await fetch('/locales/' + lang + '.json', { cache: 'reload' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const L = await res.json();
+    if (!L || !L.facial_items || !L.legal) throw new Error('locale JSON incompleto');
     _currentLang = lang;
     try { localStorage.setItem('spa_lang', lang); } catch {}
 
@@ -485,8 +486,13 @@ async function loadLocale(lang) {
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === lang);
     });
-  } catch {
-    if (lang !== 'pt-BR') loadLocale('pt-BR');
+  } catch (err) {
+    console.warn('[loadLocale] falhou', lang, err?.message);
+    if (lang !== 'pt-BR') return loadLocale('pt-BR');
+    // pt-BR falhou: retry com backoff curto, max 3 vezes.
+    if (_retry < 3) {
+      setTimeout(() => loadLocale('pt-BR', _retry + 1), 600 * (_retry + 1));
+    }
   }
 }
 let _ultimoCriadoEm = null;
