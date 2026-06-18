@@ -2571,8 +2571,27 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
           </div>
         </div>
       `;
+      const _confirmarFechar = () => {
+        const cf = document.createElement('div');
+        cf.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem';
+        cf.innerHTML = `
+          <div style="background:var(--surface);border:1px solid var(--gold);border-radius:10px;max-width:420px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 14px 44px rgba(0,0,0,.5)">
+            <h4 style="margin:0 0 .6rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.25rem;color:var(--text)">Tem certeza que deseja fechar?</h4>
+            <p style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 1.2rem 0">Os links de anamnese desta reserva não poderão ser reabertos depois. Recomendamos enviar os dois antes de sair.</p>
+            <div style="display:flex;gap:.5rem;justify-content:flex-end">
+              <button class="btn btn-outline" data-cf="cancel">Continuar enviando</button>
+              <button class="btn btn-danger" data-cf="ok">Fechar mesmo assim</button>
+            </div>
+          </div>
+        `;
+        cf.addEventListener('click', e => {
+          if (e.target === cf || e.target.dataset.cf === 'cancel') cf.remove();
+          else if (e.target.dataset.cf === 'ok') { cf.remove(); ov.remove(); }
+        });
+        document.body.appendChild(cf);
+      };
       ov.addEventListener('click', e => {
-        if (e.target === ov || e.target.dataset.act === 'close') ov.remove();
+        if (e.target === ov || e.target.dataset.act === 'close') _confirmarFechar();
         else if (e.target.dataset.zap) {
           window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
         } else if (e.target.dataset.copy) {
