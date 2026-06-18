@@ -108,6 +108,9 @@ function initCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width  = rect.width * dpr;
     canvas.height = 160 * dpr;
+    // Reseta transform ANTES de aplicar scale — evita escala composta
+    // ao redimensionar (orientation change).
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     ctx.strokeStyle = '#241508';
     ctx.lineWidth   = 2.2;
@@ -155,15 +158,33 @@ function initCanvas() {
   canvas.addEventListener('touchend',   endDraw);
 
   function clear() {
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, rect.width, 160);
+    // Reseta transform + limpa em pixels reais do canvas. Evita problemas
+    // quando o getBoundingClientRect retorna valores estranhos (iOS bug).
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Re-aplica o scale dpr pra desenhos futuros continuarem em CSS px.
+      const dpr = window.devicePixelRatio || 1;
+      ctx.scale(dpr, dpr);
+      ctx.strokeStyle = '#241508';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    } catch (e) { console.warn('[sig clear]', e?.message); }
     hasSigned = false;
-    hint.style.display = '';
-    wrap.classList.remove('has-sig');
-    validateAll();
+    if (hint) hint.style.display = '';
+    if (wrap) wrap.classList.remove('has-sig');
+    if (typeof validateAll === 'function') validateAll();
   }
 
-  document.getElementById('btn-clear-sig').addEventListener('click', clear);
+  const btnClear = document.getElementById('btn-clear-sig');
+  if (btnClear) {
+    btnClear.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      clear();
+    });
+  }
 
   return {
     hasSigned:  () => hasSigned,
@@ -461,10 +482,16 @@ function applyLocale(L) {
 
 async function loadLocale(lang, _retry = 0) {
   try {
-    const res = await fetch('/locales/' + lang + '.json', { cache: 'reload' });
+    // Sem cache:'reload' — em iOS Safari pode falhar silenciosamente.
+    // Cache-busting via querystring sem dor.
+    const res = await fetch('/locales/' + lang + '.json?v=2');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const L = await res.json();
-    if (!L || !L.facial_items || !L.legal) throw new Error('locale JSON incompleto');
+    // Valida que arrays nao venham vazios (poderiam render UI vazia silenciosamente).
+    if (!L || !Array.isArray(L.facial_items) || L.facial_items.length === 0
+        || !L.legal || typeof L.legal.text !== 'string') {
+      throw new Error('locale JSON incompleto ou invalido');
+    }
     _currentLang = lang;
     try { localStorage.setItem('spa_lang', lang); } catch {}
 
@@ -739,12 +766,17 @@ async function applyAnamneseConfig(idioma) {
     }
   }
 
+  // FAIL-OPEN: se a config nao trouxer um campo legacy, NAO esconder o bloco.
+  // O HTML estatico ja contem todos os campos padrao; esconder apenas
+  // quando o backend explicitamente sinaliza ativo=0 (caso futuro).
+  // Esconder seria perigoso se o admin esqueceu de associar uma pergunta:
+  // perderia prefill + inviabilizaria o cliente preencher.
   for (const [legado, spec] of Object.entries(_LEGADO_DOM)) {
     const bloco = _blocoDe(spec);
     if (!bloco) continue;
     const cfgItem = map[legado];
     if (!cfgItem) {
-      if (legado !== 'assinatura_data_url') bloco.style.display = 'none';
+      // sem config para esse campo: deixa visivel como esta no HTML.
       continue;
     }
     bloco.style.display = '';
