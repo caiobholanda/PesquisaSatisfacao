@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, exportarCsv, marcarSurveyTokenRespondido, atualizarIdiomaFeedback } from '../db.js';
+import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcarSurveyTokenRespondido, atualizarIdiomaFeedback } from '../db.js';
 import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { inserirRespostaPesquisa, aplicarMetasEmStats } from '../qualidade.js';
@@ -200,25 +200,7 @@ router.post('/', rateLimit, (req, res) => {
 
 // GET /api/feedback — protegido
 router.get('/', requireAuth, (req, res) => {
-  const { origem, tipo_cliente, from, to, limit = '50', offset = '0', format } = req.query;
-
-  if (format === 'csv') {
-    const items = exportarCsv({ origem, tipo_cliente, from, to });
-    const cols = [
-      'id','nome','apto','email','telefone','data_tratamento','tratamento_realizado',
-      'nome_massoterapeuta','servicos_expectativa','servicos_explicacao','servicos_atitude',
-      'servicos_tecnica','servicos_comentario','instalacoes_conforto','instalacoes_organizacao',
-      'instalacoes_conveniencia','instalacoes_comentario','recomenda','recomenda_qual',
-      'recomenda_porque','tipo_cliente','origem','submitted_at',
-    ];
-    const csv = '﻿' + [
-      cols.join(';'),
-      ...items.map(r => cols.map(c => `"${(r[c] ?? '').toString().replace(/"/g, '""')}"`).join(';')),
-    ].join('\n');
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="feedback_${from || 'all'}_${to || 'all'}.csv"`);
-    return res.send(csv);
-  }
+  const { origem, tipo_cliente, from, to, limit = '50', offset = '0' } = req.query;
 
   const { total, items } = listarFeedback({
     origem, tipo_cliente, from, to,

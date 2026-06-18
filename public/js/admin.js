@@ -566,10 +566,6 @@ document.getElementById('btn-filtrar').addEventListener('click', () => {
   loadAll();
 });
 
-// Botão "Exportar CSV" removido a pedido: relatórios consultados apenas
-// na tela. Endpoint /api/feedback?format=csv continua disponível pra uso
-// externo se necessário.
-
 function loadAll() { loadStats(); loadTable(); }
 
 // ── Navegação entre views ──
@@ -3553,9 +3549,6 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   loadHistoricoClientes();
 });
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
-// Botão "Exportar CSV" removido a pedido. Função exportarHistoricoCSV
-// mantida abaixo para uso futuro via console se necessário.
-
 let _hcPage = 0;
 const _hcLimit = 50;
 
@@ -3635,32 +3628,6 @@ async function loadHistoricoClientes(page=0) {
     if (page < totalPages-1) html += `<button class="page-btn" data-action="hc-page" data-p="${page+1}">Próxima ›</button>`;
     pag.innerHTML = html;
   }
-}
-
-async function exportarHistoricoCSV() {
-  const r = await api(`/api/reservas/historico?${_hcParams(0)}&limit=9999`);
-  if (!r) return;
-  const d = await r.json();
-  if (!d.ok || !d.items.length) return;
-  const cols = ['Data','Horário','Cliente','Email','Tipo','Apto','Telefone','Sala','Tratamento','Massoterapeuta','Cadastrado em'];
-  const rows = d.items.map(it => [
-    it.data,
-    `${it.hora_inicio}-${it.hora_fim}`,
-    it.cliente,
-    it.email||'',
-    TIPO_CLIENTE_LABEL[it.tipo_cliente]||it.tipo_cliente||'',
-    it.apto||'',
-    it.telefone||'',
-    SALA_NOME[it.sala]||`Sala ${it.sala}`,
-    it.tipo_massagem_nome||it.tratamento||'',
-    it.massoterapeuta_nome||'',
-    it.criado_em||'',
-  ].map(v=>`"${String(v).replace(/"/g,'""')}"`));
-  const csv = [cols.join(','), ...rows.map(r=>r.join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));
-  a.download = `historico-spa-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
 }
 
 // ────────────────────────────────────────────────────────────────────────────

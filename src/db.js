@@ -1073,11 +1073,6 @@ export function deletarAdmin(id) {
   return getDb().prepare('DELETE FROM admin_users WHERE id = ?').run(id).changes;
 }
 
-export function exportarCsv({ origem, tipo_cliente, from, to } = {}) {
-  const { items } = listarFeedback({ origem, tipo_cliente, from, to, limit: 9999, offset: 0 });
-  return items;
-}
-
 // ── SPA Pre-treatment form ──
 // pessoa: 1 (cliente principal) | 2 (cliente2 — segunda pessoa da reserva casal)
 // Para reservas individuais, sempre usar pessoa=1.
