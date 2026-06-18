@@ -1955,7 +1955,7 @@ _startNowLineInterval();
 // ── Modal Reserva ──
 function calSetTipo(tipo) {
   _resTipo = tipo;
-  document.querySelectorAll('.res-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+  document.querySelectorAll('[data-tipo]').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
   const isHospede = tipo === 'hospede';
   const aptoEl = document.getElementById('res-fg-apto');
   aptoEl.style.display = isHospede ? '' : 'none';
@@ -1992,9 +1992,8 @@ function calOpenModal(salaId, data, hora) {
   if (_cbMass2) _cbMass2.clear();
   _resTipo2 = null;
   document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.remove('active'));
-  document.getElementById('res2-fg-apto').style.display = 'none';
-  const _nome2Fg = document.getElementById('res2-fg-apto')?.previousElementSibling;
-  if (_nome2Fg) _nome2Fg.style.gridColumn = '1 / -1';
+  const _q2Fg = document.getElementById('res2-fg-quarto');
+  if (_q2Fg) _q2Fg.style.display = 'none';
   ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
