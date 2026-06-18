@@ -91,6 +91,9 @@
       --header-bg:   rgba(10, 14, 26, 0.72);
       --bg-grad-1:   rgba(201,169,97,.08);
       --bg-grad-2:   rgba(201,169,97,.04);
+      --sala-s1-text: #F2D7A6;
+      --sala-s2-text: #BFC8EE;
+      --sala-s3-text: #A8DDBB;
     }
 
     /* Transicao suave de tema. 300ms conforme spec ('luxo' menos brusco). */
@@ -1538,6 +1541,22 @@
     .cal-res-block.s1 .cal-res-cancel svg { stroke: var(--sala-s1-text); }
     .cal-res-block.s2 .cal-res-cancel svg { stroke: var(--sala-s2-text); }
     .cal-res-block.s3 .cal-res-cancel svg { stroke: var(--sala-s3-text); }
+
+    :root[data-theme="dark"] .cal-res-block.s1 {
+      background: linear-gradient(150deg, rgba(201,137,58,.22) 0%, rgba(201,137,58,.36) 100%);
+      border: 1px solid rgba(242,215,166,.45);
+    }
+    :root[data-theme="dark"] .cal-res-block.s2 {
+      background: linear-gradient(150deg, rgba(91,103,150,.28) 0%, rgba(91,103,150,.42) 100%);
+      border: 1px solid rgba(191,200,238,.4);
+    }
+    :root[data-theme="dark"] .cal-res-block.s3 {
+      background: linear-gradient(150deg, rgba(45,122,79,.28) 0%, rgba(45,122,79,.42) 100%);
+      border: 1px solid rgba(168,221,187,.4);
+    }
+    :root[data-theme="dark"] .cal-res-trat { opacity: .95; }
+    :root[data-theme="dark"] .cal-res-time { opacity: .85; }
+    :root[data-theme="dark"] .cal-res-by   { opacity: .8; }
 
     /* ── Close row ── */
     .cal-close-row {
@@ -3604,6 +3623,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=45"></script>
+<script src="/js/admin.js?v=46"></script>
 </body>
 </html>

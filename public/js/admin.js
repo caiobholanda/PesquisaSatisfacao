@@ -2743,6 +2743,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       // Pessoa 2 preenchida → exige coerencia
       if (!cpf2InpVal) { err.textContent = 'Pessoa 2: informe o CPF (autopreenche se ja cadastrado).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (!validarCpfMod11(cpf2InpVal)) { err.textContent = 'Pessoa 2: CPF invalido.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (cpfInpVal && cpf2InpVal === cpfInpVal) { err.textContent = 'Pessoa 1 e Pessoa 2 nao podem ter o mesmo CPF.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (!nome2)       { err.textContent = 'Pessoa 2: informe o nome.'; return; }
       if (!tipo2)       { err.textContent = 'Pessoa 2: selecione tipo de cliente (Hospede ou Passante).'; return; }
       if (tipo2 === 'hospede' && !quarto2) { err.textContent = 'Pessoa 2: informe o quarto (obrigatorio para hospede).'; document.getElementById('res2-inp-quarto')?.focus(); return; }

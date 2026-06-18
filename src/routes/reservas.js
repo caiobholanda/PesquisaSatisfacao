@@ -79,6 +79,10 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     if (cpf2) {
       const c2 = String(cpf2).replace(/\D/g, '');
       if (c2 && !validarCpfMod11(c2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: CPF inválido' });
+      const c1 = String(cpf || '').replace(/\D/g, '');
+      if (c1 && c2 && c1 === c2) {
+        return res.status(400).json({ ok: false, error: 'Pessoa 1 e Pessoa 2 não podem ter o mesmo CPF' });
+      }
     }
     if (telefone2 && !telefoneValido(telefone2)) {
       return res.status(400).json({ ok: false, error: 'Pessoa 2: telefone inválido' });
