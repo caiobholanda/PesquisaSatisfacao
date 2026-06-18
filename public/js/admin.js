@@ -204,10 +204,18 @@ function _scoreColor(media) {
   return 'var(--danger)';
 }
 
+// Converte media (0..NOTA_MAX) para string de porcentagem "XX%" ou "—".
+function _mediaPct(media) {
+  if (media == null || isNaN(media)) return '—';
+  const num = typeof media === 'number' ? media : parseFloat(media);
+  if (isNaN(num)) return '—';
+  return Math.round((num / NOTA_MAX) * 100) + '%';
+}
+
 function renderMediaBadge(media) {
-  if (media == null) return `<span class="q-media-badge empty">— / ${NOTA_MAX}</span>`;
+  if (media == null) return `<span class="q-media-badge empty">—</span>`;
   const cor = _scoreColor(media);
-  return `<span class="q-media-badge" style="background:${cor}1A;color:${cor};border-color:${cor}40"><strong>${media.toFixed(1)}</strong><span class="q-media-max"> / ${NOTA_MAX}</span></span>`;
+  return `<span class="q-media-badge" style="background:${cor}1A;color:${cor};border-color:${cor}40"><strong>${_mediaPct(media)}</strong></span>`;
 }
 
 function renderTextoGroup(titulo, items) {
@@ -253,7 +261,7 @@ async function loadStats() {
   } catch { return; }
   if (!d.ok) return;
   document.getElementById('kpi-total').textContent = d.total;
-  document.getElementById('kpi-media').textContent = d.mediaGeral != null ? d.mediaGeral.toFixed(2) + ' / ' + NOTA_MAX : '—';
+  document.getElementById('kpi-media').textContent = _mediaPct(d.mediaGeral);
   document.getElementById('kpi-recomenda').textContent = d.pctRecomenda != null ? d.pctRecomenda + '%' : '—';
   const h = d.porOrigem.find(r => r.origem === 'hospede')?.t || 0;
   const c = d.porOrigem.find(r => r.origem === 'colaborador')?.t || 0;
@@ -391,7 +399,7 @@ async function loadTable() {
         <td style="color:var(--muted)">${escHtml(r.email)}</td>
         <td style="color:var(--muted)">${escHtml(r.tipo_cliente || '—')}</td>
         <td><span class="badge ${r.origem === 'hospede' ? 'badge-hospede' : 'badge-colab'}">${r.origem === 'hospede' ? 'Hóspede' : 'Colaborador'}</span></td>
-        <td class="${scoreClass(avg)}">${avg ?? '—'}</td>
+        <td class="${scoreClass(avg)}">${_mediaPct(avg)}</td>
         <td><button class="btn btn-outline btn-sm" data-action="open-drawer" data-id="${r.id}">Ver</button></td>
       </tr>`;
     }).join('');
@@ -1307,7 +1315,7 @@ window.showHistoricoMassagista = async (id, nome) => {
     </div>
     <div class="hist-kpi">
       <div class="hist-kpi-label">Média da profissional</div>
-      <div class="hist-kpi-val" style="color:var(--gold)">${mediaGeral != null ? mediaGeral + ' / ' + NOTA_MAX : '—'}</div>
+      <div class="hist-kpi-val" style="color:var(--gold)">${_mediaPct(mediaGeral)}</div>
     </div>
     <div class="hist-kpi">
       <div class="hist-kpi-label">Recomendariam</div>
@@ -1427,7 +1435,7 @@ window.showHistoricoMassagista = async (id, nome) => {
               <td>${notaPill(r.servicos_expectativa)}</td>
               <td>${notaPill(r.servicos_atitude)}</td>
               <td>${notaPill(r.servicos_tecnica)}</td>
-              <td class="${scoreClass(avg)}">${avg ?? '—'}</td>
+              <td class="${scoreClass(avg)}">${_mediaPct(avg)}</td>
               <td>${recBadge}</td>
               <td><button class="btn btn-outline btn-sm" data-action="open-drawer" data-id="${r.id}">Ver</button></td>
             </tr>`;
@@ -2730,7 +2738,7 @@ async function loadQualidadeVisao() {
   document.getElementById('ql-kpi-pesquisa').textContent = slug;
   document.getElementById('ql-kpi-versao').textContent = 'período: ' + (stats.periodo?.from || '—') + ' a ' + (stats.periodo?.to || '—');
   document.getElementById('ql-kpi-total').textContent = stats.total ?? '—';
-  document.getElementById('ql-kpi-media').textContent = stats.mediaGeral != null ? stats.mediaGeral.toFixed(2) : '—';
+  document.getElementById('ql-kpi-media').textContent = _mediaPct(stats.mediaGeral);
   document.getElementById('ql-kpi-reco').textContent = stats.pctRecomenda != null ? stats.pctRecomenda + '%' : '—';
   const metaReco = metas?.por_questionario?.pct_recomenda;
   const recoCard = document.getElementById('ql-kpi-reco-card');
