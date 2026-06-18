@@ -4801,7 +4801,7 @@ const _TIPO_LABEL_AMIGAVEL = {
 // — visualmente renderiza com os rostinhos (smileys) no FormScreen.
 const _TIPO_LABEL_PESQUISA = {
   ..._TIPO_LABEL_AMIGAVEL,
-  rostos: 'Avaliação com rostinhos (Ótimo · Bom · Regular · Ruim)',
+  rostos: 'Avaliação com rosto',
 };
 
 // Cache do escala_id de 4pt_qualitativa — busca uma vez do backend.
