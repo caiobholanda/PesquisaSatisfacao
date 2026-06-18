@@ -242,6 +242,9 @@ router.get('/anamnese/config', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  delete req.headers['if-none-match'];
+  delete req.headers['if-modified-since'];
+  res.removeHeader('ETag');
   const idioma = (req.query.idioma || 'pt-BR').toString();
   const pesquisa = buscarPesquisaPublicada('spa-anamnese-v1', idioma);
   if (!pesquisa) return res.json({ ok: false });

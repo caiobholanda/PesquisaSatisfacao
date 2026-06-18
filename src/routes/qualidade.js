@@ -32,11 +32,17 @@ const router = Router();
 // o front cai no fallback hardcoded (compat total).
 router.get('/config', (req, res) => {
   // CACHE FIX: edicoes do admin no editor (reordenar, adicionar pergunta,
-  // criar secao) precisam refletir imediatamente. Sem este header, o
-  // browser cacheava o JSON via ETag/304 e mostrava estrutura antiga.
+  // criar secao) precisam refletir imediatamente. Sem isto, o browser
+  // cacheava o JSON via ETag/304 e mostrava estrutura antiga.
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  // Tambem invalida o caminho do ETag — sem isso o Express ainda responde
+  // 304 Not Modified quando o browser manda If-None-Match. Remove o header
+  // do response e tambem ignora a request condicional.
+  delete req.headers['if-none-match'];
+  delete req.headers['if-modified-since'];
+  res.removeHeader('ETag');
   const slug = (req.query.slug || '').toString().trim();
   const idioma = (req.query.idioma || 'pt-BR').toString();
   if (!slug) {
