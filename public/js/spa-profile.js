@@ -106,6 +106,9 @@ function initCanvas() {
   function resize() {
     const dpr  = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    // Se canvas estiver oculto (display:none) ou ainda nao tiver largura,
+    // pula — vai redimensionar depois pelo IntersectionObserver/resize listener.
+    if (rect.width === 0) return;
     canvas.width  = rect.width * dpr;
     canvas.height = 160 * dpr;
     // Reseta transform ANTES de aplicar scale — evita escala composta
@@ -123,7 +126,10 @@ function initCanvas() {
 
   function getXY(e) {
     const rect = canvas.getBoundingClientRect();
-    const src  = e.touches ? e.touches[0] : e;
+    // TouchList vazia em touchend e' truthy; usa changedTouches como fallback.
+    const src = (e.touches && e.touches.length) ? e.touches[0]
+              : (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0]
+              : e;
     return [src.clientX - rect.left, src.clientY - rect.top];
   }
 
@@ -648,7 +654,22 @@ function init() {
             setIfEmpty('f-email',    d.hospede_email);
             setIfEmpty('f-telefone', d.hospede_telefone);
             setIfEmpty('f-quarto',   d.hospede_quarto);
-            setIfEmpty('f-nascimento', d.hospede_data_nascimento);
+            // iOS Safari aceita SOMENTE YYYY-MM-DD em <input type="date">.
+            // Normaliza qualquer formato comum (DD/MM/YYYY, ISO com hora, etc).
+            const _normDataISO = (v) => {
+              if (!v) return '';
+              const s = String(v).trim();
+              // YYYY-MM-DD direto
+              if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+              // YYYY-MM-DDTHH... ou YYYY-MM-DD HH...
+              const m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+              if (m1) return `${m1[1]}-${m1[2]}-${m1[3]}`;
+              // DD/MM/YYYY
+              const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+              if (m2) return `${m2[3]}-${m2[2]}-${m2[1]}`;
+              return '';
+            };
+            setIfEmpty('f-nascimento', _normDataISO(d.hospede_data_nascimento));
             if (d.hospede_cpf) {
               const docSel = document.getElementById('f-doc-tipo');
               if (docSel && Array.from(docSel.options).some(o => o.value === 'cpf')) {
@@ -664,10 +685,13 @@ function init() {
               }
             }
           }
-          loadLocale(lang);
-          // Tenta pre-preencher pelo email do hospede (token aponta pra
-          // reserva → reserva tem email → busca ultimo spa_perfis).
-          _tentarPrePreencherHistorico({ token });
+          // AWAIT loadLocale ANTES de buscar historico — assim renderPills ja
+          // populou facial/body grids quando _aplicarPerfilNoForm tenta marcar
+          // os pills selecionados na visita anterior. Sem isso, a marcacao
+          // perde a corrida e selecoes historicas somem silenciosamente.
+          Promise.resolve(loadLocale(lang)).then(() => {
+            _tentarPrePreencherHistorico({ token });
+          });
         })
         .catch(() => loadLocale(lang));
       return;
@@ -1079,19 +1103,8 @@ function _coletarRespostasExtras() {
 }
 window._coletarRespostasExtras = _coletarRespostasExtras;
 
-// Wire-up: aplicar config após init/loadLocale ter rodado. Faz fallback
-// silencioso se backend não responder — form estático original aparece.
-(function () {
-  const originalInit = init;
-  // Substitui a referência global, mas como já chamamos init() acima,
-  // forçamos apply após DOMContentLoaded de qualquer forma.
-  const tentar = () => {
-    const lang = _currentLang || (new URLSearchParams(location.search)).get('lang') || localStorage.getItem('spa_lang') || 'pt-BR';
-    applyAnamneseConfig(lang);
-  };
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(tentar, 50);
-  } else {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(tentar, 50));
-  }
-})();
+// IIFE de wire-up removida — era redundante (loadLocale ja chama
+// applyAnamneseConfig) e causava race condition: 2 chamadas simultaneas
+// reescrevendo #f-doc-tipo e potencialmente perdendo o prefill do token.
+// Tambem usava localStorage.getItem sem try/catch (quebra em iOS Safari
+// modo privado).
