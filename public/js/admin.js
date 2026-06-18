@@ -1531,17 +1531,11 @@ function calSetTipo2(tipo) {
   _resTipo2 = tipo;
   document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.toggle('active', b.dataset.tipo2 === tipo));
   const isHospede = tipo === 'hospede';
-  const apto2El = document.getElementById('res2-fg-apto');
-  if (apto2El) {
-    apto2El.style.display = isHospede ? '' : 'none';
-    const nome2Fg = apto2El.previousElementSibling;
-    if (nome2Fg) nome2Fg.style.gridColumn = isHospede ? '' : '1 / -1';
-    if (!isHospede) document.getElementById('res2-inp-apto').value = '';
-  }
-  // Mostra/esconde campo Quarto2 conforme tipo de cliente
   const quarto2El = document.getElementById('res2-fg-quarto');
   if (quarto2El) {
     quarto2El.style.display = isHospede ? '' : 'none';
+    const nome2Fg = quarto2El.parentElement?.querySelector('.res-fg:first-child');
+    if (nome2Fg) nome2Fg.style.gridColumn = isHospede ? '' : '1 / -1';
     if (!isHospede) document.getElementById('res2-inp-quarto').value = '';
   }
 }
@@ -2001,7 +1995,7 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res2-fg-apto').style.display = 'none';
   const _nome2Fg = document.getElementById('res2-fg-apto')?.previousElementSibling;
   if (_nome2Fg) _nome2Fg.style.gridColumn = '1 / -1';
-  ['res2-inp-cpf','res2-inp-nome','res2-inp-apto','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
+  ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const _cpf2Info = document.getElementById('res2-cpf-info');
@@ -2730,9 +2724,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     const cpf2InpVal = (document.getElementById('res2-inp-cpf')?.value || '').replace(/\D/g, '');
     nome2       = document.getElementById('res2-inp-nome')?.value.trim() || '';
     tipo2       = _resTipo2;
-    apto2       = document.getElementById('res2-inp-apto')?.value.trim() || null;
     const quarto2Raw = (document.getElementById('res2-inp-quarto')?.value || '').trim();
     quarto2     = quarto2Raw ? _normNumQuarto(quarto2Raw) : null;
+    apto2       = quarto2;
     email2      = document.getElementById('res2-inp-email')?.value.trim() || null;
     tel2        = document.getElementById('res2-inp-tel')?.value.trim() || null;
     tratamento2 = document.getElementById('res-inp-tratamento2')?.value.trim() || '';

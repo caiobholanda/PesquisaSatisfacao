@@ -3383,15 +3383,11 @@
               <label>Nome</label>
               <input type="text" id="res2-inp-nome" placeholder="Nome completo">
             </div>
-            <div class="res-fg" id="res2-fg-apto" style="display:none">
-              <label>Nº do Apto</label>
-              <input type="text" id="res2-inp-apto" placeholder="Ex: 301">
+            <div class="res-fg" id="res2-fg-quarto" style="display:none">
+              <label>Nº do Quarto <small style="color:var(--muted);font-weight:400">— se hóspede</small></label>
+              <input type="text" id="res2-inp-quarto" placeholder="Ex: 0501" inputmode="numeric" maxlength="4">
+              <small id="res2-quarto-info" style="display:none;font-size:.78rem;margin-top:.25rem"></small>
             </div>
-          </div>
-          <div class="res-fg" id="res2-fg-quarto" style="display:none">
-            <label>Nº do Quarto <small style="color:var(--muted);font-weight:400">— se hóspede</small></label>
-            <input type="text" id="res2-inp-quarto" placeholder="Ex: 0501" inputmode="numeric" maxlength="4">
-            <small id="res2-quarto-info" style="display:none;font-size:.78rem;margin-top:.25rem"></small>
           </div>
           <div class="res-frow">
             <div class="res-fg">
@@ -3623,6 +3619,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=46"></script>
+<script src="/js/admin.js?v=47"></script>
 </body>
 </html>
