@@ -2469,11 +2469,14 @@ function calVerDetalhes(id) {
         ${r.email2 ? `<div class="resdet-kv"><div class="resdet-kv-label">E-mail</div><div class="resdet-kv-val">${escHtml(r.email2)}</div></div>` : ''}
         ${r.telefone2 ? `<div class="resdet-kv"><div class="resdet-kv-label">Telefone</div><div class="resdet-kv-val mono">${escHtml(r.telefone2)}</div></div>` : ''}
         ${!r.email2 && !r.telefone2 ? `<div class="resdet-kv"><div class="resdet-kv-val empty">Sem contato informado</div></div>` : ''}
+        <div class="resdet-kv"><div class="resdet-kv-label">Registrado por</div><div class="resdet-kv-val">${r.criado_por ? escHtml(r.criado_por) : '—'}</div></div>
       </div>
       <div class="resdet-card">
         <div class="resdet-card-title">Tratamento 2</div>
         <div class="resdet-tratamento-name">${r.tratamento2 ? escHtml(r.tratamento2) : '<span style="font-style:italic;color:var(--muted);font-family:var(--font);font-size:.9rem">não informado</span>'}</div>
+        ${r.linha2 ? `<div class="resdet-kv"><div class="resdet-kv-label">Linha</div><div class="resdet-kv-val">${escHtml(r.linha2)}</div></div>` : ''}
         <div class="resdet-kv"><div class="resdet-kv-label">Profissional</div>${_massagistaDetHtml2(r)}</div>
+        <div class="resdet-kv"><div class="resdet-kv-label">Duração</div><div class="resdet-kv-val mono">${dur} min</div></div>
         ${_precoDetHtml2(r)}
       </div>
     </div>
