@@ -1655,7 +1655,7 @@ export function listarReservasDaTerapeuta(massagistaId, { from, to } = {}) {
   if (to)   { conds.push('r.data <= ?'); params.push(to); }
   return db.prepare(`
     SELECT r.id, r.data, r.hora_inicio, r.hora_fim, r.sala, r.cliente, r.cliente2,
-           r.tipo_cliente, r.tipo_cliente2, r.quarto, r.quarto2, r.apto, r.apto2,
+           r.tipo_cliente, r.tipo_cliente2, r.quarto, r.apto2 AS quarto2, r.apto, r.apto2,
            r.tratamento, r.tratamento2, r.massagista_id, r.massagista_id2,
            t.nome AS tipo_massagem_nome, t2.nome AS tipo_massagem_nome2,
            m.nome AS massagista_nome, m2.nome AS massagista_nome2,
