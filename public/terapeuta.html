@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0A0E1A">
+<title>Gran SPA · Terapeuta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0E1A;
+  --surface: #11162A;
+  --surface2: #161B2E;
+  --border: rgba(138, 126, 100, 0.18);
+  --text: #F5F0E6;
+  --muted: #8A7E64;
+  --muted2: #D4C4A0;
+  --gold: #C9A961;
+  --gold-dim: rgba(201,169,97,.16);
+  --gold-dark: #B3924E;
+  --success: #3E8497;
+  --success-dim: rgba(62,132,151,.18);
+  --danger: #D86862;
+  --danger-dim: rgba(216,104,98,.18);
+  --font: 'Inter', system-ui, sans-serif;
+  --serif: 'Fraunces', Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 16px;
+  line-height: 1.5;
+}
+button, input { font-family: inherit; }
+.app { max-width: 560px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── Header ── */
+.tx-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.2rem .9rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+.tx-brand {
+  font-family: var(--serif); font-size: 1.05rem; font-weight: 500;
+  letter-spacing: .04em; color: var(--text);
+}
+.tx-brand small {
+  display: block; font-family: var(--font); font-size: .62rem;
+  letter-spacing: .25em; color: var(--gold); text-transform: uppercase;
+  margin-bottom: .15rem; font-weight: 600;
+}
+.tx-logout {
+  background: none; border: 1px solid var(--border); color: var(--muted2);
+  padding: .45rem .8rem; border-radius: 999px; font-size: .78rem; cursor: pointer;
+}
+.tx-logout:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Login ── */
+.tx-login {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2rem 1.4rem; gap: 1.4rem;
+}
+.tx-login-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 2rem 1.5rem;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.tx-login h1 {
+  font-family: var(--serif); font-size: 2rem; font-weight: 500;
+  margin: 0 0 .35rem; color: var(--text); line-height: 1.1;
+}
+.tx-login p { margin: 0 0 1.5rem; color: var(--muted2); font-size: .9rem; }
+.tx-field { margin-bottom: 1rem; }
+.tx-field label {
+  display: block; font-size: .68rem; color: var(--muted); margin-bottom: .4rem;
+  text-transform: uppercase; letter-spacing: .15em; font-weight: 700;
+}
+.tx-field select, .tx-field input {
+  width: 100%; padding: .9rem 1rem;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); border-radius: 10px; font-size: 1rem;
+  -webkit-appearance: none; appearance: none;
+  outline: none; transition: border-color .15s;
+}
+.tx-field select:focus, .tx-field input:focus { border-color: var(--gold); }
+.tx-field input[type="password"] { letter-spacing: .35em; }
+.tx-submit {
+  width: 100%; padding: 1rem; margin-top: .5rem;
+  background: var(--gold); color: var(--bg); border: 0;
+  border-radius: 10px; font-size: 1rem; font-weight: 600;
+  letter-spacing: .04em; cursor: pointer; transition: background .15s, transform .12s;
+}
+.tx-submit:hover { background: var(--gold-dark); }
+.tx-submit:active { transform: scale(.98); }
+.tx-submit:disabled { opacity: .5; cursor: wait; }
+.tx-err {
+  background: var(--danger-dim); border: 1px solid var(--danger);
+  color: var(--danger); padding: .7rem 1rem; border-radius: 8px;
+  font-size: .85rem; margin-bottom: 1rem; display: none;
+}
+.tx-err.show { display: block; }
+
+/* ── Agenda ── */
+.tx-agenda { flex: 1; padding: 1.2rem 1.2rem 4rem; }
+.tx-greet {
+  font-family: var(--serif); font-size: 1.6rem; font-weight: 500;
+  margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
+}
+.tx-greet-sub { color: var(--muted2); font-size: .85rem; margin: 0 0 1.4rem; }
+.tx-day-tabs {
+  display: flex; gap: .4rem; margin-bottom: 1.2rem; overflow-x: auto;
+  scroll-snap-type: x mandatory; padding-bottom: .25rem;
+}
+.tx-day-tab {
+  flex-shrink: 0; padding: .6rem 1rem; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 999px;
+  color: var(--muted2); cursor: pointer; font-size: .82rem;
+  scroll-snap-align: start;
+}
+.tx-day-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--text); font-weight: 600; }
+.tx-list { display: flex; flex-direction: column; gap: .65rem; }
+.tx-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1rem 1.1rem;
+  display: flex; flex-direction: column; gap: .35rem;
+  cursor: pointer; transition: transform .12s, border-color .15s;
+}
+.tx-card:active { transform: scale(.99); }
+.tx-card:hover { border-color: var(--gold); }
+.tx-card-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .8rem;
+}
+.tx-card-hora {
+  font-family: 'Inter', monospace; font-size: 1.1rem; font-weight: 600;
+  color: var(--gold); letter-spacing: -.01em;
+}
+.tx-card-sala {
+  font-size: .68rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .12em; font-weight: 700;
+}
+.tx-card-cli { font-size: 1rem; color: var(--text); font-weight: 500; }
+.tx-card-trat { font-size: .82rem; color: var(--muted2); font-style: italic; }
+.tx-card-tags { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .4rem; }
+.tx-tag {
+  display: inline-flex; align-items: center; gap: .25rem;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--muted2); padding: .25rem .6rem; border-radius: 999px;
+  font-size: .68rem; letter-spacing: .04em; font-weight: 500;
+}
+.tx-tag.quarto { color: var(--text); font-weight: 600; }
+.tx-tag.granclass {
+  background: var(--gold-dim); border-color: var(--gold);
+  color: var(--gold); font-weight: 700; letter-spacing: .08em;
+}
+.tx-tag.respondida {
+  background: var(--success-dim); border-color: var(--success); color: var(--success);
+}
+.tx-empty {
+  text-align: center; padding: 3rem 1rem; color: var(--muted2);
+}
+.tx-empty h3 {
+  font-family: var(--serif); font-size: 1.3rem; font-weight: 500;
+  margin: 0 0 .5rem; color: var(--text);
+}
+.tx-empty p { margin: 0; font-size: .9rem; }
+
+/* ── Detalhe modal ── */
+.tx-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  z-index: 100; display: none; align-items: flex-end;
+  backdrop-filter: blur(4px);
+}
+.tx-overlay.show { display: flex; }
+.tx-sheet {
+  background: var(--surface); width: 100%; max-width: 560px; margin: 0 auto;
+  border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem 2rem;
+  max-height: 92vh; overflow-y: auto;
+  animation: tx-up .25s ease;
+}
+@keyframes tx-up { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.tx-sheet-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: .8rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+}
+.tx-close {
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted2);
+  width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+}
+.tx-detail-titulo {
+  font-family: var(--serif); font-size: 1.45rem; font-weight: 500;
+  margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
+}
+.tx-detail-meta { color: var(--muted2); font-size: .85rem; margin: 0; }
+.tx-bloco {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: .9rem;
+}
+.tx-bloco-titulo {
+  font-size: .68rem; color: var(--gold); text-transform: uppercase;
+  letter-spacing: .15em; font-weight: 700; margin-bottom: .6rem;
+}
+.tx-bloco-row {
+  display: flex; justify-content: space-between; gap: 1rem;
+  padding: .3rem 0; border-bottom: 1px solid var(--border);
+  font-size: .88rem;
+}
+.tx-bloco-row:last-child { border-bottom: 0; }
+.tx-bloco-row span:first-child { color: var(--muted2); flex-shrink: 0; }
+.tx-bloco-row span:last-child { color: var(--text); text-align: right; word-break: break-word; }
+.tx-bloco-anam {
+  background: var(--gold-dim); border-color: var(--gold);
+}
+.tx-bloco-anam .tx-bloco-titulo { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- LOGIN -->
+  <div id="tx-login" class="tx-login">
+    <div class="tx-login-card">
+      <h1>Acesso<br>terapeuta</h1>
+      <p>Selecione seu nome e digite seu PIN.</p>
+      <div id="tx-login-err" class="tx-err"></div>
+      <form id="tx-login-form">
+        <div class="tx-field">
+          <label for="tx-nome">Nome</label>
+          <select id="tx-nome" required>
+            <option value="">Carregando…</option>
+          </select>
+        </div>
+        <div class="tx-field">
+          <label for="tx-pin">PIN</label>
+          <input type="password" id="tx-pin" inputmode="numeric" autocomplete="off" required minlength="4" maxlength="12">
+        </div>
+        <button type="submit" class="tx-submit" id="tx-submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="tx-app" style="display:none;flex:1;flex-direction:column">
+    <header class="tx-header">
+      <div class="tx-brand">
+        <small>Gran SPA</small>
+        <span id="tx-nome-header">Terapeuta</span>
+      </div>
+      <button class="tx-logout" id="tx-btn-logout">Sair</button>
+    </header>
+    <main class="tx-agenda">
+      <h2 class="tx-greet" id="tx-greet">Sua agenda</h2>
+      <p class="tx-greet-sub" id="tx-greet-sub">Carregando atendimentos…</p>
+      <div class="tx-day-tabs" id="tx-day-tabs"></div>
+      <div class="tx-list" id="tx-list"></div>
+    </main>
+  </div>
+
+  <!-- DETALHE -->
+  <div id="tx-overlay" class="tx-overlay">
+    <div class="tx-sheet" id="tx-sheet"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (iso) => { if(!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
+  const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
+
+  let _me = null, _reservas = [], _diaAtivo = null;
+
+  // ───── LOGIN ─────
+  async function carregarNomes() {
+    try {
+      const r = await fetch('/api/terapeuta/nomes-ativos');
+      const d = await r.json();
+      const sel = $('tx-nome');
+      sel.innerHTML = '<option value="">Selecione…</option>' +
+        (d.nomes || []).map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    } catch (e) {
+      $('tx-nome').innerHTML = '<option value="">Erro ao carregar</option>';
+    }
+  }
+  async function checarSessao() {
+    try {
+      const r = await fetch('/api/terapeuta/me');
+      if (r.ok) {
+        _me = await r.json();
+        if (_me?.ok) return entrarApp();
+      }
+    } catch {}
+    mostrarLogin();
+  }
+  function mostrarLogin() { $('tx-login').style.display = 'flex'; $('tx-app').style.display = 'none'; carregarNomes(); }
+  function entrarApp() {
+    $('tx-login').style.display = 'none';
+    $('tx-app').style.display = 'flex';
+    $('tx-nome-header').textContent = _me?.nome || 'Terapeuta';
+    carregarAgenda();
+  }
+  $('tx-login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('tx-submit'); const err = $('tx-login-err');
+    err.classList.remove('show'); btn.disabled = true; btn.textContent = 'Entrando…';
+    try {
+      const r = await fetch('/api/terapeuta/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: $('tx-nome').value, pin: $('tx-pin').value }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d?.ok) {
+        err.textContent = d?.error || 'Erro ao entrar';
+        err.classList.add('show');
+        btn.disabled = false; btn.textContent = 'Entrar';
+        return;
+      }
+      // Carrega /me para pegar id (necessario pra escopar P1/P2 no card)
+      try {
+        const m = await fetch('/api/terapeuta/me');
+        const md = await m.json();
+        if (md?.ok) _me = { id: md.id, nome: md.nome };
+        else _me = { nome: d.nome };
+      } catch { _me = { nome: d.nome }; }
+      $('tx-pin').value = '';
+      entrarApp();
+    } catch (e) {
+      err.textContent = 'Erro de rede. Tente novamente.';
+      err.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  });
+  $('tx-btn-logout').addEventListener('click', async () => {
+    await fetch('/api/terapeuta/logout', { method: 'POST' });
+    _me = null; _reservas = [];
+    mostrarLogin();
+  });
+
+  // ───── AGENDA ─────
+  async function carregarAgenda() {
+    const sub = $('tx-greet-sub');
+    sub.textContent = 'Carregando atendimentos…';
+    try {
+      // Janela: 30 dias antes e 30 dias depois de hoje (cobre semana atual e proximas)
+      const hoje = new Date();
+      const from = new Date(hoje.getTime() - 30 * 86400000).toISOString().slice(0,10);
+      const to = new Date(hoje.getTime() + 30 * 86400000).toISOString().slice(0,10);
+      const r = await fetch(`/api/terapeuta/agenda?from=${from}&to=${to}`);
+      if (r.status === 401) return mostrarLogin();
+      const d = await r.json();
+      _reservas = d.items || [];
+      renderDias();
+    } catch (e) {
+      sub.textContent = 'Erro de rede. Toque para tentar novamente.';
+      sub.style.cursor = 'pointer';
+      sub.onclick = carregarAgenda;
+    }
+  }
+  function renderDias() {
+    // Agrupa por data, ordena
+    const dias = [...new Set(_reservas.map(r => r.data))].sort();
+    const hojeStr = new Date().toISOString().slice(0,10);
+    if (!_diaAtivo || !dias.includes(_diaAtivo)) {
+      _diaAtivo = dias.includes(hojeStr) ? hojeStr : (dias[0] || hojeStr);
+    }
+    const tabs = $('tx-day-tabs');
+    if (!dias.length) {
+      tabs.innerHTML = '';
+      $('tx-greet-sub').textContent = 'Sem atendimentos nos próximos dias.';
+      $('tx-list').innerHTML = `<div class="tx-empty"><h3>Agenda livre</h3><p>Você não tem atendimentos marcados.</p></div>`;
+      return;
+    }
+    $('tx-greet-sub').textContent = `${_reservas.length} atendimento${_reservas.length!==1?'s':''} agendado${_reservas.length!==1?'s':''}.`;
+    tabs.innerHTML = dias.map(dt => {
+      const isHoje = dt === hojeStr;
+      const [y,m,d] = dt.split('-');
+      const data = new Date(+y, +m-1, +d);
+      const dia = data.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
+      const labelDia = isHoje ? 'Hoje' : `${dia} ${d}/${m}`;
+      return `<button class="tx-day-tab${dt===_diaAtivo?' active':''}" data-dia="${dt}">${esc(labelDia)}</button>`;
+    }).join('');
+    tabs.querySelectorAll('.tx-day-tab').forEach(b => b.addEventListener('click', () => { _diaAtivo = b.dataset.dia; renderDias(); }));
+    renderLista();
+  }
+  function renderLista() {
+    const items = _reservas.filter(r => r.data === _diaAtivo);
+    const list = $('tx-list');
+    if (!items.length) {
+      list.innerHTML = `<div class="tx-empty"><h3>Sem atendimentos</h3><p>Nenhum agendamento para ${fmtDate(_diaAtivo)}.</p></div>`;
+      return;
+    }
+    list.innerHTML = items.map(r => {
+      const isP1 = r.massagista_id === _me?.id;
+      const isP2 = r.massagista_id2 === _me?.id;
+      const cliente = isP1 ? r.cliente : (isP2 ? (r.cliente2 || r.cliente) : r.cliente);
+      const trat = isP2 ? (r.tipo_massagem_nome2 || r.tratamento2 || r.tipo_massagem_nome || r.tratamento) : (r.tipo_massagem_nome || r.tratamento);
+      const quarto = isP2 ? (r.quarto2 || r.apto2 || r.quarto || r.apto) : (r.quarto || r.apto);
+      const sala = SALA_NOME[r.sala] || `Sala ${r.sala}`;
+      const ehGranClass = quarto && (String(quarto).startsWith('06') || String(quarto).startsWith('17') || String(quarto).startsWith('19'));
+      return `
+        <article class="tx-card" data-id="${r.id}">
+          <div class="tx-card-head">
+            <span class="tx-card-hora">${esc(r.hora_inicio || '')} → ${esc(r.hora_fim || '')}</span>
+            <span class="tx-card-sala">${esc(sala)}</span>
+          </div>
+          <div class="tx-card-cli">${esc(cliente || '—')}</div>
+          <div class="tx-card-trat">${esc(trat || '—')}</div>
+          <div class="tx-card-tags">
+            ${quarto ? `<span class="tx-tag quarto">Quarto ${esc(quarto)}</span>` : ''}
+            ${ehGranClass ? `<span class="tx-tag granclass">GRAN CLASS</span>` : ''}
+            ${r.respondeu_pesquisa ? `<span class="tx-tag respondida">✓ Pesquisa</span>` : ''}
+          </div>
+        </article>
+      `;
+    }).join('');
+    list.querySelectorAll('.tx-card').forEach(c => c.addEventListener('click', () => abrirDetalhe(+c.dataset.id)));
+  }
+
+  // ───── DETALHE ─────
+  async function abrirDetalhe(id) {
+    const ov = $('tx-overlay'), sheet = $('tx-sheet');
+    sheet.innerHTML = `<div class="tx-sheet-head"><h2 class="tx-detail-titulo">Carregando…</h2><button class="tx-close" data-close>✕</button></div>`;
+    ov.classList.add('show');
+    sheet.querySelector('[data-close]').addEventListener('click', () => ov.classList.remove('show'));
+    try {
+      const r = await fetch(`/api/terapeuta/atendimento/${id}`);
+      if (r.status === 401) { ov.classList.remove('show'); return mostrarLogin(); }
+      if (!r.ok) { sheet.innerHTML = '<p style="padding:1rem;color:var(--danger)">Erro ao carregar.</p>'; return; }
+      const d = await r.json();
+      renderDetalhe(d, ov);
+    } catch (e) {
+      sheet.innerHTML = '<p style="padding:1rem;color:var(--danger)">Erro de rede.</p>';
+    }
+  }
+  function renderDetalhe(d, ov) {
+    const sheet = $('tx-sheet');
+    const { reserva, pessoa1, pessoa2 } = d;
+    const isP1 = reserva.massagista_id === _me?.id;
+    const p = isP1 ? pessoa1 : (pessoa2 || pessoa1);
+    const cliente = isP1 ? reserva.cliente : (reserva.cliente2 || reserva.cliente);
+    const quarto = isP1 ? (reserva.quarto || reserva.apto) : (reserva.quarto2 || reserva.apto2 || reserva.quarto);
+    const trat = isP1 ? (reserva.tipo_massagem_nome || reserva.tratamento) : (reserva.tipo_massagem_nome2 || reserva.tratamento2 || reserva.tipo_massagem_nome);
+    const sala = SALA_NOME[reserva.sala] || `Sala ${reserva.sala}`;
+    const anam = p?.anamnese;
+
+    const camposAnam = anam ? [
+      ['Documento', `${(anam.tipo_documento||'cpf').toUpperCase()} ${anam.documento||''}`],
+      ['E-mail', anam.email],
+      ['Telefone', anam.telefone],
+      ['Nascimento', anam.data_nascimento],
+      ['Rotina facial', anam.rotina_facial],
+      ['Rotina corporal', anam.rotina_corporal],
+      ['Produto específico', anam.produto_especifico],
+      ['Pressão preferida', anam.pressao_massagem],
+      ['Informações médicas', anam.info_medica],
+    ].filter(([,v]) => v && String(v).trim()) : [];
+
+    sheet.innerHTML = `
+      <div class="tx-sheet-head">
+        <div style="flex:1;min-width:0">
+          <h2 class="tx-detail-titulo">${esc(cliente || '—')}</h2>
+          <p class="tx-detail-meta">${esc(sala)} · ${fmtDate(reserva.data)} · ${esc(reserva.hora_inicio||'')}–${esc(reserva.hora_fim||'')}</p>
+        </div>
+        <button class="tx-close" data-close>✕</button>
+      </div>
+      <div class="tx-bloco">
+        <div class="tx-bloco-titulo">Atendimento</div>
+        <div class="tx-bloco-row"><span>Quarto</span><span>${esc(quarto || '—')}</span></div>
+        <div class="tx-bloco-row"><span>Tratamento</span><span>${esc(trat || '—')}</span></div>
+        <div class="tx-bloco-row"><span>Pesquisa</span><span>${p?.pesquisa_respondida_em ? '✓ Respondida' : 'Pendente'}</span></div>
+      </div>
+      ${anam ? `
+        <div class="tx-bloco tx-bloco-anam">
+          <div class="tx-bloco-titulo">Anamnese (somente leitura)</div>
+          ${camposAnam.map(([k,v]) => `<div class="tx-bloco-row"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}
+        </div>
+      ` : `
+        <div class="tx-bloco">
+          <div class="tx-bloco-titulo">Anamnese</div>
+          <p style="margin:0;color:var(--muted2);font-size:.88rem">Sem anamnese vinculada.</p>
+        </div>
+      `}
+    `;
+    sheet.querySelector('[data-close]').addEventListener('click', () => ov.classList.remove('show'));
+  }
+
+  // Init
+  checarSessao();
+})();
+</script>
+</body>
+</html>

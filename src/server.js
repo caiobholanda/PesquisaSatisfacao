@@ -16,6 +16,7 @@ import relatoriosRouter from './routes/relatorios.js';
 import qualidadeRouter from './routes/qualidade.js';
 import clientesRouter from './routes/clientes.js';
 import auditoriaRouter from './routes/auditoria.js';
+import terapeutaRouter from './routes/terapeuta.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
 import { auditMiddleware } from './middleware/audit.js';
 
@@ -108,6 +109,10 @@ function isPublicPath(p) {
   // ?token=XXX). Hospede/passante NUNCA tem login no Hub — autenticacao
   // e' via token validado pelo backend em /api/survey/:token.
   if (p === '/' || p === '/index.html') return true;
+  // Acesso mobile da terapeuta. Pagina propria (terapeuta.html), login
+  // publico via POST /api/terapeuta/login. requireTerapeuta protege os
+  // endpoints internos com cookie spa_terapeuta_sess isolado.
+  if (p === '/terapeuta' || p === '/terapeuta.html') return true;
   return false;
 }
 app.use((req, res, next) => {
@@ -235,6 +240,9 @@ app.use('/api/feedback', feedbackRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/clientes', clientesRouter);
 app.use('/api/auditoria', auditoriaRouter);
+app.use('/api/terapeuta', terapeutaRouter);
+// URL bonita /terapeuta serve a pagina mobile
+app.get('/terapeuta', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'terapeuta.html')));
 app.use('/api/reservas', reservasRouter);
 app.use('/api', cadastrosRouter);
 

@@ -1,10 +1,11 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
-  historicoMassagista,
+  historicoMassagista, setMassagistaPinHash,
 } from '../db.js';
 
 const router = Router();
@@ -99,6 +100,20 @@ router.get('/massagistas/:id/historico', (req, res) => {
 router.delete('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
   const changes = deletarMassagista(parseInt(req.params.id));
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  res.json({ ok: true });
+});
+
+// Define/reseta PIN da massoterapeuta (login mobile). Hash bcrypt.
+// Admin nunca ve o PIN — apenas redefine.
+router.post('/massagistas/:id/pin', ...podeEscreverSpa, async (req, res) => {
+  const { pin } = req.body || {};
+  if (!pin || typeof pin !== 'string' || pin.length < 4 || pin.length > 12) {
+    return res.status(400).json({ ok: false, error: 'PIN deve ter 4 a 12 caracteres' });
+  }
+  const m = buscarMassagistaById(parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Massoterapeuta nao encontrada' });
+  const hash = await bcrypt.hash(String(pin), 10);
+  setMassagistaPinHash(m.id, hash);
   res.json({ ok: true });
 });
 

@@ -51,3 +51,22 @@ export function requireSatisfacao(req, res, next) {
   if (!['master', 'satisfacao', 'admin'].includes(req.user?.role)) return res.status(403).json({ ok: false, error: 'Acesso restrito a relatórios' });
   next();
 }
+
+// Middleware EXCLUSIVO da rota /api/terapeuta/* — cookie isolado
+// (spa_terapeuta_sess). NAO compartilha com spa_admin_sess. NAO concede
+// acesso a nenhum endpoint admin. Popula req.user com massagista_id e
+// role:'terapeuta'.
+export function requireTerapeuta(req, res, next) {
+  const token = _readCookie(req, 'spa_terapeuta_sess');
+  if (!token) return res.status(401).json({ ok: false, error: 'Não autenticado' });
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (payload?.role !== 'terapeuta' || !payload?.massagista_id) {
+      return res.status(401).json({ ok: false, error: 'Token invalido' });
+    }
+    req.user = payload;
+    next();
+  } catch {
+    return res.status(401).json({ ok: false, error: 'Sessao expirada' });
+  }
+}

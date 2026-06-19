@@ -435,10 +435,9 @@ export function initDb() {
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN quarto TEXT`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
-  // reserva_id em feedback: routes/feedback.js:102 ja faz UPDATE assumindo
-  // existir; ALTER estava faltando (try/catch silenciava o erro de UPDATE).
-  // Aditivo, idempotente — try/catch evita 'duplicate column' apos primeiro deploy.
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN reserva_id INTEGER`); } catch {}
+  // PIN hash da terapeuta (login mobile). Aditivo + idempotente.
+  try { db.exec(`ALTER TABLE massagistas ADD COLUMN pin_hash TEXT`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cpf       ON reservas(cpf)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_spa_perfis_cliente ON spa_perfis(cliente_id)`); } catch {}
@@ -1633,4 +1632,54 @@ export function listarAuditoria({ from, to, ator, acao, recurso, sucesso, limit 
 
 export function listarRecursosAuditoria() {
   return getDb().prepare("SELECT DISTINCT recurso FROM auditoria WHERE recurso IS NOT NULL ORDER BY recurso").all().map(r => r.recurso);
+}
+
+// ───── Terapeuta (mobile) — helpers de DB ─────
+export function buscarMassagistaPorNome(nome) {
+  if (!nome) return null;
+  return getDb().prepare("SELECT id, nome, pin_hash, ativo FROM massagistas WHERE LOWER(nome) = LOWER(?) LIMIT 1").get(nome) || null;
+}
+export function buscarMassagistaPorId(id) {
+  return getDb().prepare("SELECT id, nome, ativo FROM massagistas WHERE id = ?").get(id) || null;
+}
+export function setMassagistaPinHash(id, pinHash) {
+  getDb().prepare("UPDATE massagistas SET pin_hash = ? WHERE id = ?").run(pinHash, id);
+}
+// Agenda da terapeuta: reservas SOMENTE com massagista_id correspondente
+// (pessoa 1 OU pessoa 2 — em sessoes de casal a terapeuta pode estar na sala 2).
+export function listarReservasDaTerapeuta(massagistaId, { from, to } = {}) {
+  const db = getDb();
+  const conds = ['(r.massagista_id = ? OR r.massagista_id2 = ?)'];
+  const params = [massagistaId, massagistaId];
+  if (from) { conds.push('r.data >= ?'); params.push(from); }
+  if (to)   { conds.push('r.data <= ?'); params.push(to); }
+  return db.prepare(`
+    SELECT r.id, r.data, r.hora_inicio, r.hora_fim, r.sala, r.cliente, r.cliente2,
+           r.tipo_cliente, r.tipo_cliente2, r.quarto, r.quarto2, r.apto, r.apto2,
+           r.tratamento, r.tratamento2, r.massagista_id, r.massagista_id2,
+           t.nome AS tipo_massagem_nome, t2.nome AS tipo_massagem_nome2,
+           m.nome AS massagista_nome, m2.nome AS massagista_nome2,
+           CASE WHEN EXISTS (
+             SELECT 1 FROM survey_tokens st
+             WHERE st.reserva_id = r.id AND st.respondida_em IS NOT NULL
+           ) THEN 1 ELSE 0 END AS respondeu_pesquisa
+    FROM reservas r
+    LEFT JOIN tipos_massagem t  ON t.id = r.tipo_massagem_id
+    LEFT JOIN tipos_massagem t2 ON t2.id = r.tipo_massagem_id2
+    LEFT JOIN massagistas m  ON m.id = r.massagista_id
+    LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
+    WHERE ${conds.join(' AND ')}
+    ORDER BY r.data ASC, r.hora_inicio ASC
+  `).all(...params);
+}
+// Detalhe de uma reserva — valida que pertence a essa terapeuta.
+// Retorna null se nao pertence (frontend tratara como 404).
+export function buscarReservaDetalheTerapeuta(reservaId, massagistaId) {
+  const r = getDb().prepare(`
+    SELECT id, massagista_id, massagista_id2
+    FROM reservas WHERE id = ?
+  `).get(reservaId);
+  if (!r) return null;
+  if (r.massagista_id !== massagistaId && r.massagista_id2 !== massagistaId) return null;
+  return buscarReservaDetalhe(reservaId);
 }
