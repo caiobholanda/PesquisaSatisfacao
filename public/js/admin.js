@@ -4956,7 +4956,7 @@ async function _anamTraduzirRotulo(rotuloPtBR) {
       // Heuristica: se nenhuma traducao mudou o texto, backend caiu no
       // fallback (sem credito/erro na API). Alerta admin.
       if (!traduziuAlgum && Object.keys(d.traducoes).length > 0) {
-        showToast('⚠ Traducao automatica falhou (sem credito Anthropic?) — salvando so pt-BR', 6000);
+        showToast('⚠ Traducao MyMemory falhou (rede lenta ou quota diaria 50k palavras esgotada) — salvando so em pt-BR. Tente de novo em alguns minutos.', 7000);
       }
     } else {
       showToast('⚠ Traducao automatica indisponivel — salvando so em pt-BR', 5000);

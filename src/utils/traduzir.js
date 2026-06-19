@@ -26,32 +26,37 @@ const FONTE = 'pt-BR';
 // Email para subir o limite de 1000 -> 50000 palavras/dia.
 const DE_EMAIL = process.env.MYMEMORY_EMAIL || 'caiobholanda2007@gmail.com';
 
-async function _traduzirUm(texto, alvo) {
+async function _traduzirUmTentativa(texto, alvo, timeoutMs) {
   const langpair = `${FONTE}|${IDIOMAS[alvo]}`;
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${encodeURIComponent(langpair)}&de=${encodeURIComponent(DE_EMAIL)}`;
-  try {
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'PesquisaSatisfacaoSPA-GranMarquise/1.0' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!r.ok) {
-      console.warn('[traduzir]', alvo, 'http', r.status);
-      return null;
-    }
-    const j = await r.json();
-    const traduzido = j?.responseData?.translatedText;
-    if (typeof traduzido !== 'string' || !traduzido.trim()) return null;
-    // MyMemory as vezes devolve mensagens em CAPS como "MYMEMORY WARNING:"
-    // ou "PLEASE SELECT TWO DISTINCT LANGUAGES" quando algo deu errado.
-    if (/^(MYMEMORY|PLEASE SELECT|INVALID)/i.test(traduzido.trim())) {
-      console.warn('[traduzir]', alvo, 'mensagem do servico:', traduzido.slice(0, 80));
-      return null;
-    }
-    return traduzido.trim();
-  } catch (e) {
-    console.warn('[traduzir]', alvo, 'erro:', e.message);
-    return null;
+  const r = await fetch(url, {
+    headers: { 'User-Agent': 'PesquisaSatisfacaoSPA-GranMarquise/1.0' },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!r.ok) throw new Error('http ' + r.status);
+  const j = await r.json();
+  if (j?.quotaFinished) throw new Error('quota mymemory esgotada');
+  const traduzido = j?.responseData?.translatedText;
+  if (typeof traduzido !== 'string' || !traduzido.trim()) throw new Error('resposta vazia');
+  if (/^(MYMEMORY|PLEASE SELECT|INVALID)/i.test(traduzido.trim())) {
+    throw new Error('mymemory: ' + traduzido.slice(0, 80));
   }
+  return traduzido.trim();
+}
+
+// Retry com backoff: 12s → 18s. Necessario porque MyMemory ocasionalmente
+// e' lento ou retorna 429 quando chamado em rajada (6 idiomas em paralelo).
+async function _traduzirUm(texto, alvo) {
+  const timeouts = [12000, 18000];
+  for (let i = 0; i < timeouts.length; i++) {
+    try {
+      return await _traduzirUmTentativa(texto, alvo, timeouts[i]);
+    } catch (e) {
+      console.warn('[traduzir]', alvo, 'tentativa', i + 1, e.message);
+      if (i < timeouts.length - 1) await new Promise(r => setTimeout(r, 400));
+    }
+  }
+  return null;
 }
 
 /**
@@ -69,8 +74,12 @@ export async function traduzirParaTodos(ptBR, idiomas) {
   // Fallback inicial: se algum idioma falhar, fica com pt-BR.
   const out = Object.fromEntries(alvos.map(i => [i, fonte]));
 
-  const resultados = await Promise.all(alvos.map(async a => [a, await _traduzirUm(fonte, a)]));
-  for (const [alvo, texto] of resultados) {
+  // SEQUENCIAL (nao paralelo): MyMemory rate-limita rajadas do mesmo IP
+  // (especialmente do IP compartilhado do Fly.io GRU). 6 requests
+  // sequenciais (~1s cada) acabam sendo mais robustas que 6 paralelas
+  // que falham juntas.
+  for (const alvo of alvos) {
+    const texto = await _traduzirUm(fonte, alvo);
     if (texto) out[alvo] = texto;
   }
   return out;
