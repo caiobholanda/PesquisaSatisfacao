@@ -4738,40 +4738,82 @@ async function _anamxAddSecaoFlow() {
   }
 }
 
+let _anamxCriandoPergunta = false;
 async function _anamxAddPergunta(secaoId) {
-  const resp = await pedirPergunta({
-    titulo: 'Nova pergunta',
-    mensagem: 'Defina o rótulo e o tipo. Tradução para 6 idiomas e automática.',
-    valorTipo: 'texto_livre',
-    valorObrigatoria: false,
-    tipos: _ANAM_TIPOS,
-  });
-  if (!resp) return;
-  const { rotulo, tipo, obrigatoria } = resp;
-  if (!rotulo) return;
+  if (_anamxCriandoPergunta) return; // guard double-click
+  _anamxCriandoPergunta = true;
   try {
+    const resp = await pedirPergunta({
+      titulo: 'Nova pergunta',
+      mensagem: 'Defina o rótulo e o tipo. Tradução para 6 idiomas é automática.',
+      valorTipo: 'texto_livre',
+      valorObrigatoria: false,
+      tipos: _ANAM_TIPOS,
+    });
+    if (!resp) return;
+    const rotulo = (resp.rotulo || '').trim();
+    const { tipo, obrigatoria } = resp;
+    if (!rotulo) return;
+
+    // Calcula ordem dinamica: maior ordem da secao + 10. Evita varias
+    // perguntas com ordem 99 que ficam empatadas.
+    const secao = (_anamEstrutura?.secoes || []).find(s => s.id === secaoId);
+    const perguntasSec = (secao?.perguntas || []).filter(p => p.ativo !== 0);
+    const proximaOrdem = perguntasSec.length
+      ? Math.max(...perguntasSec.map(p => (typeof p.ordem === 'number' ? p.ordem : 0))) + 10
+      : 10;
+
     const chave = _slugChave(rotulo, 'anamnese_');
-    const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-      chave, tipo, ativo: 1, traducoes: { 'pt-BR': { rotulo } },
-    });
-    if (!r1?.id) return showToast('Erro ao criar pergunta');
-    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
-      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
-    });
-    if (tipo === 'escala') {
-      const TRAD = { sim: { 'pt-BR':'Sim' }, nao: { 'pt-BR':'Não' } };
-      await apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
-        chave: 'sim', ordem: 1, ativo: 1, traducoes: TRAD.sim,
+    let r1 = null;
+    try {
+      r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
+        chave, tipo, ativo: 1, traducoes: { 'pt-BR': { rotulo } },
       });
-      await apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
-        chave: 'nao', ordem: 2, ativo: 1, traducoes: TRAD.nao,
-      });
+      if (!r1?.id) { showToast('Erro ao criar pergunta'); return; }
+
+      // Tenta associar. Se falhar, faz rollback removendo a pergunta global
+      // criada para nao deixar lixo orfao no banco.
+      try {
+        await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
+          pergunta_id: r1.id, secao_id: secaoId, ordem: proximaOrdem, obrigatoria, ativo: 1,
+        });
+      } catch (assocErr) {
+        // Rollback best-effort
+        try { await apiSend('DELETE', `/api/qualidade/admin/perguntas/${r1.id}`); } catch {}
+        throw assocErr;
+      }
+
+      // Tipo 'escala' cria Sim/Nao automaticamente — paralelo pra economizar
+      // round-trips.
+      if (tipo === 'escala') {
+        const TRAD = { sim: { 'pt-BR': 'Sim' }, nao: { 'pt-BR': 'Não' } };
+        await Promise.all([
+          apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
+            chave: 'sim', ordem: 1, ativo: 1, traducoes: TRAD.sim,
+          }),
+          apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
+            chave: 'nao', ordem: 2, ativo: 1, traducoes: TRAD.nao,
+          }),
+        ]);
+      }
+
+      _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
+      showToast('Pergunta criada');
+
+      // Para 'unica'/'multipla' SEM opcoes ainda — abre o modal de opcoes
+      // automaticamente para nao deixar pergunta orfa no publico.
+      if (tipo === 'unica' || tipo === 'multipla') {
+        // Re-render primeiro, depois abre o modal pra editar opcoes da chave nova.
+        await initAnamneseEditor();
+        setTimeout(() => _anamEditOpcoes(chave), 100);
+      } else {
+        initAnamneseEditor();
+      }
+    } catch (e) {
+      showToast('Erro: ' + (e?.message || e), 4000);
     }
-    _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
-    showToast('Pergunta criada');
-    initAnamneseEditor();
-  } catch (e) {
-    showToast('Erro: ' + (e?.message || e), 4000);
+  } finally {
+    _anamxCriandoPergunta = false;
   }
 }
 
