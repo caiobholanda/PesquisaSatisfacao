@@ -1497,7 +1497,15 @@ const CAL_ROOMS = [
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
-const CAL_SLOT_PX = 76;
+// Lê altura do slot da CSS var --cal-slot-h (definida em :root) — mantem
+// JS e CSS sincronizados. Fallback 52 se var nao disponivel.
+const CAL_SLOT_PX = (() => {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--cal-slot-h').trim();
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : 52;
+  } catch { return 52; }
+})();
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 let _reservas  = [];
