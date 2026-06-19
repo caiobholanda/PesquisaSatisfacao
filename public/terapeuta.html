@@ -115,18 +115,59 @@ button, input { font-family: inherit; }
   font-family: var(--serif); font-size: 1.6rem; font-weight: 500;
   margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
 }
-.tx-greet-sub { color: var(--muted2); font-size: .85rem; margin: 0 0 1.4rem; }
-.tx-day-tabs {
-  display: flex; gap: .4rem; margin-bottom: 1.2rem; overflow-x: auto;
-  scroll-snap-type: x mandatory; padding-bottom: .25rem;
+.tx-greet-sub { color: var(--muted2); font-size: .85rem; margin: 0 0 1rem; }
+
+/* Hoje / Semana toggle */
+.tx-view-tabs {
+  display: flex; gap: .35rem; margin-bottom: 1rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: .3rem;
 }
+.tx-view-tab {
+  flex: 1; padding: .55rem .5rem; border: none; border-radius: 8px;
+  background: transparent; color: var(--muted2); font-family: var(--font);
+  font-size: .88rem; font-weight: 500; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.tx-view-tab.active {
+  background: var(--gold); color: var(--bg); font-weight: 700;
+}
+
+/* Semana: dia tabs scrolláveis */
+.tx-day-tabs {
+  display: flex; gap: .35rem; margin-bottom: 1.1rem; overflow-x: auto;
+  scroll-snap-type: x mandatory; padding-bottom: .25rem;
+  scrollbar-width: none;
+}
+.tx-day-tabs::-webkit-scrollbar { display: none; }
 .tx-day-tab {
-  flex-shrink: 0; padding: .6rem 1rem; background: var(--surface);
+  flex-shrink: 0; padding: .5rem .85rem; background: var(--surface);
   border: 1px solid var(--border); border-radius: 999px;
-  color: var(--muted2); cursor: pointer; font-size: .82rem;
-  scroll-snap-align: start;
+  color: var(--muted2); cursor: pointer; font-size: .8rem;
+  scroll-snap-align: start; line-height: 1.2; text-align: center;
 }
 .tx-day-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--text); font-weight: 600; }
+.tx-day-tab.hoje-tab { border-color: var(--gold); }
+.tx-day-tab .tx-tab-dia { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; display: block; opacity: .7; }
+.tx-day-tab .tx-tab-num { font-weight: 700; font-size: .95rem; display: block; }
+
+/* Cabeçalho de dia no modo semana */
+.tx-dia-header {
+  display: flex; align-items: center; gap: .7rem;
+  margin: 1.2rem 0 .6rem;
+}
+.tx-dia-header:first-child { margin-top: 0; }
+.tx-dia-label {
+  font-family: var(--serif); font-size: 1.05rem; font-weight: 500; color: var(--text);
+}
+.tx-dia-label.hoje { color: var(--gold); }
+.tx-dia-line { flex: 1; height: 1px; background: var(--border); }
+.tx-dia-count {
+  font-size: .68rem; color: var(--muted); letter-spacing: .08em;
+  font-weight: 600; background: var(--surface); border: 1px solid var(--border);
+  padding: .15rem .5rem; border-radius: 999px;
+}
+
 .tx-list { display: flex; flex-direction: column; gap: .65rem; }
 .tx-card {
   background: var(--surface); border: 1px solid var(--border);
@@ -259,8 +300,12 @@ button, input { font-family: inherit; }
     <main class="tx-agenda">
       <h2 class="tx-greet" id="tx-greet">Sua agenda</h2>
       <p class="tx-greet-sub" id="tx-greet-sub">Carregando atendimentos…</p>
-      <div class="tx-day-tabs" id="tx-day-tabs"></div>
-      <div class="tx-list" id="tx-list"></div>
+      <div class="tx-view-tabs">
+        <button class="tx-view-tab active" id="btn-view-hoje">Hoje</button>
+        <button class="tx-view-tab" id="btn-view-semana">Esta semana</button>
+      </div>
+      <div class="tx-day-tabs" id="tx-day-tabs" style="display:none"></div>
+      <div id="tx-list"></div>
     </main>
   </div>
 
@@ -277,7 +322,7 @@ button, input { font-family: inherit; }
   const fmtDate = (iso) => { if(!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
 
-  let _me = null, _reservas = [], _diaAtivo = null;
+  let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
 
   // ───── LOGIN ─────
   async function carregarNomes() {
@@ -345,84 +390,138 @@ button, input { font-family: inherit; }
     mostrarLogin();
   });
 
+  // ───── UTILS ─────
+  function toLocalISO(d) {
+    const p = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  }
+  function getWeekDates(hoje) {
+    const d = new Date(hoje);
+    const day = d.getDay(); // 0=Dom
+    const toMon = day === 0 ? -6 : 1 - day;
+    return Array.from({length: 7}, (_, i) => {
+      const nd = new Date(d); nd.setDate(d.getDate() + toMon + i); return toLocalISO(nd);
+    });
+  }
+  function labelDiaSemana(iso, hojeStr) {
+    const [y,m,dd] = iso.split('-');
+    const dt = new Date(+y, +m-1, +dd);
+    const abrev = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
+    if (iso === hojeStr) return { short: 'Hoje', full: `Hoje, ${dd}/${m}` };
+    return { short: abrev, full: `${abrev}, ${dd}/${m}` };
+  }
+
   // ───── AGENDA ─────
   async function carregarAgenda() {
     const sub = $('tx-greet-sub');
     sub.textContent = 'Carregando atendimentos…';
     try {
-      // Janela: 30 dias antes e 30 dias depois de hoje (cobre semana atual e proximas)
       const hoje = new Date();
-      const from = new Date(hoje.getTime() - 30 * 86400000).toISOString().slice(0,10);
-      const to = new Date(hoje.getTime() + 30 * 86400000).toISOString().slice(0,10);
+      const hojeStr = toLocalISO(hoje);
+      const semana = getWeekDates(hoje);
+      const from = semana[0];
+      const to   = semana[6];
       const r = await fetch(`/api/terapeuta/agenda?from=${from}&to=${to}`);
       if (r.status === 401) return mostrarLogin();
       const d = await r.json();
       _reservas = d.items || [];
-      renderDias();
-    } catch (e) {
+      _diaAtivo = hojeStr;
+      renderAgenda();
+    } catch {
       sub.textContent = 'Erro de rede. Toque para tentar novamente.';
       sub.style.cursor = 'pointer';
       sub.onclick = carregarAgenda;
     }
   }
-  function renderDias() {
-    // Agrupa por data, ordena
-    const dias = [...new Set(_reservas.map(r => r.data))].sort();
-    const hojeStr = new Date().toISOString().slice(0,10);
-    if (!_diaAtivo || !dias.includes(_diaAtivo)) {
-      _diaAtivo = dias.includes(hojeStr) ? hojeStr : (dias[0] || hojeStr);
+
+  // Toggle Hoje / Semana
+  $('btn-view-hoje').addEventListener('click', () => {
+    _modoVista = 'hoje';
+    $('btn-view-hoje').classList.add('active');
+    $('btn-view-semana').classList.remove('active');
+    _diaAtivo = toLocalISO(new Date());
+    renderAgenda();
+  });
+  $('btn-view-semana').addEventListener('click', () => {
+    _modoVista = 'semana';
+    $('btn-view-semana').classList.add('active');
+    $('btn-view-hoje').classList.remove('active');
+    renderAgenda();
+  });
+
+  function renderAgenda() {
+    const hojeStr = toLocalISO(new Date());
+    const semana = getWeekDates(new Date());
+    const total = _reservas.length;
+    const hoje_count = _reservas.filter(r => r.data === hojeStr).length;
+    $('tx-greet-sub').textContent = `${hoje_count} hoje · ${total} esta semana`;
+    if (_modoVista === 'hoje') {
+      $('tx-day-tabs').style.display = 'none';
+      renderListaDia(hojeStr, false);
+    } else {
+      renderDayTabs(semana, hojeStr);
+      renderListaDia(_diaAtivo, false);
     }
-    const tabs = $('tx-day-tabs');
-    if (!dias.length) {
-      tabs.innerHTML = '';
-      $('tx-greet-sub').textContent = 'Sem atendimentos nos próximos dias.';
-      $('tx-list').innerHTML = `<div class="tx-empty"><h3>Agenda livre</h3><p>Você não tem atendimentos marcados.</p></div>`;
-      return;
-    }
-    $('tx-greet-sub').textContent = `${_reservas.length} atendimento${_reservas.length!==1?'s':''} agendado${_reservas.length!==1?'s':''}.`;
-    tabs.innerHTML = dias.map(dt => {
-      const isHoje = dt === hojeStr;
-      const [y,m,d] = dt.split('-');
-      const data = new Date(+y, +m-1, +d);
-      const dia = data.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
-      const labelDia = isHoje ? 'Hoje' : `${dia} ${d}/${m}`;
-      return `<button class="tx-day-tab${dt===_diaAtivo?' active':''}" data-dia="${dt}">${esc(labelDia)}</button>`;
-    }).join('');
-    tabs.querySelectorAll('.tx-day-tab').forEach(b => b.addEventListener('click', () => { _diaAtivo = b.dataset.dia; renderDias(); }));
-    renderLista();
   }
-  function renderLista() {
-    const items = _reservas.filter(r => r.data === _diaAtivo);
+
+  function renderDayTabs(semana, hojeStr) {
+    const tabs = $('tx-day-tabs');
+    tabs.style.display = 'flex';
+    tabs.innerHTML = semana.map(iso => {
+      const [,m,dd] = iso.split('-');
+      const dt = new Date(+iso.slice(0,4), +m-1, +dd);
+      const abrev = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
+      const isHoje = iso === hojeStr;
+      const isAtivo = iso === _diaAtivo;
+      const cnt = _reservas.filter(r => r.data === iso).length;
+      return `<button class="tx-day-tab${isAtivo?' active':''}${isHoje?' hoje-tab':''}" data-dia="${iso}">
+        <span class="tx-tab-dia">${isHoje?'hoje':abrev}</span>
+        <span class="tx-tab-num">${dd}/${m}</span>
+        ${cnt ? `<span style="font-size:.6rem;color:var(--gold);font-weight:700">${cnt}</span>` : ''}
+      </button>`;
+    }).join('');
+    tabs.querySelectorAll('.tx-day-tab').forEach(b => b.addEventListener('click', () => {
+      _diaAtivo = b.dataset.dia;
+      renderAgenda();
+    }));
+    // scroll to active
+    const active = tabs.querySelector('.active');
+    if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }
+
+  function renderListaDia(iso, showHeader) {
     const list = $('tx-list');
+    const items = _reservas.filter(r => r.data === iso).sort((a,b) => (a.hora_inicio||'').localeCompare(b.hora_inicio||''));
     if (!items.length) {
-      list.innerHTML = `<div class="tx-empty"><h3>Sem atendimentos</h3><p>Nenhum agendamento para ${fmtDate(_diaAtivo)}.</p></div>`;
+      list.innerHTML = `<div class="tx-empty"><h3>${iso === toLocalISO(new Date()) ? 'Hoje livre' : 'Sem atendimentos'}</h3><p>${iso === toLocalISO(new Date()) ? 'Você não tem atendimentos hoje.' : `Nenhum agendamento para ${fmtDate(iso)}.`}</p></div>`;
       return;
     }
-    list.innerHTML = items.map(r => {
-      const isP1 = r.massagista_id === _me?.id;
-      const isP2 = r.massagista_id2 === _me?.id;
-      const cliente = isP1 ? r.cliente : (isP2 ? (r.cliente2 || r.cliente) : r.cliente);
+    list.innerHTML = cardsHtml(items);
+    list.querySelectorAll('.tx-card').forEach(c => c.addEventListener('click', () => abrirDetalhe(+c.dataset.id)));
+  }
+
+  function cardsHtml(items) {
+    return `<div class="tx-list">${items.map(r => {
+      const isP2 = r.massagista_id2 === _me?.id && r.massagista_id !== _me?.id;
+      const cliente = isP2 ? (r.cliente2 || r.cliente) : r.cliente;
       const trat = isP2 ? (r.tipo_massagem_nome2 || r.tratamento2 || r.tipo_massagem_nome || r.tratamento) : (r.tipo_massagem_nome || r.tratamento);
       const quarto = isP2 ? (r.quarto2 || r.apto2 || r.quarto || r.apto) : (r.quarto || r.apto);
       const sala = SALA_NOME[r.sala] || `Sala ${r.sala}`;
-      const ehGranClass = quarto && (String(quarto).startsWith('06') || String(quarto).startsWith('17') || String(quarto).startsWith('19'));
-      return `
-        <article class="tx-card" data-id="${r.id}">
-          <div class="tx-card-head">
-            <span class="tx-card-hora">${esc(r.hora_inicio || '')} → ${esc(r.hora_fim || '')}</span>
-            <span class="tx-card-sala">${esc(sala)}</span>
-          </div>
-          <div class="tx-card-cli">${esc(cliente || '—')}</div>
-          <div class="tx-card-trat">${esc(trat || '—')}</div>
-          <div class="tx-card-tags">
-            ${quarto ? `<span class="tx-tag quarto">Quarto ${esc(quarto)}</span>` : ''}
-            ${ehGranClass ? `<span class="tx-tag granclass">GRAN CLASS</span>` : ''}
-            ${r.respondeu_pesquisa ? `<span class="tx-tag respondida">✓ Pesquisa</span>` : ''}
-          </div>
-        </article>
-      `;
-    }).join('');
-    list.querySelectorAll('.tx-card').forEach(c => c.addEventListener('click', () => abrirDetalhe(+c.dataset.id)));
+      const ehGC = quarto && (String(quarto).startsWith('06') || String(quarto).startsWith('17') || String(quarto).startsWith('19'));
+      return `<article class="tx-card" data-id="${r.id}">
+        <div class="tx-card-head">
+          <span class="tx-card-hora">${esc(r.hora_inicio||'')} → ${esc(r.hora_fim||'')}</span>
+          <span class="tx-card-sala">${esc(sala)}</span>
+        </div>
+        <div class="tx-card-cli">${esc(cliente||'—')}</div>
+        <div class="tx-card-trat">${esc(trat||'—')}</div>
+        <div class="tx-card-tags">
+          ${quarto?`<span class="tx-tag quarto">Quarto ${esc(quarto)}</span>`:''}
+          ${ehGC?`<span class="tx-tag granclass">GRAN CLASS</span>`:''}
+          ${r.respondeu_pesquisa?`<span class="tx-tag respondida">✓ Pesquisa</span>`:''}
+        </div>
+      </article>`;
+    }).join('')}</div>`;
   }
 
   // ───── DETALHE ─────
