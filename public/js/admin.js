@@ -5102,7 +5102,9 @@ function _wireDragReorder(prefix) {
     container.querySelectorAll('.drag-handle').forEach(handle => {
       if (handle.dataset.dragWired === '1') return;
       handle.dataset.dragWired = '1';
-      handle.addEventListener('pointerdown', (e) => _onDragStart(e, prefix, container, handle));
+      // passive:false e' obrigatorio para que ev.preventDefault() funcione
+      // em iOS Safari (default e' passive em pointer*).
+      handle.addEventListener('pointerdown', (e) => _onDragStart(e, prefix, container, handle), { passive: false });
     });
   });
 }
@@ -5114,6 +5116,11 @@ function _onDragStart(ev, prefix, container, handle) {
   if (!row) return;
   ev.preventDefault();
   ev.stopPropagation();
+  // setPointerCapture garante que pointermove/pointerup continuem indo
+  // para o handle mesmo apos a row ser movida para document.body (5134),
+  // sem isso o browser cancela o pointer stream em desktop+touch.
+  try { handle.setPointerCapture(ev.pointerId); } catch {}
+  const _pointerId = ev.pointerId;
 
   const rect = row.getBoundingClientRect();
   const offsetY = ev.clientY - rect.top;
@@ -5130,8 +5137,11 @@ function _onDragStart(ev, prefix, container, handle) {
   // "Sai da tela" — flutua, escala leve, rotaciona, sombra dramática.
   const origCss = row.style.cssText;
   const left = rect.left;
-  row.style.cssText = origCss + `;position:fixed;top:${rect.top}px;left:${left}px;width:${width}px;z-index:9999;pointer-events:none;opacity:.96;background:var(--surface,#fff);box-shadow:0 22px 48px rgba(0,0,0,.32),0 6px 12px rgba(0,0,0,.18);transform:scale(1.03) rotate(-.6deg);transform-origin:${offsetX}px ${offsetY}px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s ease;will-change:transform,top,left`;
+  row.style.cssText = origCss + `;position:fixed;top:${rect.top}px;left:${left}px;width:${width}px;z-index:2147483647;pointer-events:none;touch-action:none;opacity:.96;background:var(--surface,#fff);box-shadow:0 22px 48px rgba(0,0,0,.32),0 6px 12px rgba(0,0,0,.18);transform:scale(1.03) rotate(-.6deg);transform-origin:${offsetX}px ${offsetY}px;transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s ease;will-change:transform,top,left`;
   document.body.appendChild(row);
+  // Trava pan/zoom nativo do tablet enquanto arrasta — restaurado em onEnd.
+  const _prevTouchAction = document.documentElement.style.touchAction;
+  document.documentElement.style.touchAction = 'none';
 
   // Insere CSS de pulse, transitions nas siblings e alerta fora-da-secao.
   if (!document.getElementById('_drag-style')) {
@@ -5259,9 +5269,11 @@ function _onDragStart(ev, prefix, container, handle) {
   };
 
   const onEnd = async () => {
-    window.removeEventListener('pointermove', onMove);
-    window.removeEventListener('pointerup', onEnd);
-    window.removeEventListener('pointercancel', onEnd);
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onEnd);
+    handle.removeEventListener('pointercancel', onEnd);
+    try { handle.releasePointerCapture(_pointerId); } catch {}
+    document.documentElement.style.touchAction = _prevTouchAction;
     handle.style.cursor = 'grab';
 
     // Se soltou FORA dos limites da seção: cancela — volta ao lugar original
@@ -5318,9 +5330,11 @@ function _onDragStart(ev, prefix, container, handle) {
     }
   };
 
-  window.addEventListener('pointermove', onMove);
-  window.addEventListener('pointerup', onEnd);
-  window.addEventListener('pointercancel', onEnd);
+  // Listeners no proprio handle (nao em window) porque setPointerCapture
+  // redireciona todos os pointer events para o elemento capturado.
+  handle.addEventListener('pointermove', onMove, { passive: false });
+  handle.addEventListener('pointerup', onEnd, { passive: false });
+  handle.addEventListener('pointercancel', onEnd, { passive: false });
 }
 
 async function _anamDelPergunta(chave) {
