@@ -4707,26 +4707,34 @@ async function _anamxToggleObrig(chave) {
   }
 }
 
+let _anamxCriandoSecao = false;
 async function _anamxAddSecaoFlow() {
-  const titulo = await pedirTexto({
-    titulo: 'Nova seção',
-    mensagem: 'Uma seção agrupa perguntas relacionadas (ex: "Alergias", "Histórico").',
-    placeholder: 'Nome da seção',
-  });
-  if (!titulo) return;
-  const chave = _slugChave(titulo, 'sec_');
+  if (_anamxCriandoSecao) return; // guard contra double-click
+  _anamxCriandoSecao = true;
   try {
-    const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
-      chave, ordem: 99, traducoes: { 'pt-BR': titulo },
+    const raw = await pedirTexto({
+      titulo: 'Nova seção',
+      mensagem: 'Uma seção agrupa perguntas relacionadas (ex: "Alergias", "Histórico").',
+      placeholder: 'Nome da seção',
     });
-    if (resp?.id) {
-      _anamxSecaoAtivaId = resp.id;
-      _traduzirEAtualizarBg('secao', resp.id, titulo);
-      showToast('Seção criada');
+    const titulo = (raw || '').trim();
+    if (!titulo) return;
+    const chave = _slugChave(titulo, 'sec_');
+    try {
+      const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
+        chave, ordem: 99, traducoes: { 'pt-BR': titulo },
+      });
+      if (resp?.id) {
+        _anamxSecaoAtivaId = resp.id;
+        _traduzirEAtualizarBg('secao', resp.id, titulo);
+        showToast('Seção criada');
+      }
+      initAnamneseEditor();
+    } catch (e) {
+      showToast('Erro ao criar: ' + (e?.message || e), 4000);
     }
-    initAnamneseEditor();
-  } catch (e) {
-    showToast('Erro ao criar: ' + (e?.message || e), 4000);
+  } finally {
+    _anamxCriandoSecao = false;
   }
 }
 
