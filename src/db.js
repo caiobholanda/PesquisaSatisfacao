@@ -1640,7 +1640,7 @@ export function buscarMassagistaPorNome(nome) {
   return getDb().prepare("SELECT id, nome, pin_hash, ativo FROM massagistas WHERE LOWER(nome) = LOWER(?) LIMIT 1").get(nome) || null;
 }
 export function buscarMassagistaPorId(id) {
-  return getDb().prepare("SELECT id, nome, ativo FROM massagistas WHERE id = ?").get(id) || null;
+  return getDb().prepare("SELECT id, nome, ativo, disponibilidade FROM massagistas WHERE id = ?").get(id) || null;
 }
 export function setMassagistaPinHash(id, pinHash) {
   getDb().prepare("UPDATE massagistas SET pin_hash = ? WHERE id = ?").run(pinHash, id);

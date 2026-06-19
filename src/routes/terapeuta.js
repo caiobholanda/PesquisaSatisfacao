@@ -55,7 +55,9 @@ router.post('/logout', (_req, res) => {
 router.get('/me', requireTerapeuta, (req, res) => {
   const m = buscarMassagistaPorId(req.user.massagista_id);
   if (!m || !m.ativo) return res.status(401).json({ ok: false, error: 'Sessão inválida' });
-  res.json({ ok: true, id: m.id, nome: m.nome });
+  let disponibilidade = null;
+  try { disponibilidade = m.disponibilidade ? JSON.parse(m.disponibilidade) : null; } catch {}
+  res.json({ ok: true, id: m.id, nome: m.nome, disponibilidade });
 });
 
 // Agenda escopada — IGNORA qualquer massagista_id do query;

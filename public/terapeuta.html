@@ -117,6 +117,21 @@ button, input { font-family: inherit; }
 }
 .tx-greet-sub { color: var(--muted2); font-size: .85rem; margin: 0 0 1rem; }
 
+/* Banner escala do dia */
+.tx-escala-banner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: .75rem 1rem;
+  margin-bottom: 1rem; display: flex; align-items: center; gap: .75rem;
+}
+.tx-escala-icon {
+  font-size: 1.15rem; flex-shrink: 0; opacity: .8;
+}
+.tx-escala-texto {
+  font-size: .88rem; color: var(--text); line-height: 1.35;
+}
+.tx-escala-texto strong { color: var(--gold); font-weight: 700; }
+.tx-escala-folga { color: var(--muted2); font-style: italic; }
+
 /* Hoje / Semana toggle */
 .tx-view-tabs {
   display: flex; gap: .35rem; margin-bottom: 1rem;
@@ -307,6 +322,10 @@ button, input { font-family: inherit; }
     <main class="tx-agenda">
       <h2 class="tx-greet" id="tx-greet">Sua agenda</h2>
       <p class="tx-greet-sub" id="tx-greet-sub">Carregando atendimentos…</p>
+      <div id="tx-escala-banner" style="display:none" class="tx-escala-banner">
+        <span class="tx-escala-icon">🕐</span>
+        <span class="tx-escala-texto" id="tx-escala-texto"></span>
+      </div>
       <div class="tx-view-tabs">
         <button class="tx-view-tab active" id="btn-view-hoje">Hoje</button>
         <button class="tx-view-tab" id="btn-view-semana">Esta semana</button>
@@ -330,6 +349,25 @@ button, input { font-family: inherit; }
   const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
+  const DIAS_KEY = ['dom','seg','ter','qua','qui','sex','sab'];
+  function escalaDia(disponibilidade, iso) {
+    if (!disponibilidade) return null;
+    const [y,m,d] = iso.split('-');
+    const key = DIAS_KEY[new Date(+y,+m-1,+d).getDay()];
+    return disponibilidade[key] || null;
+  }
+  function renderEscalaBanner(iso) {
+    const banner = $('tx-escala-banner');
+    const txt = $('tx-escala-texto');
+    const faixa = escalaDia(_me?.disponibilidade, iso);
+    if (!faixa) {
+      txt.innerHTML = '<span class="tx-escala-folga">Hoje é seu dia de folga</span>';
+    } else {
+      const [ini, fim] = faixa.split('-').map(s => s.trim());
+      txt.innerHTML = `Hoje você entra às <strong>${ini}</strong> e sai às <strong>${fim}</strong>`;
+    }
+    banner.style.display = 'flex';
+  }
 
   // ───── LOGIN ─────
   async function carregarNomes() {
@@ -337,9 +375,10 @@ button, input { font-family: inherit; }
       const r = await fetch('/api/terapeuta/nomes-ativos');
       const d = await r.json();
       const sel = $('tx-nome');
+      const preNome = new URLSearchParams(location.search).get('nome') || '';
       sel.innerHTML = '<option value="">Selecione…</option>' +
-        (d.nomes || []).map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-    } catch (e) {
+        (d.nomes || []).map(n => `<option value="${esc(n)}"${n === preNome ? ' selected' : ''}>${esc(n)}</option>`).join('');
+    } catch {
       $('tx-nome').innerHTML = '<option value="">Erro ao carregar</option>';
     }
   }
@@ -348,16 +387,20 @@ button, input { font-family: inherit; }
       const r = await fetch('/api/terapeuta/me');
       if (r.ok) {
         _me = await r.json();
-        if (_me?.ok) return entrarApp();
+        if (_me?.ok) { _me = { id: _me.id, nome: _me.nome, disponibilidade: _me.disponibilidade }; return entrarApp(); }
       }
     } catch {}
     mostrarLogin();
   }
-  function mostrarLogin() { $('tx-login').style.display = 'flex'; $('tx-app').style.display = 'none'; carregarNomes(); }
+  function mostrarLogin() {
+    $('tx-login').style.display = 'flex'; $('tx-app').style.display = 'none';
+    carregarNomes();
+  }
   function entrarApp() {
     $('tx-login').style.display = 'none';
     $('tx-app').style.display = 'flex';
     $('tx-nome-header').textContent = _me?.nome || 'Terapeuta';
+    renderEscalaBanner(toLocalISO(new Date()));
     carregarAgenda();
   }
   $('tx-login-form').addEventListener('submit', async e => {
@@ -376,11 +419,10 @@ button, input { font-family: inherit; }
         btn.disabled = false; btn.textContent = 'Entrar';
         return;
       }
-      // Carrega /me para pegar id (necessario pra escopar P1/P2 no card)
       try {
         const m = await fetch('/api/terapeuta/me');
         const md = await m.json();
-        if (md?.ok) _me = { id: md.id, nome: md.nome };
+        if (md?.ok) _me = { id: md.id, nome: md.nome, disponibilidade: md.disponibilidade };
         else _me = { nome: d.nome };
       } catch { _me = { nome: d.nome }; }
       $('tx-pin').value = '';

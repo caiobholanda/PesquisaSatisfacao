@@ -869,6 +869,10 @@ function setupDelegation() {
     if (action === 'open-drawer')   { openDrawer(+el.dataset.id); }
     else if (action === 'ver-hist') { showHistoricoMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'set-pin')  { openPinModal(+el.dataset.id, el.dataset.nome); }
+    else if (action === 'copiar-link-terapeuta') {
+      const url = `${location.origin}/terapeuta?nome=${encodeURIComponent(el.dataset.nome)}`;
+      navigator.clipboard.writeText(url).then(() => showToast(`Link copiado: ${el.dataset.nome}`)).catch(() => prompt('Copie o link:', url));
+    }
     else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome, +el.dataset.ativo); }
     else if (action === 'edit-tipo') {
       const { id, nome, dur, preco, ativo, desc } = el.dataset;
@@ -992,6 +996,7 @@ function renderMassagistas() {
         </div>
         <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Ver histórico</button>
         <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
+        <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
         <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}" data-ativo="${m.ativo?1:0}">Editar</button>
       </div>`;
   }).join('') + '</div>';
