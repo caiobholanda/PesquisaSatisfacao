@@ -15,6 +15,8 @@ let _calDiaSel = null;
 let _modalOpen = false;
 let _resDetAtual = null;
 let _langSelected = 'pt-BR';
+let _hcPage = 0;
+const _hcLimit = 50;
 
 const LANGS_PRE = [
   { code: 'pt-BR', flag: '🇧🇷', name: 'Português (Brasil)' },
@@ -3581,8 +3583,6 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
 });
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
-let _hcPage = 0;
-const _hcLimit = 50;
 
 const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
 const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
