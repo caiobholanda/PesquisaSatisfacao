@@ -825,31 +825,89 @@ async function applyAnamneseConfig(idioma) {
   }
 
   _renderPerguntasExtras(extrasPorSecao);
-  _reordenarLegadosPorOrdem(cfg);
+  _reordenarPorOrdem(cfg);
 }
 
-// Move os blocos DOM dos campos legacy para refletir a ordem definida
-// pelo admin no editor. Os blocos sao reagrupados por elemento pai (campos
-// dentro da mesma .spa-section ou secoes inteiras no body) e re-anexados
-// em sequencia segundo q.ordem.
-function _reordenarLegadosPorOrdem(cfg) {
-  const grupos = new Map();
-  for (const sec of (cfg.secoes || [])) {
-    for (const q of (sec.perguntas || [])) {
-      const legado = q.mapeia_campo_legado;
-      if (!legado) continue;
-      const spec = _LEGADO_DOM[legado];
-      if (!spec) continue;
-      const bloco = _blocoDe(spec);
-      if (!bloco || !bloco.parentElement) continue;
-      const parent = bloco.parentElement;
-      if (!grupos.has(parent)) grupos.set(parent, []);
-      grupos.get(parent).push({ ordem: (typeof q.ordem === 'number') ? q.ordem : 99, bloco });
-    }
+// Reordena os blocos DOM da anamnese para refletir a ordem definida pelo
+// admin no editor. Trata legacy (mapeia_campo_legado) E extras (data-extra)
+// como itens equivalentes, interleaved pela coluna q.ordem do backend.
+//
+// Estrategia:
+//  1. Constroi mapa bloco-por-chave: legacy via _LEGADO_DOM, extras via
+//     [data-extra=chave]. Marca cada um como FIELD-LEVEL ou SECTION-LEVEL.
+//  2. Para cada secao do backend, separa items por nivel:
+//     - FIELD-LEVEL: move todos para o parent mais comum dos legacy fields
+//       da secao (tipicamente .spa-grid-2 em sec-personal), em ordem.
+//       Resultado: extras aparecem interleaved com legacy fields.
+//     - SECTION-LEVEL: reordena dentro de cada parent (mantem estrutura).
+//  3. Idempotente: chamadas repetidas convergem para o mesmo layout.
+function _reordenarPorOrdem(cfg) {
+  // Mapa: chave (legado_key ou extra_chave) -> { bloco, isSection }
+  const blocoDe = {};
+  for (const [legado, spec] of Object.entries(_LEGADO_DOM)) {
+    const bloco = _blocoDe(spec);
+    if (bloco) blocoDe[legado] = { bloco, isSection: !!spec.sectionId };
   }
-  for (const [parent, items] of grupos.entries()) {
-    items.sort((a, b) => a.ordem - b.ordem);
-    for (const { bloco } of items) parent.appendChild(bloco);
+  document.querySelectorAll('[data-extra]').forEach(el => {
+    if (el.dataset.extra) blocoDe[el.dataset.extra] = { bloco: el, isSection: false };
+  });
+
+  for (const sec of (cfg.secoes || [])) {
+    const items = [];
+    for (const q of (sec.perguntas || [])) {
+      const key = q.mapeia_campo_legado || q.chave;
+      const entry = blocoDe[key];
+      if (!entry || !entry.bloco.parentElement) continue;
+      items.push({
+        ordem: (typeof q.ordem === 'number') ? q.ordem : 99,
+        bloco: entry.bloco,
+        isSection: entry.isSection,
+        isLegacy: !!_LEGADO_DOM[key],
+        key,
+      });
+    }
+    if (!items.length) continue;
+
+    const fieldItems = items.filter(it => !it.isSection);
+    const sectionItems = items.filter(it => it.isSection);
+
+    // FIELD-LEVEL: descobre parent comum dos legacy fields desta secao
+    // e move TODOS (legacy + extras) para la em ordem.
+    if (fieldItems.length) {
+      const parentCount = new Map();
+      for (const it of fieldItems.filter(x => x.isLegacy)) {
+        const p = it.bloco.parentElement;
+        parentCount.set(p, (parentCount.get(p) || 0) + 1);
+      }
+      let targetParent = null;
+      if (parentCount.size) {
+        targetParent = [...parentCount.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      } else if (fieldItems.length) {
+        targetParent = fieldItems[0].bloco.parentElement;
+      }
+      if (targetParent) {
+        fieldItems.sort((a, b) => a.ordem - b.ordem);
+        for (const it of fieldItems) {
+          // appendChild move o bloco para o final do parent — chamadas
+          // em sequencia em ordem crescente resultam na ordem desejada.
+          targetParent.appendChild(it.bloco);
+        }
+      }
+    }
+
+    // SECTION-LEVEL: agrupa por parent atual e reordena dentro de cada.
+    if (sectionItems.length) {
+      const grupos = new Map();
+      for (const it of sectionItems) {
+        const p = it.bloco.parentElement;
+        if (!grupos.has(p)) grupos.set(p, []);
+        grupos.get(p).push(it);
+      }
+      for (const [p, lst] of grupos.entries()) {
+        lst.sort((a, b) => a.ordem - b.ordem);
+        for (const it of lst) p.appendChild(it.bloco);
+      }
+    }
   }
 }
 
