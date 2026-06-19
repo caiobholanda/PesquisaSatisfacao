@@ -4740,7 +4740,7 @@ async function _anamxSalvarPerguntaRotulo(chave, rotulo, el) {
       if (p?.pergunta_id) { perguntaId = p.pergunta_id; break; }
     }
     if (!perguntaId) {
-      const r = await api('/api/qualidade/admin/perguntas');
+      const r = await api(`/api/qualidade/admin/perguntas?_=${Date.now()}`);
       if (!r) throw new Error('Sem auth ou rede');
       const d = await r.json();
       const p = (d.items || []).find(x => x.chave === chave);
@@ -4761,17 +4761,35 @@ async function _anamxSalvarPerguntaRotulo(chave, rotulo, el) {
   }
 }
 
+let _anamxTogglandoObrig = false;
 async function _anamxToggleObrig(chave) {
+  if (_anamxTogglandoObrig) return;
   const sec = (_anamEstrutura?.secoes || []).find(s => (s.perguntas || []).some(q => q.chave === chave));
   const q = sec?.perguntas?.find(x => x.chave === chave);
   if (!q?.associacao_id) return showToast('Associação não encontrada');
+  _anamxTogglandoObrig = true;
   const novo = !q.obrigatoria;
+  // Optimistic UI: atualiza o botao imediatamente. Reverte no catch.
+  const btn = document.querySelector(`button[data-anamx-act="toggle-obrig"][data-chave="${CSS.escape(chave)}"]`);
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.toggle('on', novo);
+    btn.textContent = novo ? '✓ Obrigatória' : 'Opcional';
+  }
   try {
     await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${q.associacao_id}`, { obrigatoria: novo ? 1 : 0 });
     showToast(novo ? 'Marcada como obrigatória' : 'Marcada como opcional');
     initAnamneseEditor();
   } catch (e) {
+    // Reverte UI
+    if (btn) {
+      btn.classList.toggle('on', !novo);
+      btn.textContent = !novo ? '✓ Obrigatória' : 'Opcional';
+    }
     showToast('Erro: ' + (e?.message || e), 4000);
+  } finally {
+    if (btn) btn.disabled = false;
+    _anamxTogglandoObrig = false;
   }
 }
 
