@@ -223,10 +223,11 @@ router.post('/', rateLimit, (req, res) => {
 
 // GET /api/feedback — protegido
 router.get('/', requireAuth, (req, res) => {
-  const { origem, tipo_cliente, from, to, limit = '50', offset = '0' } = req.query;
+  const { origem, tipo_cliente, from, to, massoterapeuta, limit = '50', offset = '0' } = req.query;
 
   const { total, items } = listarFeedback({
     origem, tipo_cliente, from, to,
+    massoterapeuta: massoterapeuta || null,
     limit: Math.min(parseInt(limit) || 50, 200),
     offset: parseInt(offset) || 0,
   });

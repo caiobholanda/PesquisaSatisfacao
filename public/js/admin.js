@@ -362,6 +362,7 @@ async function loadTable() {
   if (_filters.to) params.set('to', _filters.to);
   if (_filters.origem) params.set('origem', _filters.origem);
   if (_filters.tipo) params.set('tipo_cliente', _filters.tipo);
+  if (_filters.massoterapeuta) params.set('massoterapeuta', _filters.massoterapeuta);
   let res, d;
   try {
     res = await api(`/api/feedback?${params}`, { signal });
@@ -594,12 +595,38 @@ document.getElementById('btn-filtrar').addEventListener('click', () => {
     to: document.getElementById('f-to').value,
     origem: document.getElementById('f-origem').value,
     tipo: document.getElementById('f-tipo').value,
+    massoterapeuta: document.getElementById('f-massoterapeuta')?.value || '',
   };
   _offset = 0;
   loadAll();
 });
 
-function loadAll() { loadStats(); loadTable(); }
+function loadAll() { loadStats(); loadTable(); _popularSelectMassoterapeutas(); }
+
+// Popula o select #f-massoterapeuta com massagistas ativas. Idempotente —
+// so' carrega uma vez por sessao (a lista nao muda durante a sessao do admin).
+let _massoterapeutasSelectCache = null;
+async function _popularSelectMassoterapeutas() {
+  const sel = document.getElementById('f-massoterapeuta');
+  if (!sel || sel.dataset.loaded === '1') return;
+  if (!_massoterapeutasSelectCache) {
+    try {
+      const r = await api('/api/massagistas-ativas');
+      if (!r) return;
+      const d = await r.json();
+      _massoterapeutasSelectCache = (d?.items || d?.nomes || []).map(x =>
+        typeof x === 'string' ? x : (x.nome || x)
+      ).filter(Boolean);
+    } catch { return; }
+  }
+  // Preserva o option "Geral (todas)" do HTML
+  const atual = sel.value;
+  const opts = ['<option value="">Geral (todas)</option>']
+    .concat(_massoterapeutasSelectCache.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`));
+  sel.innerHTML = opts.join('');
+  sel.value = atual; // mantem selecao se ja havia
+  sel.dataset.loaded = '1';
+}
 
 // ── Navegação entre views ──
 function showView(id) {

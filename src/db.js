@@ -493,7 +493,7 @@ export function getFeedbackById(id) {
   return getDb().prepare('SELECT * FROM feedback WHERE id = ?').get(id) || null;
 }
 
-export function listarFeedback({ origem, tipo_cliente, from, to, limit = 50, offset = 0 } = {}) {
+export function listarFeedback({ origem, tipo_cliente, from, to, massoterapeuta, limit = 50, offset = 0 } = {}) {
   const db = getDb();
   const conds = [];
   const params = [];
@@ -502,6 +502,14 @@ export function listarFeedback({ origem, tipo_cliente, from, to, limit = 50, off
   if (tipo_cliente) { conds.push('tipo_cliente = ?'); params.push(tipo_cliente); }
   if (from) { conds.push("submitted_at >= ?"); params.push(from + ' 00:00:00'); }
   if (to) { conds.push("submitted_at <= ?"); params.push(to + ' 23:59:59'); }
+  // Match case-insensitive — segue padrao ja usado em estatisticasMassagistaPorNome
+  // (db.js linha ~624 e ~743). Caveat conhecido: nome divergente entre
+  // massagistas e feedback.nome_massoterapeuta nao aparece sob aquele filtro;
+  // por isso 'Geral' eh o default seguro no frontend.
+  if (massoterapeuta) {
+    conds.push('LOWER(nome_massoterapeuta) = LOWER(?)');
+    params.push(massoterapeuta);
+  }
 
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const total = db.prepare(`SELECT COUNT(*) as t FROM feedback ${where}`).get(...params).t;
