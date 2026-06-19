@@ -946,13 +946,50 @@ function _reordenarPorOrdem(cfg) {
       }
 
       if (anchor) {
-        // Insere extra IMEDIATAMENTE apos o anchor
         if (anchor.classList.contains('spa-section')) {
-          // Para sections inteiras: insere DENTRO da section, ao fim
-          anchor.appendChild(extraBloco);
+          // Anchor eh uma section inteira. Verifica se ha proximo legacy DENTRO
+          // dessa section com ordem > extra.ordem — se sim, insere extra ANTES
+          // dele (para respeitar a ordem visual). Senao, appendChild ao fim.
+          //
+          // Caso real: extra ordem 25, anchor = sec-body (rotina_corporal=20),
+          // mas sec-body contem produto_especifico (ordem 30). Sem este fix,
+          // extra ia pro fim de sec-body, DEPOIS de produto, quebrando a ordem.
+          let proximoDentroDaSection = null;
+          let proximoOrdem = Infinity;
+          for (const cand of perguntas) {
+            if (!cand.mapeia_campo_legado) continue;
+            const candOrdem = typeof cand.ordem === 'number' ? cand.ordem : 99;
+            if (candOrdem <= extraOrdem) continue;
+            if (candOrdem >= proximoOrdem) continue;
+            const fn = _ANCHOR_LEGACY[cand.mapeia_campo_legado];
+            const el = fn?.();
+            if (el && el !== anchor && anchor.contains(el)) {
+              proximoDentroDaSection = el;
+              proximoOrdem = candOrdem;
+            }
+          }
+          if (proximoDentroDaSection) {
+            anchor.insertBefore(extraBloco, proximoDentroDaSection);
+          } else {
+            anchor.appendChild(extraBloco);
+          }
         } else {
-          // Para fields/labels: insere como next sibling
-          anchor.parentNode.insertBefore(extraBloco, anchor.nextSibling);
+          // Anchor eh field/label dentro de uma section. Sobe ate o nivel
+          // de filho direto da .spa-section antes de inserir, para que o
+          // extra nao fique aninhado em wrappers internos (ex:
+          // .spa-mkt-channels.parentElement = um <div> wrapper de marketing,
+          // entao inserir como next sibling do wrapper, nao do .spa-mkt-channels
+          // que ficaria amarrado ao bloco marketing).
+          let nivelSec = anchor;
+          const secAncestral = anchor.closest('.spa-section');
+          if (secAncestral) {
+            while (nivelSec && nivelSec.parentElement && nivelSec.parentElement !== secAncestral) {
+              nivelSec = nivelSec.parentElement;
+            }
+          }
+          if (nivelSec && nivelSec.parentNode) {
+            nivelSec.parentNode.insertBefore(extraBloco, nivelSec.nextSibling);
+          }
         }
       } else {
         // Extra tem ordem antes de qualquer legacy mapeado — coloca no
