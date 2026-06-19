@@ -111,7 +111,7 @@ export function ScaleBar({ i18n = null }) {
     <div className="scale-bar">
       <div className="scale-bar-title">
         <span>Como você classifica:</span>
-        {!i18n && <span className="en" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>Your rating:</span>}
+        {!i18n?.suppressEn && <span className="en" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>Your rating:</span>}
       </div>
       <div className="scale-bar-legend">
         {RATINGS.map((r) => (
@@ -119,7 +119,7 @@ export function ScaleBar({ i18n = null }) {
             <Smiley type={r.type} size={30} color="#FFFFFF" />
             <div className="scale-legend-label">
               <span>{ratingLabel(r.key, r.pt)}</span>
-              {!i18n && <span className="en" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10.5 }}>{r.en}</span>}
+              {!i18n?.suppressEn && <span className="en" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10.5 }}>{r.en}</span>}
             </div>
           </div>
         ))}

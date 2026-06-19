@@ -84,9 +84,10 @@ export default function App() {
       }
       setExtrasPorSecao(extras);
       setPesquisaVersao(d.pesquisa.versao || null);
-      // i18n so' aplica quando idioma != pt-BR (mantem hardcoded em pt-BR)
-      if (lang && lang !== 'pt-BR') setI18n({ lang, labels, ratings, sectionTitles });
-      else setI18n(null);
+      // Sempre aplica labels/ratings/sectionTitles vindos do backend (admin pode
+      // ter editado rótulos das perguntas legacy s0-s3/f0-f2). Em idiomas != pt-BR
+      // o 2º idioma (EN bilíngue) some via suppressEn.
+      setI18n({ lang, labels, ratings, sectionTitles, suppressEn: !!(lang && lang !== 'pt-BR') });
     } catch {
       // libera o cache pra permitir retry quando o usuario interagir
       configCacheRef.current.delete(lang);

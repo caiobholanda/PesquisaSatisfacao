@@ -162,8 +162,8 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
   // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
   const tr = (id, fallback) => (i18n?.labels?.[id]) || fallback;
   const trRating = (key, fallback) => (i18n?.ratings?.[key]) || fallback;
-  const services = SERVICES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n ? '' : s.en }));
-  const facilities = FACILITIES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n ? '' : s.en }));
+  const services = SERVICES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }));
+  const facilities = FACILITIES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }));
 
   const [loading,   setLoading]   = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -491,7 +491,7 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
         </section>
 
         <section ref={secRefs[0]} className="enter" style={{ animationDelay: '270ms' }}>
-          <SectionHeading num="1" pt={i18n?.sectionTitles?.servicos || 'Serviços'} en={i18n ? '' : 'Services'} />
+          <SectionHeading num="1" pt={i18n?.sectionTitles?.servicos || 'Serviços'} en={i18n?.suppressEn ? '' : 'Services'} />
           <ScaleBar i18n={i18n} />
           <div className="rating-list">
             {services.map((q) => (
@@ -499,7 +499,7 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
             ))}
           </div>
           <div className="field comment-field">
-            <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en={i18n ? '' : 'Additional comments and suggestions:'} />
+            <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en={i18n?.suppressEn ? '' : 'Additional comments and suggestions:'} />
             <AutoTextarea id="f-com-serv" value={comentarioServicos} onChange={setComentarioServicos} placeholder="Opcional..." />
             <span className="fill"></span>
           </div>
@@ -507,7 +507,7 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
         </section>
 
         <section ref={secRefs[1]} className="enter">
-          <SectionHeading num="2" pt={i18n?.sectionTitles?.instalacoes || 'Instalações'} en={i18n ? '' : 'Facilities'} />
+          <SectionHeading num="2" pt={i18n?.sectionTitles?.instalacoes || 'Instalações'} en={i18n?.suppressEn ? '' : 'Facilities'} />
           <ScaleBar i18n={i18n} />
           <div className="rating-list">
             {facilities.map((q) => (
