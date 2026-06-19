@@ -906,80 +906,66 @@
       .anamx-page { padding: 2.4rem 2.2rem 4rem; }
     }
 
-    /* Hero */
+    /* Hero — 3 linhas: barra de navegacao no topo (back + actions),
+       eyebrow + title centralizado abaixo. Visualmente coeso, sem
+       elementos flutuando nas bordas extremas. */
     .anamx-hero {
       max-width: 1240px;
-      margin: 0 auto 2rem auto;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-areas: "back meta actions";
-      align-items: center;
-      gap: 1.2rem 1.6rem;
-      padding-bottom: 1.5rem;
+      margin: 0 auto 1.6rem auto;
+      padding-bottom: 1.2rem;
       border-bottom: 1px solid var(--border);
     }
-    @media (max-width: 860px) {
-      .anamx-hero {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-          "back actions"
-          "meta meta";
-        align-items: center;
-        gap: 1rem;
-      }
+    .anamx-hero-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
     }
-    /* Back button — retangular discreto, sem uppercase forçado */
+    .anamx-hero-meta { min-width: 0; }
+    @media (max-width: 600px) {
+      .anamx-hero-nav { margin-bottom: .8rem; }
+    }
     .anamx-back {
-      grid-area: back;
       display: inline-flex; align-items: center; gap: .35rem;
       background: none;
       border: 1px solid var(--border);
       color: var(--muted2);
-      padding: .45rem .8rem;
-      font-family: var(--font); font-size: .82rem;
+      padding: .42rem .75rem;
+      font-family: var(--font); font-size: .8rem;
       font-weight: 500;
       cursor: pointer; white-space: nowrap;
       transition: border-color .15s, color .15s;
-      margin-top: .35rem;
     }
     .anamx-back:hover { border-color: var(--gold); color: var(--gold); }
-    .anamx-hero-meta { grid-area: meta; min-width: 0; }
-    /* Eyebrow — pequena etiqueta gold sutil */
     .anamx-eyebrow {
       display: inline-block;
       font-family: var(--font);
-      font-size: .7rem; letter-spacing: .08em;
+      font-size: .68rem; letter-spacing: .12em;
       color: var(--gold); font-weight: 600;
-      margin-bottom: .35rem;
+      margin-bottom: .4rem;
       text-transform: uppercase;
     }
-    /* Title — Fraunces sem exagero de letter-spacing nem uppercase */
     .anamx-title {
       font-family: var(--serif);
-      font-size: clamp(1.7rem, 2.6vw, 2.1rem);
+      font-size: clamp(1.5rem, 2.4vw, 1.95rem);
       font-weight: 500;
       letter-spacing: -.005em;
-      color: var(--text); margin: 0 0 .5rem 0;
+      color: var(--text); margin: 0 0 .45rem 0;
       line-height: 1.12;
     }
     .anamx-sub {
       font-family: var(--font);
-      font-size: .82rem; color: var(--muted2);
-      margin: 0; max-width: 560px; line-height: 1.55;
+      font-size: .8rem; color: var(--muted2);
+      margin: 0; max-width: 620px; line-height: 1.55;
     }
     .anamx-hero-actions {
-      grid-area: actions;
       display: flex; gap: .4rem; align-items: center; flex-wrap: wrap;
-      margin-top: .35rem;
     }
-    /* Botões secundários do header — compactos, alinhados ao back */
     .anamx-pill-btn {
       display: inline-flex; align-items: center; gap: .35rem;
       background: none;
       border: 1px solid var(--border);
       color: var(--muted2); font-family: var(--font);
-      padding: .45rem .8rem;
-      font-size: .82rem; font-weight: 500;
+      padding: .42rem .75rem;
+      font-size: .8rem; font-weight: 500;
       cursor: pointer; white-space: nowrap;
       transition: border-color .15s, color .15s;
     }
@@ -1105,26 +1091,29 @@
     }
     @media (max-width: 720px) { .anamx-secao-card { padding: 1.2rem 1rem 1.1rem; } }
     .anamx-secao-head {
-      display: flex; align-items: flex-start; gap: 1rem;
-      padding-bottom: 1.1rem; border-bottom: 1px solid var(--border);
-      margin-bottom: 1.4rem;
+      display: flex; align-items: center; gap: .8rem;
+      padding-bottom: .9rem; border-bottom: 1px solid var(--border);
+      margin-bottom: 1.1rem;
     }
     .anamx-secao-titulo {
       flex: 1; min-width: 0;
       font-family: var(--serif);
-      font-size: 1.8rem; font-weight: 500; color: var(--text);
+      font-size: 1.45rem; font-weight: 500; color: var(--text);
       margin: 0;
-      line-height: 1.12;
-      cursor: text; padding: .15rem .35rem;
+      line-height: 1.15;
+      cursor: text; padding: .12rem .35rem;
       border-radius: 6px; transition: background .15s, box-shadow .15s;
       outline: none;
     }
     .anamx-secao-titulo:hover { background: var(--gold-dim); }
     .anamx-secao-titulo:focus { background: var(--gold-dim); box-shadow: inset 0 0 0 1px var(--gold); }
     .anamx-secao-meta {
-      font-size: .72rem; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .14em; margin-top: .3rem;
-      font-weight: 700;
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .68rem; color: var(--muted);
+      letter-spacing: .04em;
+      font-weight: 600; flex-shrink: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      padding: .22rem .55rem; border-radius: 999px;
     }
     .anamx-secao-actions { display: flex; gap: .45rem; }
     .anamx-icon-btn {
@@ -1146,14 +1135,15 @@
     }
 
     /* Pergunta cards */
-    .anamx-perguntas { display: flex; flex-direction: column; gap: .65rem; }
+    .anamx-perguntas { display: flex; flex-direction: column; gap: .55rem; }
     .anamx-pergunta {
-      display: flex; align-items: flex-start; gap: .8rem;
+      display: flex; align-items: flex-start; gap: .7rem;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: .85rem 1rem .9rem;
+      padding: .7rem .9rem .75rem;
       transition: border-color .15s, box-shadow .15s, transform .15s, background .15s;
+      min-width: 0;
     }
     .anamx-pergunta:hover {
       border-color: var(--gold);
@@ -1177,8 +1167,9 @@
     }
     .anamx-perg-body { flex: 1; min-width: 0; }
     .anamx-perg-num {
-      font-size: .62rem; letter-spacing: .2em; color: var(--muted2);
-      text-transform: uppercase; font-weight: 700; margin-bottom: .2rem;
+      font-size: .62rem; letter-spacing: .14em; color: var(--muted);
+      text-transform: uppercase; font-weight: 700; margin-bottom: .15rem;
+      opacity: .75;
     }
     .anamx-perg-rotulo {
       font-size: .98rem; color: var(--text); line-height: 1.42;
@@ -1190,17 +1181,17 @@
     .anamx-perg-rotulo:focus { background: var(--gold-dim); box-shadow: inset 0 0 0 1px var(--gold); }
     .anamx-perg-tags { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .55rem; align-items: center; }
     .anamx-perg-tag {
-      display: inline-flex; align-items: center; gap: .3rem;
+      display: inline-flex; align-items: center; gap: .28rem;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--muted2);
-      padding: .38rem .75rem; border-radius: 999px;
-      font-size: .72rem; letter-spacing: .04em; font-weight: 500;
-      min-height: 30px; box-sizing: border-box;
+      padding: .28rem .6rem; border-radius: 999px;
+      font-size: .66rem; letter-spacing: .03em; font-weight: 500;
+      min-height: 24px; box-sizing: border-box;
     }
     button.anamx-perg-tag {
       font-family: var(--font); cursor: pointer;
-      min-height: 34px; padding: .42rem .85rem;
+      min-height: 28px; padding: .32rem .7rem;
     }
     .anamx-perg-tag.tipo { color: var(--text); }
     .anamx-perg-tag.tipo .anamx-tipo-ico {
@@ -3477,21 +3468,23 @@
     <div id="view-anamnese-editor" class="view-page anamx-page" style="display:none">
       <!-- Hero -->
       <header class="anamx-hero">
-        <button class="anamx-back" id="btn-back-anamnese-editor" aria-label="Voltar ao painel">
-          <span aria-hidden="true">←</span> <span>Painel</span>
-        </button>
+        <div class="anamx-hero-nav">
+          <button class="anamx-back" id="btn-back-anamnese-editor" aria-label="Voltar ao painel">
+            <span aria-hidden="true">←</span> <span>Painel</span>
+          </button>
+          <div class="anamx-hero-actions">
+            <button class="anamx-pill-btn" id="anamx-btn-historico" title="Histórico de alterações">
+              <span aria-hidden="true">⟲</span> Histórico
+            </button>
+            <button class="anamx-pill-btn" id="anamx-btn-inativas" title="Perguntas inativas (biblioteca)">
+              <span aria-hidden="true">⊠</span> Inativas
+            </button>
+          </div>
+        </div>
         <div class="anamx-hero-meta">
           <span class="anamx-eyebrow">Editor • Hotel Gran Marquise</span>
           <h1 class="anamx-title">Anamnese do SPA</h1>
           <p class="anamx-sub">A ficha que o hóspede preenche antes do tratamento. As edições são traduzidas em 7 idiomas automaticamente.</p>
-        </div>
-        <div class="anamx-hero-actions">
-          <button class="anamx-pill-btn" id="anamx-btn-historico" title="Histórico de alterações">
-            <span aria-hidden="true">⟲</span> Histórico
-          </button>
-          <button class="anamx-pill-btn" id="anamx-btn-inativas" title="Perguntas inativas (biblioteca)">
-            <span aria-hidden="true">⊠</span> Inativas
-          </button>
         </div>
       </header>
 
@@ -4076,6 +4069,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=77"></script>
+<script src="/js/admin.js?v=78"></script>
 </body>
 </html>

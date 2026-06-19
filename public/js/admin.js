@@ -4542,10 +4542,8 @@ function _anamxRenderSecaoContent(secao) {
   content.innerHTML = `
     <article class="anamx-secao-card anam-secao" data-secao-id="${secao.id}">
       <header class="anamx-secao-head">
-        <div style="flex:1;min-width:0">
-          <div class="anamx-secao-meta">Seção • ${totalPerg} ${totalPerg === 1 ? 'pergunta' : 'perguntas'}</div>
-          <h2 class="anamx-secao-titulo" contenteditable="true" spellcheck="false" data-anamx-edit="secao-titulo" data-secao-id="${secao.id}" data-orig="${_escAttr(secao.titulo || secao.chave)}">${_escAttr(secao.titulo || secao.chave)}</h2>
-        </div>
+        <h2 class="anamx-secao-titulo" contenteditable="true" spellcheck="false" data-anamx-edit="secao-titulo" data-secao-id="${secao.id}" data-orig="${_escAttr(secao.titulo || secao.chave)}">${_escAttr(secao.titulo || secao.chave)}</h2>
+        <span class="anamx-secao-meta">${totalPerg} ${totalPerg === 1 ? 'pergunta' : 'perguntas'}</span>
         <div class="anamx-secao-actions">
           <button class="anamx-icon-btn danger" type="button" data-anamx-act="del-secao" data-secao-id="${secao.id}" title="Remover seção" aria-label="Remover seção">🗑</button>
         </div>
@@ -4578,7 +4576,7 @@ function _anamxRenderPerguntaCard(q, idx, total, secaoId) {
         <span></span><span></span><span></span>
       </div>
       <div class="anamx-perg-body">
-        <div class="anamx-perg-num">Pergunta ${idx + 1} de ${total}</div>
+        <div class="anamx-perg-num">#${idx + 1}</div>
         <div class="anamx-perg-rotulo" contenteditable="true" spellcheck="false" data-anamx-edit="perg-rotulo" data-chave="${_escAttr(q.chave)}" data-orig="${_escAttr(q.rotulo || q.chave)}">${_escAttr(q.rotulo || q.chave)}</div>
         ${opcoes}
         <div class="anamx-perg-tags">
