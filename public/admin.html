@@ -913,66 +913,73 @@
       display: grid;
       grid-template-columns: auto 1fr auto;
       grid-template-areas: "back meta actions";
-      align-items: start;
-      gap: 1.6rem;
+      align-items: center;
+      gap: 1.2rem 1.6rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
     }
     @media (max-width: 860px) {
       .anamx-hero {
-        grid-template-columns: 1fr;
-        grid-template-areas: "back" "meta" "actions";
-        gap: .9rem;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "back actions"
+          "meta meta";
+        align-items: center;
+        gap: 1rem;
       }
     }
-    /* Back button — alinhado com .btn-back do sistema (retangular, uppercase) */
+    /* Back button — retangular discreto, sem uppercase forçado */
     .anamx-back {
       grid-area: back;
-      display: inline-flex; align-items: center; gap: .4rem;
+      display: inline-flex; align-items: center; gap: .35rem;
       background: none;
       border: 1px solid var(--border);
       color: var(--muted2);
-      padding: .4375rem .875rem;
-      font-family: var(--font); font-size: .75rem;
-      font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+      padding: .45rem .8rem;
+      font-family: var(--font); font-size: .82rem;
+      font-weight: 500;
       cursor: pointer; white-space: nowrap;
       transition: border-color .15s, color .15s;
-      margin-top: .3rem;
+      margin-top: .35rem;
     }
     .anamx-back:hover { border-color: var(--gold); color: var(--gold); }
-    .anamx-hero-meta { grid-area: meta; }
-    /* Eyebrow — alinhado com .page-num do sistema (sutil, sem uppercase forte) */
+    .anamx-hero-meta { grid-area: meta; min-width: 0; }
+    /* Eyebrow — pequena etiqueta gold sutil */
     .anamx-eyebrow {
       display: inline-block;
       font-family: var(--font);
-      font-size: .75rem; letter-spacing: .1em;
-      color: var(--gold); font-weight: 500;
-      margin-bottom: .5rem;
+      font-size: .7rem; letter-spacing: .08em;
+      color: var(--gold); font-weight: 600;
+      margin-bottom: .35rem;
+      text-transform: uppercase;
     }
-    /* Title — alinhado com .page-title do sistema (Fraunces, uppercase, 300) */
+    /* Title — Fraunces sem exagero de letter-spacing nem uppercase */
     .anamx-title {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 3vw, 2.25rem);
-      font-weight: 300; letter-spacing: .12em; text-transform: uppercase;
-      color: var(--text); margin: 0 0 .7rem 0;
-      line-height: 1;
+      font-size: clamp(1.7rem, 2.6vw, 2.1rem);
+      font-weight: 500;
+      letter-spacing: -.005em;
+      color: var(--text); margin: 0 0 .5rem 0;
+      line-height: 1.12;
     }
     .anamx-sub {
-      font-size: .8125rem; color: var(--muted2);
-      margin: 0; max-width: 580px; line-height: 1.55;
+      font-family: var(--font);
+      font-size: .82rem; color: var(--muted2);
+      margin: 0; max-width: 560px; line-height: 1.55;
     }
     .anamx-hero-actions {
       grid-area: actions;
-      display: flex; gap: .45rem; align-items: center; flex-wrap: wrap;
-      margin-top: .3rem;
+      display: flex; gap: .4rem; align-items: center; flex-wrap: wrap;
+      margin-top: .35rem;
     }
-    /* Pill btn — usa estilo do sistema (.btn .btn-outline .btn-sm) */
+    /* Botões secundários do header — compactos, alinhados ao back */
     .anamx-pill-btn {
       display: inline-flex; align-items: center; gap: .35rem;
       background: none;
       border: 1px solid var(--border);
       color: var(--muted2); font-family: var(--font);
-      padding: .4375rem .875rem;
-      font-size: .75rem; font-weight: 500;
-      letter-spacing: .09em; text-transform: uppercase;
+      padding: .45rem .8rem;
+      font-size: .82rem; font-weight: 500;
       cursor: pointer; white-space: nowrap;
       transition: border-color .15s, color .15s;
     }
@@ -4065,6 +4072,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=75"></script>
+<script src="/js/admin.js?v=76"></script>
 </body>
 </html>
