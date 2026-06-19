@@ -859,6 +859,7 @@ function setupDelegation() {
     else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
     else if (action === 'page')        { goPage(+el.dataset.off); }
     else if (action === 'hc-page')     { loadHistoricoClientes(+el.dataset.p); }
+    else if (action === 'hc-row-detalhe') { abrirDetalheSessao(+el.dataset.id); }
     else if (action === 'edit-user')         { editarUsuario(+el.dataset.id); }
     else if (action === 'del-user')          { deletarUsuario(+el.dataset.id, el.dataset.nome); }
     else if (action === 'liberar-pesquisa')  { liberarPesquisaReserva(+el.dataset.id); }
@@ -3648,7 +3649,7 @@ async function loadHistoricoClientes(page=0) {
     const massoterapeuta = it.massoterapeuta_nome || '—';
     const tipoLabel = TIPO_CLIENTE_LABEL[it.tipo_cliente] || it.tipo_cliente || '—';
     const salaLabel = SALA_NOME[it.sala] || `Sala ${it.sala}`;
-    return `<tr>
+    return `<tr data-action="hc-row-detalhe" data-id="${it.id}" style="cursor:pointer">
       <td>${fmt(it.data)}</td>
       <td style="font-family:var(--mono);font-size:.82rem">${it.hora_inicio} – ${it.hora_fim}</td>
       <td>
@@ -3671,6 +3672,180 @@ async function loadHistoricoClientes(page=0) {
     if (page < totalPages-1) html += `<button class="page-btn" data-action="hc-page" data-p="${page+1}">Próxima ›</button>`;
     pag.innerHTML = html;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Detalhe do atendimento (modal) — abre ao clicar numa linha do Historico.
+// Backend: GET /api/reservas/:id/detalhe. Mostra dados da sessao + status
+// da pesquisa + notas + anamnese (readonly). NAO inclui produtos.
+// Respeita _modalOpen pra pausar polling enquanto modal estiver aberto.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _RATINGS_FACES_LABEL = {
+  otimo: 'Ótimo', bom: 'Bom', regular: 'Regular', ruim: 'Ruim',
+  great: 'Ótimo', good: 'Bom', fair: 'Regular', poor: 'Ruim',
+};
+const _SERVICOS_LABELS = {
+  servicos_expectativa: 'Expectativa do tratamento',
+  servicos_explicacao: 'Explicação da massoterapeuta',
+  servicos_atitude: 'Atitude e qualidade dos serviços',
+  servicos_tecnica: 'Técnica e habilidade',
+};
+const _INSTALACOES_LABELS = {
+  instalacoes_conforto: 'Conforto e conservação',
+  instalacoes_organizacao: 'Organização da sala',
+  instalacoes_conveniencia: 'Itens de conveniência',
+};
+
+async function abrirDetalheSessao(id) {
+  if (!Number.isFinite(id) || id <= 0) return;
+  const r = await api(`/api/reservas/${id}/detalhe`);
+  if (!r) return;
+  const d = await r.json();
+  if (!d?.ok) return showToast('Erro ao carregar detalhe: ' + (d?.error || 'desconhecido'), 4000);
+
+  _modalOpen = true;
+  const { reserva, pessoa1, pessoa2 } = d;
+  const ov = document.createElement('div');
+  ov.id = 'detalhe-sessao-overlay';
+  ov.className = 'confirm-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.76);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto';
+
+  const dataLabel = fmt(reserva.data);
+  const salaLabel = SALA_NOME[reserva.sala] || `Sala ${reserva.sala}`;
+  const tratamento = reserva.tipo_massagem_nome || reserva.tratamento || '—';
+  const massoterapeuta = reserva.massagista_nome || '—';
+  const tratamento2 = reserva.tratamento2 || null;
+  const massoterapeuta2 = reserva.massagista_nome2 || null;
+
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:780px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;max-height:90vh;overflow:hidden">
+      <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;padding:1.4rem 1.6rem 1rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.35rem">Atendimento • #${reserva.id}</div>
+          <h2 style="font-family:var(--serif);font-size:1.65rem;font-weight:500;color:var(--text);margin:0 0 .35rem;line-height:1.15">${escHtml(reserva.cliente || '(sem cliente)')}</h2>
+          <p style="margin:0;color:var(--muted2);font-size:.82rem">${dataLabel} · ${reserva.hora_inicio || ''}–${reserva.hora_fim || ''} · ${escHtml(salaLabel)}</p>
+        </div>
+        <button class="anamx-icon-btn" type="button" data-detsess-close="1" aria-label="Fechar" style="flex-shrink:0">✕</button>
+      </header>
+      <div style="overflow-y:auto;padding:1.1rem 1.6rem 1.6rem">
+        ${_renderBlocoSessao({ pessoa: 1, pessoaData: pessoa1, cliente: reserva.cliente, apto: reserva.apto || reserva.quarto, telefone: reserva.telefone, email: reserva.email, tratamento, massoterapeuta, tipoCliente: reserva.tipo_cliente })}
+        ${pessoa2 ? _renderBlocoSessao({ pessoa: 2, pessoaData: pessoa2, cliente: reserva.cliente2, apto: reserva.apto2 || reserva.quarto2, telefone: reserva.telefone2, email: reserva.email2, tratamento: tratamento2 || tratamento, massoterapeuta: massoterapeuta2 || massoterapeuta, tipoCliente: reserva.tipo_cliente2 || reserva.tipo_cliente }) : ''}
+      </div>
+    </div>
+  `;
+  ov.addEventListener('click', e => {
+    if (e.target.closest('[data-detsess-close]')) {
+      ov.remove();
+      _modalOpen = false;
+    }
+  });
+  document.body.appendChild(ov);
+}
+
+function _renderBlocoSessao({ pessoa, pessoaData, cliente, apto, telefone, email, tratamento, massoterapeuta, tipoCliente }) {
+  const tipoLabel = TIPO_CLIENTE_LABEL[tipoCliente] || tipoCliente || '—';
+  const tit = pessoa === 1 ? 'Hóspede' : 'Acompanhante';
+  return `
+    <section style="margin-bottom:1.6rem">
+      <h3 style="font-family:var(--serif);font-size:1.15rem;font-weight:500;color:var(--text);margin:0 0 .8rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">
+        ${tit}${pessoa === 2 ? '' : ''}
+      </h3>
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.6rem;margin-bottom:1rem">
+        ${_kpiSessao('Cliente', cliente || '—')}
+        ${_kpiSessao('Apto / Quarto', apto || '—')}
+        ${_kpiSessao('Tratamento', tratamento || '—')}
+        ${_kpiSessao('Massoterapeuta', massoterapeuta || '—')}
+        ${_kpiSessao('Tipo cliente', tipoLabel)}
+        ${_kpiSessao('Contato', telefone || email || '—')}
+      </div>
+      ${_renderBlocoPesquisa(pessoaData)}
+      ${_renderBlocoAnamnese(pessoaData?.anamnese)}
+    </section>
+  `;
+}
+
+function _kpiSessao(label, valor) {
+  return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem">
+    <div style="font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:.2rem">${escHtml(label)}</div>
+    <div style="font-size:.88rem;color:var(--text);font-weight:500">${escHtml(valor)}</div>
+  </div>`;
+}
+
+function _renderBlocoPesquisa(pData) {
+  if (!pData) return '';
+  const respondida = !!pData.pesquisa_respondida_em;
+  const fb = pData.feedback;
+  if (!respondida || !fb) {
+    return `<div style="background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:.85rem 1rem;margin-bottom:.8rem">
+      <div style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:.25rem">Pesquisa de Satisfação</div>
+      <div style="color:var(--muted2);font-size:.85rem">${respondida ? 'Respondida, mas avaliação não localizada.' : 'Não respondida ainda.'}</div>
+    </div>`;
+  }
+  const respondidaEm = pData.pesquisa_respondida_em
+    ? new Date(pData.pesquisa_respondida_em.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    : '—';
+  const notasServ = Object.entries(_SERVICOS_LABELS).map(([k, lbl]) => _rowNota(lbl, fb[k]));
+  const notasInst = Object.entries(_INSTALACOES_LABELS).map(([k, lbl]) => _rowNota(lbl, fb[k]));
+  const recomendaLabel = fb.recomenda === 'sim' ? 'Sim — recomenda' : fb.recomenda === 'nao' ? 'Não recomenda' : '—';
+  const recomendaDetalhe = fb.recomenda_qual || fb.recomenda_porque || '';
+  return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.95rem 1.1rem;margin-bottom:.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.65rem">
+        <div style="font-size:.7rem;color:var(--success);letter-spacing:.1em;text-transform:uppercase;font-weight:700">✓ Pesquisa respondida</div>
+        <div style="font-size:.7rem;color:var(--muted);font-family:var(--mono)">${respondidaEm}</div>
+      </div>
+      ${notasServ.join('')}
+      ${notasInst.join('')}
+      <div style="margin-top:.65rem;padding-top:.65rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--text)">
+        <strong style="color:var(--muted)">Recomendaria?</strong> ${escHtml(recomendaLabel)}${recomendaDetalhe ? ' — <em>' + escHtml(recomendaDetalhe) + '</em>' : ''}
+      </div>
+      ${fb.servicos_comentario ? `<div style="margin-top:.45rem;font-size:.82rem;color:var(--muted2)"><strong style="color:var(--muted)">Comentário (serviços):</strong> ${escHtml(fb.servicos_comentario)}</div>` : ''}
+      ${fb.instalacoes_comentario ? `<div style="margin-top:.45rem;font-size:.82rem;color:var(--muted2)"><strong style="color:var(--muted)">Comentário (instalações):</strong> ${escHtml(fb.instalacoes_comentario)}</div>` : ''}
+    </div>
+  `;
+}
+
+function _rowNota(label, valor) {
+  if (!valor) return '';
+  const v = _RATINGS_FACES_LABEL[valor] || valor;
+  return `<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.18rem 0;border-bottom:1px solid var(--border-soft)">
+    <span style="color:var(--muted2)">${escHtml(label)}</span>
+    <strong style="color:var(--text)">${escHtml(v)}</strong>
+  </div>`;
+}
+
+function _renderBlocoAnamnese(anam) {
+  if (!anam) {
+    return `<div style="background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:.85rem 1rem">
+      <div style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:.25rem">Anamnese</div>
+      <div style="color:var(--muted2);font-size:.85rem">Sem anamnese vinculada.</div>
+    </div>`;
+  }
+  const campos = [
+    ['Nome completo', `${anam.nome || ''} ${anam.sobrenome || ''}`.trim()],
+    ['Documento', `${(anam.tipo_documento || 'CPF').toUpperCase()} ${anam.documento || ''}`.trim()],
+    ['E-mail', anam.email],
+    ['Telefone', anam.telefone],
+    ['Data nascimento', anam.data_nascimento],
+    ['Rotina facial', anam.rotina_facial],
+    ['Rotina corporal', anam.rotina_corporal],
+    ['Produto específico', anam.produto_especifico],
+    ['Pressão massagem', anam.pressao_massagem],
+    ['Informações médicas', anam.info_medica],
+  ];
+  return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.95rem 1.1rem">
+      <div style="font-size:.7rem;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:.65rem">Anamnese (somente leitura)</div>
+      ${campos.filter(([_, v]) => v && String(v).trim()).map(([k, v]) =>
+        `<div style="display:flex;justify-content:space-between;gap:1rem;font-size:.82rem;padding:.2rem 0;border-bottom:1px solid var(--border-soft)">
+          <span style="color:var(--muted2);flex-shrink:0">${escHtml(k)}</span>
+          <span style="color:var(--text);text-align:right;word-break:break-word">${escHtml(v)}</span>
+        </div>`
+      ).join('')}
+      ${anam.assinatura_data_url ? `<div style="margin-top:.65rem;padding-top:.65rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)">Assinatura registrada ✓</div>` : ''}
+    </div>
+  `;
 }
 
 // ────────────────────────────────────────────────────────────────────────────

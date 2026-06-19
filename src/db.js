@@ -858,6 +858,81 @@ export function buscarReservaById(id) {
   `).get(id) || null;
 }
 
+// Retorna detalhe completo da sessao: reserva + survey_tokens (status da
+// pesquisa por pessoa) + spa_perfis (anamnese readonly por pessoa) +
+// feedback (notas dadas, busca por reserva_id). Reaproveita schemas
+// existentes; nao introduz tabelas/migrations nem mexe em /historico.
+//
+// Casos de borda tratados: token nao gerado, pesquisa nao respondida,
+// anamnese nao vinculada (documento_perfil_id null), zero feedbacks.
+export function buscarReservaDetalhe(id) {
+  const db = getDb();
+  const reserva = buscarReservaById(id);
+  if (!reserva) return null;
+
+  // Survey tokens por pessoa (1 e 2 — casal)
+  const tokens = db.prepare(`
+    SELECT token, pessoa, liberada_em, respondida_em
+    FROM survey_tokens
+    WHERE reserva_id = ?
+    ORDER BY criado_em ASC
+  `).all(id);
+  const tokenP1 = tokens.find(t => (t.pessoa || 1) === 1) || null;
+  const tokenP2 = tokens.find(t => t.pessoa === 2) || null;
+
+  // Anamneses por pessoa via documento_perfil_id / documento_perfil_id2
+  const carregarPerfil = (perfilId) => {
+    if (!perfilId) return null;
+    return db.prepare(`SELECT * FROM spa_perfis WHERE id = ?`).get(perfilId) || null;
+  };
+  const perfilP1 = carregarPerfil(reserva.documento_perfil_id);
+  const perfilP2 = carregarPerfil(reserva.documento_perfil_id2);
+
+  // Feedback(s) ligados a essa reserva — pode haver 2 (casal). Filtra
+  // tambem por email do hospede como fallback caso reserva_id nao
+  // tenha sido gravado (compat retroativa antes da migracao do feedback.reserva_id).
+  const feedbacks = db.prepare(`
+    SELECT id, submitted_at, nome, email, tipo_cliente, origem,
+           recomenda, recomenda_qual, recomenda_porque,
+           servicos_expectativa, servicos_explicacao, servicos_atitude, servicos_tecnica,
+           servicos_comentario,
+           instalacoes_conforto, instalacoes_organizacao, instalacoes_conveniencia,
+           instalacoes_comentario,
+           massoterapeuta_avaliacao, nome_massoterapeuta,
+           tratamento, sala
+    FROM feedback
+    WHERE reserva_id = ?
+    ORDER BY submitted_at ASC
+  `).all(id);
+
+  return {
+    reserva,
+    pessoa1: {
+      token: tokenP1?.token || null,
+      pesquisa_liberada_em: tokenP1?.liberada_em || null,
+      pesquisa_respondida_em: tokenP1?.respondida_em || null,
+      anamnese: perfilP1,
+      // Filtra feedback por nome (P1 = reserva.cliente)
+      feedback: feedbacks.find(f =>
+        f.nome && reserva.cliente &&
+        f.nome.trim().toLowerCase() === reserva.cliente.trim().toLowerCase()
+      ) || null,
+    },
+    pessoa2: reserva.cliente2 ? {
+      token: tokenP2?.token || null,
+      pesquisa_liberada_em: tokenP2?.liberada_em || null,
+      pesquisa_respondida_em: tokenP2?.respondida_em || null,
+      anamnese: perfilP2,
+      feedback: feedbacks.find(f =>
+        f.nome && reserva.cliente2 &&
+        f.nome.trim().toLowerCase() === reserva.cliente2.trim().toLowerCase()
+      ) || null,
+    } : null,
+    // Lista completa pra debug / fallback (caso match por nome falhe)
+    feedbacks_todos: feedbacks,
+  };
+}
+
 export function criarSurveyToken(reservaId, pessoa = 1) {
   const db = getDb();
   const p = pessoa === 2 ? 2 : 1;

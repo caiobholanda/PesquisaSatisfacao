@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -29,6 +29,19 @@ router.get('/historico', (req, res) => {
     offset: offset ? +offset : 0,
   });
   res.json({ ok: true, ...result });
+});
+
+// Detalhe completo da sessao para o modal do Historico de Clientes.
+// Reaproveita buscarReservaDetalhe (db.js) que combina reserva + survey_tokens
+// + spa_perfis + feedback sem mudar contrato de /historico nem outras telas.
+router.get('/:id/detalhe', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ ok: false, error: 'id invalido' });
+  }
+  const detalhe = buscarReservaDetalhe(id);
+  if (!detalhe) return res.status(404).json({ ok: false, error: 'reserva nao encontrada' });
+  res.json({ ok: true, ...detalhe });
 });
 
 const SPA_OPEN_MIN = 8 * 60;   // 08:00
