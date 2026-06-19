@@ -813,7 +813,7 @@ function _modalLinksCasal({ titulo, descricao, h1, h2, msgFn }) {
     </div>
   `;
   ov.addEventListener('click', e => {
-    if (e.target === ov || e.target.dataset.act === 'close') ov.remove();
+    if (e.target.dataset.act === 'close') ov.remove();
     else if (e.target.dataset.zap) {
       window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
     } else if (e.target.dataset.copy) {
@@ -1948,8 +1948,7 @@ function confirmarAcao({ titulo = 'Confirmar?', mensagem = '', btnConfirmar = 'C
       else if (e.key === 'Enter') close(true);
     }
     overlay.addEventListener('click', e => {
-      if (e.target === overlay) close(false);
-      else if (e.target.dataset.act === 'ok') close(true);
+      if (e.target.dataset.act === 'ok') close(true);
       else if (e.target.dataset.act === 'cancel') close(false);
     });
     document.addEventListener('keydown', onKey);
@@ -2385,7 +2384,7 @@ function _abrirModalGranClass() {
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
@@ -2631,13 +2630,13 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
           </div>
         `;
         cf.addEventListener('click', e => {
-          if (e.target === cf || e.target.dataset.cf === 'cancel') cf.remove();
+          if (e.target.dataset.cf === 'cancel') cf.remove();
           else if (e.target.dataset.cf === 'ok') { cf.remove(); ov.remove(); }
         });
         document.body.appendChild(cf);
       };
       ov.addEventListener('click', e => {
-        if (e.target === ov || e.target.dataset.act === 'close') _confirmarFechar();
+        if (e.target.dataset.act === 'close') _confirmarFechar();
         else if (e.target.dataset.zap) {
           window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
         } else if (e.target.dataset.copy) {
@@ -3957,7 +3956,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
@@ -4014,7 +4013,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target === ov || e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
@@ -4567,7 +4566,7 @@ async function _abrirModalHistorico({ slug, titulo }) {
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
   ov.addEventListener('click', e => {
-    if (e.target === ov || e.target.dataset.act === 'close') return close();
+    if (e.target.dataset.act === 'close') return close();
     const f = e.target.dataset.filtro;
     if (f) {
       ov.querySelectorAll('[data-filtro]').forEach(b => {
@@ -4715,7 +4714,7 @@ async function _abrirModalPerguntas({ slug, titulo, onChange }) {
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
   ov.addEventListener('click', async e => {
-    if (e.target === ov || e.target.dataset.act === 'close') return close();
+    if (e.target.dataset.act === 'close') return close();
     if (e.target.dataset.tab) {
       ov.querySelectorAll('.tab-btn').forEach(b => {
         const ativo = b.dataset.tab === e.target.dataset.tab;
@@ -5486,8 +5485,7 @@ function pedirTexto({ titulo = 'Digite', mensagem = '', valorInicial = '', place
       else if (e.key === 'Enter' && !multilinhas) close(ov.querySelector('#_pedir-inp').value);
     }
     ov.addEventListener('click', e => {
-      if (e.target === ov) close(null);
-      else if (e.target.dataset.act === 'cancel') close(null);
+      if (e.target.dataset.act === 'cancel') close(null);
       else if (e.target.dataset.act === 'ok') close(ov.querySelector('#_pedir-inp').value);
     });
     document.addEventListener('keydown', onKey);
@@ -5519,7 +5517,7 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
     function close(r) { ov.remove(); document.removeEventListener('keydown', onKey); resolve(r); }
     function onKey(e) { if (e.key === 'Escape') close(null); else if (e.key === 'Enter') close(ov.querySelector('#_pedir-sel').value); }
     ov.addEventListener('click', e => {
-      if (e.target === ov || e.target.dataset.act === 'cancel') close(null);
+      if (e.target.dataset.act === 'cancel') close(null);
       else if (e.target.dataset.act === 'ok') close(ov.querySelector('#_pedir-sel').value);
     });
     document.addEventListener('keydown', onKey);
@@ -5576,7 +5574,7 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
       }
     }
     ov.addEventListener('click', e => {
-      if (e.target === ov || e.target.dataset.act === 'cancel') close(null);
+      if (e.target.dataset.act === 'cancel') close(null);
       else if (e.target.dataset.act === 'ok') {
         const r = _collect();
         if (!r.rotulo) { ov.querySelector('#_pq-rot').focus(); return; }
