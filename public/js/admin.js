@@ -868,6 +868,7 @@ function setupDelegation() {
     const action = el.dataset.action;
     if (action === 'open-drawer')   { openDrawer(+el.dataset.id); }
     else if (action === 'ver-hist') { showHistoricoMassagista(+el.dataset.id, el.dataset.nome); }
+    else if (action === 'set-pin')  { openPinModal(+el.dataset.id, el.dataset.nome); }
     else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome, +el.dataset.ativo); }
     else if (action === 'edit-tipo') {
       const { id, nome, dur, preco, ativo, desc } = el.dataset;
@@ -990,6 +991,7 @@ function renderMassagistas() {
           ${statHtml}
         </div>
         <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Ver histórico</button>
+        <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
         <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}" data-ativo="${m.ativo?1:0}">Editar</button>
       </div>`;
   }).join('') + '</div>';
@@ -1139,6 +1141,40 @@ document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
     _massagistasModal = [];
     closeMgmtM(); loadMassagistas();
+  } finally { btn.disabled = false; }
+});
+
+// ── PIN de acesso mobile ──
+let _pinMId = null;
+function openPinModal(id, nome) {
+  _pinMId = id;
+  document.getElementById('mgmt-pin-sub').textContent = nome;
+  document.getElementById('mgmt-pin-input').value = '';
+  document.getElementById('mgmt-pin-confirm').value = '';
+  document.getElementById('mgmt-pin-err').textContent = '';
+  _modalOpen = true;
+  document.getElementById('mgmt-pin-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('mgmt-pin-input').focus(), 50);
+}
+function closePinModal() { _modalOpen = false; document.getElementById('mgmt-pin-overlay').style.display = 'none'; _pinMId = null; }
+document.getElementById('mgmt-pin-x').addEventListener('click', closePinModal);
+document.getElementById('mgmt-pin-cancelar').addEventListener('click', closePinModal);
+document.getElementById('mgmt-pin-salvar').addEventListener('click', async () => {
+  const err = document.getElementById('mgmt-pin-err');
+  err.textContent = '';
+  const pin = document.getElementById('mgmt-pin-input').value;
+  const confirm = document.getElementById('mgmt-pin-confirm').value;
+  if (!pin || pin.length < 4 || pin.length > 12) { err.textContent = 'PIN deve ter 4 a 12 caracteres.'; return; }
+  if (pin !== confirm) { err.textContent = 'Os PINs não coincidem.'; return; }
+  const btn = document.getElementById('mgmt-pin-salvar');
+  btn.disabled = true;
+  try {
+    const res = await api(`/api/massagistas/${_pinMId}/pin`, { method: 'POST', body: JSON.stringify({ pin }) });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { err.textContent = d.error || 'Erro ao definir PIN.'; return; }
+    closePinModal();
+    showToast('PIN definido com sucesso.');
   } finally { btn.disabled = false; }
 });
 

@@ -3972,6 +3972,38 @@
   </div>
 </div>
 
+<!-- MODAL PIN TERAPEUTA -->
+<div class="res-modal-overlay" id="mgmt-pin-overlay" style="display:none">
+  <div class="res-modal" style="max-width:400px">
+    <div class="res-modal-hd">
+      <div>
+        <div class="res-modal-title">PIN de Acesso Mobile</div>
+        <div class="res-modal-sub" id="mgmt-pin-sub"></div>
+      </div>
+      <button class="res-modal-x" id="mgmt-pin-x">✕</button>
+    </div>
+    <div class="res-modal-body">
+      <p style="margin:0 0 1rem;font-size:.85rem;color:var(--muted);line-height:1.5">
+        Define o PIN que a terapeuta usará para acessar a agenda mobile.<br>
+        O PIN nunca é exibido — apenas redefinido.
+      </p>
+      <div class="res-fg">
+        <label>Novo PIN <span style="color:var(--danger)">*</span></label>
+        <input type="password" id="mgmt-pin-input" placeholder="4 a 12 caracteres" autocomplete="new-password">
+      </div>
+      <div class="res-fg">
+        <label>Confirmar PIN <span style="color:var(--danger)">*</span></label>
+        <input type="password" id="mgmt-pin-confirm" placeholder="Repita o PIN" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="res-modal-err" id="mgmt-pin-err"></div>
+    <div class="res-modal-ft">
+      <button class="btn btn-outline" id="mgmt-pin-cancelar">Cancelar</button>
+      <button class="btn btn-gold" id="mgmt-pin-salvar">Definir PIN</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EDIT TIPO -->
 <div class="res-modal-overlay" id="mgmt-t-overlay" style="display:none">
   <div class="res-modal">
@@ -4028,6 +4060,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=83"></script>
+<script src="/js/admin.js?v=84"></script>
 </body>
 </html>
