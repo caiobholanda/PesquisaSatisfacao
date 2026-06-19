@@ -25,138 +25,140 @@ const _OPCOES_FALLBACK = {
   ],
 };
 
+// Renderiza UMA pergunta extra (adicionada pelo admin no editor).
+// Extraido para que possa ser reutilizado pelo renderer ordenado das
+// secoes Servicos/Instalacoes que interleva legacy + extras pela ordem.
+function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
+  const reqMark = p.obrigatoria ? <span className="req-star"> *</span> : null;
+  const errId = err ? `${fieldId}-err` : undefined;
+  if (p.tipo === 'texto_livre') {
+    return (
+      <div className={'field comment-field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+        <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
+        <textarea
+          id={fieldId}
+          value={valores[p.chave]?.valor || ''}
+          onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
+          rows={3}
+          placeholder="..."
+          aria-required={p.obrigatoria || undefined}
+          aria-invalid={!!err || undefined}
+          aria-describedby={errId}
+        />
+        <span className="fill"></span>
+        {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+      </div>
+    );
+  }
+  if (p.tipo === 'unica' || p.tipo === 'sim_nao' || p.tipo === 'escala') {
+    const opcoes = (p.opcoes && p.opcoes.length) ? p.opcoes
+      : (_OPCOES_FALLBACK[p.tipo] || _OPCOES_FALLBACK.sim_nao);
+    const cur = valores[p.chave]?.valor || '';
+    const ehRostos = p.tipo === 'escala'
+      && opcoes.length === 4
+      && opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave));
+    if (ehRostos) {
+      const fakeQ = { id: p.chave, pt: p.rotulo, en: '' };
+      return (
+        <div data-extra-chave={p.chave} className={err ? 'extras-rostos-err' : ''}>
+          <RatingRow q={fakeQ} value={cur} onPick={(v) => setValor(p.chave, { tipo: 'escala', valor: v })} />
+          {err && <p id={errId} className="field-err" role="alert" style={{marginTop:8}}>{err}</p>}
+        </div>
+      );
+    }
+    return (
+      <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+        <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
+        <div className="radio-list extras-opts" role="radiogroup" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+          {opcoes.map(o => (
+            <label key={o.chave} className={'radio-opt' + (cur === o.chave ? ' selected' : '')}>
+              <input
+                type="radio"
+                name={'x_' + p.chave}
+                checked={cur === o.chave}
+                onChange={() => setValor(p.chave, { tipo: p.tipo, valor: o.chave })}
+              />
+              <span>{o.rotulo}</span>
+            </label>
+          ))}
+        </div>
+        {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+      </div>
+    );
+  }
+  if (p.tipo === 'multipla') {
+    const opcoes = p.opcoes || [];
+    const cur = Array.isArray(valores[p.chave]?.valor) ? valores[p.chave].valor : [];
+    if (!opcoes.length) {
+      return (
+        <div className="field" data-extra-chave={p.chave}>
+          <span className="field-label">{p.rotulo}{reqMark}</span>
+          <p style={{ fontSize: 13, color: '#9B9B9B', fontStyle: 'italic' }}>
+            (sem opções configuradas)
+          </p>
+        </div>
+      );
+    }
+    const toggle = (k) => {
+      setValor(p.chave, (prev) => {
+        const prevArr = Array.isArray(prev?.valor) ? prev.valor : [];
+        const next = prevArr.includes(k) ? prevArr.filter(x => x !== k) : [...prevArr, k];
+        return { tipo: 'multipla', valor: next };
+      });
+    };
+    return (
+      <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+        <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
+        <div className="radio-list extras-opts" role="group" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+          {opcoes.map(o => (
+            <label key={o.chave} className={'radio-opt' + (cur.includes(o.chave) ? ' selected' : '')}>
+              <input type="checkbox" checked={cur.includes(o.chave)} onChange={() => toggle(o.chave)} />
+              <span>{o.rotulo}</span>
+            </label>
+          ))}
+        </div>
+        {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+      </div>
+    );
+  }
+  return (
+    <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+      <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
+      <input
+        id={fieldId}
+        value={valores[p.chave]?.valor || ''}
+        onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
+        aria-required={p.obrigatoria || undefined}
+        aria-invalid={!!err || undefined}
+        aria-describedby={errId}
+      />
+      <span className="fill"></span>
+      {err && <p id={errId} className="field-err" role="alert">{err}</p>}
+    </div>
+  );
+}
+
 // Renderiza perguntas extras (adicionadas pelo admin no editor) para uma
 // secao especifica. O estado fica em FormScreen via setExtras.
 function ExtrasSecao({ perguntas, valores, setValor, errors = {}, sectionPrefix = 'x' }) {
   if (!perguntas || !perguntas.length) return null;
   return (
     <div className="extras-block">
-      {perguntas.map((p, idx) => {
-        const reqMark = p.obrigatoria ? <span className="req-star"> *</span> : null;
-        const err = errors[p.chave];
-        const fieldId = `xf-${sectionPrefix}-${idx}-${p.chave}`;
-        const errId = err ? `${fieldId}-err` : undefined;
-        if (p.tipo === 'texto_livre') {
-          return (
-            <div key={p.chave} className={'field comment-field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-              <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
-              <textarea
-                id={fieldId}
-                value={valores[p.chave]?.valor || ''}
-                onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
-                rows={3}
-                placeholder="..."
-                aria-required={p.obrigatoria || undefined}
-                aria-invalid={!!err || undefined}
-                aria-describedby={errId}
-              />
-              <span className="fill"></span>
-              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
-            </div>
-          );
-        }
-        if (p.tipo === 'unica' || p.tipo === 'sim_nao' || p.tipo === 'escala') {
-          const opcoes = (p.opcoes && p.opcoes.length) ? p.opcoes
-            : (_OPCOES_FALLBACK[p.tipo] || _OPCOES_FALLBACK.sim_nao);
-          const cur = valores[p.chave]?.valor || '';
-          // SMILEYS: detecta tipo 'rostos' (tipo='escala' com opcoes
-          // otimo/bom/regular/ruim). Renderiza com a mesma UI das perguntas
-          // nativas (RatingRow).
-          const ehRostos = p.tipo === 'escala'
-            && opcoes.length === 4
-            && opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave));
-          if (ehRostos) {
-            const fakeQ = { id: p.chave, pt: p.rotulo, en: '' };
-            return (
-              <div key={p.chave} data-extra-chave={p.chave} className={err ? 'extras-rostos-err' : ''}>
-                <RatingRow
-                  q={fakeQ}
-                  value={cur}
-                  onPick={(v) => setValor(p.chave, { tipo: 'escala', valor: v })}
-                />
-                {err && <p id={errId} className="field-err" role="alert" style={{marginTop:8}}>{err}</p>}
-              </div>
-            );
-          }
-          return (
-            <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-              <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
-              <div className="radio-list extras-opts" role="radiogroup" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
-                {opcoes.map(o => (
-                  <label key={o.chave} className={'radio-opt' + (cur === o.chave ? ' selected' : '')}>
-                    <input
-                      type="radio"
-                      name={'x_' + p.chave}
-                      checked={cur === o.chave}
-                      onChange={() => setValor(p.chave, { tipo: p.tipo, valor: o.chave })}
-                    />
-                    <span>{o.rotulo}</span>
-                  </label>
-                ))}
-              </div>
-              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
-            </div>
-          );
-        }
-        if (p.tipo === 'multipla') {
-          const opcoes = p.opcoes || [];
-          const cur = Array.isArray(valores[p.chave]?.valor) ? valores[p.chave].valor : [];
-          if (!opcoes.length) {
-            // Admin esqueceu de definir opcoes — degrada graciosamente.
-            return (
-              <div key={p.chave} className="field" data-extra-chave={p.chave}>
-                <span className="field-label">{p.rotulo}{reqMark}</span>
-                <p style={{ fontSize: 13, color: '#9B9B9B', fontStyle: 'italic' }}>
-                  (sem opções configuradas)
-                </p>
-              </div>
-            );
-          }
-          // Toggle com setState funcional pra evitar race com cliques rapidos.
-          const toggle = (k) => {
-            setValor(p.chave, (prev) => {
-              const prevArr = Array.isArray(prev?.valor) ? prev.valor : [];
-              const next = prevArr.includes(k) ? prevArr.filter(x => x !== k) : [...prevArr, k];
-              return { tipo: 'multipla', valor: next };
-            });
-          };
-          return (
-            <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-              <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
-              <div className="radio-list extras-opts" role="group" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
-                {opcoes.map(o => (
-                  <label key={o.chave} className={'radio-opt' + (cur.includes(o.chave) ? ' selected' : '')}>
-                    <input type="checkbox" checked={cur.includes(o.chave)} onChange={() => toggle(o.chave)} />
-                    <span>{o.rotulo}</span>
-                  </label>
-                ))}
-              </div>
-              {err && <p id={errId} className="field-err" role="alert">{err}</p>}
-            </div>
-          );
-        }
-        // fallback: texto curto
-        return (
-          <div key={p.chave} className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-            <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
-            <input
-              id={fieldId}
-              value={valores[p.chave]?.valor || ''}
-              onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
-              aria-required={p.obrigatoria || undefined}
-              aria-invalid={!!err || undefined}
-              aria-describedby={errId}
-            />
-            <span className="fill"></span>
-            {err && <p id={errId} className="field-err" role="alert">{err}</p>}
-          </div>
-        );
-      })}
+      {perguntas.map((p, idx) => (
+        <SingleExtraItem
+          key={p.chave}
+          pergunta={p}
+          valores={valores}
+          setValor={setValor}
+          err={errors[p.chave]}
+          fieldId={`xf-${sectionPrefix}-${idx}-${p.chave}`}
+        />
+      ))}
     </div>
   );
 }
 
-export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null, extrasPorSecao = [], pesquisaVersao = null }) {
+export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null, extrasPorSecao = [], secoesOrdenadas = [], pesquisaVersao = null }) {
   // Quando a reserva está num idioma diferente de pt-BR, sobrescrevemos os
   // rótulos das perguntas e os nomes das classificações com o que veio do
   // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
@@ -383,6 +385,82 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
     );
   }
 
+  // Renderiza itens da secao (Servicos/Instalacoes) na ordem definida pelo
+  // admin. Interleva ratings legacy (s0-s3 / f0-f2), comentarios e extras
+  // (perguntas adicionadas pelo admin) pela coluna `ordem` do backend.
+  const renderSectionItems = (chave) => {
+    const sec = (secoesOrdenadas || []).find(s => s.chave === chave);
+    if (!sec || !sec.perguntas?.length) return null;
+    const fallbackArr = chave === 'servicos' ? SERVICES : FACILITIES;
+    const comentarioVal = chave === 'servicos' ? comentarioServicos : comentarioInstalacoes;
+    const setComentarioVal = chave === 'servicos' ? setComentarioServicos : setComentarioInstalacoes;
+    const comentarioEn = 'Additional comments and suggestions:';
+    // Agrupa ratings consecutivos num unico .rating-list para preservar o
+    // visual de lista coesa. Quebra o grupo ao encontrar comentario/extra.
+    const blocks = [];
+    let currentRatings = null;
+    for (const p of sec.perguntas) {
+      const fb = p.legacy_id ? fallbackArr.find(x => x.id === p.legacy_id) : null;
+      if (p.kind === 'rating-legacy' && fb) {
+        if (!currentRatings) { currentRatings = []; blocks.push({ type: 'ratings', items: currentRatings }); }
+        currentRatings.push({ p, fb });
+      } else if (p.kind === 'extra' && p.tipo === 'escala' && p.opcoes?.length === 4 && p.opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave))) {
+        if (!currentRatings) { currentRatings = []; blocks.push({ type: 'ratings', items: currentRatings }); }
+        currentRatings.push({ p, fb: null });
+      } else {
+        currentRatings = null;
+        blocks.push({ type: p.kind, p });
+      }
+    }
+    return blocks.map((b, bi) => {
+      if (b.type === 'ratings') {
+        return (
+          <div key={`r-${bi}`} className="rating-list">
+            {b.items.map(({ p, fb }) => {
+              if (fb) {
+                const q = {
+                  id: p.legacy_id,
+                  pt: p.rotulo || fb.pt,
+                  en: i18n?.suppressEn ? '' : fb.en,
+                };
+                return <RatingRow key={p.legacy_id} q={q} value={ratings[p.legacy_id]} onPick={(v) => pick(p.legacy_id, v)} />;
+              }
+              // extra rostos
+              const fakeQ = { id: p.chave, pt: p.rotulo, en: '' };
+              const cur = extras[p.chave]?.valor || '';
+              return (
+                <div key={p.chave} data-extra-chave={p.chave} className={extrasErrors[p.chave] ? 'extras-rostos-err' : ''}>
+                  <RatingRow q={fakeQ} value={cur} onPick={(v) => setExtraVal(p.chave, { tipo: 'escala', valor: v })} />
+                  {extrasErrors[p.chave] && <p className="field-err" role="alert" style={{marginTop:8}}>{extrasErrors[p.chave]}</p>}
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+      if (b.type === 'comentario') {
+        return (
+          <div key={`c-${bi}-${b.p.chave}`} className="field comment-field">
+            <FieldLabel htmlFor={`f-com-${chave}`} pt={b.p.rotulo || 'Comentário e sugestões adicionais'} en={i18n?.suppressEn ? '' : comentarioEn} />
+            <AutoTextarea id={`f-com-${chave}`} value={comentarioVal} onChange={setComentarioVal} placeholder="Opcional..." />
+            <span className="fill"></span>
+          </div>
+        );
+      }
+      // extra
+      return (
+        <SingleExtraItem
+          key={`e-${bi}-${b.p.chave}`}
+          pergunta={b.p}
+          valores={extras}
+          setValor={setExtraVal}
+          err={extrasErrors[b.p.chave]}
+          fieldId={`xf-${chave}-${bi}-${b.p.chave}`}
+        />
+      );
+    });
+  };
+
   return (
     <div className="screen" style={{ opacity: visible ? 1 : 0 }}>
       <div className="progress-bar">
@@ -496,33 +574,41 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
         <section ref={secRefs[0]} className="enter" style={{ animationDelay: '270ms' }}>
           <SectionHeading num="1" pt={i18n?.sectionTitles?.servicos || 'Serviços'} en={i18n?.suppressEn ? '' : 'Services'} />
           <ScaleBar i18n={i18n} />
-          <div className="rating-list">
-            {services.map((q) => (
-              <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
-            ))}
-          </div>
-          <div className="field comment-field">
-            <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en={i18n?.suppressEn ? '' : 'Additional comments and suggestions:'} />
-            <AutoTextarea id="f-com-serv" value={comentarioServicos} onChange={setComentarioServicos} placeholder="Opcional..." />
-            <span className="fill"></span>
-          </div>
-          <ExtrasSecao perguntas={extrasDe('servicos')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="servicos" />
+          {renderSectionItems('servicos') || (
+            <>
+              <div className="rating-list">
+                {services.map((q) => (
+                  <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
+                ))}
+              </div>
+              <div className="field comment-field">
+                <FieldLabel htmlFor="f-com-serv" pt="Comentário e sugestões adicionais" en={i18n?.suppressEn ? '' : 'Additional comments and suggestions:'} />
+                <AutoTextarea id="f-com-serv" value={comentarioServicos} onChange={setComentarioServicos} placeholder="Opcional..." />
+                <span className="fill"></span>
+              </div>
+              <ExtrasSecao perguntas={extrasDe('servicos')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="servicos" />
+            </>
+          )}
         </section>
 
         <section ref={secRefs[1]} className="enter">
           <SectionHeading num="2" pt={i18n?.sectionTitles?.instalacoes || 'Instalações'} en={i18n?.suppressEn ? '' : 'Facilities'} />
           <ScaleBar i18n={i18n} />
-          <div className="rating-list">
-            {facilities.map((q) => (
-              <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
-            ))}
-          </div>
-          <div className="field comment-field">
-            <FieldLabel htmlFor="f-com-inst" pt="Comentário e sugestões adicionais" en="Additional comments and suggestions:" />
-            <AutoTextarea id="f-com-inst" value={comentarioInstalacoes} onChange={setComentarioInstalacoes} placeholder="Opcional..." />
-            <span className="fill"></span>
-          </div>
-          <ExtrasSecao perguntas={extrasDe('instalacoes')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="instalacoes" />
+          {renderSectionItems('instalacoes') || (
+            <>
+              <div className="rating-list">
+                {facilities.map((q) => (
+                  <RatingRow key={q.id} q={q} value={ratings[q.id]} onPick={(v) => pick(q.id, v)} />
+                ))}
+              </div>
+              <div className="field comment-field">
+                <FieldLabel htmlFor="f-com-inst" pt="Comentário e sugestões adicionais" en="Additional comments and suggestions:" />
+                <AutoTextarea id="f-com-inst" value={comentarioInstalacoes} onChange={setComentarioInstalacoes} placeholder="Opcional..." />
+                <span className="fill"></span>
+              </div>
+              <ExtrasSecao perguntas={extrasDe('instalacoes')} valores={extras} setValor={setExtraVal} errors={extrasErrors} sectionPrefix="instalacoes" />
+            </>
+          )}
         </section>
 
         <section ref={secRefs[2]}>

@@ -25,6 +25,7 @@ export default function App() {
   const pollRef = useRef(null);
 
   const [extrasPorSecao, setExtrasPorSecao] = useState([]);
+  const [secoesOrdenadas, setSecoesOrdenadas] = useState([]);
   const [pesquisaVersao, setPesquisaVersao] = useState(null);
 
   const configCacheRef = useRef(new Set());
@@ -49,9 +50,17 @@ export default function App() {
       const sectionTitles = {};
       const legacyOrder = {};
       const extras = [];
+      // Lista completa de perguntas por secao em ordem (legacy + extras +
+      // comentarios). Cada item carrega tipo, ordem, legacy_id (se for s0-s3
+      // ou f0-f2), permitindo o FormScreen renderizar tudo na ordem definida
+      // pelo admin via drag-and-drop.
+      const secoesOrd = [];
+      const COMENTARIO_LEGADO = new Set(['servicos_comentario', 'instalacoes_comentario']);
+      const SKIP_LEGADO = new Set(['recomenda', 'recomenda_qual', 'recomenda_porque']);
       for (const sec of d.pesquisa.secoes || []) {
         if (sec.chave) sectionTitles[sec.chave] = sec.titulo;
         const extrasDaSecao = [];
+        const perguntasOrd = [];
         for (const q of sec.perguntas || []) {
           const id = _MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave];
           if (id) {
@@ -61,18 +70,26 @@ export default function App() {
           if (Array.isArray(q.opcoes)) {
             for (const o of q.opcoes) if (o.chave && o.rotulo) ratings[o.chave] = o.rotulo;
           }
-          // Pergunta nao mapeada = extra (adicionada pelo admin).
-          // Exclui todas as perguntas legacy (s0-s3, f0-f2 + comentarios +
-          // recomenda/recomenda_qual/recomenda_porque) que ja sao renderizadas
-          // pelos componentes hardcoded do React.
-          const LEGACY_CHAVES = new Set([
-            'recomenda', 'recomenda_qual', 'recomenda_porque',
-            'servicos_comentario', 'instalacoes_comentario',
-          ]);
           const refChave = q.mapeia_campo_legado || q.chave;
-          const ehLegado = !!(_MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave]
-            || LEGACY_CHAVES.has(refChave));
-          if (!ehLegado) extrasDaSecao.push({
+          // Pula recomenda* (renderizado em secao separada hardcoded fora do loop).
+          if (SKIP_LEGADO.has(refChave)) continue;
+          const ehLegacyRating = !!id;
+          const ehComentario = COMENTARIO_LEGADO.has(refChave);
+          const ehExtra = !ehLegacyRating && !ehComentario;
+          perguntasOrd.push({
+            chave: q.chave,
+            mapeia_campo_legado: q.mapeia_campo_legado || null,
+            ordem: (typeof q.ordem === 'number') ? q.ordem : 99,
+            tipo: q.tipo,
+            rotulo: q.rotulo,
+            obrigatoria: !!q.obrigatoria,
+            opcoes: Array.isArray(q.opcoes) ? q.opcoes : null,
+            legacy_id: id || null,
+            kind: ehLegacyRating ? 'rating-legacy'
+                : ehComentario   ? 'comentario'
+                                 : 'extra',
+          });
+          if (ehExtra) extrasDaSecao.push({
             chave: q.chave,
             rotulo: q.rotulo,
             tipo: q.tipo,
@@ -80,6 +97,8 @@ export default function App() {
             opcoes: Array.isArray(q.opcoes) ? q.opcoes : null,
           });
         }
+        perguntasOrd.sort((a, b) => a.ordem - b.ordem);
+        secoesOrd.push({ chave: sec.chave, titulo: sec.titulo, perguntas: perguntasOrd });
         if (extrasDaSecao.length) extras.push({
           chave: sec.chave,
           titulo: sec.titulo,
@@ -87,10 +106,8 @@ export default function App() {
         });
       }
       setExtrasPorSecao(extras);
+      setSecoesOrdenadas(secoesOrd);
       setPesquisaVersao(d.pesquisa.versao || null);
-      // Sempre aplica labels/ratings/sectionTitles vindos do backend (admin pode
-      // ter editado rótulos das perguntas legacy s0-s3/f0-f2). Em idiomas != pt-BR
-      // o 2º idioma (EN bilíngue) some via suppressEn.
       setI18n({ lang, labels, ratings, sectionTitles, legacyOrder, suppressEn: !!(lang && lang !== 'pt-BR') });
     } catch {
       // libera o cache pra permitir retry quando o usuario interagir
@@ -159,7 +176,7 @@ export default function App() {
   return (
     <div className="app-root">
       {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
-      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} pesquisaVersao={pesquisaVersao} />}
+      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} secoesOrdenadas={secoesOrdenadas} pesquisaVersao={pesquisaVersao} />}
       {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
     </div>
   );
