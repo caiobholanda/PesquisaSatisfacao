@@ -262,6 +262,13 @@ button, input { font-family: inherit; }
   background: var(--gold-dim); border-color: var(--gold);
 }
 .tx-bloco-anam .tx-bloco-titulo { color: var(--gold); }
+.tx-bloco-sep {
+  height: 1px; background: var(--border); margin: .5rem -.1rem;
+}
+.tx-bloco-row-anam span:first-child { color: var(--muted); }
+.tx-anam-vazia {
+  color: var(--danger); font-size: .85rem; font-weight: 600;
+}
 </style>
 </head>
 <body>
@@ -552,16 +559,21 @@ button, input { font-family: inherit; }
     const anam = p?.anamnese;
 
     const camposAnam = anam ? [
-      ['Documento', `${(anam.tipo_documento||'cpf').toUpperCase()} ${anam.documento||''}`],
-      ['E-mail', anam.email],
-      ['Telefone', anam.telefone],
+      ['Documento', anam.documento ? `${(anam.tipo_documento||'CPF').toUpperCase()} ${anam.documento}` : null],
       ['Nascimento', anam.data_nascimento],
+      ['Pressão preferida', anam.pressao_massagem],
       ['Rotina facial', anam.rotina_facial],
       ['Rotina corporal', anam.rotina_corporal],
       ['Produto específico', anam.produto_especifico],
-      ['Pressão preferida', anam.pressao_massagem],
       ['Informações médicas', anam.info_medica],
+      ['Contato', anam.telefone || anam.email],
     ].filter(([,v]) => v && String(v).trim()) : [];
+
+    const anamHtml = anam
+      ? (camposAnam.length
+          ? camposAnam.map(([k,v]) => `<div class="tx-bloco-row tx-bloco-row-anam"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
+          : `<div class="tx-bloco-row"><span style="color:var(--muted2);font-style:italic">Anamnese preenchida (sem campos adicionais)</span></div>`)
+      : `<div class="tx-bloco-row"><span class="tx-anam-vazia">⚠ Anamnese não preenchida</span></div>`;
 
     sheet.innerHTML = `
       <div class="tx-sheet-head">
@@ -571,23 +583,14 @@ button, input { font-family: inherit; }
         </div>
         <button class="tx-close" data-close>✕</button>
       </div>
-      <div class="tx-bloco">
-        <div class="tx-bloco-titulo">Atendimento</div>
+      <div class="tx-bloco${anam ? ' tx-bloco-anam' : ''}">
+        <div class="tx-bloco-titulo">Características do atendimento</div>
         <div class="tx-bloco-row"><span>Quarto</span><span>${esc(quarto || '—')}</span></div>
         <div class="tx-bloco-row"><span>Tratamento</span><span>${esc(trat || '—')}</span></div>
         <div class="tx-bloco-row"><span>Pesquisa</span><span>${p?.pesquisa_respondida_em ? '✓ Respondida' : 'Pendente'}</span></div>
+        <div class="tx-bloco-sep"></div>
+        ${anamHtml}
       </div>
-      ${anam ? `
-        <div class="tx-bloco tx-bloco-anam">
-          <div class="tx-bloco-titulo">Anamnese (somente leitura)</div>
-          ${camposAnam.map(([k,v]) => `<div class="tx-bloco-row"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}
-        </div>
-      ` : `
-        <div class="tx-bloco">
-          <div class="tx-bloco-titulo">Anamnese</div>
-          <p style="margin:0;color:var(--muted2);font-size:.88rem">Sem anamnese vinculada.</p>
-        </div>
-      `}
     `;
     sheet.querySelector('[data-close]').addEventListener('click', () => ov.classList.remove('show'));
   }
