@@ -828,23 +828,44 @@ async function applyAnamneseConfig(idioma) {
   _reordenarPorOrdem(cfg);
 }
 
-// Reordena os blocos DOM da anamnese para refletir a ordem definida pelo
-// admin no editor. Trata legacy (mapeia_campo_legado) E extras (data-extra)
-// como itens equivalentes, interleaved pela coluna q.ordem do backend.
+// Ancora DOM granular para placement de extras nas secoes complexas.
+// Mais especifica que _LEGADO_DOM/_blocoDe (que para alguns legados retorna
+// a .spa-section inteira). Aqui retornamos o elemento concreto após o qual
+// o extra deve aparecer (ex: a label do consent, o input do quarto).
+const _ANCHOR_LEGACY = {
+  nome:                    () => document.querySelector('#f-nome')?.closest('.spa-field'),
+  sobrenome:               () => document.querySelector('#f-sobrenome')?.closest('.spa-field'),
+  tipo_documento:          () => document.querySelector('#f-doc-tipo')?.closest('.spa-field'),
+  documento:               () => document.querySelector('#f-doc-num')?.closest('.spa-field'),
+  email:                   () => document.querySelector('#f-email')?.closest('.spa-field'),
+  telefone:                () => document.querySelector('#f-telefone')?.closest('.spa-field'),
+  data_nascimento:         () => document.querySelector('#f-nascimento')?.closest('.spa-field'),
+  rotina_facial:           () => document.getElementById('sec-facial')?.closest('.spa-section'),
+  rotina_corporal:         () => document.getElementById('sec-body')?.closest('.spa-section'),
+  produto_especifico:      () => document.querySelector('#f-outro-produto')?.closest('.spa-field'),
+  pressao_massagem:        () => document.getElementById('sec-pressao')?.closest('.spa-section'),
+  info_medica:             () => document.querySelector('#f-medico')?.closest('.spa-field'),
+  consentimento_saude:     () => document.getElementById('consent-health-wrap'),
+  consentimento_marketing: () => document.querySelector('.spa-mkt-channels')?.parentElement,
+  canais_marketing:        () => document.querySelector('.spa-mkt-channels'),
+  assinatura_data_url:     () => document.getElementById('sec-sig')?.closest('.spa-section'),
+};
+
+// Reordena DOM da anamnese conforme ordem do admin. Estrategia em duas
+// etapas:
 //
-// Estrategia conservadora (NAO mexe em section-level para evitar regressao
-// no layout — uma section yankada com appendChild iria para o fim da pagina):
-//  1. Constroi mapa bloco-por-chave: legacy via _LEGADO_DOM, extras via
-//     [data-extra=chave].
-//  2. Para cada secao do backend, considera APENAS itens cujo bloco e
-//     FIELD-LEVEL (.spa-field, NAO .spa-section).
-//  3. Se todos os legacy fields da secao compartilham o mesmo parent
-//     (ex: .spa-grid-2 em dados_pessoais), MOVE os extras para esse mesmo
-//     parent e reordena tudo (legacy + extras) em ordem crescente.
-//  4. Se multi-parent (ex: saude_rotinas tem produto_especifico em sec-body
-//     e info_medica em sec-medico), apenas reordena dentro de CADA parent
-//     sem mover entre eles — preserva o layout original.
-//  5. Idempotente: chamadas repetidas convergem.
+//  ETAPA 1: Reordena legacy fields (.spa-field) DENTRO do mesmo parent.
+//  Funciona perfeitamente para dados_pessoais (todos em .spa-grid-2).
+//  Para multi-parent (saude_rotinas, consentimentos), reordena dentro de
+//  cada parent sem mover entre eles.
+//
+//  ETAPA 2: Reposiciona EXTRAS de qualquer secao usando _ANCHOR_LEGACY.
+//  Para cada extra, encontra o legacy com maior ordem ≤ extra.ordem e
+//  insere o extra como next sibling (ou ao fim da section se anchor for
+//  uma section inteira). Resultado: extras aparecem na posicao certa,
+//  mesmo nas secoes onde legacy esta espalhado entre varias .spa-section.
+//
+//  Idempotente: chamadas repetidas convergem.
 function _reordenarPorOrdem(cfg) {
   const blocoDe = {};
   for (const [legado, spec] of Object.entries(_LEGADO_DOM)) {
@@ -854,47 +875,33 @@ function _reordenarPorOrdem(cfg) {
   document.querySelectorAll('[data-extra]').forEach(el => {
     if (el.dataset.extra) blocoDe[el.dataset.extra] = el;
   });
+  const _ehSectionLevel = (b) => b.classList && b.classList.contains('spa-section');
 
-  const _ehSectionLevel = (bloco) => bloco.classList && bloco.classList.contains('spa-section');
-
+  // ───────── ETAPA 1: reorder dentro do mesmo parent (legacy fields) ─────────
   for (const sec of (cfg.secoes || [])) {
     const fieldItems = [];
     for (const q of (sec.perguntas || [])) {
       const key = q.mapeia_campo_legado || q.chave;
       const bloco = blocoDe[key];
       if (!bloco || !bloco.parentElement) continue;
-      // SECTION-LEVEL: nao mexer (mover via appendChild yanka pro fim da
-      // pagina e quebra o layout). Layout original do HTML estatico ja
-      // tem a ordem natural — preservar.
       if (_ehSectionLevel(bloco)) continue;
       fieldItems.push({
         ordem: (typeof q.ordem === 'number') ? q.ordem : 99,
         bloco,
         isLegacy: !!_LEGADO_DOM[key],
-        key,
       });
     }
     if (!fieldItems.length) continue;
-
-    // Parents UNICOS dos legacy fields desta secao
     const legacyParents = new Set();
-    for (const it of fieldItems.filter(x => x.isLegacy)) {
-      legacyParents.add(it.bloco.parentElement);
-    }
-
+    for (const it of fieldItems.filter(x => x.isLegacy)) legacyParents.add(it.bloco.parentElement);
     if (legacyParents.size === 1) {
-      // Cenario simples: todos os legacy fields no mesmo container
-      // (ex: .spa-grid-2 em dados_pessoais). Move extras para la tambem
-      // e reordena tudo em sequencia por q.ordem.
+      // Cenario simples: dados_pessoais. Move extras para o mesmo parent
+      // e reordena tudo em sequencia.
       const targetParent = [...legacyParents][0];
       fieldItems.sort((a, b) => a.ordem - b.ordem);
-      for (const it of fieldItems) {
-        targetParent.appendChild(it.bloco);
-      }
+      for (const it of fieldItems) targetParent.appendChild(it.bloco);
     } else {
-      // Multi-parent: legacy fields espalhados (ex: produto_especifico em
-      // sec-body, info_medica em sec-medico). Reordena dentro de CADA
-      // parent separadamente, sem mover entre eles.
+      // Multi-parent: so reordena dentro de cada parent (sem cross-move).
       const grupos = new Map();
       for (const it of fieldItems) {
         const p = it.bloco.parentElement;
@@ -908,9 +915,78 @@ function _reordenarPorOrdem(cfg) {
     }
   }
 
-  // Cleanup: remove extras-grids vazios apos a mudanca de parent dos extras.
+  // ───────── ETAPA 2: reposiciona EXTRAS via _ANCHOR_LEGACY ─────────
+  // Resolve "extras travados no extras-grid" — agora cada extra eh inserido
+  // imediatamente apos seu anchor legacy (o ultimo com ordem ≤ extra.ordem).
+  for (const sec of (cfg.secoes || [])) {
+    // Ordena perguntas da secao por ordem ASC para resolver anchors estaveis
+    const perguntas = (sec.perguntas || []).slice().sort((a, b) => {
+      const oa = typeof a.ordem === 'number' ? a.ordem : 99;
+      const ob = typeof b.ordem === 'number' ? b.ordem : 99;
+      return oa - ob;
+    });
+    // Itera extras em ordem ASC; cada um vai para sua posicao final.
+    for (const extra of perguntas) {
+      if (extra.mapeia_campo_legado) continue;
+      const extraBloco = document.querySelector(`[data-extra="${CSS && CSS.escape ? CSS.escape(extra.chave) : extra.chave.replace(/"/g, '\\"')}"]`);
+      if (!extraBloco) continue;
+      const extraOrdem = typeof extra.ordem === 'number' ? extra.ordem : 99;
+
+      // Procura legacy com maior ordem ≤ extraOrdem
+      let anchor = null, anchorOrdem = -Infinity;
+      for (const cand of perguntas) {
+        if (!cand.mapeia_campo_legado) continue;
+        const candOrdem = typeof cand.ordem === 'number' ? cand.ordem : 99;
+        if (candOrdem > extraOrdem) continue;
+        if (candOrdem < anchorOrdem) continue;
+        const fn = _ANCHOR_LEGACY[cand.mapeia_campo_legado];
+        if (!fn) continue;
+        const el = fn();
+        if (el) { anchor = el; anchorOrdem = candOrdem; }
+      }
+
+      if (anchor) {
+        // Insere extra IMEDIATAMENTE apos o anchor
+        if (anchor.classList.contains('spa-section')) {
+          // Para sections inteiras: insere DENTRO da section, ao fim
+          anchor.appendChild(extraBloco);
+        } else {
+          // Para fields/labels: insere como next sibling
+          anchor.parentNode.insertBefore(extraBloco, anchor.nextSibling);
+        }
+      } else {
+        // Extra tem ordem antes de qualquer legacy mapeado — coloca no
+        // inicio da primeira section relevante (fallback: deixa onde esta)
+        // Procura primeiro legacy DA SECAO para usar como referencia
+        let primeiraSec = null;
+        for (const cand of perguntas) {
+          if (!cand.mapeia_campo_legado) continue;
+          const fn = _ANCHOR_LEGACY[cand.mapeia_campo_legado];
+          const el = fn?.();
+          if (el) {
+            primeiraSec = el.classList.contains('spa-section')
+              ? el
+              : el.closest('.spa-section');
+            break;
+          }
+        }
+        if (primeiraSec) {
+          // Insere apos o titulo (primeira ocorrencia de h2 da section)
+          const h2 = primeiraSec.querySelector('.spa-section-title');
+          if (h2 && h2.nextSibling) primeiraSec.insertBefore(extraBloco, h2.nextSibling);
+          else primeiraSec.appendChild(extraBloco);
+        }
+      }
+    }
+  }
+
+  // ───────── Cleanup: remove extras-grids vazios ─────────
   document.querySelectorAll('[data-extras-grid]').forEach(grid => {
     if (!grid.children.length) grid.remove();
+  });
+  document.querySelectorAll('[data-extras-secao]').forEach(sec => {
+    const inner = sec.querySelector('[data-extras-grid]');
+    if (!inner || !inner.children.length) sec.remove();
   });
 }
 
