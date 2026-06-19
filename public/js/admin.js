@@ -4394,6 +4394,7 @@ async function loadAuditoria() {
 // ANAMNESE_SLUG hoisted pro topo do arquivo (TDZ fix).
 let _anamPesquisaId = null;
 let _anamEstrutura  = null;
+let _anamxSecaoAtivaId = null; // qual secao do sidebar esta selecionada (v2)
 
 const _ANAM_TIPOS = [
   { value: 'texto_livre', label: 'Texto livre' },
@@ -4402,39 +4403,376 @@ const _ANAM_TIPOS = [
   { value: 'escala',      label: 'Escala (ex: sim/não, otimo/bom/...)' },
 ];
 
+// Icones por tipo de pergunta — usados nas tags do card v2.
+const _ANAMX_TIPO_ICO = {
+  texto_livre: '✎',
+  unica:       '◉',
+  multipla:    '☐',
+  escala:      '▮▮',
+  sim_nao:     '⇄',
+  data:        '📅',
+};
+const _ANAMX_TIPO_LABEL = {
+  texto_livre: 'Texto livre',
+  unica:       'Escolha única',
+  multipla:    'Múltipla escolha',
+  escala:      'Escala',
+  sim_nao:     'Sim ou Não',
+  data:        'Data',
+};
+
 document.getElementById('btn-open-anamnese-editor')?.addEventListener('click', () => showView('view-anamnese-editor'));
 document.getElementById('btn-back-anamnese-editor')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-anam-reload')?.addEventListener('click', () => initAnamneseEditor());
 
 async function initAnamneseEditor() {
-  const wrap = document.getElementById('anam-secoes');
   const empty = document.getElementById('anam-empty');
-  empty.style.display = 'block';
-  empty.textContent = 'Carregando…';
-  wrap.innerHTML = '';
+  const shell = document.getElementById('anamx-shell');
+  if (empty) { empty.style.display = 'flex'; }
+  if (shell) shell.style.display = 'none';
 
-  // Usa endpoint ADMIN (montarEstruturaPesquisaAdmin) — retorna `associacao_id`
-  // necessario para reordenacao via drag-and-drop. O endpoint publico
-  // `/api/survey/config` nao expoe esse campo (BUG-DRAG-ANAM fix).
   try {
     const rE = await api(`/api/qualidade/admin/pesquisas/slug/${ANAMNESE_SLUG}/estrutura?_=${Date.now()}`);
     if (!rE) return;
     const dE = await rE.json();
     if (!dE.ok || !dE.estrutura) {
-      empty.textContent = `Pesquisa "${ANAMNESE_SLUG}" não encontrada. Reinicie o servidor para rodar o seed.`;
+      if (empty) empty.innerHTML = `<span>Pesquisa "<b>${ANAMNESE_SLUG}</b>" não encontrada. Reinicie o servidor para rodar o seed.</span>`;
       return;
     }
     _anamPesquisaId = dE.estrutura.id;
     _anamEstrutura  = dE.estrutura;
   } catch (e) {
-    empty.textContent = 'Erro ao carregar estrutura: ' + e.message;
+    if (empty) empty.innerHTML = '<span>Erro ao carregar estrutura: ' + e.message + '</span>';
     return;
   }
 
-  empty.style.display = 'none';
-  _renderAnamEstrutura();
-  _renderAnamInativas();
-  _renderAnamHistorico();
+  if (empty) empty.style.display = 'none';
+  if (shell) shell.style.display = 'grid';
+  _anamxRender();
+  // _renderAnamInativas / _renderAnamHistorico nao sao mais chamados aqui —
+  // os botoes "Histórico" e "Inativas" no header (.anamx-hero-actions) ja
+  // disparam diretamente via _abrirModalHistorico / _abrirModalPerguntas.
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// EDITOR ANAMNESE — v2 "Atelier de Hospitalidade"
+// Render 2-col (sidebar + main), inline edit, drag-and-drop preservado.
+// ═════════════════════════════════════════════════════════════════════
+function _escAttr(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function _anamxRender() {
+  if (!_anamEstrutura) return;
+  const secoes = (_anamEstrutura.secoes || []).filter(s => s.ativo !== 0 && s.ativo !== false);
+  if (!secoes.length) {
+    _anamxRenderSemSecoes();
+    return;
+  }
+  // Se nao tem secao ativa selecionada, escolhe a primeira
+  if (!_anamxSecaoAtivaId || !secoes.find(s => s.id === _anamxSecaoAtivaId)) {
+    _anamxSecaoAtivaId = secoes[0].id;
+  }
+  _anamxRenderSidebar(secoes);
+  const ativa = secoes.find(s => s.id === _anamxSecaoAtivaId);
+  if (ativa) _anamxRenderSecaoContent(ativa);
+  _wireAnamxAcoes();
+  _wireDragReorder('anam');
+}
+
+function _anamxRenderSemSecoes() {
+  const content = document.getElementById('anamx-content');
+  const nav = document.getElementById('anamx-nav');
+  if (nav) nav.innerHTML = '<div style="font-size:.85rem;color:var(--anamx-taupe);padding:.5rem .85rem">Nenhuma seção</div>';
+  if (content) {
+    content.innerHTML = `
+      <div class="anamx-secao-card">
+        <div class="anamx-empty-state">
+          <h3>Comece sua anamnese</h3>
+          <p>Crie a primeira seção para agrupar perguntas. Ex: "Dados Pessoais", "Saúde", "Consentimentos".</p>
+          <button class="anamx-add-perg-btn" id="anamx-empty-add-secao" type="button">
+            <span aria-hidden="true">+</span> Criar primeira seção
+          </button>
+        </div>
+      </div>
+    `;
+    document.getElementById('anamx-empty-add-secao')?.addEventListener('click', _anamxAddSecaoFlow);
+  }
+  _wireAnamxAcoes();
+}
+
+function _anamxRenderSidebar(secoes) {
+  const nav = document.getElementById('anamx-nav');
+  if (!nav) return;
+  nav.innerHTML = secoes.map(s => {
+    const perg = (s.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
+    const active = s.id === _anamxSecaoAtivaId;
+    return `
+      <button type="button" class="anamx-nav-item${active ? ' active' : ''}" data-anamx-nav="${s.id}">
+        <span class="anamx-nav-name">${_escAttr(s.titulo || s.chave)}</span>
+        <span class="anamx-nav-count">${perg.length}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function _anamxRenderSecaoContent(secao) {
+  const content = document.getElementById('anamx-content');
+  if (!content) return;
+  const perguntas = (secao.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
+  const totalPerg = perguntas.length;
+  const perguntasHTML = perguntas.map((q, i) => _anamxRenderPerguntaCard(q, i, totalPerg, secao.id)).join('');
+
+  const corpoPerguntas = totalPerg
+    ? `<div class="anamx-perguntas anam-perguntas" data-secao-id="${secao.id}">${perguntasHTML}</div>`
+    : `
+      <div class="anamx-empty-state">
+        <h3>Esta seção ainda não tem perguntas</h3>
+        <p>Adicione a primeira pergunta abaixo. Você pode escolher o tipo (texto, opções, escala, sim/não).</p>
+      </div>
+      <div class="anam-perguntas" data-secao-id="${secao.id}" style="display:none"></div>
+    `;
+
+  content.innerHTML = `
+    <article class="anamx-secao-card anam-secao" data-secao-id="${secao.id}">
+      <header class="anamx-secao-head">
+        <div style="flex:1;min-width:0">
+          <div class="anamx-secao-meta">Seção • ${totalPerg} ${totalPerg === 1 ? 'pergunta' : 'perguntas'}</div>
+          <h2 class="anamx-secao-titulo" contenteditable="true" spellcheck="false" data-anamx-edit="secao-titulo" data-secao-id="${secao.id}" data-orig="${_escAttr(secao.titulo || secao.chave)}">${_escAttr(secao.titulo || secao.chave)}</h2>
+        </div>
+        <div class="anamx-secao-actions">
+          <button class="anamx-icon-btn danger" type="button" data-anamx-act="del-secao" data-secao-id="${secao.id}" title="Remover seção" aria-label="Remover seção">🗑</button>
+        </div>
+      </header>
+      ${corpoPerguntas}
+      <div class="anamx-add-perg-wrap">
+        <button class="anamx-add-perg-btn" type="button" data-anamx-act="add-pergunta" data-secao-id="${secao.id}">
+          <span aria-hidden="true">+</span> Adicionar pergunta
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function _anamxRenderPerguntaCard(q, idx, total, secaoId) {
+  const tipoLabel = _ANAMX_TIPO_LABEL[q.tipo] || q.tipo;
+  const tipoIco = _ANAMX_TIPO_ICO[q.tipo] || '◆';
+  const obrigOn = !!q.obrigatoria;
+  const legado = q.mapeia_campo_legado;
+  const tagLegado = legado ? `<span class="anamx-perg-tag legado" title="Campo padrão do hotel (vinculado ao banco legado)">CAMPO PADRÃO</span>` : '';
+  const opcoes = (q.opcoes && q.opcoes.length)
+    ? `<div class="anamx-perg-opcoes"><b>Opções:</b> ${q.opcoes.map(o => _escAttr(o.rotulo || o.chave)).join(' · ')}</div>`
+    : '';
+  const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
+    ? `<button class="anamx-icon-btn" type="button" data-anamx-act="edit-opcoes" data-chave="${_escAttr(q.chave)}" title="Editar opções" aria-label="Editar opções">⋯</button>`
+    : '';
+  return `
+    <div class="anamx-pergunta anam-pergunta" data-perg-chave="${_escAttr(q.chave)}" data-assoc-id="${q.associacao_id || ''}">
+      <div class="anamx-perg-drag drag-handle" data-drag-prefix="anam" title="Arraste para reordenar" aria-label="Arraste para reordenar">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="anamx-perg-body">
+        <div class="anamx-perg-num">Pergunta ${idx + 1} de ${total}</div>
+        <div class="anamx-perg-rotulo" contenteditable="true" spellcheck="false" data-anamx-edit="perg-rotulo" data-chave="${_escAttr(q.chave)}" data-orig="${_escAttr(q.rotulo || q.chave)}">${_escAttr(q.rotulo || q.chave)}</div>
+        ${opcoes}
+        <div class="anamx-perg-tags">
+          <span class="anamx-perg-tag tipo" title="Tipo de resposta"><span class="anamx-tipo-ico" aria-hidden="true">${tipoIco}</span> ${_escAttr(tipoLabel)}</span>
+          <button type="button" class="anamx-perg-tag obrig${obrigOn ? ' on' : ''}" data-anamx-act="toggle-obrig" data-chave="${_escAttr(q.chave)}" title="Clique para alternar obrigatoriedade">
+            ${obrigOn ? '✓ Obrigatória' : 'Opcional'}
+          </button>
+          ${tagLegado}
+        </div>
+      </div>
+      <div class="anamx-perg-actions">
+        ${editOpcoesBtn}
+        <button class="anamx-icon-btn" type="button" data-anamx-act="edit-perg" data-chave="${_escAttr(q.chave)}" title="Editar pergunta (mais opções)" aria-label="Editar pergunta">✎</button>
+        <button class="anamx-icon-btn danger" type="button" data-anamx-act="del-perg" data-chave="${_escAttr(q.chave)}" title="Remover pergunta" aria-label="Remover pergunta">🗑</button>
+      </div>
+    </div>
+  `;
+}
+
+let _anamxAcoesWired = false;
+function _wireAnamxAcoes() {
+  if (_anamxAcoesWired) return;
+  _anamxAcoesWired = true;
+
+  // Header buttons
+  document.getElementById('anamx-btn-historico')?.addEventListener('click', () => {
+    _abrirModalHistorico({ slug: ANAMNESE_SLUG, titulo: 'Histórico — Anamnese' });
+  });
+  document.getElementById('anamx-btn-inativas')?.addEventListener('click', _anamxAbrirInativas);
+  document.getElementById('anamx-btn-add-secao')?.addEventListener('click', _anamxAddSecaoFlow);
+
+  // Delegacao global no body — cobre cliques nas pergunta cards
+  document.addEventListener('click', _anamxOnClick);
+  // Inline edit blur
+  document.addEventListener('focusout', _anamxOnFocusOut);
+  // Enter no inline edit -> blur
+  document.addEventListener('keydown', _anamxOnKeyDown);
+}
+
+function _anamxOnClick(e) {
+  // Sidebar nav
+  const navBtn = e.target.closest('[data-anamx-nav]');
+  if (navBtn) {
+    const id = parseInt(navBtn.dataset.anamxNav);
+    if (!Number.isNaN(id) && id !== _anamxSecaoAtivaId) {
+      _anamxSecaoAtivaId = id;
+      _anamxRender();
+    }
+    return;
+  }
+  // Acoes [data-anamx-act]
+  const actBtn = e.target.closest('[data-anamx-act]');
+  if (!actBtn) return;
+  const act = actBtn.dataset.anamxAct;
+  const secaoId = actBtn.dataset.secaoId ? parseInt(actBtn.dataset.secaoId) : null;
+  const chave = actBtn.dataset.chave;
+
+  if (act === 'add-pergunta')      _anamxAddPergunta(secaoId);
+  else if (act === 'edit-perg')    _anamEditPergunta(chave);
+  else if (act === 'del-perg')     _anamDelPergunta(chave);
+  else if (act === 'edit-opcoes')  _anamEditOpcoes(chave);
+  else if (act === 'del-secao')    _anamDelSecao(secaoId);
+  else if (act === 'toggle-obrig') _anamxToggleObrig(chave);
+}
+
+function _anamxOnFocusOut(e) {
+  const el = e.target.closest('[data-anamx-edit]');
+  if (!el) return;
+  const kind = el.dataset.anamxEdit;
+  const orig = el.dataset.orig || '';
+  const novo = (el.textContent || '').trim();
+  if (novo === orig.trim()) return;
+  if (!novo) {
+    // Volta ao original se vazio
+    el.textContent = orig;
+    showToast('Texto nao pode ficar vazio');
+    return;
+  }
+  el.dataset.orig = novo;
+  if (kind === 'secao-titulo') {
+    const secaoId = parseInt(el.dataset.secaoId);
+    _anamxSalvarSecaoTitulo(secaoId, novo);
+  } else if (kind === 'perg-rotulo') {
+    const chave = el.dataset.chave;
+    _anamxSalvarPerguntaRotulo(chave, novo);
+  }
+}
+
+function _anamxOnKeyDown(e) {
+  if (e.key === 'Enter' && e.target.closest('[data-anamx-edit]')) {
+    e.preventDefault();
+    e.target.blur();
+  }
+}
+
+async function _anamxSalvarSecaoTitulo(secaoId, titulo) {
+  try {
+    const traducoes = await _anamTraduzirRotulo(titulo);
+    await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, { traducoes });
+    showToast('Seção renomeada');
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro: ' + (e?.message || e), 4000);
+  }
+}
+
+async function _anamxSalvarPerguntaRotulo(chave, rotulo) {
+  try {
+    const r = await api('/api/qualidade/admin/perguntas');
+    if (!r) return;
+    const d = await r.json();
+    const p = (d.items || []).find(x => x.chave === chave);
+    if (!p?.id) return showToast('Pergunta não encontrada');
+    const traducoes = await _anamTraduzirRotulo(rotulo);
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { rotulo, traducoes });
+    showToast('Pergunta atualizada');
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro: ' + (e?.message || e), 4000);
+  }
+}
+
+async function _anamxToggleObrig(chave) {
+  const sec = (_anamEstrutura?.secoes || []).find(s => (s.perguntas || []).some(q => q.chave === chave));
+  const q = sec?.perguntas?.find(x => x.chave === chave);
+  if (!q?.associacao_id) return showToast('Associação não encontrada');
+  const novo = !q.obrigatoria;
+  try {
+    await apiSend('PUT', `/api/qualidade/admin/pesquisa-pergunta/${q.associacao_id}`, { obrigatoria: novo ? 1 : 0 });
+    showToast(novo ? 'Marcada como obrigatória' : 'Marcada como opcional');
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro: ' + (e?.message || e), 4000);
+  }
+}
+
+async function _anamxAddSecaoFlow() {
+  const titulo = await pedirTexto({
+    titulo: 'Nova seção',
+    mensagem: 'Uma seção agrupa perguntas relacionadas (ex: "Alergias", "Histórico").',
+    placeholder: 'Nome da seção',
+  });
+  if (!titulo) return;
+  const chave = _slugChave(titulo, 'sec_');
+  try {
+    const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/secoes`, {
+      chave, ordem: 99, traducoes: { 'pt-BR': titulo },
+    });
+    if (resp?.id) {
+      _anamxSecaoAtivaId = resp.id;
+      _traduzirEAtualizarBg('secao', resp.id, titulo);
+      showToast('Seção criada');
+    }
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro ao criar: ' + (e?.message || e), 4000);
+  }
+}
+
+async function _anamxAddPergunta(secaoId) {
+  const resp = await pedirPergunta({
+    titulo: 'Nova pergunta',
+    mensagem: 'Defina o rótulo e o tipo. Tradução para 6 idiomas e automática.',
+    valorTipo: 'texto_livre',
+    valorObrigatoria: false,
+    tipos: _ANAM_TIPOS,
+  });
+  if (!resp) return;
+  const { rotulo, tipo, obrigatoria } = resp;
+  if (!rotulo) return;
+  try {
+    const chave = _slugChave(rotulo, 'anamnese_');
+    const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
+      chave, tipo, ativo: 1, traducoes: { 'pt-BR': { rotulo } },
+    });
+    if (!r1?.id) return showToast('Erro ao criar pergunta');
+    await apiSend('POST', `/api/qualidade/admin/pesquisas/${_anamPesquisaId}/perguntas`, {
+      pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
+    });
+    if (tipo === 'escala') {
+      const TRAD = { sim: { 'pt-BR':'Sim' }, nao: { 'pt-BR':'Não' } };
+      await apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
+        chave: 'sim', ordem: 1, ativo: 1, traducoes: TRAD.sim,
+      });
+      await apiSend('POST', `/api/qualidade/admin/perguntas/${r1.id}/opcoes`, {
+        chave: 'nao', ordem: 2, ativo: 1, traducoes: TRAD.nao,
+      });
+    }
+    _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
+    showToast('Pergunta criada');
+    initAnamneseEditor();
+  } catch (e) {
+    showToast('Erro: ' + (e?.message || e), 4000);
+  }
+}
+
+async function _anamxAbrirInativas() {
+  _abrirModalPerguntas({
+    slug: ANAMNESE_SLUG,
+    titulo: 'Perguntas — Anamnese',
+    onChange: initAnamneseEditor,
+  });
 }
 
 // Botao "Histórico" no header do editor — abre modal grande com a
