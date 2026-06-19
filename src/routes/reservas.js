@@ -39,9 +39,14 @@ router.get('/:id/detalhe', (req, res) => {
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ ok: false, error: 'id invalido' });
   }
-  const detalhe = buscarReservaDetalhe(id);
-  if (!detalhe) return res.status(404).json({ ok: false, error: 'reserva nao encontrada' });
-  res.json({ ok: true, ...detalhe });
+  try {
+    const detalhe = buscarReservaDetalhe(id);
+    if (!detalhe) return res.status(404).json({ ok: false, error: 'reserva nao encontrada' });
+    res.json({ ok: true, ...detalhe });
+  } catch (e) {
+    console.error('[GET /api/reservas/:id/detalhe]', e?.message || e);
+    res.status(500).json({ ok: false, error: e?.message || 'erro interno' });
+  }
 });
 
 const SPA_OPEN_MIN = 8 * 60;   // 08:00

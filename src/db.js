@@ -435,6 +435,10 @@ export function initDb() {
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN quarto TEXT`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
+  // reserva_id em feedback: routes/feedback.js:102 ja faz UPDATE assumindo
+  // existir; ALTER estava faltando (try/catch silenciava o erro de UPDATE).
+  // Aditivo, idempotente — try/catch evita 'duplicate column' apos primeiro deploy.
+  try { db.exec(`ALTER TABLE feedback    ADD COLUMN reserva_id INTEGER`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cpf       ON reservas(cpf)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_spa_perfis_cliente ON spa_perfis(cliente_id)`); } catch {}
@@ -906,19 +910,40 @@ export function buscarReservaDetalhe(id) {
   // Feedback(s) ligados a essa reserva — pode haver 2 (casal). Filtra
   // tambem por email do hospede como fallback caso reserva_id nao
   // tenha sido gravado (compat retroativa antes da migracao do feedback.reserva_id).
-  const feedbacks = db.prepare(`
+  // Colunas reais da tabela feedback (schema em db.js:25-52). NAO inclui
+  // massoterapeuta_avaliacao, tratamento, sala (nao existem). Quando
+  // feedback.reserva_id ainda nao foi populado (registros antigos), o
+  // fallback abaixo busca por nome+email.
+  const _selectFb = `
     SELECT id, submitted_at, nome, email, tipo_cliente, origem,
            recomenda, recomenda_qual, recomenda_porque,
            servicos_expectativa, servicos_explicacao, servicos_atitude, servicos_tecnica,
            servicos_comentario,
            instalacoes_conforto, instalacoes_organizacao, instalacoes_conveniencia,
            instalacoes_comentario,
-           massoterapeuta_avaliacao, nome_massoterapeuta,
-           tratamento, sala
+           nome_massoterapeuta, tratamento_realizado, data_tratamento, apto
     FROM feedback
-    WHERE reserva_id = ?
-    ORDER BY submitted_at ASC
-  `).all(id);
+  `;
+  let feedbacks = [];
+  try {
+    feedbacks = db.prepare(`${_selectFb} WHERE reserva_id = ? ORDER BY submitted_at ASC`).all(id);
+  } catch {
+    // reserva_id pode nao existir em DB antigo (caso ALTER tenha falhado)
+    feedbacks = [];
+  }
+  // Fallback adicional por nome/email da reserva caso reserva_id nao tenha
+  // sido populado para registros antigos.
+  if (!feedbacks.length && reserva.email) {
+    try {
+      const porEmail = db.prepare(`${_selectFb} WHERE LOWER(email) = LOWER(?) ORDER BY submitted_at ASC`).all(reserva.email);
+      feedbacks = porEmail.filter(fb => {
+        if (!fb.submitted_at || !reserva.data) return true;
+        // Mesmo dia ou ate 7 dias depois da reserva
+        const fbDay = fb.submitted_at.slice(0, 10);
+        return fbDay >= reserva.data;
+      });
+    } catch {}
+  }
 
   return {
     reserva,
