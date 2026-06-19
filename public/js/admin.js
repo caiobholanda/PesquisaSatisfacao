@@ -4606,8 +4606,10 @@ function _wireAnamxAcoes() {
   document.addEventListener('click', _anamxOnClick);
   // Inline edit blur
   document.addEventListener('focusout', _anamxOnFocusOut);
-  // Enter no inline edit -> blur
+  // Enter/Esc/Tab no inline edit
   document.addEventListener('keydown', _anamxOnKeyDown);
+  // Paste sanitizado (texto plano) nos contenteditable
+  document.addEventListener('paste', _anamxOnPaste);
 }
 
 function _anamxOnClick(e) {
@@ -4636,60 +4638,126 @@ function _anamxOnClick(e) {
   else if (act === 'toggle-obrig') _anamxToggleObrig(chave);
 }
 
+// Normaliza texto editado inline: trim, colapsa whitespace (\n, \t, etc),
+// limita a 500 chars (limite generoso pra pergunta).
+function _anamxNormalizarTexto(s) {
+  return String(s || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+}
+
+let _anamxSalvando = false;
 function _anamxOnFocusOut(e) {
   const el = e.target.closest('[data-anamx-edit]');
   if (!el) return;
+  // Se ja esta salvando, ignora — vai salvar quando o primeiro terminar.
+  if (_anamxSalvando) return;
   const kind = el.dataset.anamxEdit;
-  const orig = el.dataset.orig || '';
-  const novo = (el.textContent || '').trim();
-  if (novo === orig.trim()) return;
+  const orig = (el.dataset.orig || '').trim();
+  const novo = _anamxNormalizarTexto(el.textContent || '');
+  if (novo === orig) {
+    // Mesmo conteudo apos normalizacao — atualiza textContent caso tenha HTML
+    if (el.textContent !== novo) el.textContent = novo;
+    return;
+  }
   if (!novo) {
-    // Volta ao original se vazio
     el.textContent = orig;
     showToast('Texto nao pode ficar vazio');
     return;
   }
-  el.dataset.orig = novo;
+  // Reescreve o textContent ja normalizado (remove HTML do paste)
+  el.textContent = novo;
+  // NAO atualiza data-orig aqui — so' apos save bem-sucedido
   if (kind === 'secao-titulo') {
     const secaoId = parseInt(el.dataset.secaoId);
-    _anamxSalvarSecaoTitulo(secaoId, novo);
+    _anamxSalvarSecaoTitulo(secaoId, novo, el);
   } else if (kind === 'perg-rotulo') {
     const chave = el.dataset.chave;
-    _anamxSalvarPerguntaRotulo(chave, novo);
+    _anamxSalvarPerguntaRotulo(chave, novo, el);
   }
 }
 
 function _anamxOnKeyDown(e) {
-  if (e.key === 'Enter' && e.target.closest('[data-anamx-edit]')) {
+  const el = e.target.closest('[data-anamx-edit]');
+  if (!el) return;
+  if (e.key === 'Enter') {
     e.preventDefault();
-    e.target.blur();
+    el.blur();
+  } else if (e.key === 'Escape' || e.key === 'Esc') {
+    // Reverte para data-orig sem salvar
+    e.preventDefault();
+    el.textContent = el.dataset.orig || '';
+    el.blur();
+  } else if (e.key === 'Tab') {
+    // Permite navegacao Tab (default) — nao insere literal \t.
+    // (Browsers podem inserir \t em contenteditable; preventDefault evita)
+    e.preventDefault();
+    el.blur();
   }
 }
 
-async function _anamxSalvarSecaoTitulo(secaoId, titulo) {
+// Sanitiza paste para texto plano — evita formatacao HTML herdada do Word.
+function _anamxOnPaste(e) {
+  const el = e.target.closest('[data-anamx-edit]');
+  if (!el) return;
+  e.preventDefault();
+  const texto = (e.clipboardData || window.clipboardData).getData('text/plain');
+  const limpo = _anamxNormalizarTexto(texto);
+  // insertText respeita undo stack e cursor position
+  try { document.execCommand('insertText', false, limpo); }
+  catch { el.textContent = (el.textContent || '') + limpo; }
+}
+
+async function _anamxSalvarSecaoTitulo(secaoId, titulo, el) {
+  if (_anamxSalvando) return;
+  _anamxSalvando = true;
+  if (el) el.setAttribute('contenteditable', 'false');
   try {
     const traducoes = await _anamTraduzirRotulo(titulo);
     await apiSend('PUT', `/api/qualidade/admin/secoes/${secaoId}`, { traducoes });
+    if (el) el.dataset.orig = titulo;
     showToast('Seção renomeada');
     initAnamneseEditor();
   } catch (e) {
     showToast('Erro: ' + (e?.message || e), 4000);
+    // Reverte UI para o valor anterior em caso de falha
+    if (el && el.dataset.orig) el.textContent = el.dataset.orig;
+  } finally {
+    if (el) el.setAttribute('contenteditable', 'true');
+    _anamxSalvando = false;
   }
 }
 
-async function _anamxSalvarPerguntaRotulo(chave, rotulo) {
+async function _anamxSalvarPerguntaRotulo(chave, rotulo, el) {
+  if (_anamxSalvando) return;
+  _anamxSalvando = true;
+  if (el) el.setAttribute('contenteditable', 'false');
   try {
-    const r = await api('/api/qualidade/admin/perguntas');
-    if (!r) return;
-    const d = await r.json();
-    const p = (d.items || []).find(x => x.chave === chave);
-    if (!p?.id) return showToast('Pergunta não encontrada');
+    // Tenta primeiro achar a pergunta via estrutura local (mais confiavel —
+    // GET /perguntas pode retornar duplicatas se a chave colidir entre
+    // pesquisas diferentes). Fallback: GET /perguntas.
+    let perguntaId = null;
+    for (const sec of (_anamEstrutura?.secoes || [])) {
+      const p = (sec.perguntas || []).find(q => q.chave === chave);
+      if (p?.pergunta_id) { perguntaId = p.pergunta_id; break; }
+    }
+    if (!perguntaId) {
+      const r = await api('/api/qualidade/admin/perguntas');
+      if (!r) throw new Error('Sem auth ou rede');
+      const d = await r.json();
+      const p = (d.items || []).find(x => x.chave === chave);
+      perguntaId = p?.id;
+    }
+    if (!perguntaId) { showToast('Pergunta não encontrada'); return; }
     const traducoes = await _anamTraduzirRotulo(rotulo);
-    await apiSend('PUT', `/api/qualidade/admin/perguntas/${p.id}`, { rotulo, traducoes });
+    await apiSend('PUT', `/api/qualidade/admin/perguntas/${perguntaId}`, { rotulo, traducoes });
+    if (el) el.dataset.orig = rotulo;
     showToast('Pergunta atualizada');
     initAnamneseEditor();
   } catch (e) {
     showToast('Erro: ' + (e?.message || e), 4000);
+    if (el && el.dataset.orig) el.textContent = el.dataset.orig;
+  } finally {
+    if (el) el.setAttribute('contenteditable', 'true');
+    _anamxSalvando = false;
   }
 }
 
