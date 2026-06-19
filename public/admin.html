@@ -923,56 +923,60 @@
         gap: .9rem;
       }
     }
+    /* Back button — alinhado com .btn-back do sistema (retangular, uppercase) */
     .anamx-back {
       grid-area: back;
-      display: inline-flex; align-items: center; gap: .45rem;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--muted);
-      padding: .5rem .85rem; border-radius: 999px;
-      font-family: var(--font); font-size: .82rem; cursor: pointer;
-      transition: background .18s, color .18s, border-color .18s;
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted2);
+      padding: .4375rem .875rem;
+      font-family: var(--font); font-size: .75rem;
+      font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color .15s, color .15s;
+      margin-top: .3rem;
     }
-    .anamx-back:hover {
-      background: var(--gold-dim); color: var(--text);
-      border-color: var(--gold);
-    }
+    .anamx-back:hover { border-color: var(--gold); color: var(--gold); }
     .anamx-hero-meta { grid-area: meta; }
+    /* Eyebrow — alinhado com .page-num do sistema (sutil, sem uppercase forte) */
     .anamx-eyebrow {
       display: inline-block;
-      font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
-      color: var(--gold); font-weight: 700;
-      margin-bottom: .35rem;
+      font-family: var(--font);
+      font-size: .75rem; letter-spacing: .1em;
+      color: var(--gold); font-weight: 500;
+      margin-bottom: .5rem;
     }
+    /* Title — alinhado com .page-title do sistema (Fraunces, uppercase, 300) */
     .anamx-title {
       font-family: var(--serif);
-      font-size: clamp(2rem, 3.2vw, 2.8rem);
-      font-weight: 500; letter-spacing: -.01em;
-      color: var(--text); margin: 0 0 .3rem 0;
-      line-height: 1.08;
+      font-size: clamp(1.8rem, 3vw, 2.25rem);
+      font-weight: 300; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text); margin: 0 0 .7rem 0;
+      line-height: 1;
     }
     .anamx-sub {
-      font-size: .88rem; color: var(--muted2);
+      font-size: .8125rem; color: var(--muted2);
       margin: 0; max-width: 580px; line-height: 1.55;
     }
     .anamx-hero-actions {
       grid-area: actions;
-      display: flex; gap: .55rem; align-items: center; flex-wrap: wrap;
+      display: flex; gap: .45rem; align-items: center; flex-wrap: wrap;
+      margin-top: .3rem;
     }
+    /* Pill btn — usa estilo do sistema (.btn .btn-outline .btn-sm) */
     .anamx-pill-btn {
-      display: inline-flex; align-items: center; gap: .4rem;
-      background: var(--surface);
+      display: inline-flex; align-items: center; gap: .35rem;
+      background: none;
       border: 1px solid var(--border);
-      color: var(--text); font-family: var(--font);
-      padding: .55rem .9rem; border-radius: 999px;
-      font-size: .8rem; cursor: pointer;
-      transition: transform .15s, box-shadow .15s, border-color .15s, background .15s;
+      color: var(--muted2); font-family: var(--font);
+      padding: .4375rem .875rem;
+      font-size: .75rem; font-weight: 500;
+      letter-spacing: .09em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color .15s, color .15s;
     }
-    .anamx-pill-btn:hover {
-      border-color: var(--gold);
-      background: var(--gold-dim);
-      box-shadow: 0 4px 14px var(--gold-dim);
-      transform: translateY(-1px);
-    }
+    .anamx-pill-btn:hover { border-color: var(--gold); color: var(--gold); }
 
     /* Loading */
     .anamx-loading {
@@ -1166,7 +1170,7 @@
     }
     .anamx-perg-body { flex: 1; min-width: 0; }
     .anamx-perg-num {
-      font-size: .62rem; letter-spacing: .2em; color: var(--muted);
+      font-size: .62rem; letter-spacing: .2em; color: var(--muted2);
       text-transform: uppercase; font-weight: 700; margin-bottom: .2rem;
     }
     .anamx-perg-rotulo {
@@ -4061,6 +4065,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=74"></script>
+<script src="/js/admin.js?v=75"></script>
 </body>
 </html>

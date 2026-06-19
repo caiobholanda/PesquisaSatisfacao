@@ -925,11 +925,6 @@ function _reordenarPorOrdem(cfg) {
       const ob = typeof b.ordem === 'number' ? b.ordem : 99;
       return oa - ob;
     });
-    // Cursor por anchor: rastreia o ULTIMO bloco inserido apos cada anchor,
-    // para que multiplos extras com mesmo anchor mantenham a ordem ASC.
-    // Sem isso, segundo extra usaria nivelSec.nextSibling = primeiro extra,
-    // resultando em insertBefore que INVERTE a ordem visual.
-    const cursorPorAnchor = new Map();
     // Itera extras em ordem ASC; cada um vai para sua posicao final.
     for (const extra of perguntas) {
       if (extra.mapeia_campo_legado) continue;
@@ -993,15 +988,7 @@ function _reordenarPorOrdem(cfg) {
             }
           }
           if (nivelSec && nivelSec.parentNode) {
-            // Usa cursor: se ja inserimos outro extra apos este anchor nesta
-            // mesma chamada, ref vira o ultimo inserido (para sequenciar).
-            const ref = cursorPorAnchor.get(nivelSec) || nivelSec;
-            if (ref.nextSibling) {
-              ref.parentNode.insertBefore(extraBloco, ref.nextSibling);
-            } else {
-              ref.parentNode.appendChild(extraBloco);
-            }
-            cursorPorAnchor.set(nivelSec, extraBloco);
+            nivelSec.parentNode.insertBefore(extraBloco, nivelSec.nextSibling);
           }
         }
       } else {
