@@ -349,7 +349,8 @@ button, input { font-family: inherit; }
   const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
-  const DIAS_KEY = ['dom','seg','ter','qua','qui','sex','sab'];
+  const DIAS_KEY    = ['dom','seg','ter','qua','qui','sex','sab'];
+  const DIAS_LABEL  = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   function escalaDia(disponibilidade, iso) {
     if (!disponibilidade) return null;
     const [y,m,d] = iso.split('-');
@@ -357,14 +358,20 @@ button, input { font-family: inherit; }
     return disponibilidade[key] || null;
   }
   function renderEscalaBanner(iso) {
+    if (!_me?.disponibilidade) { $('tx-escala-banner').style.display = 'none'; return; }
     const banner = $('tx-escala-banner');
     const txt = $('tx-escala-texto');
-    const faixa = escalaDia(_me?.disponibilidade, iso);
+    const hojeStr = toLocalISO(new Date());
+    const [y,m,d] = iso.split('-');
+    const dowIndex = new Date(+y,+m-1,+d).getDay();
+    const ehHoje = iso === hojeStr;
+    const prefixo = ehHoje ? 'Hoje' : `Na ${DIAS_LABEL[dowIndex]}`;
+    const faixa = escalaDia(_me.disponibilidade, iso);
     if (!faixa) {
-      txt.innerHTML = '<span class="tx-escala-folga">Hoje é seu dia de folga</span>';
+      txt.innerHTML = `<span class="tx-escala-folga">${prefixo} é dia de folga</span>`;
     } else {
       const [ini, fim] = faixa.split('-').map(s => s.trim());
-      txt.innerHTML = `Hoje você entra às <strong>${ini}</strong> e sai às <strong>${fim}</strong>`;
+      txt.innerHTML = `${prefixo} você entra às <strong>${ini}</strong> e sai às <strong>${fim}</strong>`;
     }
     banner.style.display = 'flex';
   }
@@ -400,7 +407,6 @@ button, input { font-family: inherit; }
     $('tx-login').style.display = 'none';
     $('tx-app').style.display = 'flex';
     $('tx-nome-header').textContent = _me?.nome || 'Terapeuta';
-    renderEscalaBanner(toLocalISO(new Date()));
     carregarAgenda();
   }
   $('tx-login-form').addEventListener('submit', async e => {
@@ -504,6 +510,8 @@ button, input { font-family: inherit; }
     const total = _reservas.length;
     const hoje_count = _reservas.filter(r => r.data === hojeStr).length;
     $('tx-greet-sub').textContent = `${hoje_count} hoje · ${total} esta semana`;
+    const diaParaBanner = _modoVista === 'hoje' ? hojeStr : _diaAtivo;
+    renderEscalaBanner(diaParaBanner);
     if (_modoVista === 'hoje') {
       $('tx-day-tabs').style.display = 'none';
       renderListaDia(hojeStr, false);
