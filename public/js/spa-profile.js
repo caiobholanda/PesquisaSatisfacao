@@ -825,6 +825,32 @@ async function applyAnamneseConfig(idioma) {
   }
 
   _renderPerguntasExtras(extrasPorSecao);
+  _reordenarLegadosPorOrdem(cfg);
+}
+
+// Move os blocos DOM dos campos legacy para refletir a ordem definida
+// pelo admin no editor. Os blocos sao reagrupados por elemento pai (campos
+// dentro da mesma .spa-section ou secoes inteiras no body) e re-anexados
+// em sequencia segundo q.ordem.
+function _reordenarLegadosPorOrdem(cfg) {
+  const grupos = new Map();
+  for (const sec of (cfg.secoes || [])) {
+    for (const q of (sec.perguntas || [])) {
+      const legado = q.mapeia_campo_legado;
+      if (!legado) continue;
+      const spec = _LEGADO_DOM[legado];
+      if (!spec) continue;
+      const bloco = _blocoDe(spec);
+      if (!bloco || !bloco.parentElement) continue;
+      const parent = bloco.parentElement;
+      if (!grupos.has(parent)) grupos.set(parent, []);
+      grupos.get(parent).push({ ordem: (typeof q.ordem === 'number') ? q.ordem : 99, bloco });
+    }
+  }
+  for (const [parent, items] of grupos.entries()) {
+    items.sort((a, b) => a.ordem - b.ordem);
+    for (const { bloco } of items) parent.appendChild(bloco);
+  }
 }
 
 // Pre-preenchimento via historico: chama GET /api/spa/historico

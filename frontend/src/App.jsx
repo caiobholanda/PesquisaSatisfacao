@@ -47,13 +47,17 @@ export default function App() {
       const labels = {};
       const ratings = {};
       const sectionTitles = {};
+      const legacyOrder = {};
       const extras = [];
       for (const sec of d.pesquisa.secoes || []) {
         if (sec.chave) sectionTitles[sec.chave] = sec.titulo;
         const extrasDaSecao = [];
         for (const q of sec.perguntas || []) {
           const id = _MAP_CHAVE_ID[q.mapeia_campo_legado] || _MAP_CHAVE_ID[q.chave];
-          if (id) labels[id] = q.rotulo;
+          if (id) {
+            labels[id] = q.rotulo;
+            legacyOrder[id] = (typeof q.ordem === 'number') ? q.ordem : 99;
+          }
           if (Array.isArray(q.opcoes)) {
             for (const o of q.opcoes) if (o.chave && o.rotulo) ratings[o.chave] = o.rotulo;
           }
@@ -87,7 +91,7 @@ export default function App() {
       // Sempre aplica labels/ratings/sectionTitles vindos do backend (admin pode
       // ter editado rótulos das perguntas legacy s0-s3/f0-f2). Em idiomas != pt-BR
       // o 2º idioma (EN bilíngue) some via suppressEn.
-      setI18n({ lang, labels, ratings, sectionTitles, suppressEn: !!(lang && lang !== 'pt-BR') });
+      setI18n({ lang, labels, ratings, sectionTitles, legacyOrder, suppressEn: !!(lang && lang !== 'pt-BR') });
     } catch {
       // libera o cache pra permitir retry quando o usuario interagir
       configCacheRef.current.delete(lang);

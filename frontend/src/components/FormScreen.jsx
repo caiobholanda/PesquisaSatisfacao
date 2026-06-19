@@ -162,8 +162,11 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
   // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
   const tr = (id, fallback) => (i18n?.labels?.[id]) || fallback;
   const trRating = (key, fallback) => (i18n?.ratings?.[key]) || fallback;
-  const services = SERVICES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }));
-  const facilities = FACILITIES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }));
+  const ordOf = (id) => (i18n?.legacyOrder?.[id] ?? 99);
+  const services = SERVICES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }))
+    .sort((a, b) => ordOf(a.id) - ordOf(b.id));
+  const facilities = FACILITIES.map(s => ({ ...s, pt: tr(s.id, s.pt), en: i18n?.suppressEn ? '' : s.en }))
+    .sort((a, b) => ordOf(a.id) - ordOf(b.id));
 
   const [loading,   setLoading]   = useState(true);
   const [loadError, setLoadError] = useState(false);
