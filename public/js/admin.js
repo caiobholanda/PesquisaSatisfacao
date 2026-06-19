@@ -157,7 +157,6 @@ function showApp() {
   else if (view === 'view-tipos') { loadTipos(); }
   else if (view === 'view-historico' && st.histId) { showHistoricoMassagista(st.histId, st.histNome); }
   else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
-  else if (view === 'view-relatorio-mensal') { loadRelatorioMensal(); }
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
@@ -630,10 +629,8 @@ async function _popularSelectMassoterapeutas() {
 
 // ── Navegação entre views ──
 function showView(id) {
-  // Lista completa de views. Adicoes anteriores (view-relatorio-mensal,
-  // view-qualidade) tinham que entrar aqui — sem isso o display nunca
-  // virava 'block' e a view ficava invisivel.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-relatorio-mensal', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
+  // Lista completa de views.
+  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -655,19 +652,16 @@ function showView(id) {
   // Renderiza a barra de sub-abas de Relatórios quando uma das 3 views está
   // ativa. Carrega os dados da view que acabou de ser ativada também.
   renderTabsRelatorios(id);
-  if (id === 'view-relatorio-mensal') loadRelatorioMensal();
   if (id === 'view-historico-clientes') loadHistoricoClientes();
   if (id === 'view-anamnese-editor') initAnamneseEditor();
   if (id === 'view-pesquisa-editor') initPesquisaEditor();
 }
 
 // ── Sub-abas de Relatórios ──
-// Mantém 3 views fisicamente separadas no DOM (view-main, view-relatorio-mensal
-// e view-historico-clientes) mas apresenta uma barra de abas única no topo
-// para o usuário alternar entre elas como se fossem uma só página.
+// Visão Mensal foi unificada no Histórico de Clientes (KPIs do periodo
+// + coluna 'Pesquisa' + filtro de status). Restam 2 abas.
 const REL_TABS = [
   { view: 'view-main',                 label: 'Avaliações' },
-  { view: 'view-relatorio-mensal',     label: 'Visão Mensal' },
   { view: 'view-historico-clientes',   label: 'Atendimentos' },
 ];
 
@@ -2940,9 +2934,8 @@ document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekO
   window.addEventListener('focus', checar);
 })();
 document.getElementById('btn-open-relatorios').addEventListener('click',()=>showView('view-main'));
-// btn-open-relatorio-mensal foi removido da dropdown — agora é a sub-aba
-// "Visão Mensal" dentro de Relatórios (renderTabsRelatorios).
-document.getElementById('btn-back-relatorio-mensal')?.addEventListener('click', () => showView('view-main'));
+// btn-back-relatorio-mensal e funcoes loadRelatorioMensal/loadCruzamento
+// removidos — funcionalidade unificada no Historico de Clientes.
 document.getElementById('btn-open-qualidade')?.addEventListener('click', () => { showView('view-qualidade'); loadQualidade(); });
 document.getElementById('btn-back-qualidade')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-ql-atualizar')?.addEventListener('click', () => loadQualidade());
@@ -3367,84 +3360,9 @@ async function apiSend(method, url, body) {
   return d;
 }
 
-// ── Relatorio Mensal (Fase 2): KPIs do mes + cruzamento sessao x pesquisa ──
-function _ymAtualFortaleza() {
-  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
-async function loadRelatorioMensal() {
-  const ymInput = document.getElementById('rm-ym');
-  if (ymInput && !ymInput.value) ymInput.value = _ymAtualFortaleza();
-  const ym = ymInput?.value || _ymAtualFortaleza();
-  // KPIs do mes
-  try {
-    const r = await api(`/api/relatorios/mensal?ym=${encodeURIComponent(ym)}`);
-    if (r) {
-      const d = await r.json();
-      if (d.ok) {
-        document.getElementById('rm-kpi-sessoes').textContent = d.sessoes;
-        document.getElementById('rm-kpi-respondidas').textContent = d.respondidas;
-        document.getElementById('rm-kpi-taxa').textContent = (d.taxa || 0) + '%';
-        document.getElementById('rm-kpi-pendentes').textContent = d.pendentes + ' pendentes';
-      }
-    }
-  } catch {}
-  // Default do filtro: mes selecionado por inteiro
-  const [yy, mm] = ym.split('-').map(Number);
-  const fromEl = document.getElementById('rm-from');
-  const toEl   = document.getElementById('rm-to');
-  if (fromEl && !fromEl.value) fromEl.value = `${ym}-01`;
-  if (toEl && !toEl.value)     toEl.value = new Date(yy, mm, 0).toISOString().slice(0, 10);
-  await loadCruzamento();
-}
-async function loadCruzamento() {
-  const from   = document.getElementById('rm-from')?.value || '';
-  const to     = document.getElementById('rm-to')?.value || '';
-  const status = document.getElementById('rm-status')?.value || 'todos';
-  const params = new URLSearchParams();
-  if (from) params.set('from', from);
-  if (to)   params.set('to', to);
-  params.set('status', status);
-  let d;
-  try {
-    const r = await api(`/api/relatorios/cruzamento?${params}`);
-    if (!r) return;
-    d = await r.json();
-  } catch { return; }
-  if (!d.ok) return;
-  const body  = document.getElementById('rm-body');
-  const empty = document.getElementById('rm-empty');
-  const count = document.getElementById('rm-count');
-  if (count) count.textContent = d.total + (d.total === 1 ? ' sessão' : ' sessões');
-  if (!d.items.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-  const fmtData = iso => iso ? iso.slice(0, 10).split('-').reverse().join('/') : '—';
-  body.innerHTML = d.items.map(r => {
-    const badge = r.respondeu_pesquisa
-      ? '<span style="color:var(--success,#1f7a3d);font-weight:600">✓ respondeu</span>'
-      : '<span style="color:var(--danger,#b33);font-weight:600">✗ pendente</span>';
-    return `<tr>
-      <td>${fmtData(r.data)}</td>
-      <td style="font-variant-numeric:tabular-nums">${r.hora_inicio?.slice(0,5) || '—'} – ${r.hora_fim?.slice(0,5) || '—'}</td>
-      <td>${escHtml(r.cliente || '—')}<div style="font-size:.72rem;color:var(--muted)">${escHtml(r.email || '')}</div></td>
-      <td>${escHtml(r.massagista_nome || '—')}</td>
-      <td>${escHtml(r.tratamento || '—')}</td>
-      <td style="text-align:center">${badge}</td>
-    </tr>`;
-  }).join('');
-}
-document.getElementById('btn-rm-atualizar')?.addEventListener('click', loadRelatorioMensal);
-document.getElementById('btn-rm-filtrar')?.addEventListener('click', loadCruzamento);
-document.getElementById('btn-rm-limpar')?.addEventListener('click', () => {
-  document.getElementById('rm-from').value = '';
-  document.getElementById('rm-to').value = '';
-  document.getElementById('rm-status').value = 'todos';
-  loadCruzamento();
-});
+// ── Relatorio Mensal: REMOVIDO — unificado no Historico de Clientes ──
+// Endpoints /api/relatorios/{mensal,cruzamento} preservados no backend
+// para uso futuro (nao ha caller hoje, mas a remocao introduz risco baixo).
 document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-reservas'));
 
 // Dropdowns SPA e Administrativo
@@ -3616,10 +3534,12 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   document.getElementById('hc-from').value='';
   document.getElementById('hc-to').value='';
   document.getElementById('hc-sala').value='';
+  const st = document.getElementById('hc-status'); if (st) st.value = 'todos';
   document.getElementById('hc-busca').value='';
   loadHistoricoClientes();
 });
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
+document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 let _hcPage = 0;
 const _hcLimit = 50;
 
@@ -3645,7 +3565,7 @@ async function loadHistoricoClientes(page=0) {
   const empty  = document.getElementById('hc-empty');
   const count  = document.getElementById('hc-count');
   const pag    = document.getElementById('hc-pagination');
-  body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr>';
+  body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Carregando…</td></tr>';
   empty.style.display = 'none';
   pag.innerHTML = '';
 
@@ -3654,8 +3574,15 @@ async function loadHistoricoClientes(page=0) {
   const d = await r.json();
   if (!d.ok) { body.innerHTML=''; empty.textContent='Erro ao carregar dados.'; empty.style.display='block'; return; }
 
-  const { total, items } = d;
-  count.textContent = `${total} atendimento${total !== 1 ? 's' : ''}`;
+  let { total, items } = d;
+  // Filtro client-side por status da pesquisa (todos/respondidas/pendentes)
+  const status = document.getElementById('hc-status')?.value || 'todos';
+  if (status === 'respondidas') items = items.filter(it => it.respondeu_pesquisa);
+  else if (status === 'pendentes') items = items.filter(it => !it.respondeu_pesquisa);
+  count.textContent = `${items.length} atendimento${items.length !== 1 ? 's' : ''}${status !== 'todos' ? ` (filtrado: ${status})` : ''}`;
+
+  // Atualiza KPIs do periodo (substitui o antigo Relatorio Mensal)
+  _hcAtualizarKPIs(d.items, total);
 
   if (!items.length) {
     body.innerHTML = '';
@@ -3676,6 +3603,9 @@ async function loadHistoricoClientes(page=0) {
     const massoterapeuta = it.massoterapeuta_nome || '—';
     const tipoLabel = TIPO_CLIENTE_LABEL[it.tipo_cliente] || it.tipo_cliente || '—';
     const salaLabel = SALA_NOME[it.sala] || `Sala ${it.sala}`;
+    const pesquisaBadge = it.respondeu_pesquisa
+      ? '<span style="display:inline-block;background:var(--success-dim);color:var(--success);border:1px solid var(--success);padding:.18rem .55rem;border-radius:999px;font-size:.7rem;font-weight:600">✓ Respondida</span>'
+      : '<span style="display:inline-block;background:var(--bg);color:var(--muted2);border:1px solid var(--border);padding:.18rem .55rem;border-radius:999px;font-size:.7rem;font-weight:500">Pendente</span>';
     return `<tr data-action="hc-row-detalhe" data-id="${it.id}" style="cursor:pointer">
       <td>${fmt(it.data)}</td>
       <td style="font-family:var(--mono);font-size:.82rem">${it.hora_inicio} – ${it.hora_fim}</td>
@@ -3688,6 +3618,7 @@ async function loadHistoricoClientes(page=0) {
       <td style="font-size:.82rem">${escHtml(salaLabel)}</td>
       <td style="font-size:.82rem">${escHtml(tratamento)}</td>
       <td style="font-size:.82rem">${escHtml(massoterapeuta)}</td>
+      <td style="text-align:center">${pesquisaBadge}</td>
     </tr>`;
   }).join('');
 
@@ -3699,6 +3630,29 @@ async function loadHistoricoClientes(page=0) {
     if (page < totalPages-1) html += `<button class="page-btn" data-action="hc-page" data-p="${page+1}">Próxima ›</button>`;
     pag.innerHTML = html;
   }
+}
+
+// Atualiza os KPIs do Historico (substitui o antigo Relatorio Mensal).
+// Calcula sobre TODOS os items retornados pelo backend (nao apenas a pagina
+// atual): respondeu_pesquisa vem aditivo da query — sem chamada extra.
+// Se quiser totais do mes inteiro, usa o intervalo from-to atual.
+function _hcAtualizarKPIs(itemsTodos, total) {
+  const sessoes = total ?? itemsTodos.length;
+  const respondidas = itemsTodos.reduce((acc, it) => acc + (it.respondeu_pesquisa ? 1 : 0), 0);
+  const pendentes = itemsTodos.length - respondidas;
+  const taxa = itemsTodos.length ? Math.round((respondidas / itemsTodos.length) * 100) : 0;
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('hc-kpi-sessoes', String(sessoes));
+  setText('hc-kpi-respondidas', String(respondidas));
+  setText('hc-kpi-taxa', `${taxa}%`);
+  setText('hc-kpi-pendentes', String(pendentes));
+  // Subtitulo do periodo
+  const from = document.getElementById('hc-from')?.value;
+  const to = document.getElementById('hc-to')?.value;
+  const periodo = (from || to)
+    ? `${from || 'início'} → ${to || 'hoje'}`
+    : 'Todo o histórico';
+  setText('hc-kpi-periodo', periodo);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -776,10 +776,17 @@ export function listarTodasReservas({ from, to, sala, busca, limit = 100, offset
   if (busca)  { conds.push('(LOWER(r.cliente) LIKE ? OR LOWER(r.email) LIKE ?)'); params.push(`%${busca.toLowerCase()}%`, `%${busca.toLowerCase()}%`); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const total = db.prepare(`SELECT COUNT(*) AS t FROM reservas r ${where}`).get(...params).t;
+  // Aditivo: novo campo respondeu_pesquisa (1 se ao menos uma pesquisa
+  // foi respondida pra essa reserva). Subquery via survey_tokens. Contrato
+  // do endpoint /historico preservado — campos antigos intactos.
   const items = db.prepare(`
     SELECT r.*,
       m.nome AS massoterapeuta_nome,
-      t.nome AS tipo_massagem_nome
+      t.nome AS tipo_massagem_nome,
+      CASE WHEN EXISTS (
+        SELECT 1 FROM survey_tokens st
+        WHERE st.reserva_id = r.id AND st.respondida_em IS NOT NULL
+      ) THEN 1 ELSE 0 END AS respondeu_pesquisa
     FROM reservas r
     LEFT JOIN massagistas m ON m.id = r.massagista_id
     LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id

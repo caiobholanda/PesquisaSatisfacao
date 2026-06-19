@@ -3165,86 +3165,9 @@
       </div>
     </div>
 
-    <!-- ── VIEW: Relatório Mensal ── -->
-    <div id="view-relatorio-mensal" class="view-page" style="display:none">
-      <div class="page-hero">
-        <button class="btn-back" id="btn-back-relatorio-mensal">← Voltar</button>
-        <div>
-          <div class="page-hero-eyebrow">
-            <span class="page-num">Admin</span>
-            <h1 class="page-title">Relatório Mensal</h1>
-          </div>
-          <p class="page-sub">Sessões realizadas e cruzamento com pesquisas de satisfação.</p>
-        </div>
-        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
-          <label style="font-size:.78rem;color:var(--muted)">Mês</label>
-          <input type="month" id="rm-ym" style="padding:.45rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:var(--bg)">
-          <button class="btn btn-outline btn-sm" id="btn-rm-atualizar">Atualizar</button>
-        </div>
-      </div>
-
-      <div class="kpi-grid" style="margin-bottom:1.5rem">
-        <div class="kpi">
-          <div class="kpi-label">Sessões no mês</div>
-          <div class="kpi-val" id="rm-kpi-sessoes">—</div>
-          <div class="kpi-sub">tratamentos realizados</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Pesquisas respondidas</div>
-          <div class="kpi-val accent" id="rm-kpi-respondidas">—</div>
-          <div class="kpi-sub">avaliações recebidas</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Taxa de resposta</div>
-          <div class="kpi-val" id="rm-kpi-taxa">—</div>
-          <div class="kpi-sub" id="rm-kpi-pendentes">— pendentes</div>
-        </div>
-      </div>
-
-      <div class="filters" style="flex-wrap:wrap;gap:.6rem">
-        <div class="filter-group">
-          <label>De</label>
-          <input type="date" id="rm-from">
-        </div>
-        <div class="filter-group">
-          <label>Até</label>
-          <input type="date" id="rm-to">
-        </div>
-        <div class="filter-group">
-          <label>Status</label>
-          <select id="rm-status" style="width:180px">
-            <option value="todos">Todos</option>
-            <option value="respondidas">Só respondidas</option>
-            <option value="pendentes">Só pendentes</option>
-          </select>
-        </div>
-        <div class="filter-actions">
-          <button class="btn btn-gold" id="btn-rm-filtrar">Filtrar</button>
-          <button class="btn btn-outline" id="btn-rm-limpar">Limpar</button>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <div class="table-head">
-          <h2>Cruzamento Sessão × Pesquisa</h2>
-          <span id="rm-count"></span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Horário</th>
-              <th>Cliente</th>
-              <th>Massoterapeuta</th>
-              <th>Tratamento</th>
-              <th style="text-align:center">Pesquisa</th>
-            </tr>
-          </thead>
-          <tbody id="rm-body"></tbody>
-        </table>
-        <div id="rm-empty" class="empty" style="display:none">Nenhuma sessão encontrada no período.</div>
-      </div>
-    </div>
+    <!-- Relatorio Mensal: REMOVIDO. Funcionalidade unificada no Historico
+         de Clientes (KPIs do periodo + coluna 'Pesquisa' + filtro de status).
+         Endpoints /api/relatorios/* PRESERVADOS no backend para uso futuro. -->
 
     <!-- ── VIEW: Gestão da Qualidade ── -->
     <div id="view-qualidade" class="view-page" style="display:none">
@@ -3416,6 +3339,30 @@
         </div>
       </div>
 
+      <!-- KPIs do periodo selecionado (antigo Relatorio Mensal) -->
+      <div class="kpi-grid" id="hc-kpis" style="margin-bottom:1rem">
+        <div class="kpi">
+          <div class="kpi-label">Sessões no período</div>
+          <div class="kpi-val" id="hc-kpi-sessoes">—</div>
+          <div class="kpi-sub" id="hc-kpi-periodo"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Pesquisas respondidas</div>
+          <div class="kpi-val" id="hc-kpi-respondidas">—</div>
+          <div class="kpi-sub">Sessões com retorno do hóspede</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Taxa de resposta</div>
+          <div class="kpi-val" id="hc-kpi-taxa">—</div>
+          <div class="kpi-sub">% respondidas / sessões</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Pendentes</div>
+          <div class="kpi-val" id="hc-kpi-pendentes">—</div>
+          <div class="kpi-sub">Sessões sem pesquisa</div>
+        </div>
+      </div>
+
       <div class="filters" style="flex-wrap:wrap;gap:.6rem">
         <div class="filter-group">
           <label>De</label>
@@ -3432,6 +3379,14 @@
             <option value="1">Sala 1 · Serenity</option>
             <option value="2">Sala 2 · Tranquility</option>
             <option value="3">Sala 3 · Harmony (Casal)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Pesquisa</label>
+          <select id="hc-status">
+            <option value="todos">Todas</option>
+            <option value="respondidas">Respondidas</option>
+            <option value="pendentes">Pendentes</option>
           </select>
         </div>
         <div class="filter-group">
@@ -3460,6 +3415,7 @@
               <th>Sala</th>
               <th>Tratamento</th>
               <th>Massoterapeuta</th>
+              <th>Pesquisa</th>
             </tr>
           </thead>
           <tbody id="hc-body"></tbody>
@@ -4072,6 +4028,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=81"></script>
+<script src="/js/admin.js?v=82"></script>
 </body>
 </html>
