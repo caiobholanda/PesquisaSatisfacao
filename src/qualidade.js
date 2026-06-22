@@ -351,10 +351,26 @@ export function inserirRespostaPesquisa({ pesquisa_slug, pesquisa_versao, app_or
     p = db.prepare("SELECT id, versao FROM pesquisa WHERE slug=? AND ativo=1 ORDER BY versao DESC LIMIT 1").get(pesquisa_slug);
   }
   if (!p) return null;
-  const r = db.prepare(
-    "INSERT INTO resposta_pesquisa (pesquisa_id, pesquisa_versao, app_origem, cliente_id, reserva_id, feedback_id) VALUES (?,?,?,?,?,?)"
-  ).run(p.id, p.versao, app_origem || 'spa', cliente_id || null, reserva_id || null, feedback_id || null);
-  const respId = r.lastInsertRowid;
+
+  // Upsert: quando reserva_id esta presente e feedback_id ausente (caso anamnese),
+  // reutiliza o resposta_pesquisa existente em vez de criar duplicata a cada reenvio.
+  // Para surveys de satisfacao (feedback_id preenchido), sempre insere novo registro.
+  const existente = (reserva_id && !feedback_id)
+    ? db.prepare('SELECT id FROM resposta_pesquisa WHERE pesquisa_id=? AND reserva_id=? AND app_origem=? LIMIT 1')
+        .get(p.id, reserva_id, app_origem || 'spa')
+    : null;
+
+  let respId;
+  if (existente) {
+    db.prepare('DELETE FROM resposta_item WHERE resposta_pesquisa_id=?').run(existente.id);
+    respId = existente.id;
+  } else {
+    const r = db.prepare(
+      "INSERT INTO resposta_pesquisa (pesquisa_id, pesquisa_versao, app_origem, cliente_id, reserva_id, feedback_id) VALUES (?,?,?,?,?,?)"
+    ).run(p.id, p.versao, app_origem || 'spa', cliente_id || null, reserva_id || null, feedback_id || null);
+    respId = r.lastInsertRowid;
+  }
+
   if (Array.isArray(itens)) {
     const stmt = db.prepare("INSERT INTO resposta_item (resposta_pesquisa_id, pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave) VALUES (?,?,?,?,?)");
     for (const it of itens) {
