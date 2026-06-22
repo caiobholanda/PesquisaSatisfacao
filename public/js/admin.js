@@ -4228,7 +4228,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
           <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(a.nome + ' ' + a.sobrenome)} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml([a.nome, a.sobrenome].filter(Boolean).join(' ') || '—')} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
       </header>
@@ -4286,7 +4286,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close' || e.target === ov) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }

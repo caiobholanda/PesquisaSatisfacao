@@ -279,6 +279,28 @@ function validateAll(showErrors) {
     if (el) el.style.display = 'none';
   }
 
+  // Validacao de extras obrigatorios (perguntas criadas pelo admin).
+  // wrap.dataset.obrigatoria === '1' marca perguntas obrigatorias.
+  document.querySelectorAll('[data-extra]').forEach(wrap => {
+    if (wrap.dataset.obrigatoria !== '1') return;
+    const tipo = wrap.dataset.tipo;
+    let ok = false;
+    if (tipo === 'texto_livre') {
+      ok = (wrap.querySelector('textarea')?.value || '').trim().length > 0;
+    } else if (tipo === 'multipla') {
+      ok = wrap.querySelectorAll('input[type=checkbox]:checked').length > 0;
+    } else {
+      ok = !!wrap.querySelector('input:checked');
+    }
+    if (!ok) {
+      const lbl = wrap.querySelector('.spa-label')?.textContent?.replace(/\*$/, '').trim() || 'Resposta obrigatoria';
+      errs.push(`${lbl}: resposta obrigatória`);
+      if (showErrors) wrap.style.outline = '2px solid #e05555';
+    } else if (showErrors) {
+      wrap.style.outline = '';
+    }
+  });
+
   const btn = document.getElementById('btn-submit');
   if (btn) btn.disabled = errs.length > 0;
 
@@ -1226,6 +1248,7 @@ function _appendPerguntasNoGrid(grid, perguntas) {
     wrap.className = 'spa-field';
     wrap.dataset.extra = q.chave;
     wrap.dataset.tipo  = q.tipo;
+    if (q.obrigatoria) wrap.dataset.obrigatoria = '1';
     const reqMark = q.obrigatoria ? ' <span class="req">*</span>' : '';
     if (q.tipo === 'texto_livre') {
       wrap.innerHTML = `
@@ -1296,7 +1319,13 @@ function _appendPerguntasNoGrid(grid, perguntas) {
         inp.checked = !inp.checked;
         p.classList.toggle('selected', inp.checked);
       }
+      // Revalida apos cada interacao para limpar/exibir erros de extras obrigatorios
+      if (typeof validateAll === 'function') validateAll(false);
     });
+  });
+  // Validacao on-input para textarea/text de extras tipo texto_livre
+  grid.querySelectorAll('textarea[data-extra-input], input[type=text][data-extra-input]').forEach(el => {
+    el.addEventListener('input', () => { if (typeof validateAll === 'function') validateAll(false); });
   });
 }
 
