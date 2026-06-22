@@ -94,6 +94,7 @@
       --sala-s1-text: #F2D7A6;
       --sala-s2-text: #BFC8EE;
       --sala-s3-text: #A8DDBB;
+      --sala-s4-text: #E8C0D8;
     }
 
     /* Transicao suave de tema. 300ms conforme spec ('luxo' menos brusco). */
@@ -1695,6 +1696,9 @@
       --sala-s3: #2D7A4F;
       --sala-s3-dim: rgba(45,122,79,.13);
       --sala-s3-text: #144228;
+      --sala-s4: #8B4A6B;
+      --sala-s4-dim: rgba(139,74,107,.13);
+      --sala-s4-text: #4a1f38;
     }
 
     /* Toolbar */
@@ -1777,6 +1781,7 @@
     .cal-leg-dot.s1 { background: var(--sala-s1); }
     .cal-leg-dot.s2 { background: var(--sala-s2); }
     .cal-leg-dot.s3 { background: var(--sala-s3); }
+    .cal-leg-dot.s4 { background: var(--sala-s4); }
 
     /* ── Container ── */
     .cal-container {
@@ -1811,6 +1816,7 @@
     .cal-room-col-head.s1::before { background: var(--sala-s1); }
     .cal-room-col-head.s2::before { background: var(--sala-s2); }
     .cal-room-col-head.s3::before { background: var(--sala-s3); }
+    .cal-room-col-head.s4::before { background: var(--sala-s4); }
 
     .cal-room-col-name {
       font-family: var(--serif); font-size: 1.05rem;
@@ -1819,6 +1825,7 @@
     .cal-room-col-name.s1 { color: var(--sala-s1-text); }
     .cal-room-col-name.s2 { color: var(--sala-s2-text); }
     .cal-room-col-name.s3 { color: var(--sala-s3-text); }
+    .cal-room-col-name.s4 { color: var(--sala-s4-text); }
 
     .cal-room-col-sub { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
 
@@ -1834,6 +1841,7 @@
     .cal-room-col-head.s1 .cal-room-occ-fill { background: var(--sala-s1); }
     .cal-room-col-head.s2 .cal-room-occ-fill { background: var(--sala-s2); }
     .cal-room-col-head.s3 .cal-room-occ-fill { background: var(--sala-s3); }
+    .cal-room-col-head.s4 .cal-room-occ-fill { background: var(--sala-s4); }
     .cal-room-occ-lbl { font-family: var(--mono); font-size: .6rem; color: var(--muted); white-space: nowrap; }
 
     /* ── Scroll ── */
@@ -1918,6 +1926,10 @@
       border: 1px solid rgba(91,103,150,.32);
       box-shadow: 0 1px 5px rgba(91,103,150,.15);
     }
+    .cal-res-block.s4 {
+      background: linear-gradient(150deg, rgba(139,74,107,.15) 0%, rgba(139,74,107,.25) 100%);
+      border-left: 3px solid var(--sala-s4);
+    }
     .cal-res-block.s3 {
       background: linear-gradient(150deg, rgba(45,122,79,.15) 0%, rgba(45,122,79,.25) 100%);
       border: 1px solid rgba(45,122,79,.32);
@@ -1926,6 +1938,7 @@
     .cal-res-block.s1:hover { box-shadow: 0 5px 16px rgba(201,137,58,.28); }
     .cal-res-block.s2:hover { box-shadow: 0 5px 16px rgba(91,103,150,.22); }
     .cal-res-block.s3:hover { box-shadow: 0 5px 16px rgba(45,122,79,.22); }
+    .cal-res-block.s4:hover { box-shadow: 0 5px 16px rgba(139,74,107,.22); }
 
     .cal-res-name {
       font-family: var(--serif); font-size: .85rem; font-weight: 500;
@@ -1934,6 +1947,7 @@
     .cal-res-block.s1 .cal-res-name { color: var(--sala-s1-text); }
     .cal-res-block.s2 .cal-res-name { color: var(--sala-s2-text); }
     .cal-res-block.s3 .cal-res-name { color: var(--sala-s3-text); }
+    .cal-res-block.s4 .cal-res-name { color: var(--sala-s4-text); }
 
     .cal-res-trat {
       font-size: .62rem; font-style: italic;
@@ -1943,6 +1957,7 @@
     .cal-res-block.s1 .cal-res-trat { color: var(--sala-s1-text); }
     .cal-res-block.s2 .cal-res-trat { color: var(--sala-s2-text); }
     .cal-res-block.s3 .cal-res-trat { color: var(--sala-s3-text); }
+    .cal-res-block.s4 .cal-res-trat { color: var(--sala-s4-text); }
 
     .cal-res-time {
       font-family: var(--mono); font-size: .55rem;
@@ -2072,7 +2087,7 @@
 
     .res-room-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0.5rem;
     }
 
@@ -2093,6 +2108,7 @@
     .res-room-btn[data-sala="1"].active { border-color: var(--sala-s1); background: var(--sala-s1-dim); }
     .res-room-btn[data-sala="2"].active { border-color: var(--sala-s2); background: var(--sala-s2-dim); }
     .res-room-btn[data-sala="3"].active { border-color: var(--sala-s3); background: var(--sala-s3-dim); }
+    .res-room-btn[data-sala="4"].active { border-color: var(--sala-s4); background: var(--sala-s4-dim); }
 
     .res-room-btn-name {
       font-size: 0.9375rem;
@@ -2102,6 +2118,7 @@
     .res-room-btn[data-sala="1"].active .res-room-btn-name { color: var(--sala-s1-text); }
     .res-room-btn[data-sala="2"].active .res-room-btn-name { color: var(--sala-s2-text); }
     .res-room-btn[data-sala="3"].active .res-room-btn-name { color: var(--sala-s3-text); }
+    .res-room-btn[data-sala="4"].active .res-room-btn-name { color: var(--sala-s4-text); }
 
     .res-room-btn-sub {
       font-size: 0.6875rem;
@@ -3153,7 +3170,8 @@
         <div class="cal-legend">
           <span class="cal-leg"><span class="cal-leg-dot s1"></span>Sala 1</span>
           <span class="cal-leg"><span class="cal-leg-dot s2"></span>Sala 2</span>
-          <span class="cal-leg"><span class="cal-leg-dot s3"></span>Casal</span>
+          <span class="cal-leg"><span class="cal-leg-dot s3"></span>Sala 3</span>
+          <span class="cal-leg"><span class="cal-leg-dot s4"></span>Sala 4</span>
         </div>
       </div>
 
@@ -3378,7 +3396,8 @@
             <option value="">Todas</option>
             <option value="1">Sala 1 · Serenity</option>
             <option value="2">Sala 2 · Tranquility</option>
-            <option value="3">Sala 3 · Harmony (Casal)</option>
+            <option value="3">Sala 3 · Harmony</option>
+            <option value="4">Sala 4 · Harmony</option>
           </select>
         </div>
         <div class="filter-group">
@@ -3687,9 +3706,20 @@
             <span class="res-room-btn-sub">Individual · 1 pessoa</span>
           </button>
           <button class="res-room-btn" data-sala="3">
-            <span class="res-room-btn-name">Casal</span>
-            <span class="res-room-btn-sub">Casal · 2 pessoas</span>
+            <span class="res-room-btn-name">Sala 3</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
           </button>
+          <button class="res-room-btn" data-sala="4">
+            <span class="res-room-btn-name">Sala 4</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+        </div>
+        <!-- Checkbox casal: visível apenas quando Sala 3 ou Sala 4 selecionada -->
+        <div id="res-casal-chk-wrap" style="display:none;padding:.5rem .75rem;background:rgba(139,74,107,.07);border:1px dashed rgba(139,74,107,.3);border-radius:8px;margin-top:.25rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--text);user-select:none">
+            <input type="checkbox" id="res-chk-casal" style="width:14px;height:14px;cursor:pointer;accent-color:var(--sala-s4)">
+            <span>Esta reserva é para um casal? <span style="color:var(--muted);font-size:.76rem">(une Sala 3 + Sala 4 — bloqueia as duas)</span></span>
+          </label>
         </div>
       </div>
       <!-- ── Separador Pessoa 1 (só Casal) ── -->

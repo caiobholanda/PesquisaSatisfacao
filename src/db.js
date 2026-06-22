@@ -808,12 +808,18 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
   } = opts;
   const db = getDb();
 
-  // Conflito de sala
-  const conflitoSala = db.prepare(`
-    SELECT id, cliente, hora_inicio, hora_fim FROM reservas
-    WHERE sala = ? AND data = ?
-    AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-  `).get(sala, data, horaInicio, horaFim);
+  // Conflito de sala (salas 3 e 4 são o mesmo espaço físico — checar ambas)
+  const conflitoSala = (sala === 3 || sala === 4)
+    ? db.prepare(`
+        SELECT id, cliente, hora_inicio, hora_fim FROM reservas
+        WHERE (sala = 3 OR sala = 4) AND data = ?
+        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      `).get(data, horaInicio, horaFim)
+    : db.prepare(`
+        SELECT id, cliente, hora_inicio, hora_fim FROM reservas
+        WHERE sala = ? AND data = ?
+        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      `).get(sala, data, horaInicio, horaFim);
   if (conflitoSala) {
     const e = new Error('CONFLITO_SALA');
     e.code = 'CONFLITO_SALA';

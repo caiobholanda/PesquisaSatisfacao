@@ -88,7 +88,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   // Casal: pessoa 2 é OPCIONAL. Só valida coerencia SE algum campo foi
   // preenchido (cliente2, cpf2, tratamento2 ou massagista_id2 disparam
   // a validacao do bloco inteiro).
-  const _p2Presente = +sala === 3 && !!(cliente2?.trim() || cpf2 || tratamento2?.trim() || massagista_id2);
+  const _p2Presente = (+sala === 3 || +sala === 4) && !!(cliente2?.trim() || cpf2 || tratamento2?.trim() || massagista_id2);
   if (_p2Presente) {
     if (!cliente2?.trim())  return res.status(400).json({ ok: false, error: 'Pessoa 2: informe o nome' });
     if (!massagista_id2)    return res.status(400).json({ ok: false, error: 'Pessoa 2: selecione a massoterapeuta' });

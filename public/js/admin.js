@@ -1558,7 +1558,8 @@ window.showHistoricoMassagista = async (id, nome) => {
 const CAL_ROOMS = [
   { id: 1, nome: 'Sala 1', tipo: 'Individual', cap: 1, cls: 's1' },
   { id: 2, nome: 'Sala 2', tipo: 'Individual', cap: 1, cls: 's2' },
-  { id: 3, nome: 'Casal',  tipo: 'Casal',      cap: 2, cls: 's3' },
+  { id: 3, nome: 'Sala 3', tipo: 'Individual', cap: 1, cls: 's3' },
+  { id: 4, nome: 'Sala 4', tipo: 'Individual', cap: 1, cls: 's4' },
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
@@ -1656,7 +1657,7 @@ function calSetTipo2(tipo) {
 }
 document.querySelectorAll('[data-tipo2]').forEach(btn => btn.addEventListener('click', () => calSetTipo2(btn.dataset.tipo2)));
 
-function _isCasal() { return _resSala === 3; }
+function _isCasal() { return (_resSala === 3 || _resSala === 4) && !!document.getElementById('res-chk-casal')?.checked; }
 
 function _syncTratListToSecond() {
   const src = document.getElementById('res-cb-trat-list');
@@ -1900,6 +1901,26 @@ function renderCalDia() {
     html+=`<div class="cal-time-cell${halfClass}">${timeStr}</div>`;
     CAL_ROOMS.forEach(room=>{
       const res=dayRes.find(r=>r.sala===room.id&&calTimeMin(r.hora_inicio)<slotE&&calTimeMin(r.hora_fim)>slotS);
+      // Sala 4: verificar se está bloqueada por reserva na sala 3 (mesmo espaço físico)
+      if (!res && room.id === 4) {
+        const s3block = dayRes.find(r => r.sala === 3 && calTimeMin(r.hora_inicio) < slotE && calTimeMin(r.hora_fim) > slotS);
+        if (s3block) {
+          const isFirst = calTimeMin(s3block.hora_inicio) >= slotS && calTimeMin(s3block.hora_inicio) < slotE;
+          if (isFirst) {
+            const rs3 = calTimeMin(s3block.hora_inicio), re3 = calTimeMin(s3block.hora_fim);
+            const topPx = ((rs3 - slotS) / SLOT_MIN) * CAL_SLOT_PX + 2;
+            const ht = ((re3 - rs3) / SLOT_MIN) * CAL_SLOT_PX - 4;
+            html += `<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
+              <div style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;border-radius:6px;background:var(--sala-s3-dim);border-left:3px dashed var(--sala-s3);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.65">
+                <span style="font-size:.65rem;color:var(--sala-s3-text);text-align:center;line-height:1.4">Bloqueada<br>(Sala 3 em uso)</span>
+              </div>
+            </div>`;
+          } else {
+            html += `<div class="cal-slot occupied-cont${halfClass}"></div>`;
+          }
+          return;
+        }
+      }
       if(res){
         const rs=calTimeMin(res.hora_inicio), re=calTimeMin(res.hora_fim);
         const isFirst=rs>=slotS&&rs<slotE;
@@ -1928,25 +1949,28 @@ function renderCalDia() {
           const gcBadge = ehGC
             ? `<button type="button" data-action="gc-info" title="Ver benefícios Gran Class" style="background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;border:1px solid #c9a86a;border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.04em;line-height:1.3;cursor:pointer;flex-shrink:0">★ GC</button>`
             : '';
+          const casalBadge = res.cliente2
+            ? `<span style="background:rgba(139,74,107,.18);color:var(--sala-s4-text,#4a1f38);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0">🤝 S3+4</span>`
+            : '';
           let inner = '';
           if (modo === 'compact') {
             // Ultra compacto: nome + GC badge + horario na mesma linha
             inner = `
               <div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                ${gcBadge}
+                ${gcBadge}${casalBadge}
                 <span style="overflow:hidden;text-overflow:ellipsis">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span>
               </div>
               <div style="font-size:.7rem;opacity:.85;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.hora_inicio}–${res.hora_fim}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''}</div>
             `;
           } else if (modo === 'medium') {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
             `;
           } else {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
               ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' &amp; '+escHtml(res.massagista_nome2):''}</div>`:''}
@@ -2117,12 +2141,17 @@ function calOpenModal(salaId, data, hora) {
   if (_quarto2Info) { _quarto2Info.style.display = 'none'; _quarto2Info.textContent = ''; }
   const _quarto2Fg = document.getElementById('res2-fg-quarto');
   if (_quarto2Fg) _quarto2Fg.style.display = 'none';
+  // Casal checkbox: exibe para sala 3/4, sempre desmarcado ao abrir
+  const _casalChk = document.getElementById('res-chk-casal');
+  const _casalWrap = document.getElementById('res-casal-chk-wrap');
+  if (_casalChk) _casalChk.checked = false;
+  if (_casalWrap) _casalWrap.style.display = (_resSala === 3 || _resSala === 4) ? '' : 'none';
   const sec2 = document.getElementById('res-sec-pessoa2');
-  if (sec2) sec2.style.display = _isCasal() ? '' : 'none';
+  if (sec2) sec2.style.display = 'none';
   const _sep1 = document.getElementById('res-sep-pessoa1');
-  if (_sep1) _sep1.style.display = _isCasal() ? '' : 'none';
+  if (_sep1) _sep1.style.display = 'none';
   const _wrap1 = document.getElementById('res-pessoa1-wrap');
-  if (_wrap1) _wrap1.classList.toggle('casal-ativo', _isCasal());
+  if (_wrap1) _wrap1.classList.remove('casal-ativo');
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
@@ -2293,9 +2322,10 @@ function _atualizarComboLinhaPreco() {
 
 // Detecta conflito local (sala ou profissional)
 function calDetectarConflito(sala, massagistaId, data, horaInicio, horaFim, excluirId) {
-  // Sala primeiro
+  // Salas 3 e 4 são o mesmo espaço físico — checar ambas
+  const salasVerif = (sala === 3 || sala === 4) ? [3, 4] : [sala];
   const conflitoSala = _reservas.find(r =>
-    r.sala === sala &&
+    salasVerif.includes(r.sala) &&
     r.data === data &&
     r.id !== excluirId &&
     !(r.hora_fim <= horaInicio || r.hora_inicio >= horaFim)
@@ -2497,7 +2527,7 @@ function calVerDetalhes(id) {
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
   const salaCls = sala ? sala.cls : 's1';
-  const salaTipo = sala ? `${sala.tipo} · ${sala.cap} pessoa${sala.cap>1?'s':''}` : '';
+  const salaTipo = r.cliente2 ? 'Casal · Sala 3+4' : (sala ? `${sala.tipo} · ${sala.cap} pessoa` : '');
   const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
   const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
   const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
@@ -2745,17 +2775,53 @@ document.getElementById('btn-nova-reserva').addEventListener('click',()=>calOpen
 document.getElementById('btn-res-x').addEventListener('click',calCloseModal);
 document.getElementById('btn-res-cancelar').addEventListener('click',calCloseModal);
 
+function _syncCasalUI() {
+  const casal = _isCasal();
+  const sec2  = document.getElementById('res-sec-pessoa2');
+  const sep1  = document.getElementById('res-sep-pessoa1');
+  const wrap1 = document.getElementById('res-pessoa1-wrap');
+  if (sec2)  sec2.style.display  = casal ? '' : 'none';
+  if (sep1)  sep1.style.display  = casal ? '' : 'none';
+  if (wrap1) wrap1.classList.toggle('casal-ativo', casal);
+}
+
 document.querySelectorAll('.res-room-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     _resSala=+btn.dataset.sala;
     document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',b===btn));
-    const sec2 = document.getElementById('res-sec-pessoa2');
-    if (sec2) sec2.style.display = _isCasal() ? '' : 'none';
-    const sep1 = document.getElementById('res-sep-pessoa1');
-    if (sep1) sep1.style.display = _isCasal() ? '' : 'none';
-    const wrap1 = document.getElementById('res-pessoa1-wrap');
-    if (wrap1) wrap1.classList.toggle('casal-ativo', _isCasal());
+    const casalWrap = document.getElementById('res-casal-chk-wrap');
+    const casalChk  = document.getElementById('res-chk-casal');
+    const isSalaCasal = (_resSala === 3 || _resSala === 4);
+    if (casalWrap) casalWrap.style.display = isSalaCasal ? '' : 'none';
+    if (!isSalaCasal && casalChk) {
+      casalChk.checked = false;
+      // limpa pessoa 2 se estava ativa
+      if (_cbTrat2) _cbTrat2.clear();
+      if (_cbMass2) _cbMass2.clear();
+      _resTipo2 = null;
+      document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.remove('active'));
+      ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+    }
+    _syncCasalUI();
   });
+});
+
+document.getElementById('res-chk-casal')?.addEventListener('change', () => {
+  if (!_isCasal()) {
+    // Desmarcou: limpa pessoa 2
+    if (_cbTrat2) _cbTrat2.clear();
+    if (_cbMass2) _cbMass2.clear();
+    _resTipo2 = null;
+    document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.remove('active'));
+    ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const _cpf2Info = document.getElementById('res2-cpf-info');
+    if (_cpf2Info) { _cpf2Info.style.display = 'none'; _cpf2Info.textContent = ''; }
+  }
+  _syncCasalUI();
 });
 
 document.querySelectorAll('.res-tipo-btn').forEach(btn=>{
@@ -2767,7 +2833,8 @@ document.getElementById('res-inp-tratamento').addEventListener('change', calAtua
 document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const err=document.getElementById('res-modal-err');
   err.textContent='';
-  const sala=_resSala;
+  // Casal sempre grava na sala 3 (espaço unificado 3+4); individual usa sala escolhida
+  const sala = _isCasal() ? 3 : _resSala;
   const tipo=_resTipo;
   const cpfInpVal = (document.getElementById('res-inp-cpf')?.value || '').replace(/\D/g, '');
   const nome=document.getElementById('res-inp-nome').value.trim();
@@ -3584,7 +3651,7 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 
-const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony' };
+const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony', 4: 'Sala 4 · Harmony' };
 const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
 
 function _hcParams(off=0) {
