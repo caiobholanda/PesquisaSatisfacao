@@ -21,11 +21,11 @@ const _hcLimit = 50;
 const LANGS_PRE = [
   { code: 'pt-BR', flag: '🇧🇷', name: 'Português (Brasil)' },
   { code: 'pt-PT', flag: '🇵🇹', name: 'Português (Portugal)' },
-  { code: 'en',    flag: '🇺🇸', name: 'English' },
-  { code: 'fr',    flag: '🇫🇷', name: 'Français' },
-  { code: 'es',    flag: '🇪🇸', name: 'Español' },
+  { code: 'en',    flag: '🇺🇸', name: 'Inglês' },
+  { code: 'fr',    flag: '🇫🇷', name: 'Francês' },
+  { code: 'es',    flag: '🇪🇸', name: 'Espanhol' },
   { code: 'it',    flag: '🇮🇹', name: 'Italiano' },
-  { code: 'de',    flag: '🇩🇪', name: 'Deutsch' },
+  { code: 'de',    flag: '🇩🇪', name: 'Alemão' },
 ];
 
 function token() { return _token || sessionStorage.getItem(TOKEN_KEY); }
@@ -4195,11 +4195,11 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   const linhaCampo = (label, valor) => `
     <div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
-      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#5a5248">— vazio —</em>'}</div>
+      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#7a7068">— vazio —</em>'}</div>
     </div>`;
   const linhaLista = (label, arr) => {
     const items = (arr || []).filter(Boolean);
-    const v = items.length ? items.map(i => `<span style="background:rgba(201,168,106,.14);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#5a5248">— vazio —</em>';
+    const v = items.length ? items.map(i => `<span style="background:rgba(201,168,106,.14);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#7a7068">— vazio —</em>';
     return `<div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
       <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">${v}</div>
@@ -4212,8 +4212,8 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
     </div>`;
   const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
   const assinaturaHtml = a.assinatura_data_url
-    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:280px;max-height:120px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:#fff;padding:.3rem;display:block">`
-    : '<em style="color:#5a5248;font-size:.85rem">— sem assinatura —</em>';
+    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
+    : '<em style="color:#9a8f82;font-size:.85rem">— sem assinatura registrada —</em>';
 
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
@@ -4375,9 +4375,9 @@ async function _abrirModalPesquisaRespondida(respostaId) {
 
     const sigVal = getText('assinatura_digital') || getText('assinatura');
     const sigHtml = sigVal && sigVal.startsWith('data:image')
-      ? `<img src="${sigVal}" style="max-width:260px;max-height:110px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:.35rem;display:block">`
+      ? `<img src="${sigVal}" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
       : sigVal ? `<span class="an-tag" style="font-size:.83rem">✓ Assinatura registrada</span>`
-      : `<em style="color:var(--muted);font-size:.85rem">— sem assinatura —</em>`;
+      : `<em style="color:#9a8f82;font-size:.85rem">— sem assinatura registrada —</em>`;
 
     const nomeFull = [getText('nome'), getText('sobrenome')].filter(Boolean).join(' ');
     const tipoDocR = getOpcR('tipo_documento') || getText('tipo_documento') || '';
