@@ -513,40 +513,44 @@ export function listarEscalas() {
 // Todas as funções abaixo são CRUD para a UI admin. Nada delas é chamada
 // pelo fluxo público — só pelas rotas /api/qualidade/admin/* protegidas.
 
+// Normaliza traducoes para array de {idioma, ...campos}.
+// Aceita: objeto { "pt-BR": {titulo,rotulo,...} } ou array [{idioma:"pt-BR",...}].
+function _normTraducoes(traducoes) {
+  if (!traducoes || typeof traducoes !== 'object') return [];
+  if (Array.isArray(traducoes)) return traducoes.filter(t => t && t.idioma);
+  return Object.entries(traducoes).map(([idioma, t]) => ({ idioma, ...(typeof t === 'string' ? { _raw: t } : t) }));
+}
+
 function _gravarTraducoesPesquisa(db, pesquisaId, traducoes) {
-  if (!traducoes || typeof traducoes !== 'object') return;
   const upsert = db.prepare(`
     INSERT INTO pesquisa_traducao (pesquisa_id, idioma, titulo, descricao) VALUES (?,?,?,?)
     ON CONFLICT(pesquisa_id, idioma) DO UPDATE SET titulo=excluded.titulo, descricao=excluded.descricao
   `);
-  for (const [idioma, t] of Object.entries(traducoes)) {
-    if (!idioma || !t) continue;
-    upsert.run(pesquisaId, idioma, t.titulo || '', t.descricao || null);
+  for (const t of _normTraducoes(traducoes)) {
+    if (!t.idioma) continue;
+    upsert.run(pesquisaId, t.idioma, t.titulo || '', t.descricao || null);
   }
 }
 
 function _gravarTraducoesSecao(db, secaoId, traducoes) {
-  if (!traducoes) return;
   const upsert = db.prepare(`
     INSERT INTO pesquisa_secao_traducao (pesquisa_secao_id, idioma, titulo) VALUES (?,?,?)
     ON CONFLICT(pesquisa_secao_id, idioma) DO UPDATE SET titulo=excluded.titulo
   `);
-  for (const [idioma, t] of Object.entries(traducoes)) {
-    if (!idioma || !t) continue;
-    upsert.run(secaoId, idioma, typeof t === 'string' ? t : (t.titulo || ''));
+  for (const t of _normTraducoes(traducoes)) {
+    if (!t.idioma) continue;
+    upsert.run(secaoId, t.idioma, t._raw || t.titulo || '');
   }
 }
 
 function _gravarTraducoesPergunta(db, perguntaId, traducoes) {
-  if (!traducoes) return;
   const upsert = db.prepare(`
     INSERT INTO pergunta_traducao (pergunta_id, idioma, rotulo, ajuda) VALUES (?,?,?,?)
     ON CONFLICT(pergunta_id, idioma) DO UPDATE SET rotulo=excluded.rotulo, ajuda=excluded.ajuda
   `);
-  for (const [idioma, t] of Object.entries(traducoes)) {
-    if (!idioma || !t) continue;
-    if (typeof t === 'string') upsert.run(perguntaId, idioma, t, null);
-    else upsert.run(perguntaId, idioma, t.rotulo || '', t.ajuda || null);
+  for (const t of _normTraducoes(traducoes)) {
+    if (!t.idioma) continue;
+    upsert.run(perguntaId, t.idioma, t._raw || t.rotulo || '', t.ajuda || null);
   }
 }
 
