@@ -1791,58 +1791,69 @@
     }
 
     .cal-rooms-header {
-      display: grid; grid-template-columns: 72px 1fr 1fr 1fr;
+      display: grid; grid-template-columns: 52px repeat(4, 1fr);
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
       background: var(--surface);
+      min-width: 640px;
     }
 
     .cal-time-col-head {
-      padding: 1rem .75rem .8rem; border-right: 1px solid var(--border);
+      padding: .7rem .5rem .6rem; border-right: 1px solid var(--border);
       display: flex; align-items: flex-end; justify-content: flex-end;
     }
     .cal-time-col-head-lbl {
-      font-family: var(--mono); font-size: .57rem;
-      text-transform: uppercase; letter-spacing: .1em; color: var(--border);
+      font-family: var(--mono); font-size: .52rem;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--border);
     }
 
     .cal-room-col-head {
-      padding: .9rem 1.1rem .85rem; border-left: 1px solid var(--border-soft);
+      padding: .6rem .85rem .55rem; border-left: 1px solid var(--border-soft);
       position: relative; overflow: hidden;
     }
     .cal-room-col-head::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px;
     }
     .cal-room-col-head.s1::before { background: var(--sala-s1); }
     .cal-room-col-head.s2::before { background: var(--sala-s2); }
     .cal-room-col-head.s3::before { background: var(--sala-s3); }
     .cal-room-col-head.s4::before { background: var(--sala-s4); }
 
+    /* Sala 3 + 4: espaço físico compartilhado */
+    .cal-room-col-head.cal-room-shared { background: rgba(139,74,107,.025); }
+    .cal-room-col-head.cal-room-shared::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px; background: rgba(139,74,107,.15);
+    }
+
+    .cal-room-col-hd-inner {
+      display: flex; align-items: center; justify-content: space-between; gap: .3rem;
+    }
+
     .cal-room-col-name {
-      font-family: var(--serif); font-size: 1.05rem;
+      font-family: var(--serif); font-size: .95rem;
       font-weight: 400; letter-spacing: -.01em; line-height: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .cal-room-col-name.s1 { color: var(--sala-s1-text); }
     .cal-room-col-name.s2 { color: var(--sala-s2-text); }
     .cal-room-col-name.s3 { color: var(--sala-s3-text); }
     .cal-room-col-name.s4 { color: var(--sala-s4-text); }
 
-    .cal-room-col-sub { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+    .cal-room-col-badge {
+      font-family: var(--mono); font-size: .6rem; font-weight: 700;
+      padding: .1rem .38rem; border-radius: 99px; flex-shrink: 0;
+      line-height: 1.5;
+    }
+    .cal-room-col-badge.s1 { background: var(--sala-s1-dim); color: var(--sala-s1-text); }
+    .cal-room-col-badge.s2 { background: var(--sala-s2-dim); color: var(--sala-s2-text); }
+    .cal-room-col-badge.s3 { background: var(--sala-s3-dim); color: var(--sala-s3-text); }
+    .cal-room-col-badge.s4 { background: var(--sala-s4-dim); color: var(--sala-s4-text); }
 
-    .cal-room-occ { display: flex; align-items: center; gap: .5rem; margin-top: .4rem; }
-    .cal-room-occ-bar {
-      flex: 1; height: 3px; border-radius: 999px;
-      background: var(--border-soft); overflow: hidden; position: relative;
+    .cal-room-shared-lbl {
+      font-size: .58rem; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--muted); margin-top: .22rem; opacity: .75;
     }
-    .cal-room-occ-fill {
-      position: absolute; left: 0; top: 0; bottom: 0;
-      border-radius: 999px; transition: width .4s ease;
-    }
-    .cal-room-col-head.s1 .cal-room-occ-fill { background: var(--sala-s1); }
-    .cal-room-col-head.s2 .cal-room-occ-fill { background: var(--sala-s2); }
-    .cal-room-col-head.s3 .cal-room-occ-fill { background: var(--sala-s3); }
-    .cal-room-col-head.s4 .cal-room-occ-fill { background: var(--sala-s4); }
-    .cal-room-occ-lbl { font-family: var(--mono); font-size: .6rem; color: var(--muted); white-space: nowrap; }
 
     /* ── Scroll ── */
     .cal-scroll {
@@ -1856,7 +1867,7 @@
     .cal-scroll::-webkit-scrollbar-track { background: transparent; }
     .cal-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    .cal-grid { display: grid; grid-template-columns: 72px 1fr 1fr 1fr; position: relative; }
+    .cal-grid { display: grid; grid-template-columns: 52px repeat(4, 1fr); min-width: 640px; position: relative; }
 
     /* Current-time line — z-index abaixo do cabecalho sticky (10) para nao
        cobrir as informacoes das salas quando a linha rola ate o topo */

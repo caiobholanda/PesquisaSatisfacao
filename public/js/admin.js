@@ -1879,14 +1879,14 @@ function renderCalDia() {
     `<div class="cal-time-col-head"><span class="cal-time-col-head-lbl">hora</span></div>`+
     CAL_ROOMS.map(room=>{
       const occ=dayRes.filter(r=>r.sala===room.id).length;
-      const pct=Math.min(100, Math.round((occ/Math.max(1,Math.floor((CAL_H_END-CAL_H_START)*60/90)))*100));
-      return `<div class="cal-room-col-head ${room.cls}">
-        <div class="cal-room-col-name ${room.cls}">${room.nome}</div>
-        <div class="cal-room-col-sub">${room.tipo} · ${room.cap} pessoa${room.cap>1?'s':''}</div>
-        <div class="cal-room-occ">
-          <div class="cal-room-occ-bar"><div class="cal-room-occ-fill" style="width:${pct}%"></div></div>
-          <span class="cal-room-occ-lbl">${occ} reserva${occ!==1?'s':''}</span>
+      const isShared=(room.id===3||room.id===4);
+      return `<div class="cal-room-col-head ${room.cls}${isShared?' cal-room-shared':''}">
+        <div class="cal-room-col-hd-inner">
+          <div class="cal-room-col-name ${room.cls}">${room.nome}</div>
+          ${occ>0?`<span class="cal-room-col-badge ${room.cls}">${occ}</span>`:''}
         </div>
+        <div class="cal-room-col-sub">${room.tipo}</div>
+        ${isShared?`<div class="cal-room-shared-lbl">espaço compartilhado</div>`:''}
       </div>`;
     }).join('');
 
