@@ -76,14 +76,21 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 // Converte timestamp UTC (formato SQLite "YYYY-MM-DD HH:MM:SS") para BRT (UTC-3, Fortaleza CE).
-function fmtBRT(utcStr, { seconds = false } = {}) {
+// { br: true } retorna DD/MM/AAAA HH:MM; { seconds: true } inclui segundos (formato ISO).
+function fmtBRT(utcStr, { seconds = false, br = false } = {}) {
   if (!utcStr) return '—';
   const d = new Date(String(utcStr).replace(' ', 'T') + 'Z');
   if (isNaN(d)) return String(utcStr).slice(0, 16);
   const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000);
   const iso = brt.toISOString();
+  if (br) {
+    const [y, mo, day] = iso.slice(0, 10).split('-');
+    return `${day}/${mo}/${y} ${iso.slice(11, 16)}`;
+  }
   return seconds ? iso.slice(0, 19).replace('T', ' ') : iso.slice(0, 16).replace('T', ' ');
 }
+// Formata data pura YYYY-MM-DD (sem timezone) para DD/MM/AAAA.
+function fmtDataBR(d) { if (!d) return '—'; const p = String(d).slice(0,10).split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
 
 async function api(url, opts = {}) {
   try {
@@ -4115,11 +4122,11 @@ function renderClienteReservas(rs) {
     const ehGC = r.quarto_categoria === 'gran_class';
     const gcBadge = ehGC ? ' <span style="display:inline-flex;align-items:center;gap:.18rem;padding:.1rem .4rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-size:.67rem;font-weight:700;letter-spacing:.06em;vertical-align:middle">★ GC</span>' : '';
     return `<tr${ehGC ? ' style="background:rgba(212,166,74,.06)"' : ''}>
-      <td>${escHtml(r.data || '')}</td>
+      <td>${fmtDataBR(r.data)}</td>
       <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
       <td style="text-align:center">${r.sala}</td>
       <td>${r.quarto ? escHtml(r.quarto) : '—'}${gcBadge}</td>
-      <td>${r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'}</td>
+      <td>${escHtml(r.tratamento || (r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'))}</td>
       <td>${escHtml(r.cliente || '')}${r.cliente2 ? ' + ' + escHtml(r.cliente2) : ''}</td>
     </tr>`;
   }).join('')}</tbody></table></div>`;
@@ -4134,7 +4141,7 @@ function renderClienteAnamneses(as) {
     // Modal correto conforme fonte: spa_perfil → modal completo; resposta_pesquisa → modal de respostas estruturadas
     const act = ehResposta ? 'ver-pesquisa' : 'ver-anamnese';
     return `<tr>
-      <td>${escHtml(fmtBRT(a.criado_em).slice(0,10))}</td>
+      <td>${fmtBRT(a.criado_em, { br: true }).slice(0, 10)}</td>
       <td>${escHtml(a.idioma || '—')}</td>
       <td>${a.reserva_id ? '#' + a.reserva_id : '—'}</td>
       <td>${escHtml(a.email || '—')}</td>
@@ -4161,7 +4168,7 @@ function renderClientePesquisas(ps) {
       ? `data-act="ver-feedback" data-id="${p.feedback_id}"`
       : `data-act="ver-pesquisa" data-id="${p.id}"`;
     return `<tr>
-      <td>${escHtml(fmtBRT(p.submitted_at))}</td>
+      <td>${fmtBRT(p.submitted_at, { br: true })}</td>
       <td>${escHtml(_nomeAmigavelPesquisa(p.slug, p.pesquisa_titulo))}</td>
       <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
       <td><button class="btn btn-outline btn-sm" ${btnAttr}>Ver</button></td>
@@ -4181,7 +4188,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
   const a = dados;
-  const dt = fmtBRT(a.criado_em);
+  const dt = fmtBRT(a.criado_em, { br: true });
   const linhaCampo = (label, valor) => `
     <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
       <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem">${escHtml(label)}</div>
@@ -4271,48 +4278,124 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     resp = d.resposta; itens = d.itens || [];
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
+  const OPTS4 = ['ruim','regular','bom','otimo'];
+  const OPTS4_L = { ruim:'Ruim', regular:'Regular', bom:'Bom', otimo:'Ótimo' };
+  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#c9a86a' };
+  const OPTS4_T = { ruim:'#fff', regular:'#fff', bom:'#fff', otimo:'#1a1008' };
+
+  const r4 = sel => OPTS4.map(k => {
+    if (k === sel) return `<div class="srm-opt srm-on" style="background:${OPTS4_C[k]};color:${OPTS4_T[k]};border-color:${OPTS4_C[k]}">${OPTS4_L[k]}</div>`;
+    return `<div class="srm-opt">${OPTS4_L[k]}</div>`;
+  }).join('');
+
+  const ryn = sel => ['nao','sim'].map(k => {
+    const c = k === 'sim' ? '#2e7d56' : '#b83232', l = k === 'sim' ? 'Sim' : 'Não';
+    if (k === sel) return `<div class="srm-opt srm-on" style="background:${c};color:#fff;border-color:${c}">${l}</div>`;
+    return `<div class="srm-opt">${l}</div>`;
+  }).join('');
+
+  // Indexa por chave (primeira ocorrência = item principal)
+  const byKey = {};
+  for (const it of itens) { if (!byKey[it.pergunta_chave]) byKey[it.pergunta_chave] = it; }
+
+  const SERV = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica'];
+  const INST = ['instalacoes_conforto','instalacoes_organizacao','instalacoes_conveniencia'];
+  const KNOWN = new Set([...SERV,...INST,'recomenda','servicos_comentario','instalacoes_comentario','recomenda_qual','recomenda_porque']);
+
+  const item4 = k => {
+    const it = byKey[k]; if (!it) return '';
+    return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || k)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
+  };
+  const commentIt = k => {
+    const it = byKey[k]; if (!it || !it.valor_texto) return '';
+    return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || k)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
+  };
+  const extrasItens = itens.filter(it => !KNOWN.has(it.pergunta_chave));
+  const extrasHtml = extrasItens.map(it => {
+    if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
+    if (it.escala_opcao_chave) {
+      if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
+      if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
+      return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
+    }
+    return '';
+  }).join('');
+
+  const temServicos  = SERV.some(k => byKey[k]);
+  const temInst      = INST.some(k => byKey[k]);
+  const temRecomenda = byKey['recomenda'];
+
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.82);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
-      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+    <style>
+      .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
+      @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
+      .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
+      .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+      .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
+      .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
+      .srm-sec{display:flex;flex-direction:column;gap:1rem}
+      .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem;padding-bottom:.1rem}
+      .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
+      .srm-item{display:flex;flex-direction:column;gap:.5rem}
+      .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
+      .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
+      .srm-opts--yn{grid-template-columns:repeat(2,1fr);max-width:200px}
+      .srm-opt{display:flex;align-items:center;justify-content:center;padding:.45rem .3rem;border-radius:7px;border:1px solid #242424;font-size:.76rem;font-weight:600;letter-spacing:.03em;color:#3c3c3c;background:transparent;text-align:center;line-height:1.2;user-select:none}
+      .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
+      .srm-comment{display:flex;flex-direction:column;gap:.38rem}
+      .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+      .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
+      .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+    </style>
+    <div class="srm-wrap">
+      <div class="srm-head">
         <div>
-          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
+          <h2>Pesquisa respondida</h2>
+          <p>${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
         </div>
-        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
-      </header>
-      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
+        <button class="btn btn-outline btn-sm" data-act="close" style="flex-shrink:0">✕</button>
+      </div>
+      <div class="srm-body">
         ${itens.length === 0
           ? '<div style="padding:2rem;text-align:center;color:var(--muted)">Nenhuma resposta registrada.</div>'
-          : itens.map(it => {
-              let valor = '';
-              if (it.escala_opcao_chave) {
-                const cor = (it.valor_numerico >= 7) ? 'var(--success,#3a6b47)' : (it.valor_numerico >= 4 ? 'var(--gold-dark,#8a6b35)' : 'var(--danger,#9e3832)');
-                valor = `<span style="background:${cor}1A;color:${cor};border:1px solid ${cor}40;font-size:.82rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo || it.escala_opcao_chave)}</span>`;
-              } else if (it.valor_texto) {
-                valor = `<div style="background:var(--bg);border-left:3px solid var(--gold,#b8935a);padding:.5rem .8rem;font-style:italic;color:var(--text);font-size:.88rem;line-height:1.5">"${escHtml(it.valor_texto)}"</div>`;
-              } else if (it.valor_numerico != null) {
-                valor = `<strong>${escHtml(String(it.valor_numerico))}</strong>`;
-              } else {
-                valor = '<em style="color:var(--muted)">— sem resposta —</em>';
-              }
-              return `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)">
-                <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(it.pergunta_chave)}</div>
-                <div style="font-size:.92rem;color:var(--text);margin-bottom:.45rem;line-height:1.4">${escHtml(it.rotulo)}</div>
-                <div>${valor}</div>
-              </div>`;
-            }).join('')
-        }
+          : `
+          ${temServicos ? `<div class="srm-sec">
+            <div class="srm-sec-title">✦ Serviços</div>
+            ${item4('servicos_expectativa')}
+            ${item4('servicos_explicacao')}
+            ${item4('servicos_atitude')}
+            ${item4('servicos_tecnica')}
+            ${commentIt('servicos_comentario')}
+          </div>` : ''}
+          ${temInst ? `<div class="srm-sec">
+            <div class="srm-sec-title">✦ Instalações</div>
+            ${item4('instalacoes_conforto')}
+            ${item4('instalacoes_organizacao')}
+            ${item4('instalacoes_conveniencia')}
+            ${commentIt('instalacoes_comentario')}
+          </div>` : ''}
+          ${temRecomenda ? `<div class="srm-sec">
+            <div class="srm-sec-title">✦ Recomendação</div>
+            <div class="srm-item">
+              <div class="srm-q">${escHtml(byKey['recomenda'].rotulo || 'Recomendaria nossos serviços?')}</div>
+              <div class="srm-opts srm-opts--yn">${ryn(byKey['recomenda'].escala_opcao_chave)}</div>
+            </div>
+            ${commentIt('recomenda_qual')}
+            ${commentIt('recomenda_porque')}
+          </div>` : ''}
+          ${extrasHtml ? `<div class="srm-sec"><div class="srm-sec-title">✦ Outras perguntas</div>${extrasHtml}</div>` : ''}
+        `}
       </div>
-      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <div class="srm-foot">
         <button class="btn btn-outline" data-act="close">Fechar</button>
-      </footer>
+      </div>
     </div>
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close' || e.target === ov) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
@@ -4326,43 +4409,91 @@ async function _abrirModalFeedbackRaw(feedbackId) {
     fb = d.item;
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
-  const NOTAS = [
-    ['servicos_expectativa','Expectativa (serviços)'],['servicos_explicacao','Explicação'],
-    ['servicos_atitude','Atitude'],['servicos_tecnica','Técnica'],
-    ['instalacoes_conforto','Conforto (instalações)'],['instalacoes_organizacao','Organização'],
-    ['instalacoes_conveniencia','Conveniência'],
-  ];
-  const corNota = v => v==='otimo'?'var(--success,#3a6b47)':v==='bom'?'var(--gold-dark,#8a6b35)':'var(--danger,#9e3832)';
-  const badgeNota = v => v ? `<span style="background:${corNota(v)}1A;color:${corNota(v)};border:1px solid ${corNota(v)}40;font-size:.82rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(v)}</span>` : '<em style="color:var(--muted)">—</em>';
-  const linhaTexto = (label, val) => val ? `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div><div style="background:var(--bg);border-left:3px solid var(--gold,#b8935a);padding:.5rem .8rem;font-style:italic;font-size:.88rem">"${escHtml(val)}"</div></div>` : '';
+  const OPTS4 = ['ruim','regular','bom','otimo'];
+  const OPTS4_L = { ruim:'Ruim', regular:'Regular', bom:'Bom', otimo:'Ótimo' };
+  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#c9a86a' };
+  const OPTS4_T = { ruim:'#fff', regular:'#fff', bom:'#fff', otimo:'#1a1008' };
+
+  const r4 = sel => OPTS4.map(k => {
+    if (k === sel) return `<div class="srm-opt srm-on" style="background:${OPTS4_C[k]};color:${OPTS4_T[k]};border-color:${OPTS4_C[k]}">${OPTS4_L[k]}</div>`;
+    return `<div class="srm-opt">${OPTS4_L[k]}</div>`;
+  }).join('');
+
+  const ryn = sel => ['nao','sim'].map(k => {
+    const c = k === 'sim' ? '#2e7d56' : '#b83232', l = k === 'sim' ? 'Sim' : 'Não';
+    if (k === sel) return `<div class="srm-opt srm-on" style="background:${c};color:#fff;border-color:${c}">${l}</div>`;
+    return `<div class="srm-opt">${l}</div>`;
+  }).join('');
+
+  const item4 = (q, k) => `<div class="srm-item"><div class="srm-q">${escHtml(q)}</div><div class="srm-opts">${r4(fb[k])}</div></div>`;
+  const comment = (lbl, val) => val ? `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(lbl)}</div><div class="srm-comment-txt">${escHtml(val)}</div></div>` : '';
 
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.82);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
-      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+    <style>
+      .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
+      @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
+      .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
+      .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+      .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
+      .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
+      .srm-sec{display:flex;flex-direction:column;gap:1rem}
+      .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem;padding-bottom:.1rem}
+      .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
+      .srm-item{display:flex;flex-direction:column;gap:.5rem}
+      .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
+      .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
+      .srm-opts--yn{grid-template-columns:repeat(2,1fr);max-width:200px}
+      .srm-opt{display:flex;align-items:center;justify-content:center;padding:.45rem .3rem;border-radius:7px;border:1px solid #242424;font-size:.76rem;font-weight:600;letter-spacing:.03em;color:#3c3c3c;background:transparent;text-align:center;line-height:1.2;user-select:none}
+      .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
+      .srm-comment{display:flex;flex-direction:column;gap:.38rem}
+      .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+      .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
+      .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+    </style>
+    <div class="srm-wrap">
+      <div class="srm-head">
         <div>
-          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">Pesquisa de Satisfação · ${escHtml(fmtBRT(fb.submitted_at))}${fb.reserva_id ? ' · reserva #'+fb.reserva_id : ''}</p>
+          <h2>Pesquisa respondida</h2>
+          <p>Pesquisa de Satisfação · ${escHtml(fmtBRT(fb.submitted_at, { br: true }))}${fb.reserva_id ? ' · reserva #' + fb.reserva_id : ''}</p>
         </div>
-        <button class="btn btn-outline btn-sm" data-act="close">✕</button>
-      </header>
-      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
-        ${NOTAS.map(([k,l]) => `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(l)}</div><div>${badgeNota(fb[k])}</div></div>`).join('')}
-        ${linhaTexto('Comentário — serviços', fb.servicos_comentario)}
-        ${linhaTexto('Comentário — instalações', fb.instalacoes_comentario)}
-        ${fb.recomenda ? `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">Recomendaria</div><div>${badgeNota(fb.recomenda)}</div></div>` : ''}
-        ${linhaTexto('Por que recomendaria', fb.recomenda_qual)}
-        ${linhaTexto('Por que não recomendaria', fb.recomenda_porque)}
+        <button class="btn btn-outline btn-sm" data-act="close" style="flex-shrink:0">✕</button>
       </div>
-      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <div class="srm-body">
+        <div class="srm-sec">
+          <div class="srm-sec-title">✦ Serviços</div>
+          ${item4('Expectativa do tratamento', 'servicos_expectativa')}
+          ${item4('Explicação da massoterapeuta sobre benefícios e procedimentos', 'servicos_explicacao')}
+          ${item4('Atitude e qualidade dos serviços da massoterapeuta', 'servicos_atitude')}
+          ${item4('Técnica e habilidade da massoterapeuta', 'servicos_tecnica')}
+          ${comment('Comentário — serviços', fb.servicos_comentario)}
+        </div>
+        <div class="srm-sec">
+          <div class="srm-sec-title">✦ Instalações</div>
+          ${item4('Conforto e conservação da estrutura', 'instalacoes_conforto')}
+          ${item4('Organização da sala, equipamentos e atmosfera', 'instalacoes_organizacao')}
+          ${item4('Itens de conveniência (roupões, toalhas, etc.)', 'instalacoes_conveniencia')}
+          ${comment('Comentário — instalações', fb.instalacoes_comentario)}
+        </div>
+        ${fb.recomenda ? `<div class="srm-sec">
+          <div class="srm-sec-title">✦ Recomendação</div>
+          <div class="srm-item">
+            <div class="srm-q">Recomendaria nossos serviços?</div>
+            <div class="srm-opts srm-opts--yn">${ryn(fb.recomenda)}</div>
+          </div>
+          ${comment('Por que recomendaria', fb.recomenda_qual)}
+          ${comment('Por que não recomendaria', fb.recomenda_porque)}
+        </div>` : ''}
+      </div>
+      <div class="srm-foot">
         <button class="btn btn-outline" data-act="close">Fechar</button>
-      </footer>
+      </div>
     </div>
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close' || e.target === ov) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
