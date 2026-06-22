@@ -10,6 +10,23 @@ function san(v) {
   if (v === null || v === undefined) return '';
   return String(v).trim().slice(0, 1000);
 }
+// Sanitizador especifico para data URLs de imagem (assinatura).
+// NAO aplica o limite de 1000 chars de san() — uma assinatura PNG em base64
+// tem facilmente 10-100 KB. Valida que o valor comeca com data:image e
+// aceita ate 500 KB (bem acima de qualquer assinatura real).
+function sanDataUrl(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (!s.startsWith('data:image')) return null;
+  const b64 = s.split(',')[1] || '';
+  if (b64.length % 4 !== 0) {
+    console.warn('[spa/perfil] assinatura_data_url base64 com padding invalido (len=' + b64.length + ')');
+  }
+  if (b64.length < 200) {
+    console.warn('[spa/perfil] assinatura_data_url suspeita: base64 muito curta (' + b64.length + ' chars) — possivel canvas em branco');
+  }
+  return s.slice(0, 500_000);
+}
 
 // GET /api/spa/documento?t=TOKEN
 router.get('/documento', (req, res) => {
@@ -165,7 +182,7 @@ router.post('/perfil', (req, res) => {
       consentimento_saude:    !!b.consentimento_saude,
       consentimento_marketing:!!b.consentimento_marketing,
       canais_marketing:       b.canais_marketing ? JSON.stringify(b.canais_marketing) : null,
-      assinatura_data_url:    san(b.assinatura_data_url).slice(0, 200000) || null,
+      assinatura_data_url:    sanDataUrl(b.assinatura_data_url),
       idioma:                 locale,
       reserva_id,
     });
