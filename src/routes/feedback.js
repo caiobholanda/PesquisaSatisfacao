@@ -79,11 +79,13 @@ router.post('/', rateLimit, (req, res) => {
   // BUG-U fix: usa o token especifico do hospede (vindo do body) ao inves
   // do ultimo liberado nos ultimos 15min — preserva a separacao por pessoa
   // em reservas casal (cada um marca SEU token, nao o do parceiro).
-  try { marcarSurveyTokenRespondido(b.survey_token || null); } catch {}
+  // marcarSurveyTokenRespondido agora retorna reserva_id — usado como fallback
+  // quando b.survey_token está ausente (guest acessou URL direta sem token).
+  let _markedReservaId = null;
+  try { _markedReservaId = marcarSurveyTokenRespondido(b.survey_token || null); } catch {}
 
-  // BUG-CLI360: resolve cliente_id/reserva_id a partir do survey_token (fonte
-  // autoritaria) — frontend publico nao manda esses ids no body. Sem isso,
-  // Clientes 360 nao consegue vincular a pesquisa ao cliente.
+  // Resolve cliente_id/reserva_id: token explícito tem prioridade; se ausente,
+  // usa reserva_id retornado pelo fallback de marcarSurveyTokenRespondido.
   let _resolvedClienteId = null, _resolvedReservaId = null;
   if (b.survey_token) {
     try {
@@ -92,6 +94,14 @@ router.post('/', rateLimit, (req, res) => {
         _resolvedReservaId = tokRow.reserva_id || null;
         _resolvedClienteId = tokRow.cliente_id || null;
       }
+    } catch {}
+  }
+  if (!_resolvedReservaId && _markedReservaId) {
+    _resolvedReservaId = _markedReservaId;
+    // Tenta resolver cliente_id a partir da reserva
+    try {
+      const resRow = getDb().prepare('SELECT cliente_id FROM reservas WHERE id=?').get(_markedReservaId);
+      if (resRow?.cliente_id) _resolvedClienteId = resRow.cliente_id;
     } catch {}
   }
   // Tambem persiste cliente_id/reserva_id na tabela feedback (colunas ja
