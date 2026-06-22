@@ -4089,7 +4089,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
   document.getElementById('btn-prod-add')?.addEventListener('click', () => adicionarProduto(c.id));
   det.querySelectorAll('button[data-prod-del]').forEach(b =>
     b.addEventListener('click', async () => {
-      if (!confirm('Remover este produto?')) return;
+      if (!await _confirmar('Remover este produto?')) return;
       await apiSend('DELETE', '/api/clientes/produtos/' + b.dataset.prodDel);
       selectCliente(c.id);
     })
@@ -4350,17 +4350,95 @@ async function editarCliente(c) {
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
 }
 
-async function adicionarProduto(cliId) {
-  const produto_nome = prompt('Nome do produto:');
-  if (!produto_nome) return;
-  const categoria = prompt('Categoria (opcional):') || '';
-  const valorRaw = prompt('Valor R$ (opcional):') || '';
-  const valor = valorRaw ? parseFloat(valorRaw.replace(',', '.')) : null;
-  const data_compra = prompt('Data da compra (YYYY-MM-DD, opcional):') || '';
-  try {
-    await apiSend('POST', `/api/clientes/${cliId}/produtos`, { produto_nome, categoria, valor, data_compra });
-    showToast('Produto lançado'); selectCliente(cliId);
-  } catch (e) { showToast('Erro: ' + e.message, 5000); }
+// ── Modal de produto (lançar) ─────────────────────────────────────────────
+function _abrirModalProduto(cliId) {
+  const ov  = document.getElementById('prod-modal-overlay');
+  const err = document.getElementById('prod-modal-err');
+  if (!ov) return;
+  // Limpa
+  ['prod-inp-nome','prod-inp-categoria','prod-inp-valor','prod-inp-data'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  if (err) err.textContent = '';
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('prod-inp-nome')?.focus(), 50);
+
+  const close = () => { ov.style.display = 'none'; };
+
+  const saveHandler = async () => {
+    const produto_nome = (document.getElementById('prod-inp-nome')?.value || '').trim();
+    if (!produto_nome) { if (err) err.textContent = 'Informe o nome do produto.'; return; }
+    const categoria   = (document.getElementById('prod-inp-categoria')?.value || '').trim() || null;
+    const valorRaw    = (document.getElementById('prod-inp-valor')?.value || '').trim();
+    const valor       = valorRaw ? parseFloat(valorRaw.replace(',', '.')) : null;
+    const data_compra = (document.getElementById('prod-inp-data')?.value || '').trim() || null;
+    if (valorRaw && isNaN(valor)) { if (err) err.textContent = 'Valor inválido.'; return; }
+    const btn = document.getElementById('prod-modal-save');
+    if (btn) btn.disabled = true;
+    try {
+      await apiSend('POST', `/api/clientes/${cliId}/produtos`, { produto_nome, categoria, valor, data_compra });
+      close(); showToast('Produto lançado'); selectCliente(cliId);
+    } catch (e) {
+      if (err) err.textContent = 'Erro: ' + (e.message || 'tente novamente');
+    } finally { if (btn) btn.disabled = false; }
+  };
+
+  // Remove listeners antigos (troca o nó pelo clone)
+  const xBtn     = document.getElementById('prod-modal-x');
+  const cancelBtn = document.getElementById('prod-modal-cancel');
+  const saveBtn   = document.getElementById('prod-modal-save');
+  const replaceBtn = (el, handler) => {
+    if (!el) return;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    clone.addEventListener('click', handler);
+  };
+  replaceBtn(xBtn,     close);
+  replaceBtn(cancelBtn, close);
+  replaceBtn(saveBtn,   saveHandler);
+
+  // Fechar com Escape
+  const onKey = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); } };
+  document.addEventListener('keydown', onKey);
+  // Fechar ao clicar fora
+  ov.onclick = (e) => { if (e.target === ov) close(); };
+}
+
+function adicionarProduto(cliId) {
+  _abrirModalProduto(cliId);
+}
+
+// ── Modal de confirmação genérica ─────────────────────────────────────────
+function _confirmar(msg) {
+  return new Promise(resolve => {
+    const ov  = document.getElementById('confirm-modal-overlay');
+    const txt = document.getElementById('confirm-modal-msg');
+    if (!ov) { resolve(window.confirm(msg)); return; }
+    if (txt) txt.textContent = msg;
+    ov.style.display = 'flex';
+
+    const done = (result) => {
+      ov.style.display = 'none';
+      document.removeEventListener('keydown', onKey);
+      ov.onclick = null;
+      resolve(result);
+    };
+
+    const replaceBtn = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const clone = el.cloneNode(true);
+      el.parentNode.replaceChild(clone, el);
+      clone.addEventListener('click', () => done(val));
+    };
+    replaceBtn('confirm-modal-x',      false);
+    replaceBtn('confirm-modal-cancel', false);
+    replaceBtn('confirm-modal-ok',     true);
+
+    const onKey = (e) => { if (e.key === 'Escape') done(false); };
+    document.addEventListener('keydown', onKey);
+    ov.onclick = (e) => { if (e.target === ov) done(false); };
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────────────
