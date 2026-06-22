@@ -1551,19 +1551,31 @@ export function buscarCliente360(id) {
   const anamRespostasFiltrado = anamRespostas.filter(a => !a.reserva_id || !_reservasComPerfil.has(a.reserva_id));
   const anamneses = [...anamPerfis, ...anamRespostasFiltrado]
     .sort((a, b) => (b.criado_em || '').localeCompare(a.criado_em || ''));
-  // Pesquisas de SATISFAÇÃO respondidas — exclui slugs de anamnese
-  // (anamnese tem sua propria aba via spa_perfis). Tambem inclui titulo
-  // amigavel pra nao expor slug tecnico no front.
-  const pesquisas = db.prepare(`
+  // Pesquisas de SATISFAÇÃO respondidas (fonte 1: resposta_pesquisa estruturada).
+  const _cpf360 = cliente.cpf || '';
+  const pesquisasRp = db.prepare(`
     SELECT rp.id, rp.pesquisa_id, p.slug, p.titulo AS pesquisa_titulo,
-           rp.app_origem, rp.submitted_at, rp.reserva_id, rp.feedback_id
+           rp.app_origem, rp.submitted_at, rp.reserva_id, rp.feedback_id, 'rp' AS fonte
     FROM resposta_pesquisa rp
     LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
     WHERE (rp.cliente_id=?
        OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
       AND (p.slug IS NULL OR p.slug NOT LIKE 'spa-anamnese%')
     ORDER BY rp.submitted_at DESC
-  `).all(id, id, cliente.cpf || '');
+  `).all(id, id, _cpf360);
+  // Fonte 2: feedback (sempre gravado). Captura surveys cujo resposta_pesquisa
+  // ficou sem cliente_id/reserva_id (token ausente, reserva sem CPF no momento).
+  // Exclui registros já cobertos pela fonte 1 (dedup por feedback_id).
+  const _rpFbIds = new Set(pesquisasRp.map(r => r.feedback_id).filter(Boolean));
+  const feedbackExtra = db.prepare(`
+    SELECT NULL AS id, NULL AS pesquisa_id, NULL AS slug, 'Pesquisa de Satisfação' AS pesquisa_titulo,
+           'spa' AS app_origem, f.submitted_at, f.reserva_id, f.id AS feedback_id, 'fb' AS fonte
+    FROM feedback f
+    WHERE (f.cliente_id=?
+       OR f.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
+  `).all(id, id, _cpf360).filter(f => !_rpFbIds.has(f.id));
+  const pesquisas = [...pesquisasRp, ...feedbackExtra]
+    .sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || ''));
   // Produtos
   const produtos = db.prepare(`
     SELECT id, produto_nome, categoria, valor, data_compra, reserva_id, observacao, criado_em

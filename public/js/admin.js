@@ -4084,6 +4084,9 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
   det.querySelectorAll('button[data-act="ver-pesquisa"]').forEach(b =>
     b.addEventListener('click', () => _abrirModalPesquisaRespondida(parseInt(b.dataset.id)))
   );
+  det.querySelectorAll('button[data-act="ver-feedback"]').forEach(b =>
+    b.addEventListener('click', () => _abrirModalFeedbackRaw(parseInt(b.dataset.id)))
+  );
   // Wire up botões dos produtos
   document.getElementById('btn-prod-add')?.addEventListener('click', () => adicionarProduto(c.id));
   det.querySelectorAll('button[data-prod-del]').forEach(b =>
@@ -4143,14 +4146,18 @@ function renderClientePesquisas(ps) {
   return `<div style="color:var(--muted);font-size:.78rem;margin-bottom:.5rem">Cada pesquisa respondida ao final de um tratamento. Clique "Ver" para conferir as notas e comentários.</div>
   <div class="table-wrap"><table style="font-size:.88rem"><thead>
     <tr><th>Data</th><th>Pesquisa</th><th>Reserva</th><th></th></tr>
-  </thead><tbody>${ps.map(p => `
-    <tr>
+  </thead><tbody>${ps.map(p => {
+    const isFb = p.fonte === 'fb';
+    const btnAttr = isFb
+      ? `data-act="ver-feedback" data-id="${p.feedback_id}"`
+      : `data-act="ver-pesquisa" data-id="${p.id}"`;
+    return `<tr>
       <td>${escHtml((p.submitted_at || '').slice(0,16))}</td>
       <td>${escHtml(_nomeAmigavelPesquisa(p.slug, p.pesquisa_titulo))}</td>
       <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
-      <td><button class="btn btn-outline btn-sm" data-act="ver-pesquisa" data-id="${p.id}">Ver</button></td>
-    </tr>
-  `).join('')}</tbody></table></div>`;
+      <td><button class="btn btn-outline btn-sm" ${btnAttr}>Ver</button></td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 
 // Modal de visualizacao completa de uma anamnese preenchida (spa_perfil)
@@ -4288,6 +4295,56 @@ async function _abrirModalPesquisaRespondida(respostaId) {
               </div>`;
             }).join('')
         }
+      </div>
+      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="close">Fechar</button>
+      </footer>
+    </div>
+  `;
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+}
+async function _abrirModalFeedbackRaw(feedbackId) {
+  let fb = null;
+  try {
+    const r = await api('/api/feedback/item/' + feedbackId);
+    if (!r) return;
+    const d = await r.json();
+    if (!d.ok) { showToast('Erro ao carregar pesquisa: ' + (d.error || ''), 5000); return; }
+    fb = d.item;
+  } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
+
+  const NOTAS = [
+    ['servicos_expectativa','Expectativa (serviços)'],['servicos_explicacao','Explicação'],
+    ['servicos_atitude','Atitude'],['servicos_tecnica','Técnica'],
+    ['instalacoes_conforto','Conforto (instalações)'],['instalacoes_organizacao','Organização'],
+    ['instalacoes_conveniencia','Conveniência'],
+  ];
+  const corNota = v => v==='otimo'?'var(--success,#3a6b47)':v==='bom'?'var(--gold-dark,#8a6b35)':'var(--danger,#9e3832)';
+  const badgeNota = v => v ? `<span style="background:${corNota(v)}1A;color:${corNota(v)};border:1px solid ${corNota(v)}40;font-size:.82rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(v)}</span>` : '<em style="color:var(--muted)">—</em>';
+  const linhaTexto = (label, val) => val ? `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div><div style="background:var(--bg);border-left:3px solid var(--gold,#b8935a);padding:.5rem .8rem;font-style:italic;font-size:.88rem">"${escHtml(val)}"</div></div>` : '';
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+        <div>
+          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">Pesquisa de Satisfação · ${escHtml((fb.submitted_at||'').slice(0,16))}${fb.reserva_id ? ' · reserva #'+fb.reserva_id : ''}</p>
+        </div>
+        <button class="btn btn-outline btn-sm" data-act="close">✕</button>
+      </header>
+      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
+        ${NOTAS.map(([k,l]) => `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(l)}</div><div>${badgeNota(fb[k])}</div></div>`).join('')}
+        ${linhaTexto('Comentário — serviços', fb.servicos_comentario)}
+        ${linhaTexto('Comentário — instalações', fb.instalacoes_comentario)}
+        ${fb.recomenda ? `<div style="padding:.7rem 0;border-bottom:1px solid var(--border-lt,#eee)"><div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em">Recomendaria</div><div>${badgeNota(fb.recomenda)}</div></div>` : ''}
+        ${linhaTexto('Por que recomendaria', fb.recomenda_qual)}
+        ${linhaTexto('Por que não recomendaria', fb.recomenda_porque)}
       </div>
       <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
         <button class="btn btn-outline" data-act="close">Fechar</button>
