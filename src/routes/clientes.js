@@ -72,6 +72,12 @@ router.get('/anamnese/:perfilId', (req, res) => {
     'produto_especifico','pressao_massagem','info_medica',
     'consentimento_saude','consentimento_marketing','canais_marketing',
     'assinatura_digital','assinatura',
+    // versoes prefixadas gravadas por spa.js via inserirRespostaPesquisa
+    'anamnese_nome','anamnese_sobrenome','anamnese_tipo_documento','anamnese_documento',
+    'anamnese_email','anamnese_telefone','anamnese_data_nascimento','anamnese_quarto',
+    'anamnese_rotina_facial','anamnese_rotina_corporal','anamnese_produto_especifico',
+    'anamnese_pressao_massagem','anamnese_info_medica','anamnese_consentimento_saude',
+    'anamnese_consentimento_marketing','anamnese_canais_marketing','anamnese_assinatura',
   ]);
   let extras = [];
   if (perfil.reserva_id) {
