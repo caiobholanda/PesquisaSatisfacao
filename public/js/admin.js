@@ -4267,6 +4267,8 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${extras.length ? `
         ${secaoTitulo('8. Perguntas adicionais')}
         ${extras.map(it => {
+          // Prioridade: rotulos resolvidos pelo backend (Sim, Ombros, etc)
+          if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return linhaLista(it.rotulo, it.valor_texto_rotulos);
           if (it.escala_opcao_rotulo) return linhaCampo(it.rotulo, it.escala_opcao_rotulo);
           if (it.valor_texto) {
             try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return linhaLista(it.rotulo, arr); } catch {}
@@ -4452,12 +4454,15 @@ async function _abrirModalPesquisaRespondida(respostaId) {
       <div class="srm-sec"><div class="srm-sec-title">✦ Assinatura</div><div style="padding:.35rem 0">${sigHtml}</div></div>
       ${anamExtras.length ? `<div class="srm-sec"><div class="srm-sec-title">✦ Perguntas adicionais</div><div class="an-grid">
         ${anamExtras.map(it => {
-          if (it.escala_opcao_rotulo) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val">${escHtml(it.escala_opcao_rotulo)}</div></div>`;
+          const lbl = it.rotulo || it.pergunta_chave;
+          // Prioridade: rotulos resolvidos pelo backend (Sim, Ombros, etc)
+          if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(it.valor_texto_rotulos)}</div></div>`;
+          if (it.escala_opcao_rotulo) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(it.escala_opcao_rotulo)}</div></div>`;
           if (it.valor_texto) {
-            try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val an-tags">${tagsHtml(arr)}</div></div>`; } catch {}
-            return txtRow(it.rotulo || it.pergunta_chave, it.valor_texto);
+            try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(arr)}</div></div>`; } catch {}
+            return txtRow(lbl, it.valor_texto);
           }
-          if (it.escala_opcao_chave) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val">${escHtml(it.escala_opcao_chave)}</div></div>`;
+          if (it.escala_opcao_chave) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(it.escala_opcao_chave)}</div></div>`;
           return '';
         }).join('')}
       </div></div>` : ''}
@@ -4482,11 +4487,17 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     };
     const extrasItens = itens.filter(it => !KNOWN.has(it.pergunta_chave));
     const extrasHtml  = extrasItens.map(it => {
-      if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
+      const lbl = it.rotulo || it.pergunta_chave;
+      // multipla: usa rotulos resolvidos pelo backend
+      if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) {
+        const tags = it.valor_texto_rotulos.map(x => `<span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600;margin-right:.3rem">${escHtml(x)}</span>`).join('');
+        return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div style="display:flex;flex-wrap:wrap;gap:.3rem">${tags}</div></div>`;
+      }
+      if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(lbl)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
       if (it.escala_opcao_chave) {
-        if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
-        if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
-        return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
+        if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
+        if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
+        return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
       }
       return '';
     }).join('');

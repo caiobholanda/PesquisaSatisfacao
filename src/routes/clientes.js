@@ -12,6 +12,72 @@ const router = Router();
 // Tudo aqui exige sessão admin (master/spa/admin lê; admin não escreve).
 router.use(requireAuth, requireSpa);
 
+// Resolve o rotulo humanizado de uma opcao (slug -> "Sim"/"Ombros"/etc).
+// Tenta escala_opcao primeiro (escalas globais como sim_nao, 4pt_qualitativa),
+// cai para pergunta_opcao (opcoes locais criadas pelo admin no editor).
+// Retorna null se nada for encontrado — caller decide o fallback.
+function _resolverRotuloOpcao(db, perguntaChave, opcaoChave, idioma = 'pt-BR') {
+  if (!opcaoChave) return null;
+  // 1) Escala global
+  const esc = db.prepare(`
+    SELECT eot.rotulo FROM escala_opcao eo
+    JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma=?
+    WHERE eo.chave=? ORDER BY eo.escala_id LIMIT 1
+  `).get(idioma, opcaoChave);
+  if (esc?.rotulo) return esc.rotulo;
+  // 2) Opcao local da pergunta (criada via editor)
+  if (perguntaChave) {
+    const loc = db.prepare(`
+      SELECT pot.rotulo FROM pergunta_opcao po
+      JOIN pergunta_satisfacao p ON p.id = po.pergunta_id
+      LEFT JOIN pergunta_opcao_traducao pot ON pot.pergunta_opcao_id = po.id AND pot.idioma=?
+      WHERE p.chave=? AND po.chave=? LIMIT 1
+    `).get(idioma, perguntaChave, opcaoChave);
+    if (loc?.rotulo) return loc.rotulo;
+    // Fallback pt-BR se idioma alvo nao tem traducao
+    if (idioma !== 'pt-BR') {
+      const locPt = db.prepare(`
+        SELECT pot.rotulo FROM pergunta_opcao po
+        JOIN pergunta_satisfacao p ON p.id = po.pergunta_id
+        LEFT JOIN pergunta_opcao_traducao pot ON pot.pergunta_opcao_id = po.id AND pot.idioma='pt-BR'
+        WHERE p.chave=? AND po.chave=? LIMIT 1
+      `).get(perguntaChave, opcaoChave);
+      if (locPt?.rotulo) return locPt.rotulo;
+    }
+  }
+  return null;
+}
+
+// Enriquece um item de resposta_item com:
+//  - rotulo:               rotulo da pergunta (pt-BR)
+//  - escala_opcao_rotulo:  rotulo da opcao escolhida (Sim/Não/Ombros/...)
+//  - valor_texto_rotulos:  se valor_texto for JSON array de slugs (multipla),
+//                          array de rotulos correspondentes
+function _enriquecerItemResposta(db, it, idioma = 'pt-BR') {
+  // rotulo da pergunta
+  const trad = db.prepare(`
+    SELECT rotulo FROM pergunta_traducao pt
+    JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
+    WHERE p.chave=? AND pt.idioma=?
+  `).get(it.pergunta_chave, idioma);
+  it.rotulo = trad?.rotulo || it.pergunta_chave;
+  // single-choice: rotulo da opcao
+  if (it.escala_opcao_chave) {
+    const r = _resolverRotuloOpcao(db, it.pergunta_chave, it.escala_opcao_chave, idioma);
+    it.escala_opcao_rotulo = r || it.escala_opcao_chave;
+  }
+  // multipla: valor_texto eh JSON array de slugs -> array de rotulos
+  if (it.valor_texto && typeof it.valor_texto === 'string' && it.valor_texto.startsWith('[')) {
+    try {
+      const arr = JSON.parse(it.valor_texto);
+      if (Array.isArray(arr) && arr.length && arr.every(x => typeof x === 'string')) {
+        it.valor_texto_rotulos = arr.map(slug => _resolverRotuloOpcao(db, it.pergunta_chave, slug, idioma) || slug);
+      }
+    } catch {}
+  }
+  return it;
+}
+
 // GET /api/clientes?q=...
 router.get('/', (req, res) => {
   const q = (req.query.q || '').toString().trim();
@@ -39,6 +105,11 @@ router.get('/buscar', (req, res) => {
 
 // GET /api/clientes/:id (cliente 360)
 router.get('/:id', (req, res) => {
+  // CACHE FIX: anamneses, reservas e pesquisas mudam frequentemente.
+  // Sem isso, browsers cacheam e admin precisa F5 pra ver dados novos.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const data = buscarCliente360(parseInt(req.params.id));
   if (!data) return res.status(404).json({ ok: false, error: 'Cliente nao encontrado' });
   res.json({ ok: true, ...data });
@@ -49,6 +120,7 @@ router.get('/:id', (req, res) => {
 // preenchidos para visualizacao admin (info_medica, rotinas, consentimentos,
 // assinatura). Usado no modal "Ver anamnese preenchida" no Cliente 360.
 router.get('/anamnese/:perfilId', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   const id = parseInt(req.params.perfilId);
   if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
   const db = getDb();
@@ -94,20 +166,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
         ).all(rp.id);
         for (const it of itens) {
           if (LEGACY_ANAM.has(it.pergunta_chave)) continue;
-          const trad = db.prepare(`
-            SELECT rotulo FROM pergunta_traducao pt
-            JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
-            WHERE p.chave=? AND pt.idioma='pt-BR'
-          `).get(it.pergunta_chave);
-          it.rotulo = trad?.rotulo || it.pergunta_chave;
-          if (it.escala_opcao_chave) {
-            const opt = db.prepare(`
-              SELECT eot.rotulo FROM escala_opcao eo
-              JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma='pt-BR'
-              WHERE eo.chave=? ORDER BY eo.escala_id LIMIT 1
-            `).get(it.escala_opcao_chave);
-            it.escala_opcao_rotulo = opt?.rotulo || it.escala_opcao_chave;
-          }
+          _enriquecerItemResposta(db, it, 'pt-BR');
           extras.push(it);
         }
       }
@@ -133,6 +192,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
 // com pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave).
 // Usado no modal "Ver respostas da pesquisa" no Cliente 360.
 router.get('/pesquisa/:respostaId', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   const id = parseInt(req.params.respostaId);
   if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
   const db = getDb();
@@ -149,24 +209,9 @@ router.get('/pesquisa/:respostaId', (req, res) => {
     SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave
     FROM resposta_item WHERE resposta_pesquisa_id = ?
   `).all(id);
-  // Enriquece com rotulo pt-BR da pergunta
-  for (const it of itens) {
-    const trad = db.prepare(`
-      SELECT rotulo FROM pergunta_traducao pt
-      JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
-      WHERE p.chave = ? AND pt.idioma = 'pt-BR'
-    `).get(it.pergunta_chave);
-    it.rotulo = trad?.rotulo || it.pergunta_chave;
-    if (it.escala_opcao_chave) {
-      const opt = db.prepare(`
-        SELECT eot.rotulo FROM escala_opcao eo
-        JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma = 'pt-BR'
-        WHERE eo.chave = ?
-        ORDER BY eo.escala_id LIMIT 1
-      `).get(it.escala_opcao_chave);
-      it.escala_opcao_rotulo = opt?.rotulo || it.escala_opcao_chave;
-    }
-  }
+  // Enriquece com rotulo pt-BR da pergunta + rotulos das opcoes (incluindo
+  // arrays de multipla escolha em valor_texto).
+  for (const it of itens) _enriquecerItemResposta(db, it, 'pt-BR');
   res.json({ ok: true, resposta, itens });
 });
 
