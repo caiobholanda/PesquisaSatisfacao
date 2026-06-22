@@ -368,7 +368,9 @@ async function handleSubmit(e) {
   if (errs.length > 0) {
     const genErr = document.getElementById('generic-error');
     if (genErr) { genErr.textContent = _locale.errors.generic; genErr.style.display = ''; }
-    const firstErrEl = document.querySelector('.spa-error-msg[style=""]');
+    // Scroll para o primeiro erro: spa-error-msg ou extra com outline vermelho.
+    const firstErrEl = document.querySelector('.spa-error-msg[style=""]')
+      || document.querySelector('[data-extra][style*="outline"]');
     if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }

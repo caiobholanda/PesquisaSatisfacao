@@ -53,6 +53,8 @@ function _resolverRotuloOpcao(db, perguntaChave, opcaoChave, idioma = 'pt-BR') {
 //  - escala_opcao_rotulo:  rotulo da opcao escolhida (Sim/Não/Ombros/...)
 //  - valor_texto_rotulos:  se valor_texto for JSON array de slugs (multipla),
 //                          array de rotulos correspondentes
+//  - valor_texto_rotulo:   se valor_texto for slug scalar de uma opcao (registros
+//                          antigos sem escala_opcao_chave), rotulo correspondente
 function _enriquecerItemResposta(db, it, idioma = 'pt-BR') {
   // rotulo da pergunta
   const trad = db.prepare(`
@@ -66,14 +68,23 @@ function _enriquecerItemResposta(db, it, idioma = 'pt-BR') {
     const r = _resolverRotuloOpcao(db, it.pergunta_chave, it.escala_opcao_chave, idioma);
     it.escala_opcao_rotulo = r || it.escala_opcao_chave;
   }
-  // multipla: valor_texto eh JSON array de slugs -> array de rotulos
-  if (it.valor_texto && typeof it.valor_texto === 'string' && it.valor_texto.startsWith('[')) {
-    try {
-      const arr = JSON.parse(it.valor_texto);
-      if (Array.isArray(arr) && arr.length && arr.every(x => typeof x === 'string')) {
-        it.valor_texto_rotulos = arr.map(slug => _resolverRotuloOpcao(db, it.pergunta_chave, slug, idioma) || slug);
-      }
-    } catch {}
+  // valor_texto scalar pode ser tanto texto livre quanto slug de opcao
+  // (registros antigos antes do escala_opcao_chave: valor_texto). Resolve
+  // se houver match em pergunta_opcao para essa pergunta.
+  if (it.valor_texto && typeof it.valor_texto === 'string') {
+    const s = it.valor_texto.trim();
+    if (s.startsWith('[')) {
+      try {
+        const arr = JSON.parse(s);
+        if (Array.isArray(arr) && arr.length && arr.every(x => typeof x === 'string')) {
+          it.valor_texto_rotulos = arr.map(slug => _resolverRotuloOpcao(db, it.pergunta_chave, slug, idioma) || slug);
+        }
+      } catch {}
+    } else if (s.length <= 64 && !/\s/.test(s) && /^[a-z0-9_-]+$/i.test(s)) {
+      // String curta tipo slug: pode ser opcao antiga gravada sem escala_opcao_chave
+      const r = _resolverRotuloOpcao(db, it.pergunta_chave, s, idioma);
+      if (r && r !== s) it.valor_texto_rotulo = r;
+    }
   }
   return it;
 }

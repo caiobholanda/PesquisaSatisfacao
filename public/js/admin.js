@@ -4270,6 +4270,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
           // Prioridade: rotulos resolvidos pelo backend (Sim, Ombros, etc)
           if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return linhaLista(it.rotulo, it.valor_texto_rotulos);
           if (it.escala_opcao_rotulo) return linhaCampo(it.rotulo, it.escala_opcao_rotulo);
+          if (it.valor_texto_rotulo) return linhaCampo(it.rotulo, it.valor_texto_rotulo);
           if (it.valor_texto) {
             try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return linhaLista(it.rotulo, arr); } catch {}
             return linhaCampo(it.rotulo, it.valor_texto);
@@ -4458,6 +4459,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
           // Prioridade: rotulos resolvidos pelo backend (Sim, Ombros, etc)
           if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(it.valor_texto_rotulos)}</div></div>`;
           if (it.escala_opcao_rotulo) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(it.escala_opcao_rotulo)}</div></div>`;
+          if (it.valor_texto_rotulo) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(it.valor_texto_rotulo)}</div></div>`;
           if (it.valor_texto) {
             try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(arr)}</div></div>`; } catch {}
             return txtRow(lbl, it.valor_texto);
