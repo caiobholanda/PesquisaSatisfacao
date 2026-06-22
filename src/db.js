@@ -1542,9 +1542,11 @@ export function buscarCliente360(id) {
            sp.reserva_id, sp.criado_em, 'spa_perfil' AS fonte
     FROM spa_perfis sp
     LEFT JOIN clientes c ON c.id = sp.cliente_id
-    WHERE sp.cliente_id=? OR (sp.documento IS NOT NULL AND sp.documento=?)
+    WHERE sp.cliente_id=?
+      OR (sp.documento IS NOT NULL AND sp.documento=?)
+      OR sp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?))
     ORDER BY sp.criado_em DESC
-  `).all(id, cliente.cpf || '');
+  `).all(id, cliente.cpf || '', id, cliente.cpf || '');
   // Reservas onde JA existe spa_perfil (pra nao duplicar a entrada da
   // resposta_pesquisa quando a anamnese tradicional foi gravada normal).
   const _reservasComPerfil = new Set(anamPerfis.map(a => a.reserva_id).filter(Boolean));
