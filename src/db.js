@@ -1532,21 +1532,30 @@ export function buscarCliente360(id) {
   // 1) spa_perfis (anamnese tradicional com assinatura + info_medica)
   // 2) resposta_pesquisa com slug spa-anamnese* (anamnese estruturada)
   // Faz UNION e deduplica por reserva_id quando existir spa_perfil.
+  // COALESCE: usa dado do formulário (spa_perfis) quando preenchido, caso contrário
+  // cai no cadastro do cliente — evita exibir "—" para info que o sistema já conhece.
   const anamPerfis = db.prepare(`
-    SELECT id, nome, sobrenome, tipo_documento, documento, email, telefone,
-           idioma, reserva_id, criado_em, 'spa_perfil' AS fonte
-    FROM spa_perfis
-    WHERE cliente_id=? OR (documento IS NOT NULL AND documento=?)
-    ORDER BY criado_em DESC
+    SELECT sp.id, sp.nome, sp.sobrenome, sp.tipo_documento, sp.documento,
+           COALESCE(sp.email,    c.email)       AS email,
+           COALESCE(sp.telefone, c.telefone)    AS telefone,
+           COALESCE(sp.idioma,   c.locale_pref) AS idioma,
+           sp.reserva_id, sp.criado_em, 'spa_perfil' AS fonte
+    FROM spa_perfis sp
+    LEFT JOIN clientes c ON c.id = sp.cliente_id
+    WHERE sp.cliente_id=? OR (sp.documento IS NOT NULL AND sp.documento=?)
+    ORDER BY sp.criado_em DESC
   `).all(id, cliente.cpf || '');
   // Reservas onde JA existe spa_perfil (pra nao duplicar a entrada da
   // resposta_pesquisa quando a anamnese tradicional foi gravada normal).
   const _reservasComPerfil = new Set(anamPerfis.map(a => a.reserva_id).filter(Boolean));
   const anamRespostas = db.prepare(`
     SELECT rp.id, rp.submitted_at AS criado_em, rp.reserva_id,
-           p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte
+           p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte,
+           c.email, c.telefone, c.locale_pref AS idioma
     FROM resposta_pesquisa rp
     JOIN pesquisa p ON p.id = rp.pesquisa_id
+    LEFT JOIN reservas rv ON rv.id = rp.reserva_id
+    LEFT JOIN clientes c ON c.id = COALESCE(rp.cliente_id, rv.cliente_id)
     WHERE p.slug LIKE 'spa-anamnese%'
       AND (rp.cliente_id=? OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
     ORDER BY rp.submitted_at DESC
