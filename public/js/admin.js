@@ -4125,7 +4125,7 @@ function renderClienteReservas(rs) {
       <td>${fmtDataBR(r.data)}</td>
       <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
       <td style="text-align:center">${r.sala}</td>
-      <td>${r.quarto ? escHtml(r.quarto) : '—'}${gcBadge}</td>
+      <td>${r.quarto ? escHtml(r.quarto) : '<em style="color:var(--muted);font-size:.82rem">passante</em>'}${gcBadge}</td>
       <td>${escHtml(r.tratamento || (r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'))}</td>
       <td>${escHtml(r.cliente || '')}${r.cliente2 ? ' + ' + escHtml(r.cliente2) : ''}</td>
     </tr>`;
