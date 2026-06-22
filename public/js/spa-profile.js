@@ -1207,10 +1207,21 @@ const _SECAO_DB_PARA_HTML = {
 };
 
 function _renderPerguntasExtras(extrasPorSecao) {
-  // Remove qualquer secao extra renderizada anteriormente
+  // Captura respostas atuais ANTES de remover (preserva input em troca de idioma)
+  const respostasPrev = (typeof _coletarRespostasExtras === 'function')
+    ? _coletarRespostasExtras() : {};
+
+  // Remove qualquer secao extra renderizada anteriormente.
+  // IMPORTANTE: tambem remove [data-extra] standalone, porque _reordenarPorOrdem
+  // pode ter movido as perguntas para fora de [data-extras-grid] (em re-render
+  // por troca de idioma, sem este cleanup, as perguntas antigas duplicam).
   document.querySelectorAll('[data-extras-secao]').forEach(n => n.remove());
   document.querySelectorAll('[data-extras-grid]').forEach(n => n.remove());
+  document.querySelectorAll('[data-extra]').forEach(n => n.remove());
   if (!extrasPorSecao || !extrasPorSecao.length) return;
+
+  // Stash para _appendPerguntasNoGrid restaurar apos criar pillas/inputs
+  window.__extrasRespostasPrev = respostasPrev;
 
   const secSig = document.getElementById('sec-sig')?.closest('.spa-section');
 
@@ -1329,6 +1340,26 @@ function _appendPerguntasNoGrid(grid, perguntas) {
   grid.querySelectorAll('textarea[data-extra-input], input[type=text][data-extra-input]').forEach(el => {
     el.addEventListener('input', () => { if (typeof validateAll === 'function') validateAll(false); });
   });
+
+  // Restaura respostas previas (troca de idioma: NAO perder input do hospede)
+  const prev = window.__extrasRespostasPrev || {};
+  for (const wrap of grid.querySelectorAll('[data-extra]')) {
+    const chave = wrap.dataset.extra;
+    const v = prev[chave];
+    if (v == null) continue;
+    const tipo = wrap.dataset.tipo;
+    if (tipo === 'texto_livre') {
+      const t = wrap.querySelector('textarea'); if (t) t.value = String(v);
+    } else if (tipo === 'multipla' && Array.isArray(v)) {
+      v.forEach(val => {
+        const cb = wrap.querySelector(`input[type=checkbox][value="${CSS.escape(val)}"]`);
+        if (cb) { cb.checked = true; cb.closest('.spa-pill')?.classList.add('selected'); }
+      });
+    } else if (typeof v === 'string') {
+      const r = wrap.querySelector(`input[type=radio][value="${CSS.escape(v)}"]`);
+      if (r) { r.checked = true; r.closest('.spa-pill')?.classList.add('selected'); }
+    }
+  }
 }
 
 function _escHtml(s) {
