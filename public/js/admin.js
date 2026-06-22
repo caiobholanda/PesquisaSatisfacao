@@ -4193,6 +4193,9 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   const _ROW = 'display:flex;gap:.7rem;padding:.52rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem';
   const _LBL = 'flex:0 0 200px;color:#9a8f82;font-size:.71rem;text-transform:uppercase;letter-spacing:.06em;padding-top:.1rem';
   const _VAL = 'flex:1;color:#d4c9b8;line-height:1.5';
+  const TIPO_DOC = { cpf:'CPF', passport:'Passaporte', passaporte:'Passaporte', rg:'RG', rne:'RNE' };
+  const PRESSAO   = { low:'Leve', light:'Leve', soft:'Suave', medium:'Média', normal:'Normal', high:'Forte', firm:'Firme', strong:'Forte', hard:'Forte' };
+  const fmtData   = v => v && /^\d{4}-\d{2}-\d{2}/.test(v) ? fmtDataBR(v.slice(0,10)) : (v || null);
   const linhaCampo = (label, valor) => `
     <div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
@@ -4233,11 +4236,11 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${secaoTitulo('1. Dados pessoais')}
         ${linhaCampo('Nome', a.nome)}
         ${linhaCampo('Sobrenome', a.sobrenome)}
-        ${linhaCampo('Tipo de documento', a.tipo_documento)}
+        ${linhaCampo('Tipo de documento', TIPO_DOC[(a.tipo_documento||'').toLowerCase()] || a.tipo_documento)}
         ${linhaCampo('Número do documento', a.documento)}
         ${linhaCampo('E-mail', a.email)}
         ${linhaCampo('Telefone', a.telefone)}
-        ${linhaCampo('Data de nascimento', a.data_nascimento)}
+        ${linhaCampo('Data de nascimento', fmtData(a.data_nascimento))}
         ${linhaCampo('Quarto', a.quarto || 'Passante')}
 
         ${secaoTitulo('2. Rotina facial')}
@@ -4248,7 +4251,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${linhaCampo('Produto específico', a.produto_especifico)}
 
         ${secaoTitulo('4. Preferência de massagem')}
-        ${linhaCampo('Pressão preferida', a.pressao_massagem)}
+        ${linhaCampo('Pressão preferida', PRESSAO[(a.pressao_massagem||'').toLowerCase()] || a.pressao_massagem)}
 
         ${secaoTitulo('5. Informações médicas')}
         ${linhaCampo('Info médica relevante', a.info_medica)}
