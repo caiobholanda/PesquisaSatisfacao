@@ -210,7 +210,6 @@ router.post('/perfil', (req, res) => {
       ];
       // Perguntas customizadas criadas pelo admin no editor (sem
       // mapeia_campo_legado) chegam como { chave: valor }.
-      console.log('[Anamnese] respostas_extras recebidas:', JSON.stringify(b.respostas_extras || null), '| reserva_id:', reserva_id);
       if (b.respostas_extras && typeof b.respostas_extras === 'object') {
         for (const [chave, valor] of Object.entries(b.respostas_extras)) {
           if (Array.isArray(valor)) {

@@ -1305,9 +1305,12 @@ function _escHtml(s) {
 }
 
 // Helper público: coleta respostas das perguntas extras para o submit.
+// IMPORTANTE: usa seletor [data-extra] direto (não [data-extras-grid] [data-extra]),
+// porque _reordenarPorOrdem() move os blocos extras para FORA do grid original
+// (para perto da ancora legacy), e o cleanup remove o grid vazio.
 function _coletarRespostasExtras() {
   const out = {};
-  document.querySelectorAll('[data-extras-grid] [data-extra]').forEach(wrap => {
+  document.querySelectorAll('[data-extra]').forEach(wrap => {
     const chave = wrap.dataset.extra;
     const tipo  = wrap.dataset.tipo;
     if (tipo === 'texto_livre') {
