@@ -1560,10 +1560,10 @@ export function buscarCliente360(id) {
     FROM resposta_pesquisa rp
     LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
     WHERE (rp.cliente_id=?
-       OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=?))
+       OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
       AND (p.slug IS NULL OR p.slug NOT LIKE 'spa-anamnese%')
     ORDER BY rp.submitted_at DESC
-  `).all(id, id);
+  `).all(id, id, cliente.cpf || '');
   // Produtos
   const produtos = db.prepare(`
     SELECT id, produto_nome, categoria, valor, data_compra, reserva_id, observacao, criado_em
