@@ -1591,7 +1591,7 @@ export function buscarCliente360(id) {
           AND st.respondida_em IS NOT NULL
       )
     )
-  `).all(id, id, _cpf360, id, _cpf360).filter(f => !_rpFbIds.has(f.id));
+  `).all(id, id, _cpf360, id, _cpf360).filter(f => !_rpFbIds.has(f.feedback_id));
   const pesquisas = [...pesquisasRp, ...feedbackExtra]
     .sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || ''));
   // Produtos
