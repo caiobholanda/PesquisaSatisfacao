@@ -4189,28 +4189,31 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
 
   const a = dados;
   const dt = fmtBRT(a.criado_em, { br: true });
+  const _ROW = 'display:flex;gap:.7rem;padding:.52rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem';
+  const _LBL = 'flex:0 0 200px;color:#9a8f82;font-size:.71rem;text-transform:uppercase;letter-spacing:.06em;padding-top:.1rem';
+  const _VAL = 'flex:1;color:#d4c9b8;line-height:1.5';
   const linhaCampo = (label, valor) => `
-    <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
-      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem">${escHtml(label)}</div>
-      <div style="flex:1;color:var(--text);line-height:1.5">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:var(--muted)">— vazio —</em>'}</div>
+    <div style="${_ROW}">
+      <div style="${_LBL}">${escHtml(label)}</div>
+      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#5a5248">— vazio —</em>'}</div>
     </div>`;
   const linhaLista = (label, arr) => {
     const items = (arr || []).filter(Boolean);
-    const v = items.length ? items.map(i => `<span class="badge" style="background:var(--gold-lt,#f5ead8);color:var(--text);font-size:.78rem;padding:.15rem .55rem;border-radius:9999px">${escHtml(i)}</span>`).join(' ') : '<em style="color:var(--muted)">— vazio —</em>';
-    return `<div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
-      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
-      <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap">${v}</div>
+    const v = items.length ? items.map(i => `<span style="background:rgba(201,168,106,.14);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#5a5248">— vazio —</em>';
+    return `<div style="${_ROW}">
+      <div style="${_LBL}">${escHtml(label)}</div>
+      <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">${v}</div>
     </div>`;
   };
   const linhaBool = (label, b) => `
-    <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
-      <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">${escHtml(label)}</div>
-      <div style="flex:1">${b ? '<span style="color:var(--success,#3a6b47);font-weight:600">✓ Sim</span>' : '<span style="color:var(--danger,#9e3832);font-weight:600">✗ Não</span>'}</div>
+    <div style="${_ROW}">
+      <div style="${_LBL}">${escHtml(label)}</div>
+      <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
-  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:500;color:var(--text);border-bottom:1px solid var(--gold,#b8935a);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
   const assinaturaHtml = a.assinatura_data_url
-    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:280px;max-height:120px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:.3rem">`
-    : '<em style="color:var(--muted)">— sem assinatura —</em>';
+    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:280px;max-height:120px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:#fff;padding:.3rem;display:block">`
+    : '<em style="color:#5a5248;font-size:.85rem">— sem assinatura —</em>';
 
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
