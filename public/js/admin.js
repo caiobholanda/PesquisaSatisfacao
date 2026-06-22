@@ -3651,7 +3651,7 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 
-const SALA_NOME = { 1: 'Sala 1 · Serenity', 2: 'Sala 2 · Tranquility', 3: 'Sala 3 · Harmony', 4: 'Sala 4 · Harmony' };
+const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4' };
 const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
 
 function _hcParams(off=0) {
