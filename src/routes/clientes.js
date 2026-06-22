@@ -64,6 +64,50 @@ router.get('/anamnese/:perfilId', (req, res) => {
 
   // Parseia arrays JSON gravados como TEXT
   const parseArr = v => { if (!v) return []; try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } };
+
+  // Busca perguntas extras adicionadas pelo admin (nao sao colunas de spa_perfis)
+  const LEGACY_ANAM = new Set([
+    'nome','sobrenome','tipo_documento','documento','email','telefone',
+    'data_nascimento','quarto','rotina_facial','rotina_corporal',
+    'produto_especifico','pressao_massagem','info_medica',
+    'consentimento_saude','consentimento_marketing','canais_marketing',
+    'assinatura_digital','assinatura',
+  ]);
+  let extras = [];
+  if (perfil.reserva_id) {
+    try {
+      const rp = db.prepare(`
+        SELECT rp.id FROM resposta_pesquisa rp
+        JOIN pesquisa p ON p.id = rp.pesquisa_id
+        WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'
+        LIMIT 1
+      `).get(perfil.reserva_id);
+      if (rp?.id) {
+        const itens = db.prepare(
+          'SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave FROM resposta_item WHERE resposta_pesquisa_id=?'
+        ).all(rp.id);
+        for (const it of itens) {
+          if (LEGACY_ANAM.has(it.pergunta_chave)) continue;
+          const trad = db.prepare(`
+            SELECT rotulo FROM pergunta_traducao pt
+            JOIN pergunta_satisfacao p ON p.id = pt.pergunta_id
+            WHERE p.chave=? AND pt.idioma='pt-BR'
+          `).get(it.pergunta_chave);
+          it.rotulo = trad?.rotulo || it.pergunta_chave;
+          if (it.escala_opcao_chave) {
+            const opt = db.prepare(`
+              SELECT eot.rotulo FROM escala_opcao eo
+              JOIN escala_opcao_traducao eot ON eot.escala_opcao_id = eo.id AND eot.idioma='pt-BR'
+              WHERE eo.chave=? ORDER BY eo.escala_id LIMIT 1
+            `).get(it.escala_opcao_chave);
+            it.escala_opcao_rotulo = opt?.rotulo || it.escala_opcao_chave;
+          }
+          extras.push(it);
+        }
+      }
+    } catch (e) { console.warn('[anamnese extras]', e?.message); }
+  }
+
   res.json({
     ok: true,
     anamnese: {
@@ -74,6 +118,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
       consentimento_saude: !!perfil.consentimento_saude,
       consentimento_marketing: !!perfil.consentimento_marketing,
     },
+    extras,
   });
 });
 

@@ -4178,13 +4178,14 @@ function renderClientePesquisas(ps) {
 
 // Modal de visualizacao completa de uma anamnese preenchida (spa_perfil)
 async function _abrirModalAnamnesePreenchida(perfilId) {
-  let dados = null;
+  let dados = null, extras = [];
   try {
     const r = await api('/api/clientes/anamnese/' + perfilId);
     if (!r) return;
     const d = await r.json();
     if (!d.ok) { showToast('Erro ao carregar anamnese: ' + (d.error || ''), 5000); return; }
     dados = d.anamnese;
+    extras = d.extras || [];
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
   const a = dados;
@@ -4211,8 +4212,9 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
   const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
-  const assinaturaHtml = a.assinatura_data_url
-    ? `<img src="${a.assinatura_data_url}" alt="assinatura" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
+  const _sigUrl = typeof a.assinatura_data_url === 'string' && a.assinatura_data_url.startsWith('data:image') ? a.assinatura_data_url : null;
+  const assinaturaHtml = _sigUrl
+    ? `<img src="${_sigUrl}" alt="Assinatura do cliente" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
     : '<em style="color:#9a8f82;font-size:.85rem">— sem assinatura registrada —</em>';
 
   const ov = document.createElement('div');
@@ -4257,6 +4259,13 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
 
         ${secaoTitulo('7. Assinatura')}
         <div style="padding:.6rem 0">${assinaturaHtml}</div>
+
+        ${extras.length ? `
+        ${secaoTitulo('8. Perguntas adicionais')}
+        ${extras.map(it => {
+          const val = it.valor_texto || it.escala_opcao_rotulo || it.escala_opcao_chave || (it.valor_numerico != null ? String(it.valor_numerico) : null);
+          return linhaCampo(it.rotulo, val);
+        }).join('')}` : ''}
       </div>
       <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
         <button class="btn btn-outline" data-act="close">Fechar</button>
