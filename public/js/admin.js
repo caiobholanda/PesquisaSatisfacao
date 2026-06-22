@@ -75,6 +75,15 @@ function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// Converte timestamp UTC (formato SQLite "YYYY-MM-DD HH:MM:SS") para BRT (UTC-3, Fortaleza CE).
+function fmtBRT(utcStr, { seconds = false } = {}) {
+  if (!utcStr) return '—';
+  const d = new Date(String(utcStr).replace(' ', 'T') + 'Z');
+  if (isNaN(d)) return String(utcStr).slice(0, 16);
+  const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+  const iso = brt.toISOString();
+  return seconds ? iso.slice(0, 19).replace('T', ' ') : iso.slice(0, 16).replace('T', ' ');
+}
 
 async function api(url, opts = {}) {
   try {
@@ -4125,7 +4134,7 @@ function renderClienteAnamneses(as) {
     // Modal correto conforme fonte: spa_perfil → modal completo; resposta_pesquisa → modal de respostas estruturadas
     const act = ehResposta ? 'ver-pesquisa' : 'ver-anamnese';
     return `<tr>
-      <td>${escHtml((a.criado_em || '').slice(0,10))}</td>
+      <td>${escHtml(fmtBRT(a.criado_em).slice(0,10))}</td>
       <td>${escHtml(a.idioma || '—')}</td>
       <td>${a.reserva_id ? '#' + a.reserva_id : '—'}</td>
       <td>${escHtml(a.email || '—')}</td>
@@ -4152,7 +4161,7 @@ function renderClientePesquisas(ps) {
       ? `data-act="ver-feedback" data-id="${p.feedback_id}"`
       : `data-act="ver-pesquisa" data-id="${p.id}"`;
     return `<tr>
-      <td>${escHtml((p.submitted_at || '').slice(0,16))}</td>
+      <td>${escHtml(fmtBRT(p.submitted_at))}</td>
       <td>${escHtml(_nomeAmigavelPesquisa(p.slug, p.pesquisa_titulo))}</td>
       <td>${p.reserva_id ? '#' + p.reserva_id : '—'}</td>
       <td><button class="btn btn-outline btn-sm" ${btnAttr}>Ver</button></td>
@@ -4172,7 +4181,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
   const a = dados;
-  const dt = a.criado_em ? a.criado_em.slice(0, 16) : '';
+  const dt = fmtBRT(a.criado_em);
   const linhaCampo = (label, valor) => `
     <div style="display:flex;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--border-lt,#eee);font-size:.88rem">
       <div style="flex:0 0 200px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem">${escHtml(label)}</div>
@@ -4269,7 +4278,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
           <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml((resp.submitted_at || '').slice(0,16))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
       </header>
@@ -4334,7 +4343,7 @@ async function _abrirModalFeedbackRaw(feedbackId) {
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
           <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Pesquisa respondida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">Pesquisa de Satisfação · ${escHtml((fb.submitted_at||'').slice(0,16))}${fb.reserva_id ? ' · reserva #'+fb.reserva_id : ''}</p>
+          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">Pesquisa de Satisfação · ${escHtml(fmtBRT(fb.submitted_at))}${fb.reserva_id ? ' · reserva #'+fb.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close">✕</button>
       </header>
