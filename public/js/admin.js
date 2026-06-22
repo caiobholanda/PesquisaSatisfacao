@@ -4045,7 +4045,6 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
     <div style="margin-bottom:1rem">
       <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.3rem">
         <h2 style="margin:0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
-        ${gran_class ? badgeGranClassHtml('Cliente Gran Class') : ''}
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
         ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
@@ -4102,11 +4101,12 @@ function renderClienteReservas(rs) {
     <tr><th>Data</th><th>Horário</th><th>Sala</th><th>Quarto</th><th>Tratamento</th><th>Cliente</th></tr>
   </thead><tbody>${rs.map(r => {
     const ehGC = r.quarto_categoria === 'gran_class';
+    const gcBadge = ehGC ? ' <span style="display:inline-flex;align-items:center;gap:.18rem;padding:.1rem .4rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-size:.67rem;font-weight:700;letter-spacing:.06em;vertical-align:middle">★ GC</span>' : '';
     return `<tr${ehGC ? ' style="background:rgba(212,166,74,.06)"' : ''}>
       <td>${escHtml(r.data || '')}</td>
       <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
       <td style="text-align:center">${r.sala}</td>
-      <td>${r.quarto ? escHtml(r.quarto) + (ehGC ? ' ★' : '') : '—'}</td>
+      <td>${r.quarto ? escHtml(r.quarto) : '—'}${gcBadge}</td>
       <td>${r.tipo_massagem_id ? '#' + r.tipo_massagem_id : '—'}</td>
       <td>${escHtml(r.cliente || '')}${r.cliente2 ? ' + ' + escHtml(r.cliente2) : ''}</td>
     </tr>`;
