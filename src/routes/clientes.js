@@ -86,7 +86,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
         SELECT rp.id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'
-        LIMIT 1
+        ORDER BY rp.id DESC LIMIT 1
       `).get(perfil.reserva_id);
       if (rp?.id) {
         const itens = db.prepare(

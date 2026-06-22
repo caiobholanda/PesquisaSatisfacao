@@ -342,11 +342,13 @@ function montarOpcoesPergunta(perguntaId, idioma) {
 }
 
 // ── Submissao ─────────────────────────────────────────────────────────────
-export function inserirRespostaPesquisa({ pesquisa_slug, pesquisa_versao, app_origem, cliente_id, reserva_id, feedback_id, itens }) {
+export function inserirRespostaPesquisa({ pesquisa_slug, pesquisa_versao, app_origem, cliente_id, reserva_id, feedback_id, itens, ignorar_ativo = false }) {
   const db = getDb();
   let p;
   if (pesquisa_versao) {
     p = db.prepare("SELECT id, versao FROM pesquisa WHERE slug=? AND versao=?").get(pesquisa_slug, pesquisa_versao);
+  } else if (ignorar_ativo) {
+    p = db.prepare("SELECT id, versao FROM pesquisa WHERE slug=? ORDER BY versao DESC LIMIT 1").get(pesquisa_slug);
   } else {
     p = db.prepare("SELECT id, versao FROM pesquisa WHERE slug=? AND ativo=1 ORDER BY versao DESC LIMIT 1").get(pesquisa_slug);
   }

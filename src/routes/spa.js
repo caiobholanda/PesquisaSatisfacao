@@ -217,7 +217,8 @@ router.post('/perfil', (req, res) => {
           } else if (typeof valor === 'object' && valor !== null) {
             itens.push({ chave, valor_texto: JSON.stringify(valor) });
           } else {
-            itens.push({ chave, valor_texto: String(valor) });
+            const s = String(valor);
+            itens.push({ chave, valor_texto: s, escala_opcao_chave: s });
           }
         }
       }
@@ -226,6 +227,7 @@ router.post('/perfil', (req, res) => {
         app_origem: 'spa-anamnese',
         reserva_id,
         itens,
+        ignorar_ativo: true,
       });
     } catch (errA) {
       console.error('[Anamnese] gravacao estruturada falhou (legado OK):', errA.message);

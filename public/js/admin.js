@@ -4267,8 +4267,14 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${extras.length ? `
         ${secaoTitulo('8. Perguntas adicionais')}
         ${extras.map(it => {
-          const val = it.valor_texto || it.escala_opcao_rotulo || it.escala_opcao_chave || (it.valor_numerico != null ? String(it.valor_numerico) : null);
-          return linhaCampo(it.rotulo, val);
+          if (it.escala_opcao_rotulo) return linhaCampo(it.rotulo, it.escala_opcao_rotulo);
+          if (it.valor_texto) {
+            try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return linhaLista(it.rotulo, arr); } catch {}
+            return linhaCampo(it.rotulo, it.valor_texto);
+          }
+          if (it.escala_opcao_chave) return linhaCampo(it.rotulo, it.escala_opcao_chave);
+          if (it.valor_numerico != null) return linhaCampo(it.rotulo, String(it.valor_numerico));
+          return '';
         }).join('')}` : ''}
       </div>
       <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
@@ -4409,6 +4415,14 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     const temRotina  = byK['rotina_facial'] || byK['rotina_corporal'] || pressaoR || getText('produto_especifico');
     const temSaude   = getText('info_medica') || getText('informacoes_medicas');
     const temConsent = byK['consentimento_saude'] || byK['consentimento_marketing'] || byK['canais_marketing'];
+    const KNOWN_ANAM_KEYS = new Set([
+      'nome','sobrenome','tipo_documento','documento','numero_documento','email','telefone',
+      'data_nascimento','quarto','rotina_facial','rotina_corporal','produto_especifico',
+      'pressao_massagem','pressao_preferida','info_medica','informacoes_medicas',
+      'consentimento_saude','consentimento_marketing','canais_marketing',
+      'assinatura','assinatura_digital',
+    ]);
+    const anamExtras = itens.filter(it => !it.pergunta_chave.startsWith('anamnese_') && !KNOWN_ANAM_KEYS.has(it.pergunta_chave));
 
     corpoHtml = `
       ${temIdent ? `<div class="srm-sec"><div class="srm-sec-title">✦ Identificação</div><div class="an-grid">
@@ -4436,6 +4450,17 @@ async function _abrirModalPesquisaRespondida(respostaId) {
         ${multiRow('Canais autorizados', 'canais_marketing')}
       </div></div>` : ''}
       <div class="srm-sec"><div class="srm-sec-title">✦ Assinatura</div><div style="padding:.35rem 0">${sigHtml}</div></div>
+      ${anamExtras.length ? `<div class="srm-sec"><div class="srm-sec-title">✦ Perguntas adicionais</div><div class="an-grid">
+        ${anamExtras.map(it => {
+          if (it.escala_opcao_rotulo) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val">${escHtml(it.escala_opcao_rotulo)}</div></div>`;
+          if (it.valor_texto) {
+            try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val an-tags">${tagsHtml(arr)}</div></div>`; } catch {}
+            return txtRow(it.rotulo || it.pergunta_chave, it.valor_texto);
+          }
+          if (it.escala_opcao_chave) return `<div class="an-row"><div class="an-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="an-val">${escHtml(it.escala_opcao_chave)}</div></div>`;
+          return '';
+        }).join('')}
+      </div></div>` : ''}
     `;
     titulo    = 'Anamnese preenchida';
     subtitulo = `${escHtml(nomeFull || 'Anamnese')} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}`;
