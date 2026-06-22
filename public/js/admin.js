@@ -4267,7 +4267,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   document.body.appendChild(ov);
 }
 
-// Modal de visualizacao das respostas de uma pesquisa de satisfacao
+// Modal de visualizacao das respostas de uma pesquisa de satisfacao ou anamnese
 async function _abrirModalPesquisaRespondida(respostaId) {
   let resp = null, itens = [];
   try {
@@ -4278,119 +4278,197 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     resp = d.resposta; itens = d.itens || [];
   } catch (e) { showToast('Erro: ' + e.message, 5000); return; }
 
+  const isAnamnese = !!(resp.pesquisa_slug?.startsWith('spa-anamnese'));
+
+  // ── helpers compartilhados ────────────────────────────────────────────────
   const OPTS4 = ['ruim','regular','bom','otimo'];
   const OPTS4_L = { ruim:'Ruim', regular:'Regular', bom:'Bom', otimo:'Ótimo' };
   const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#c9a86a' };
   const OPTS4_T = { ruim:'#fff', regular:'#fff', bom:'#fff', otimo:'#1a1008' };
-
   const r4 = sel => OPTS4.map(k => {
     if (k === sel) return `<div class="srm-opt srm-on" style="background:${OPTS4_C[k]};color:${OPTS4_T[k]};border-color:${OPTS4_C[k]}">${OPTS4_L[k]}</div>`;
     return `<div class="srm-opt">${OPTS4_L[k]}</div>`;
   }).join('');
-
   const ryn = sel => ['nao','sim'].map(k => {
     const c = k === 'sim' ? '#2e7d56' : '#b83232', l = k === 'sim' ? 'Sim' : 'Não';
     if (k === sel) return `<div class="srm-opt srm-on" style="background:${c};color:#fff;border-color:${c}">${l}</div>`;
     return `<div class="srm-opt">${l}</div>`;
   }).join('');
 
-  // Indexa por chave (primeira ocorrência = item principal)
-  const byKey = {};
-  for (const it of itens) { if (!byKey[it.pergunta_chave]) byKey[it.pergunta_chave] = it; }
+  // ── CSS unificado ─────────────────────────────────────────────────────────
+  const CSS = `
+    .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
+    @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
+    .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
+    .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+    .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
+    .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
+    .srm-sec{display:flex;flex-direction:column;gap:1rem}
+    .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem}
+    .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
+    .srm-item{display:flex;flex-direction:column;gap:.5rem}
+    .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
+    .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
+    .srm-opts--yn{grid-template-columns:repeat(2,1fr);max-width:200px}
+    .srm-opt{display:flex;align-items:center;justify-content:center;padding:.45rem .3rem;border-radius:7px;border:1px solid #242424;font-size:.76rem;font-weight:600;letter-spacing:.03em;color:#3c3c3c;background:transparent;text-align:center;line-height:1.2;user-select:none}
+    .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
+    .srm-comment{display:flex;flex-direction:column;gap:.38rem}
+    .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
+    .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+    .an-grid{display:flex;flex-direction:column}
+    .an-row{display:grid;grid-template-columns:165px 1fr;gap:.75rem;padding:.52rem 0;border-bottom:1px solid rgba(255,255,255,.04);align-items:baseline}
+    .an-lbl{color:var(--muted);font-size:.71rem;text-transform:uppercase;letter-spacing:.07em;line-height:1.4}
+    .an-val{color:var(--text);font-size:.88rem;line-height:1.5}
+    .an-tags{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}
+    .an-tag{background:rgba(201,168,106,.1);color:#c9a86a;border:1px solid rgba(201,168,106,.25);font-size:.76rem;padding:.18rem .55rem;border-radius:9999px;font-weight:500}
+    .an-yes{color:#3d8a5c;font-weight:700;font-size:.87rem}
+    .an-no{color:#c0392b;font-weight:700;font-size:.87rem}
+  `;
 
-  const SERV = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica'];
-  const INST = ['instalacoes_conforto','instalacoes_organizacao','instalacoes_conveniencia'];
-  const KNOWN = new Set([...SERV,...INST,'recomenda','servicos_comentario','instalacoes_comentario','recomenda_qual','recomenda_porque']);
+  let titulo, subtitulo, corpoHtml;
 
-  const item4 = k => {
-    const it = byKey[k]; if (!it) return '';
-    return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || k)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
-  };
-  const commentIt = k => {
-    const it = byKey[k]; if (!it || !it.valor_texto) return '';
-    return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || k)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
-  };
-  const extrasItens = itens.filter(it => !KNOWN.has(it.pergunta_chave));
-  const extrasHtml = extrasItens.map(it => {
-    if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
-    if (it.escala_opcao_chave) {
-      if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
-      if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
-      return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
-    }
-    return '';
-  }).join('');
+  // ── ANAMNESE ──────────────────────────────────────────────────────────────
+  if (isAnamnese) {
+    const byK = {};
+    for (const it of itens) { (byK[it.pergunta_chave] = byK[it.pergunta_chave] || []).push(it); }
 
-  const temServicos  = SERV.some(k => byKey[k]);
-  const temInst      = INST.some(k => byKey[k]);
-  const temRecomenda = byKey['recomenda'];
+    const getText  = k => byK[k]?.[0]?.valor_texto  ?? null;
+    const getOpcR  = k => byK[k]?.[0]?.escala_opcao_rotulo ?? byK[k]?.[0]?.escala_opcao_chave ?? null;
+    const getOpc   = k => byK[k]?.[0]?.escala_opcao_chave ?? null;
+    const getAll   = k => (byK[k] || []).map(i => i.escala_opcao_rotulo || i.escala_opcao_chave).filter(Boolean);
+    const tryArr   = v => { try { const j = JSON.parse(v); return Array.isArray(j) ? j : null; } catch { return null; } };
+    const toBool   = v => /^(true|1|sim|yes)$/i.test(String(v || ''));
+
+    const TIPO_DOC = { cpf:'CPF', passport:'Passaporte', passaporte:'Passaporte', rg:'RG', rne:'RNE' };
+    const PRESSAO  = { low:'Leve', light:'Leve', soft:'Suave', medium:'Média', normal:'Normal', high:'Forte', firm:'Firme', strong:'Forte', hard:'Forte' };
+
+    const tagsHtml = arr => arr.filter(Boolean).map(x => `<span class="an-tag">${escHtml(x)}</span>`).join('');
+
+    const txtRow = (lbl, val) => {
+      if (val == null || val === '') return '';
+      const arr = tryArr(val);
+      if (arr?.length) return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(arr)}</div></div>`;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) val = fmtDataBR(val);
+      return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(String(val))}</div></div>`;
+    };
+    const multiRow = (lbl, k) => {
+      const all = getAll(k);
+      if (!all.length) return txtRow(lbl, getText(k));
+      return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val an-tags">${tagsHtml(all)}</div></div>`;
+    };
+    const boolRow = (lbl, k) => {
+      const raw = getText(k) || getOpc(k);
+      if (!raw) return '';
+      const pos = toBool(raw);
+      return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val"><span class="${pos ? 'an-yes' : 'an-no'}">${pos ? '✓ Sim' : '✗ Não'}</span></div></div>`;
+    };
+    const opcRow = (lbl, k, mapa) => {
+      const raw = getOpcR(k) || getText(k);
+      if (!raw) return '';
+      const fmt = mapa?.[raw.toLowerCase()] || raw;
+      return `<div class="an-row"><div class="an-lbl">${escHtml(lbl)}</div><div class="an-val">${escHtml(fmt)}</div></div>`;
+    };
+
+    const sigVal = getText('assinatura_digital') || getText('assinatura');
+    const sigHtml = sigVal && sigVal.startsWith('data:image')
+      ? `<img src="${sigVal}" style="max-width:260px;max-height:110px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:.35rem;display:block">`
+      : sigVal ? `<span class="an-tag" style="font-size:.83rem">✓ Assinatura registrada</span>`
+      : `<em style="color:var(--muted);font-size:.85rem">— sem assinatura —</em>`;
+
+    const nomeFull = [getText('nome'), getText('sobrenome')].filter(Boolean).join(' ');
+    const tipoDocR = getOpcR('tipo_documento') || getText('tipo_documento') || '';
+    const tipoDocF = TIPO_DOC[tipoDocR.toLowerCase()] || tipoDocR;
+    const docNum   = getText('documento') || getText('numero_documento') || '';
+    const nascRaw  = getText('data_nascimento');
+    const pressaoR = getOpcR('pressao_massagem') || getText('pressao_massagem') || getText('pressao_preferida') || '';
+    const pressaoF = PRESSAO[pressaoR.toLowerCase()] || pressaoR;
+
+    const temIdent   = nomeFull || tipoDocR || docNum || nascRaw || getText('quarto');
+    const temContato = getText('email') || getText('telefone');
+    const temRotina  = byK['rotina_facial'] || byK['rotina_corporal'] || pressaoR || getText('produto_especifico');
+    const temSaude   = getText('info_medica') || getText('informacoes_medicas');
+    const temConsent = byK['consentimento_saude'] || byK['consentimento_marketing'] || byK['canais_marketing'];
+
+    corpoHtml = `
+      ${temIdent ? `<div class="srm-sec"><div class="srm-sec-title">✦ Identificação</div><div class="an-grid">
+        ${nomeFull ? `<div class="an-row"><div class="an-lbl">Nome completo</div><div class="an-val" style="font-weight:500">${escHtml(nomeFull)}</div></div>` : ''}
+        ${tipoDocF || docNum ? `<div class="an-row"><div class="an-lbl">Documento</div><div class="an-val">${escHtml([tipoDocF, docNum].filter(Boolean).join(' · '))}</div></div>` : ''}
+        ${nascRaw ? `<div class="an-row"><div class="an-lbl">Nascimento</div><div class="an-val">${fmtDataBR(nascRaw)}</div></div>` : ''}
+        ${getText('quarto') ? `<div class="an-row"><div class="an-lbl">Quarto</div><div class="an-val">${escHtml(getText('quarto'))}</div></div>` : ''}
+      </div></div>` : ''}
+      ${temContato ? `<div class="srm-sec"><div class="srm-sec-title">✦ Contato</div><div class="an-grid">
+        ${txtRow('E-mail', getText('email'))}
+        ${txtRow('Telefone', getText('telefone'))}
+      </div></div>` : ''}
+      ${temRotina ? `<div class="srm-sec"><div class="srm-sec-title">✦ Rotina & Preferências</div><div class="an-grid">
+        ${multiRow('Rotina facial', 'rotina_facial')}
+        ${multiRow('Rotina corporal', 'rotina_corporal')}
+        ${txtRow('Produto específico', getText('produto_especifico'))}
+        ${pressaoF ? `<div class="an-row"><div class="an-lbl">Pressão de massagem</div><div class="an-val">${escHtml(pressaoF)}</div></div>` : ''}
+      </div></div>` : ''}
+      ${temSaude ? `<div class="srm-sec"><div class="srm-sec-title">✦ Saúde</div><div class="an-grid">
+        ${txtRow('Informações médicas', getText('info_medica') || getText('informacoes_medicas'))}
+      </div></div>` : ''}
+      ${temConsent ? `<div class="srm-sec"><div class="srm-sec-title">✦ Consentimentos</div><div class="an-grid">
+        ${boolRow('Apto ao tratamento', 'consentimento_saude')}
+        ${boolRow('Autoriza marketing', 'consentimento_marketing')}
+        ${multiRow('Canais autorizados', 'canais_marketing')}
+      </div></div>` : ''}
+      <div class="srm-sec"><div class="srm-sec-title">✦ Assinatura</div><div style="padding:.35rem 0">${sigHtml}</div></div>
+    `;
+    titulo    = 'Anamnese preenchida';
+    subtitulo = `${escHtml(nomeFull || 'Anamnese')} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}`;
+
+  // ── PESQUISA DE SATISFAÇÃO ────────────────────────────────────────────────
+  } else {
+    const byKey = {};
+    for (const it of itens) { if (!byKey[it.pergunta_chave]) byKey[it.pergunta_chave] = it; }
+    const SERV  = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica'];
+    const INST  = ['instalacoes_conforto','instalacoes_organizacao','instalacoes_conveniencia'];
+    const KNOWN = new Set([...SERV,...INST,'recomenda','servicos_comentario','instalacoes_comentario','recomenda_qual','recomenda_porque']);
+    const item4 = k => {
+      const it = byKey[k]; if (!it) return '';
+      return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || k)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
+    };
+    const commentIt = k => {
+      const it = byKey[k]; if (!it || !it.valor_texto) return '';
+      return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || k)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
+    };
+    const extrasItens = itens.filter(it => !KNOWN.has(it.pergunta_chave));
+    const extrasHtml  = extrasItens.map(it => {
+      if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
+      if (it.escala_opcao_chave) {
+        if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
+        if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
+        return `<div class="srm-item"><div class="srm-q">${escHtml(it.rotulo || it.pergunta_chave)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
+      }
+      return '';
+    }).join('');
+
+    corpoHtml = itens.length === 0
+      ? '<div style="padding:2rem;text-align:center;color:var(--muted)">Nenhuma resposta registrada.</div>'
+      : `
+        ${SERV.some(k => byKey[k]) ? `<div class="srm-sec"><div class="srm-sec-title">✦ Serviços</div>${item4('servicos_expectativa')}${item4('servicos_explicacao')}${item4('servicos_atitude')}${item4('servicos_tecnica')}${commentIt('servicos_comentario')}</div>` : ''}
+        ${INST.some(k => byKey[k]) ? `<div class="srm-sec"><div class="srm-sec-title">✦ Instalações</div>${item4('instalacoes_conforto')}${item4('instalacoes_organizacao')}${item4('instalacoes_conveniencia')}${commentIt('instalacoes_comentario')}</div>` : ''}
+        ${byKey['recomenda'] ? `<div class="srm-sec"><div class="srm-sec-title">✦ Recomendação</div><div class="srm-item"><div class="srm-q">${escHtml(byKey['recomenda'].rotulo || 'Recomendaria nossos serviços?')}</div><div class="srm-opts srm-opts--yn">${ryn(byKey['recomenda'].escala_opcao_chave)}</div></div>${commentIt('recomenda_qual')}${commentIt('recomenda_porque')}</div>` : ''}
+        ${extrasHtml ? `<div class="srm-sec"><div class="srm-sec-title">✦ Outras perguntas</div>${extrasHtml}</div>` : ''}
+      `;
+    titulo    = 'Pesquisa respondida';
+    subtitulo = `${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}`;
+  }
 
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.82);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
-    <style>
-      .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
-      @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
-      .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
-      .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
-      .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
-      .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
-      .srm-sec{display:flex;flex-direction:column;gap:1rem}
-      .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem;padding-bottom:.1rem}
-      .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
-      .srm-item{display:flex;flex-direction:column;gap:.5rem}
-      .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
-      .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
-      .srm-opts--yn{grid-template-columns:repeat(2,1fr);max-width:200px}
-      .srm-opt{display:flex;align-items:center;justify-content:center;padding:.45rem .3rem;border-radius:7px;border:1px solid #242424;font-size:.76rem;font-weight:600;letter-spacing:.03em;color:#3c3c3c;background:transparent;text-align:center;line-height:1.2;user-select:none}
-      .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
-      .srm-comment{display:flex;flex-direction:column;gap:.38rem}
-      .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-      .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
-      .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
-    </style>
+    <style>${CSS}</style>
     <div class="srm-wrap">
       <div class="srm-head">
-        <div>
-          <h2>Pesquisa respondida</h2>
-          <p>${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}</p>
-        </div>
+        <div><h2>${titulo}</h2><p>${subtitulo}</p></div>
         <button class="btn btn-outline btn-sm" data-act="close" style="flex-shrink:0">✕</button>
       </div>
-      <div class="srm-body">
-        ${itens.length === 0
-          ? '<div style="padding:2rem;text-align:center;color:var(--muted)">Nenhuma resposta registrada.</div>'
-          : `
-          ${temServicos ? `<div class="srm-sec">
-            <div class="srm-sec-title">✦ Serviços</div>
-            ${item4('servicos_expectativa')}
-            ${item4('servicos_explicacao')}
-            ${item4('servicos_atitude')}
-            ${item4('servicos_tecnica')}
-            ${commentIt('servicos_comentario')}
-          </div>` : ''}
-          ${temInst ? `<div class="srm-sec">
-            <div class="srm-sec-title">✦ Instalações</div>
-            ${item4('instalacoes_conforto')}
-            ${item4('instalacoes_organizacao')}
-            ${item4('instalacoes_conveniencia')}
-            ${commentIt('instalacoes_comentario')}
-          </div>` : ''}
-          ${temRecomenda ? `<div class="srm-sec">
-            <div class="srm-sec-title">✦ Recomendação</div>
-            <div class="srm-item">
-              <div class="srm-q">${escHtml(byKey['recomenda'].rotulo || 'Recomendaria nossos serviços?')}</div>
-              <div class="srm-opts srm-opts--yn">${ryn(byKey['recomenda'].escala_opcao_chave)}</div>
-            </div>
-            ${commentIt('recomenda_qual')}
-            ${commentIt('recomenda_porque')}
-          </div>` : ''}
-          ${extrasHtml ? `<div class="srm-sec"><div class="srm-sec-title">✦ Outras perguntas</div>${extrasHtml}</div>` : ''}
-        `}
-      </div>
-      <div class="srm-foot">
-        <button class="btn btn-outline" data-act="close">Fechar</button>
-      </div>
+      <div class="srm-body">${corpoHtml}</div>
+      <div class="srm-foot"><button class="btn btn-outline" data-act="close">Fechar</button></div>
     </div>
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }

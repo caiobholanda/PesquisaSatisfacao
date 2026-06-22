@@ -1536,9 +1536,9 @@ export function buscarCliente360(id) {
   // cai no cadastro do cliente — evita exibir "—" para info que o sistema já conhece.
   const anamPerfis = db.prepare(`
     SELECT sp.id, sp.nome, sp.sobrenome, sp.tipo_documento, sp.documento,
-           COALESCE(sp.email,    c.email)       AS email,
-           COALESCE(sp.telefone, c.telefone)    AS telefone,
-           COALESCE(sp.idioma,   c.locale_pref) AS idioma,
+           COALESCE(sp.email,    c.email)    AS email,
+           COALESCE(sp.telefone, c.telefone) AS telefone,
+           sp.idioma,
            sp.reserva_id, sp.criado_em, 'spa_perfil' AS fonte
     FROM spa_perfis sp
     LEFT JOIN clientes c ON c.id = sp.cliente_id
@@ -1551,7 +1551,7 @@ export function buscarCliente360(id) {
   const anamRespostas = db.prepare(`
     SELECT rp.id, rp.submitted_at AS criado_em, rp.reserva_id,
            p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte,
-           c.email, c.telefone, c.locale_pref AS idioma
+           c.email, c.telefone, NULL AS idioma
     FROM resposta_pesquisa rp
     JOIN pesquisa p ON p.id = rp.pesquisa_id
     LEFT JOIN reservas rv ON rv.id = rp.reserva_id
