@@ -4212,7 +4212,8 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
   const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
-  const _sigUrl = typeof a.assinatura_data_url === 'string' && a.assinatura_data_url.startsWith('data:image') ? a.assinatura_data_url : null;
+  // Valor truncado em 1000 chars pelo bug antigo do san() — rejeitar: nunca é imagem válida
+  const _sigUrl = typeof a.assinatura_data_url === 'string' && a.assinatura_data_url.startsWith('data:image') && a.assinatura_data_url.length > 1000 ? a.assinatura_data_url : null;
   const assinaturaHtml = _sigUrl
     ? `<img src="${_sigUrl}" alt="Assinatura do cliente" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
     : '<em style="color:#9a8f82;font-size:.85rem">— sem assinatura registrada —</em>';
@@ -4237,7 +4238,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${linhaCampo('E-mail', a.email)}
         ${linhaCampo('Telefone', a.telefone)}
         ${linhaCampo('Data de nascimento', a.data_nascimento)}
-        ${linhaCampo('Quarto', a.quarto)}
+        ${linhaCampo('Quarto', a.quarto || 'Passante')}
 
         ${secaoTitulo('2. Rotina facial')}
         ${linhaLista('Itens usados', a.rotina_facial)}
@@ -4344,6 +4345,10 @@ async function _abrirModalPesquisaRespondida(respostaId) {
   if (isAnamnese) {
     const byK = {};
     for (const it of itens) { (byK[it.pergunta_chave] = byK[it.pergunta_chave] || []).push(it); }
+    // Chaves gravadas com prefixo 'anamnese_' (spa.js) também acessíveis sem prefixo
+    for (const [k, v] of Object.entries(byK)) {
+      if (k.startsWith('anamnese_')) { const bare = k.slice(9); if (!byK[bare]) byK[bare] = v; }
+    }
 
     const getText  = k => byK[k]?.[0]?.valor_texto  ?? null;
     const getOpcR  = k => byK[k]?.[0]?.escala_opcao_rotulo ?? byK[k]?.[0]?.escala_opcao_chave ?? null;
@@ -4407,7 +4412,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
         ${nomeFull ? `<div class="an-row"><div class="an-lbl">Nome completo</div><div class="an-val" style="font-weight:500">${escHtml(nomeFull)}</div></div>` : ''}
         ${tipoDocF || docNum ? `<div class="an-row"><div class="an-lbl">Documento</div><div class="an-val">${escHtml([tipoDocF, docNum].filter(Boolean).join(' · '))}</div></div>` : ''}
         ${nascRaw ? `<div class="an-row"><div class="an-lbl">Nascimento</div><div class="an-val">${fmtDataBR(nascRaw)}</div></div>` : ''}
-        ${getText('quarto') ? `<div class="an-row"><div class="an-lbl">Quarto</div><div class="an-val">${escHtml(getText('quarto'))}</div></div>` : ''}
+        <div class="an-row"><div class="an-lbl">Quarto</div><div class="an-val">${escHtml(getText('quarto') || 'Passante')}</div></div>
       </div></div>` : ''}
       ${temContato ? `<div class="srm-sec"><div class="srm-sec-title">✦ Contato</div><div class="an-grid">
         ${txtRow('E-mail', getText('email'))}
