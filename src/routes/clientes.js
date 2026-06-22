@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
-  listarClientes, buscarClientePorId, buscarClientePorCpf,
+  listarClientes, buscarClientePorId, buscarClientePorCpf, buscarClientePorPassaporte,
   inserirCliente, atualizarCliente, buscarCliente360,
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
   validarCpfMod11, getDb,
@@ -20,14 +20,21 @@ router.get('/', (req, res) => {
   res.json({ ok: true, ...listarClientes({ q, limit, offset }) });
 });
 
-// GET /api/clientes/buscar?cpf=... (autofill na reserva)
+// GET /api/clientes/buscar?cpf=... ou ?passaporte=... (autofill na reserva)
 router.get('/buscar', (req, res) => {
-  const cpf = (req.query.cpf || '').toString();
-  if (!cpf) return res.status(400).json({ ok: false, error: 'cpf obrigatorio' });
-  if (!validarCpfMod11(cpf)) return res.status(400).json({ ok: false, error: 'CPF invalido' });
-  const cli = buscarClientePorCpf(cpf);
-  if (!cli) return res.json({ ok: true, cliente: null });
-  res.json({ ok: true, cliente: cli });
+  const cpf = (req.query.cpf || '').toString().replace(/\D/g, '');
+  const passaporte = (req.query.passaporte || '').toString().trim().toUpperCase();
+  if (cpf) {
+    if (!validarCpfMod11(cpf)) return res.status(400).json({ ok: false, error: 'CPF invalido' });
+    const cli = buscarClientePorCpf(cpf);
+    return res.json({ ok: true, cliente: cli || null });
+  }
+  if (passaporte) {
+    if (passaporte.length < 5) return res.status(400).json({ ok: false, error: 'Passaporte invalido' });
+    const cli = buscarClientePorPassaporte(passaporte);
+    return res.json({ ok: true, cliente: cli || null });
+  }
+  return res.status(400).json({ ok: false, error: 'cpf ou passaporte obrigatorio' });
 });
 
 // GET /api/clientes/:id (cliente 360)

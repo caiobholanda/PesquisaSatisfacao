@@ -3739,9 +3739,15 @@
       <!-- ── Campos Pessoa 1 ── -->
       <div id="res-pessoa1-wrap" class="res-pessoa1-wrap">
         <!-- CPF primeiro: se já existir cadastro, autofill dos demais campos. -->
-        <div class="res-fg" id="res-fg-cpf">
-          <label>CPF <span style="color:var(--danger)">*</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0">— informe primeiro para autopreencher dados já cadastrados</span></label>
-          <input type="text" id="res-inp-cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off" inputmode="numeric">
+        <div class="res-fg" id="res-fg-cpf" style="grid-column:1/-1">
+          <label>Documento <span style="color:var(--danger)">*</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0">— informe primeiro para autopreencher dados já cadastrados</span></label>
+          <div style="display:flex;gap:.4rem">
+            <select id="res-sel-tipo-doc" style="flex:0 0 auto;min-width:130px">
+              <option value="cpf">CPF</option>
+              <option value="passaporte">Passaporte</option>
+            </select>
+            <input type="text" id="res-inp-cpf" placeholder="000.000.000-00" maxlength="20" autocomplete="off" inputmode="numeric" style="flex:1;min-width:0">
+          </div>
           <small id="res-cpf-info" style="display:none;font-size:.78rem;margin-top:.3rem"></small>
         </div>
         <div class="res-fg">
@@ -3817,8 +3823,14 @@
         <div class="res-pessoa2-sep"><span>✦ Pessoa 2 <small style="color:var(--muted);font-weight:400;font-size:.72rem;letter-spacing:0;text-transform:none;margin-left:.4rem">(opcional — preencha apenas se houver acompanhante)</small></span></div>
         <div class="res-pessoa2-container">
           <div class="res-fg">
-            <label>CPF <small style="color:var(--muted);font-weight:400">— informe para autopreencher se já cadastrado</small></label>
-            <input type="text" id="res2-inp-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off">
+            <label>Documento <small style="color:var(--muted);font-weight:400">— informe para autopreencher se já cadastrado</small></label>
+            <div style="display:flex;gap:.4rem">
+              <select id="res2-sel-tipo-doc" style="flex:0 0 auto;min-width:130px">
+                <option value="cpf">CPF</option>
+                <option value="passaporte">Passaporte</option>
+              </select>
+              <input type="text" id="res2-inp-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="20" autocomplete="off" style="flex:1;min-width:0">
+            </div>
             <small id="res2-cpf-info" style="display:none;font-size:.78rem;margin-top:.25rem"></small>
           </div>
           <div class="res-fg">

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -62,8 +62,10 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   const {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
-    cpf, quarto,
-    cpf2, quarto2,
+    tipo_doc, doc, quarto,
+    tipo_doc2, doc2, quarto2,
+    // compat: clientes antigos podem ainda enviar cpf/cpf2
+    cpf: _cpfLegacy, cpf2: _cpf2Legacy,
   } = req.body || {};
 
   // Quarto: obrigatório e VÁLIDO para hóspedes; opcional para passantes/externos.
@@ -88,19 +90,31 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   // Casal: pessoa 2 é OPCIONAL. Só valida coerencia SE algum campo foi
   // preenchido (cliente2, cpf2, tratamento2 ou massagista_id2 disparam
   // a validacao do bloco inteiro).
-  const _p2Presente = (+sala === 3 || +sala === 4) && !!(cliente2?.trim() || cpf2 || tratamento2?.trim() || massagista_id2);
+  const _p2Presente = (+sala === 3 || +sala === 4) && !!(cliente2?.trim() || doc2 || _cpf2Legacy || tratamento2?.trim() || massagista_id2);
+  // Normaliza documento pessoa 1 (suporte CPF ou Passaporte)
+  const tipoDoc1 = tipo_doc === 'passaporte' ? 'passaporte' : 'cpf';
+  const docNorm1 = tipoDoc1 === 'cpf'
+    ? (doc || _cpfLegacy || '').toString().replace(/\D/g, '')
+    : (doc || '').toString().trim().toUpperCase();
+
+  // Normaliza documento pessoa 2 (se presente)
+  const tipoDoc2 = tipo_doc2 === 'passaporte' ? 'passaporte' : 'cpf';
+  const docNorm2 = tipoDoc2 === 'cpf'
+    ? (doc2 || _cpf2Legacy || '').toString().replace(/\D/g, '')
+    : (doc2 || '').toString().trim().toUpperCase();
+
   if (_p2Presente) {
     if (!cliente2?.trim())  return res.status(400).json({ ok: false, error: 'Pessoa 2: informe o nome' });
     if (!massagista_id2)    return res.status(400).json({ ok: false, error: 'Pessoa 2: selecione a massoterapeuta' });
     if (massagista_id2 === massagista_id || +massagista_id2 === +massagista_id)
       return res.status(400).json({ ok: false, error: 'As duas pessoas não podem ter a mesma massoterapeuta' });
-    if (cpf2) {
-      const c2 = String(cpf2).replace(/\D/g, '');
-      if (c2 && !validarCpfMod11(c2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: CPF inválido' });
-      const c1 = String(cpf || '').replace(/\D/g, '');
-      if (c1 && c2 && c1 === c2) {
-        return res.status(400).json({ ok: false, error: 'Pessoa 1 e Pessoa 2 não podem ter o mesmo CPF' });
-      }
+    if (docNorm2) {
+      if (tipoDoc2 === 'cpf' && !validarCpfMod11(docNorm2))
+        return res.status(400).json({ ok: false, error: 'Pessoa 2: CPF inválido' });
+      if (tipoDoc2 === 'passaporte' && docNorm2.length < 5)
+        return res.status(400).json({ ok: false, error: 'Pessoa 2: passaporte inválido (mínimo 5 caracteres)' });
+      if (docNorm1 && docNorm1 === docNorm2)
+        return res.status(400).json({ ok: false, error: 'Pessoa 1 e Pessoa 2 não podem ter o mesmo documento' });
     }
     if (telefone2 && !telefoneValido(telefone2)) {
       return res.status(400).json({ ok: false, error: 'Pessoa 2: telefone inválido' });
@@ -145,45 +159,42 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   try {
     const criado_por = (() => { const a = req.user?.sub ? buscarAdminById(req.user.sub) : null; return a?.nome || a?.username || req.user?.username || null; })();
 
-    // CPF é OBRIGATÓRIO: toda reserva precisa estar vinculada ao cadastro
-    // central de clientes. Se o CPF não existir ainda, criamos o cliente.
-    let clienteIdReserva = null;
-    const cpfNorm = (cpf || '').toString().replace(/\D/g, '');
-    if (!cpfNorm) {
-      return res.status(400).json({ ok: false, error: 'CPF do cliente é obrigatório' });
+    // Documento é OBRIGATÓRIO: toda reserva precisa estar vinculada ao cadastro
+    // central de clientes (CPF ou Passaporte). Cria o cliente se não existir.
+    if (!docNorm1) {
+      return res.status(400).json({ ok: false, error: 'Documento do cliente é obrigatório (CPF ou Passaporte)' });
     }
-    if (!validarCpfMod11(cpfNorm)) {
+    if (tipoDoc1 === 'cpf' && !validarCpfMod11(docNorm1)) {
       return res.status(400).json({ ok: false, error: 'CPF inválido' });
     }
-    const existing = buscarClientePorCpf(cpfNorm);
-    if (existing) {
-      clienteIdReserva = existing.id;
-    } else {
-      clienteIdReserva = inserirCliente({
-        cpf: cpfNorm,
-        nome: cliente.trim(),
-        email: email.trim() || null,
-        telefone: telefone?.trim() || null,
-      });
+    if (tipoDoc1 === 'passaporte' && docNorm1.length < 5) {
+      return res.status(400).json({ ok: false, error: 'Passaporte inválido (mínimo 5 caracteres)' });
     }
 
-    // Pessoa 2: se CPF foi fornecido, upserta o cliente tambem
-    // (cadastro central serve para os dois hospedes em reservas casal).
-    if (_p2Presente && cpf2) {
-      const cpf2Norm = String(cpf2).replace(/\D/g, '');
-      if (cpf2Norm && validarCpfMod11(cpf2Norm)) {
-        const ex2 = buscarClientePorCpf(cpf2Norm);
-        if (!ex2) {
-          try {
-            inserirCliente({
-              cpf: cpf2Norm,
-              nome: cliente2.trim(),
-              email: email2?.trim() || null,
-              telefone: telefone2?.trim() || null,
-            });
-          } catch {}
+    let clienteIdReserva = null;
+    if (tipoDoc1 === 'cpf') {
+      const existing = buscarClientePorCpf(docNorm1);
+      clienteIdReserva = existing
+        ? existing.id
+        : inserirCliente({ cpf: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null });
+    } else {
+      const existing = buscarClientePorPassaporte(docNorm1);
+      clienteIdReserva = existing
+        ? existing.id
+        : inserirCliente({ passaporte: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null });
+    }
+
+    // Pessoa 2: upserta cliente também (cadastro central).
+    if (_p2Presente && docNorm2) {
+      try {
+        if (tipoDoc2 === 'cpf' && validarCpfMod11(docNorm2)) {
+          if (!buscarClientePorCpf(docNorm2))
+            inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null });
+        } else if (tipoDoc2 === 'passaporte' && docNorm2.length >= 5) {
+          if (!buscarClientePorPassaporte(docNorm2))
+            inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null });
         }
-      }
+      } catch {}
     }
 
     const id = inserirReserva(
@@ -205,12 +216,17 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       }
     );
 
-    // Vincula cliente_id / cpf / quarto na reserva recém-criada (a inserirReserva
-    // não conhece esses campos — gravamos via UPDATE para não mexer na
-    // assinatura existente). Falha silenciosa se as colunas não existirem.
+    // Vincula cliente_id / cpf ou passaporte / quarto na reserva recém-criada.
+    // Falha silenciosa se as colunas ainda não existirem (migrações pendentes).
     try {
-      getDb().prepare('UPDATE reservas SET cliente_id=?, cpf=?, quarto=? WHERE id=?')
-        .run(clienteIdReserva || null, cpfNorm || null, quartoLimpo || null, id);
+      getDb().prepare('UPDATE reservas SET cliente_id=?, cpf=?, passaporte=?, quarto=? WHERE id=?')
+        .run(
+          clienteIdReserva || null,
+          tipoDoc1 === 'cpf' ? docNorm1 : null,
+          tipoDoc1 === 'passaporte' ? docNorm1 : null,
+          quartoLimpo || null,
+          id
+        );
     } catch {}
 
     res.status(201).json({

@@ -2122,6 +2122,8 @@ function calOpenModal(salaId, data, hora) {
   ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-cpf'].forEach(id=>{
     const el = document.getElementById(id); if (el) el.value='';
   });
+  const _tipoDocSel = document.getElementById('res-sel-tipo-doc');
+  if (_tipoDocSel) { _tipoDocSel.value = 'cpf'; _tipoDocSel.dispatchEvent(new Event('change')); }
   const _cpfInfo = document.getElementById('res-cpf-info');
   if (_cpfInfo) { _cpfInfo.style.display = 'none'; _cpfInfo.textContent = ''; }
   if (_cbTrat)  _cbTrat.clear();
@@ -2135,6 +2137,8 @@ function calOpenModal(salaId, data, hora) {
   ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const _tipoDoc2Sel = document.getElementById('res2-sel-tipo-doc');
+  if (_tipoDoc2Sel) { _tipoDoc2Sel.value = 'cpf'; _tipoDoc2Sel.dispatchEvent(new Event('change')); }
   const _cpf2Info = document.getElementById('res2-cpf-info');
   if (_cpf2Info) { _cpf2Info.style.display = 'none'; _cpf2Info.textContent = ''; }
   const _quarto2Info = document.getElementById('res2-quarto-info');
@@ -2803,6 +2807,7 @@ document.querySelectorAll('.res-room-btn').forEach(btn=>{
       ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
+      const _s2 = document.getElementById('res2-sel-tipo-doc'); if (_s2) { _s2.value='cpf'; _s2.dispatchEvent(new Event('change')); }
     }
     _syncCasalUI();
   });
@@ -2818,6 +2823,7 @@ document.getElementById('res-chk-casal')?.addEventListener('change', () => {
     ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    const _s2 = document.getElementById('res2-sel-tipo-doc'); if (_s2) { _s2.value='cpf'; _s2.dispatchEvent(new Event('change')); }
     const _cpf2Info = document.getElementById('res2-cpf-info');
     if (_cpf2Info) { _cpf2Info.style.display = 'none'; _cpf2Info.textContent = ''; }
   }
@@ -2836,7 +2842,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   // Casal sempre grava na sala 3 (espaço unificado 3+4); individual usa sala escolhida
   const sala = _isCasal() ? 3 : _resSala;
   const tipo=_resTipo;
-  const cpfInpVal = (document.getElementById('res-inp-cpf')?.value || '').replace(/\D/g, '');
+  const tipoDoc = document.getElementById('res-sel-tipo-doc')?.value || 'cpf';
+  const _docRaw = document.getElementById('res-inp-cpf')?.value || '';
+  const cpfInpVal = tipoDoc === 'cpf' ? _docRaw.replace(/\D/g, '') : _docRaw.trim().toUpperCase();
   const nome=document.getElementById('res-inp-nome').value.trim();
   const apto=document.getElementById('res-inp-apto').value.trim();
   const email=document.getElementById('res-inp-email').value.trim();
@@ -2845,8 +2853,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const data=document.getElementById('res-inp-data').value;
   const horaInicio=document.getElementById('res-inp-hora-inicio').value;
   if(!sala){err.textContent='Selecione uma sala.';return;}
-  if(!cpfInpVal){err.textContent='Informe o CPF do cliente (obrigatório).';document.getElementById('res-inp-cpf')?.focus();return;}
-  if(!validarCpfMod11(cpfInpVal)){err.textContent='CPF inválido.';document.getElementById('res-inp-cpf')?.focus();return;}
+  if(!cpfInpVal){err.textContent='Informe o documento do cliente (CPF ou Passaporte).';document.getElementById('res-inp-cpf')?.focus();return;}
+  if(tipoDoc==='cpf'&&!validarCpfMod11(cpfInpVal)){err.textContent='CPF inválido.';document.getElementById('res-inp-cpf')?.focus();return;}
+  if(tipoDoc==='passaporte'&&cpfInpVal.length<5){err.textContent='Passaporte inválido (mínimo 5 caracteres).';document.getElementById('res-inp-cpf')?.focus();return;}
   if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
   if(!nome){err.textContent='Informe o nome do cliente.';return;}
   if(!email){err.textContent='Informe o e-mail.';return;}
@@ -2921,10 +2930,12 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   // Casal: campos pessoa 2 — TODOS OPCIONAIS. Se NADA estiver preenchido,
   // pessoa 2 e' ignorada (sala 3 pode ser usada por uma pessoa so).
   // Se ALGUM campo for preenchido, valida o restante coerentemente.
-  let cpf2 = null, nome2 = null, tipo2 = null, apto2 = null, quarto2 = null, email2 = null, tel2 = null;
+  let cpf2 = null, tipoDoc2 = 'cpf', nome2 = null, tipo2 = null, apto2 = null, quarto2 = null, email2 = null, tel2 = null;
   let tratamento2 = null, tratObj2 = null, massagistaId2 = null, _p2Preenchida = false;
   if (_isCasal()) {
-    const cpf2InpVal = (document.getElementById('res2-inp-cpf')?.value || '').replace(/\D/g, '');
+    tipoDoc2 = document.getElementById('res2-sel-tipo-doc')?.value || 'cpf';
+    const _doc2Raw = document.getElementById('res2-inp-cpf')?.value || '';
+    const cpf2InpVal = tipoDoc2 === 'cpf' ? _doc2Raw.replace(/\D/g,'') : _doc2Raw.trim().toUpperCase();
     nome2       = document.getElementById('res2-inp-nome')?.value.trim() || '';
     tipo2       = _resTipo2;
     const quarto2Raw = (document.getElementById('res2-inp-quarto')?.value || '').trim();
@@ -2938,9 +2949,10 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     _p2Preenchida = !!(cpf2InpVal || nome2 || email2 || tel2 || tratamento2 || massagistaId2 || quarto2);
     if (_p2Preenchida) {
       // Pessoa 2 preenchida → exige coerencia
-      if (!cpf2InpVal) { err.textContent = 'Pessoa 2: informe o CPF (autopreenche se ja cadastrado).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
-      if (!validarCpfMod11(cpf2InpVal)) { err.textContent = 'Pessoa 2: CPF invalido.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
-      if (cpfInpVal && cpf2InpVal === cpfInpVal) { err.textContent = 'Pessoa 1 e Pessoa 2 nao podem ter o mesmo CPF.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (!cpf2InpVal) { err.textContent = 'Pessoa 2: informe o documento (CPF ou Passaporte).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (tipoDoc2==='cpf'&&!validarCpfMod11(cpf2InpVal)) { err.textContent = 'Pessoa 2: CPF inválido.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (tipoDoc2==='passaporte'&&cpf2InpVal.length<5) { err.textContent = 'Pessoa 2: passaporte inválido (mínimo 5 caracteres).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (cpfInpVal && cpf2InpVal === cpfInpVal) { err.textContent = 'Pessoa 1 e Pessoa 2 nao podem ter o mesmo documento.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (!nome2)       { err.textContent = 'Pessoa 2: informe o nome.'; return; }
       if (!tipo2)       { err.textContent = 'Pessoa 2: selecione tipo de cliente (Hospede ou Passante).'; return; }
       if (tipo2 === 'hospede' && !quarto2) { err.textContent = 'Pessoa 2: informe o quarto (obrigatorio para hospede).'; document.getElementById('res2-inp-quarto')?.focus(); return; }
@@ -2974,19 +2986,18 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const btn=document.getElementById('btn-res-salvar');
   btn.disabled=true;
   try{
-    // cpfInpVal já validado mais acima (obrigatório + módulo-11)
     const body = {
       sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data,
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
-      cpf: cpfInpVal,
+      tipo_doc: tipoDoc, doc: cpfInpVal,
       quarto: quartoInp || null,
     };
     if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {
         cliente2: nome2, tipo_cliente2: tipo2 || null, apto2, email2, telefone2: tel2,
         tratamento2, tipo_massagem_id2: tratObj2?.id || null, massagista_id2: massagistaId2,
-        cpf2, quarto2,
+        tipo_doc2: tipoDoc2, doc2: cpf2, quarto2,
       });
     }
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify(body)});
@@ -4394,42 +4405,82 @@ async function adicionarProduto(cliId) {
 // Ao digitar 11 dígitos válidos, busca cliente existente e preenche
 // nome/email/telefone. Não bloqueia o submit se for cliente novo.
 // ────────────────────────────────────────────────────────────────────────────
-// Wire generico de CPF (mascara + autofill) — usado por pessoa 1 e pessoa 2
-function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId }) {
+// Wire generico de documento (CPF ou Passaporte) — máscara + autofill
+function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId }) {
   const inp = document.getElementById(inpId);
   if (!inp) return;
-  inp.addEventListener('input', async function () {
-    let v = this.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length > 9)      v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
-    else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
-    else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
-    this.value = v;
+
+  // Ao trocar o tipo de documento: limpa o campo, ajusta placeholder e inputmode
+  const sel = tipoDocSelId ? document.getElementById(tipoDocSelId) : null;
+  function _atualizarTipoDoc() {
+    const tipo = sel?.value || 'cpf';
+    inp.value = '';
     const info = document.getElementById(infoId);
-    const digits = v.replace(/\D/g, '');
-    if (digits.length !== 11) { if (info) info.style.display = 'none'; return; }
-    if (!validarCpfMod11(digits)) {
-      if (info) { info.style.color = 'var(--danger)'; info.textContent = '⚠ CPF inválido'; info.style.display = ''; }
-      return;
+    if (info) { info.style.display = 'none'; info.textContent = ''; }
+    if (tipo === 'cpf') {
+      inp.placeholder = '000.000.000-00';
+      inp.inputMode = 'numeric';
+      inp.maxLength = 14;
+    } else {
+      inp.placeholder = 'Ex: AB123456';
+      inp.inputMode = 'text';
+      inp.maxLength = 20;
     }
-    try {
-      const r = await api('/api/clientes/buscar?cpf=' + digits);
-      if (!r) return;
-      const d = await r.json();
-      if (d.ok && d.cliente) {
-        const c = d.cliente;
-        const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
-        set(nomeId,  c.nome);
-        set(emailId, c.email);
-        set(telId,   c.telefone);
-        if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
-      } else {
-        if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
+  }
+  if (sel) sel.addEventListener('change', _atualizarTipoDoc);
+
+  inp.addEventListener('input', async function () {
+    const tipo = sel?.value || 'cpf';
+    const info = document.getElementById(infoId);
+
+    if (tipo === 'cpf') {
+      let v = this.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 9)      v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+      this.value = v;
+      const digits = v.replace(/\D/g, '');
+      if (digits.length !== 11) { if (info) info.style.display = 'none'; return; }
+      if (!validarCpfMod11(digits)) {
+        if (info) { info.style.color = 'var(--danger)'; info.textContent = '⚠ CPF inválido'; info.style.display = ''; }
+        return;
       }
-    } catch {}
+      try {
+        const r = await api('/api/clientes/buscar?cpf=' + digits);
+        if (!r) return;
+        const d = await r.json();
+        if (d.ok && d.cliente) {
+          const c = d.cliente;
+          const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+          set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
+          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
+        } else {
+          if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
+        }
+      } catch {}
+    } else {
+      // Passaporte: sem máscara, uppercase
+      this.value = this.value.toUpperCase();
+      const v = this.value.trim();
+      if (v.length < 5) { if (info) info.style.display = 'none'; return; }
+      try {
+        const r = await api('/api/clientes/buscar?passaporte=' + encodeURIComponent(v));
+        if (!r) return;
+        const d = await r.json();
+        if (d.ok && d.cliente) {
+          const c = d.cliente;
+          const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+          set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
+          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
+        } else {
+          if (info) { info.style.color = 'var(--muted)'; info.textContent = 'Passaporte válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
+        }
+      } catch {}
+    }
   });
 }
-_wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel'  });
-_wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel' });
+_wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel',  tipoDocSelId: 'res-sel-tipo-doc'  });
+_wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel', tipoDocSelId: 'res2-sel-tipo-doc' });
 
 // ────────────────────────────────────────────────────────────────────────────
 // Máscara automática do TELEFONE na Nova Reserva.

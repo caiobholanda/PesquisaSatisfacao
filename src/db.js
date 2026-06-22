@@ -186,6 +186,10 @@ export function initDb() {
   for (const col of ['documento_token2 TEXT', 'documento_token_expiry2 TEXT', 'documento_perfil_id2 INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
   }
+  // Migration: suporte a passaporte como alternativa ao CPF
+  try { db.exec(`ALTER TABLE clientes ADD COLUMN passaporte TEXT`); } catch {}
+  try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_passaporte ON clientes(passaporte) WHERE passaporte IS NOT NULL AND passaporte <> ''`); } catch {}
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN passaporte TEXT`); } catch {}
 
   // Tabela de auditoria das mudancas no editor de anamnese / pesquisa
   // de satisfacao. Registra criar/editar/remover/excluir/reativar de
@@ -1424,12 +1428,13 @@ export function listarClientes({ q, limit = 100, offset = 0 } = {}) {
   let where = '1=1', args = [];
   if (q) {
     const needle = '%' + q.toLowerCase().replace(/\s+/g, '%') + '%';
-    where = '(LOWER(nome) LIKE ? OR cpf LIKE ? OR LOWER(email) LIKE ? OR telefone LIKE ?)';
+    where = '(LOWER(nome) LIKE ? OR cpf LIKE ? OR LOWER(passaporte) LIKE ? OR LOWER(email) LIKE ? OR telefone LIKE ?)';
     const cpfN = '%' + _normCpf(q) + '%';
-    args = [needle, cpfN, needle, needle];
+    const passN = '%' + q.toUpperCase() + '%';
+    args = [needle, cpfN, passN, needle, needle];
   }
   const items = db.prepare(`
-    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, criado_em, atualizado_em
     FROM clientes WHERE ${where}
     ORDER BY nome
     LIMIT ? OFFSET ?
@@ -1449,24 +1454,37 @@ export function buscarClientePorCpf(cpf) {
   const n = _normCpf(cpf);
   if (!n) return null;
   return getDb().prepare(`
-    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
     FROM clientes WHERE cpf=? LIMIT 1
   `).get(n) || null;
 }
 
-export function inserirCliente({ cpf, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
+export function buscarClientePorPassaporte(passaporte) {
+  const p = (passaporte || '').toString().trim().toUpperCase();
+  if (!p) return null;
+  return getDb().prepare(`
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    FROM clientes WHERE passaporte=? LIMIT 1
+  `).get(p) || null;
+}
+
+export function inserirCliente({ cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
   if (!nome) throw new Error('nome obrigatorio');
   const cpfN = _normCpf(cpf) || null;
+  const passN = passaporte ? passaporte.toString().trim().toUpperCase() : null;
   if (cpfN && !validarCpfMod11(cpfN)) throw new Error('CPF invalido');
-  // upsert por CPF (se cpf existir, retorna o existente; se nome novo, atualiza)
+  // upsert por CPF ou passaporte (retorna id existente se já cadastrado)
   if (cpfN) {
     const existing = buscarClientePorCpf(cpfN);
     if (existing) return existing.id;
+  } else if (passN) {
+    const existing = buscarClientePorPassaporte(passN);
+    if (existing) return existing.id;
   }
   const r = getDb().prepare(`
-    INSERT INTO clientes (cpf, nome, email, telefone, data_nascimento, locale_pref, observacao)
-    VALUES (?,?,?,?,?,?,?)
-  `).run(cpfN, nome, email || null, telefone || null, data_nascimento || null, locale_pref || 'pt-BR', observacao || null);
+    INSERT INTO clientes (cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao)
+    VALUES (?,?,?,?,?,?,?,?)
+  `).run(cpfN, passN, nome, email || null, telefone || null, data_nascimento || null, locale_pref || 'pt-BR', observacao || null);
   return r.lastInsertRowid;
 }
 
