@@ -1275,20 +1275,45 @@ export function inserirSpaPerfil(dados) {
           rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
           idioma, reserva_id } = dados;
-  const r = getDb().prepare(`
-    INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
-      rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
-      consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
-         data_nascimento || null, rotina_facial || null, rotina_corporal || null,
-         produto_especifico || null, pressao_massagem || null, info_medica || '',
-         consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
-         canais_marketing || null, assinatura_data_url || null, idioma || 'pt-BR', reserva_id || null);
-  if (reserva_id) {
-    getDb().prepare('UPDATE reservas SET documento_perfil_id=? WHERE id=?').run(r.lastInsertRowid, reserva_id);
+  const db = getDb();
+  const resolvedIdioma = idioma || 'pt-BR';
+
+  // Upsert: reenvio na mesma (reserva_id, idioma) substitui registro anterior.
+  // Idiomas diferentes na mesma reserva coexistem como registros separados.
+  const existente = reserva_id
+    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND idioma=? LIMIT 1').get(reserva_id, resolvedIdioma)
+    : null;
+
+  let perfil_id;
+  if (existente) {
+    db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
+      data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
+      info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
+      assinatura_data_url=?, idioma=? WHERE id=?`
+    ).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
+          data_nascimento || null, rotina_facial || null, rotina_corporal || null,
+          produto_especifico || null, pressao_massagem || null, info_medica || '',
+          consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
+          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, existente.id);
+    perfil_id = existente.id;
+  } else {
+    const r = db.prepare(`
+      INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
+        rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
+        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
+           data_nascimento || null, rotina_facial || null, rotina_corporal || null,
+           produto_especifico || null, pressao_massagem || null, info_medica || '',
+           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
+           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null);
+    perfil_id = r.lastInsertRowid;
   }
-  return r.lastInsertRowid;
+
+  if (reserva_id) {
+    db.prepare('UPDATE reservas SET documento_perfil_id=? WHERE id=?').run(perfil_id, reserva_id);
+  }
+  return perfil_id;
 }
 
 export function vincularDocumentoToken(reservaId, locale) {

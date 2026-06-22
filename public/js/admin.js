@@ -5205,18 +5205,29 @@ function _anamxRenderSidebar(secoes) {
 function _anamxRenderSecaoContent(secao) {
   const content = document.getElementById('anamx-content');
   if (!content) return;
-  const perguntas = (secao.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
+  const todasPerguntas = secao.perguntas || [];
+  const perguntas      = todasPerguntas.filter(q => q.ativo !== 0 && q.ativo !== false);
+  const inativas       = todasPerguntas.filter(q => q.ativo === 0 || q.ativo === false);
   const totalPerg = perguntas.length;
-  const perguntasHTML = perguntas.map((q, i) => _anamxRenderPerguntaCard(q, i, totalPerg, secao.id)).join('');
+  const perguntasHTML = perguntas.map((q, i) => _anamxRenderPerguntaCard(q, i, totalPerg, secao.id, false)).join('');
+
+  const inativasHTML = inativas.length ? `
+    <div style="margin-top:.6rem;padding:.7rem 1.2rem .5rem;border-top:1px dashed rgba(255,255,255,.07);background:rgba(0,0,0,.12)">
+      <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem">
+        ${inativas.length} pergunta${inativas.length > 1 ? 's' : ''} inativa${inativas.length > 1 ? 's' : ''} nesta seção
+      </div>
+      ${inativas.map(q => _anamxRenderPerguntaCard(q, -1, 0, secao.id, true)).join('')}
+    </div>` : '';
 
   const corpoPerguntas = totalPerg
-    ? `<div class="anamx-perguntas anam-perguntas" data-secao-id="${secao.id}">${perguntasHTML}</div>`
+    ? `<div class="anamx-perguntas anam-perguntas" data-secao-id="${secao.id}">${perguntasHTML}</div>${inativasHTML}`
     : `
       <div class="anamx-empty-state">
         <h3>Esta seção ainda não tem perguntas</h3>
         <p>Adicione a primeira pergunta abaixo. Você pode escolher o tipo (texto, opções, escala, sim/não).</p>
       </div>
       <div class="anam-perguntas" data-secao-id="${secao.id}" style="display:none"></div>
+      ${inativasHTML}
     `;
 
   content.innerHTML = `
@@ -5238,7 +5249,7 @@ function _anamxRenderSecaoContent(secao) {
   `;
 }
 
-function _anamxRenderPerguntaCard(q, idx, total, secaoId) {
+function _anamxRenderPerguntaCard(q, idx, total, secaoId, inativa = false) {
   const tipoLabel = _ANAMX_TIPO_LABEL[q.tipo] || q.tipo;
   const tipoIco = _ANAMX_TIPO_ICO[q.tipo] || '◆';
   const obrigOn = !!q.obrigatoria;
@@ -5247,6 +5258,26 @@ function _anamxRenderPerguntaCard(q, idx, total, secaoId) {
   const opcoes = (q.opcoes && q.opcoes.length)
     ? `<div class="anamx-perg-opcoes"><b>Opções:</b> ${q.opcoes.map(o => _escAttr(o.rotulo || o.chave)).join(' · ')}</div>`
     : '';
+
+  if (inativa) {
+    return `
+      <div class="anamx-pergunta anam-pergunta" data-perg-chave="${_escAttr(q.chave)}" data-assoc-id="${q.associacao_id || ''}" style="opacity:.55;pointer-events:auto">
+        <div class="anamx-perg-drag" style="visibility:hidden"><span></span><span></span><span></span></div>
+        <div class="anamx-perg-body">
+          <div class="anamx-perg-num" style="color:var(--muted)">—</div>
+          <div style="text-decoration:line-through;color:var(--muted);font-size:.92rem">${_escAttr(q.rotulo || q.chave)}</div>
+          ${opcoes}
+          <div class="anamx-perg-tags">
+            <span class="anamx-perg-tag" style="background:#9e3832;color:#fff;font-weight:700;font-size:.66rem">INATIVA</span>
+            <span class="anamx-perg-tag tipo"><span class="anamx-tipo-ico" aria-hidden="true">${tipoIco}</span> ${_escAttr(tipoLabel)}</span>
+          </div>
+        </div>
+        <div class="anamx-perg-actions">
+          <button class="anamx-icon-btn" type="button" data-anamx-act="ativar-perg" data-pergunta-id="${q.pergunta_id}" data-chave="${_escAttr(q.chave)}" title="Ativar pergunta" style="color:var(--gold,#c9a86a);opacity:1">↺ Ativar</button>
+        </div>
+      </div>`;
+  }
+
   const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
     ? `<button class="anamx-icon-btn" type="button" data-anamx-act="edit-opcoes" data-chave="${_escAttr(q.chave)}" title="Editar opções" aria-label="Editar opções">⋯</button>`
     : '';
@@ -5322,6 +5353,17 @@ function _anamxOnClick(e) {
   else if (act === 'edit-opcoes')  _anamEditOpcoes(chave);
   else if (act === 'del-secao')    _anamDelSecao(secaoId);
   else if (act === 'toggle-obrig') _anamxToggleObrig(chave);
+  else if (act === 'ativar-perg')  _anamxAtivarPergunta(parseInt(actBtn.dataset.perguntaId));
+}
+
+async function _anamxAtivarPergunta(perguntaId) {
+  if (!perguntaId) return;
+  try {
+    const r = await apiSend('PUT', `/api/qualidade/admin/perguntas/${perguntaId}`, { ativo: 1, pesquisa_slug: ANAMNESE_SLUG });
+    if (!r?.ok) { showToast('Erro ao ativar pergunta', 4000); return; }
+    showToast('Pergunta ativada — formulário atualizado');
+    await initAnamneseEditor();
+  } catch (e) { showToast('Erro: ' + e.message, 4000); }
 }
 
 // Normaliza texto editado inline: trim, colapsa whitespace (\n, \t, etc),
