@@ -1291,8 +1291,11 @@ export function inserirSpaPerfil(dados) {
   // Upsert por (reserva_id, pessoa): garante que o hospede 2 nao sobrescreva
   // a anamnese do hospede 1 em reservas casal, mesmo quando ambos preenchem
   // no mesmo idioma. O idioma vira coluna comum (sobrescrita no reenvio).
+  // ORDER BY criado_em DESC: protege contra orfas legadas (linhas duplicadas
+  // criadas antes do Passo 2 quando a chave era (reserva_id, idioma) — ao
+  // reenviar, escolhemos deterministicamente a mais recente para atualizar.
   const existente = reserva_id
-    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? LIMIT 1').get(reserva_id, resolvedPessoa)
+    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? ORDER BY criado_em DESC LIMIT 1').get(reserva_id, resolvedPessoa)
     : null;
 
   let perfil_id;
