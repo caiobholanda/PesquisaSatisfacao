@@ -83,26 +83,61 @@ export function recalcularHmacConsentimento(texto, keyId) {
 }
 export function consentKeyIdAtual() { return _CONSENT_KEY_ID; }
 
-// D19: selo composto serializa todos os componentes da prova de
-// conteudo+autoria em JSON canonico (ordem de chaves fixa) antes do
-// HMAC. Mudancas em qualquer componente quebram o selo. Versao 'v1'
-// inclui texto, documento, reserva_id, assinatura_hash, consentido_em.
+// D19: selo composto serializa componentes em formato canonico explicito
+// (NAO JSON.stringify — esse depende de impl preservar insertion order,
+// fragil a refactoring futuro). Formato fixo com chaves em ordem ASCII,
+// delimitador unico (\x1F = Unit Separator), valores escapados. Mudanca
+// em qualquer componente quebra o selo. Versao 'v1' sela:
+// alg, assinatura_hash, consentido_em, documento, reserva_id, texto.
 export const CONSENT_ALG_ATUAL = 'hmac-sha256-composto-v1';
 export function sha256Hex(s) {
   return createHash('sha256').update(String(s ?? ''), 'utf8').digest('hex');
 }
+// Lista FIXA E IMUTAVEL de campos do selo v1, em ordem ASCII. Adicionar
+// campo = nova versao do alg (composto-v2). Reordenar quebra todas as
+// provas existentes — proibido sem migracao.
+const _SELO_COMPOSTO_V1_CAMPOS = Object.freeze([
+  'alg',
+  'assinatura_hash',
+  'consentido_em',
+  'documento',
+  'reserva_id',
+  'texto',
+]);
+function _escapeSelo(v) {
+  // Escape minimal para preservar a fronteira do separador. Substitui
+  // 0x1F (Unit Separator) e 0x1E (Record Separator) por sequencias
+  // literais legiveis. Backslash duplicado para reversibilidade.
+  return String(v ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\x1E/g, '\\x1E')
+    .replace(/\x1F/g, '\\x1F');
+}
+// Normaliza reserva_id para representacao canonica: null/undefined/''/
+// NaN/0/negativo todos sinalizam "anamnese solta" → string vazia. Apenas
+// inteiros positivos viram a representacao numerica. Sem isso null !=
+// '' geravam selos diferentes para semantica identica.
+function _normReservaId(r) {
+  if (r == null || r === '') return '';
+  const n = Number(r);
+  if (!Number.isFinite(n) || n < 1) return '';
+  return String(Math.trunc(n));
+}
 function _serializarSeloComposto(c) {
-  // Ordem fixa, sem caracteres de escape inesperados (JSON.stringify
-  // ja garante isso). Campos null/undefined explicitos para evitar
-  // ambiguidade ('' vs ausente).
-  return JSON.stringify({
+  const valoresCanonicos = {
     alg: 'hmac-sha256-composto-v1',
-    texto: String(c.texto ?? ''),
-    documento: String(c.documento ?? ''),
-    reserva_id: c.reserva_id == null ? null : Number(c.reserva_id),
     assinatura_hash: String(c.assinatura_hash ?? ''),
     consentido_em: String(c.consentido_em ?? ''),
-  });
+    documento: String(c.documento ?? ''),
+    reserva_id: _normReservaId(c.reserva_id),
+    texto: String(c.texto ?? ''),
+  };
+  // Concatena chave=valor com \x1F entre pares, \x1E entre componentes.
+  // Ordem garantida pela iteracao na lista frozen (nao depende de order
+  // de chaves do objeto).
+  return _SELO_COMPOSTO_V1_CAMPOS
+    .map(k => k + '\x1F' + _escapeSelo(valoresCanonicos[k]))
+    .join('\x1E');
 }
 export function selarComposto(componentes, keyId) {
   const seloRaw = _serializarSeloComposto(componentes);
