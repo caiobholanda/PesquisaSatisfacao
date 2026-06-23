@@ -1578,7 +1578,7 @@ export function buscarCliente360(id) {
     SELECT sp.id, sp.nome, sp.sobrenome, sp.tipo_documento, sp.documento,
            COALESCE(sp.email,    c.email)    AS email,
            COALESCE(sp.telefone, c.telefone) AS telefone,
-           sp.idioma,
+           sp.idioma, sp.pessoa,
            sp.reserva_id, sp.criado_em, 'spa_perfil' AS fonte
     FROM spa_perfis sp
     LEFT JOIN clientes c ON c.id = sp.cliente_id
@@ -1587,13 +1587,24 @@ export function buscarCliente360(id) {
       OR sp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?))
     ORDER BY sp.criado_em DESC
   `).all(id, cliente.cpf || '', id, cliente.cpf || '');
-  // Reservas onde JA existe spa_perfil (pra nao duplicar a entrada da
-  // resposta_pesquisa quando a anamnese tradicional foi gravada normal).
-  const _reservasComPerfil = new Set(anamPerfis.map(a => a.reserva_id).filter(Boolean));
+  // Reservas onde JA existe spa_perfil por (reserva_id, pessoa) — dedup
+  // preserva anamnese do hospede 2 que so existe em resposta_pesquisa
+  // (caso em casal onde apenas um dos hospedes preencheu o formulario
+  // novo e o outro tem apenas o registro estruturado).
+  const _perfisExistentes = new Set(
+    anamPerfis
+      .map(a => a.reserva_id ? `${a.reserva_id}|${a.pessoa || 1}` : null)
+      .filter(Boolean)
+  );
   const anamRespostas = db.prepare(`
     SELECT rp.id, rp.submitted_at AS criado_em, rp.reserva_id,
            p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte,
-           c.email, c.telefone, NULL AS idioma
+           CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN COALESCE(rv.email2, c.email)
+                ELSE COALESCE(c.email, rv.email) END AS email,
+           CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN COALESCE(rv.telefone2, c.telefone)
+                ELSE COALESCE(c.telefone, rv.telefone) END AS telefone,
+           NULL AS idioma,
+           CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN 2 ELSE 1 END AS pessoa
     FROM resposta_pesquisa rp
     JOIN pesquisa p ON p.id = rp.pesquisa_id
     LEFT JOIN reservas rv ON rv.id = rp.reserva_id
@@ -1602,7 +1613,9 @@ export function buscarCliente360(id) {
       AND (rp.cliente_id=? OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
     ORDER BY rp.submitted_at DESC
   `).all(id, id, cliente.cpf || '');
-  const anamRespostasFiltrado = anamRespostas.filter(a => !a.reserva_id || !_reservasComPerfil.has(a.reserva_id));
+  const anamRespostasFiltrado = anamRespostas.filter(a =>
+    !a.reserva_id || !_perfisExistentes.has(`${a.reserva_id}|${a.pessoa || 1}`)
+  );
   const anamneses = [...anamPerfis, ...anamRespostasFiltrado]
     .sort((a, b) => (b.criado_em || '').localeCompare(a.criado_em || ''));
   // Pesquisas de SATISFAÇÃO respondidas.
