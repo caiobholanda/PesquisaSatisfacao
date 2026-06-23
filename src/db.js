@@ -1295,7 +1295,7 @@ export function inserirSpaPerfil(dados) {
   // criadas antes do Passo 2 quando a chave era (reserva_id, idioma) — ao
   // reenviar, escolhemos deterministicamente a mais recente para atualizar.
   const existente = reserva_id
-    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? ORDER BY criado_em DESC LIMIT 1').get(reserva_id, resolvedPessoa)
+    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? ORDER BY criado_em DESC, id DESC LIMIT 1').get(reserva_id, resolvedPessoa)
     : null;
 
   let perfil_id;
