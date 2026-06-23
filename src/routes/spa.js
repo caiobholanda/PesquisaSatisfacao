@@ -16,8 +16,24 @@ import { fileURLToPath } from 'url';
 // continuam validas para revalidacao.
 const _CONSENT_KEY_ID = process.env.CONSENT_KEY_ID || 'k1';
 const _CONSENT_HMAC_SECRET_ATUAL = process.env.CONSENT_HMAC_SECRET || 'dev-fallback-NO-ROTATION-NO-AUDIT-VALUE';
-if (_CONSENT_HMAC_SECRET_ATUAL.startsWith('dev-fallback')) {
-  console.warn('[consentimento] CONSENT_HMAC_SECRET nao configurado — usando fallback dev (nao apto para producao)');
+const _ehProducao = process.env.NODE_ENV === 'production';
+const _segredoFraco = _CONSENT_HMAC_SECRET_ATUAL.startsWith('dev-fallback');
+// Fail-closed: em producao, segredo ausente/fallback significa que a
+// prova de consentimento pode ser forjada por qualquer um que tenha
+// acesso ao codigo. Aborta o boot — preferimos servidor down a prova
+// forjavel sendo gravada como legitima.
+if (_ehProducao && _segredoFraco) {
+  console.error('═══════════════════════════════════════════════════════════════');
+  console.error('[consentimento] FATAL: CONSENT_HMAC_SECRET ausente em producao.');
+  console.error('  A prova de consentimento LGPD nao pode ser gravada sem segredo.');
+  console.error('  Configure via:');
+  console.error('    fly secrets set CONSENT_HMAC_SECRET=$(node -e "console.log(require(\\"crypto\\").randomBytes(32).toString(\\"hex\\"))")');
+  console.error('    fly secrets set CONSENT_KEY_ID=k1-2026-06-23');
+  console.error('═══════════════════════════════════════════════════════════════');
+  process.exit(1);
+}
+if (_segredoFraco) {
+  console.warn('[consentimento] CONSENT_HMAC_SECRET nao configurado — usando fallback dev (NODE_ENV=' + (process.env.NODE_ENV || 'undefined') + ')');
 }
 const _CONSENT_KEYRING = new Map();
 _CONSENT_KEYRING.set(_CONSENT_KEY_ID, _CONSENT_HMAC_SECRET_ATUAL);
