@@ -1,8 +1,27 @@
 import { Router } from 'express';
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Segredo HMAC para assinatura da prova de consentimento. Em prod,
+// definir via `fly secrets set CONSENT_HMAC_SECRET=<32+ bytes random>`.
+// Sem segredo configurado, ainda funciona com fallback dev — mas a
+// prova nao tem assinatura criptografica, so checksum. Loga warn no boot.
+const _CONSENT_HMAC_SECRET = process.env.CONSENT_HMAC_SECRET || 'dev-fallback-NO-ROTATION-NO-AUDIT-VALUE';
+const _CONSENT_KEY_ID = process.env.CONSENT_KEY_ID || 'k1';
+if (_CONSENT_HMAC_SECRET.startsWith('dev-fallback')) {
+  console.warn('[consentimento] CONSENT_HMAC_SECRET nao configurado — usando fallback dev (nao apto para producao)');
+}
+function _hmacProva(texto) {
+  return createHmac('sha256', _CONSENT_HMAC_SECRET).update(texto, 'utf8').digest('hex');
+}
+// Exportado para o endpoint de verificacao em clientes.js (mesmo
+// segredo, mesmo algoritmo).
+export function recalcularHmacConsentimento(texto) {
+  return _hmacProva(String(texto || ''));
+}
+export function consentKeyIdAtual() { return _CONSENT_KEY_ID; }
 import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
@@ -14,11 +33,12 @@ const router = Router();
 // estrutura juridica do texto enquanto neutraliza diferencas cosmeticas:
 // NFD vs NFC (macOS), BOM em JSON, ZWSP/ZWNJ/ZWJ invisiveis.
 function _normalizarTextoLegal(s) {
-  if (!s) return '';
+  if (s === null || s === undefined) return '';
   return String(s)
     .normalize('NFC')
     .replace(/^﻿/, '')
     .replace(/[​-‍﻿]/g, '')
+    .replace(/[  ]/g, ' ')
     .replace(/\r\n?/g, '\n')
     .split('\n')
     .map(linha => linha.replace(/[ \t]+/g, ' ').trim())
@@ -234,43 +254,51 @@ router.post('/perfil', (req, res) => {
       idioma:                 locale,
       reserva_id,
       pessoa:                 _pessoaReserva,
-      // Prova de consentimento LGPD: hash SHA-256 do texto canonico do
-      // servidor (lido de public/locales/{idioma}.json), nao do texto
-      // enviado pelo cliente. Garante que a prova vale o que o servidor
-      // tem como verdade, independente do que o cliente envia. Cliente
-      // pode mandar texto para comparacao — se divergir do canonico,
-      // gravamos versao com sufixo '-divergente' para auditoria.
+      // Prova de consentimento LGPD: hash HMAC-SHA256 do texto EXIBIDO
+      // ao hospede (vindo do cliente), nao do canonico do servidor. A
+      // prova juridica e o que ele leu na tela — nao o que o servidor
+      // tem hoje. O canonico server-side entra apenas como cross-check:
+      // se divergir, marca consentimento_saude_canonico_divergente=1
+      // para auditoria, sem rebaixar o texto do hospede.
+      // HMAC com segredo server-side impede forja por quem so tem o DB.
       ...(() => {
         if (!b.consentimento_saude) return {};
         const agora = new Date().toISOString();
-        const textoCanon = _normalizarTextoLegal(_carregarTextoLegalCanonico(locale));
-        if (!textoCanon) {
-          // Sem texto canonico no servidor — nao podemos provar nada.
-          // Marca versao='sem-canonico' em vez de hashear string vazia.
+        const textoExibido = _normalizarTextoLegal(b.consentimento_saude_texto);
+        if (!textoExibido) {
+          // Cliente nao enviou texto exibido — nao podemos provar o que
+          // ele viu. Marca versao='sem-texto-cliente' SEM hashear nada
+          // (nunca hashear string vazia como prova).
           return {
-            consentimento_saude_versao: 'sem-canonico',
+            consentimento_saude_versao: 'sem-texto-cliente',
             consentimento_saude_em: agora,
+            consentimento_saude_key_id: _CONSENT_KEY_ID,
           };
         }
-        const truncado = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
-        const hash = createHash('sha256').update(truncado, 'utf8').digest('hex');
-        let versao = hash.slice(0, 16);
-        // Comparacao com texto do cliente: detecta divergencia (cache stale,
-        // cliente adulterado, JSON publicado mid-sessao). Nao bloqueia, apenas
-        // marca para auditoria.
-        const textoClienteCru = b.consentimento_saude_texto;
-        if (textoClienteCru && typeof textoClienteCru === 'string') {
-          const textoClienteNorm = _normalizarTextoLegal(textoClienteCru);
-          if (textoClienteNorm && textoClienteNorm !== truncado) {
-            versao = versao + '-divergente';
-            console.warn('[consentimento] divergencia cliente vs canonico (lang=' + locale + ')');
+        const truncadoExibido = textoExibido.length > 50_000 ? textoExibido.slice(0, 50_000) : textoExibido;
+        const hash = _hmacProva(truncadoExibido);
+        // Cross-check com canonico do servidor (mesmo idioma). Sem
+        // fallback para outro idioma — texto de outro idioma seria
+        // vicio de consentimento (LGPD art. 8).
+        let canonicoDivergente = 0;
+        try {
+          const textoCanonRaw = _carregarTextoLegalCanonico(locale);
+          if (textoCanonRaw && textoCanonRaw.length > 0) {
+            const textoCanon = _normalizarTextoLegal(textoCanonRaw);
+            const truncadoCanon = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
+            if (truncadoCanon && truncadoCanon !== truncadoExibido) {
+              canonicoDivergente = 1;
+              console.warn('[consentimento] cross-check divergente vs canonico (lang=' + locale + ')');
+            }
           }
-        }
+        } catch (e) { console.warn('[consentimento] cross-check falhou', e?.message); }
         return {
-          consentimento_saude_texto: truncado,
+          consentimento_saude_texto: truncadoExibido,
           consentimento_saude_hash: hash,
-          consentimento_saude_versao: versao,
+          consentimento_saude_versao: hash.slice(0, 16),
           consentimento_saude_em: agora,
+          consentimento_saude_canonico_divergente: canonicoDivergente,
+          consentimento_saude_key_id: _CONSENT_KEY_ID,
         };
       })(),
     });

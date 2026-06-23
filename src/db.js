@@ -453,6 +453,13 @@ export function initDb() {
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_hash TEXT`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_versao TEXT`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_em TEXT`); } catch {}
+  // Cross-check de adulteracao: 1 = texto exibido ao hospede divergiu do
+  // canonico do servidor (cache stale, deploy mid-sessao, etc). Nao
+  // invalida a prova — a prova continua sendo o que ele leu.
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_canonico_divergente INTEGER NOT NULL DEFAULT 0`); } catch {}
+  // ID da chave HMAC usada para gerar o hash. Permite rotacao de
+  // segredo: hashes antigos continuam validos com a key_id de origem.
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_key_id TEXT`); } catch {}
   // Backfill idempotente: linhas existentes com consentimento marcado mas
   // sem hash viram versao='desconhecida' + em=criado_em. Nao falsificar
   // hash com texto atual — assume-se honestamente que nao ha prova
@@ -1297,7 +1304,8 @@ export function inserirSpaPerfil(dados) {
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
           idioma, reserva_id, pessoa,
           consentimento_saude_texto, consentimento_saude_hash,
-          consentimento_saude_versao, consentimento_saude_em } = dados;
+          consentimento_saude_versao, consentimento_saude_em,
+          consentimento_saude_canonico_divergente, consentimento_saude_key_id } = dados;
   const db = getDb();
   const resolvedIdioma = idioma || 'pt-BR';
   const resolvedPessoa = pessoa === 2 ? 2 : 1;
@@ -1324,6 +1332,7 @@ export function inserirSpaPerfil(dados) {
       assinatura_data_url=?, idioma=?, pessoa=?,
       consentimento_saude_texto=?, consentimento_saude_hash=?,
       consentimento_saude_versao=?,
+      consentimento_saude_canonico_divergente=?, consentimento_saude_key_id=?,
       consentimento_saude_em = CASE
         WHEN consentimento_saude_hash IS NOT NULL AND consentimento_saude_hash = ? THEN consentimento_saude_em
         ELSE ?
@@ -1336,6 +1345,7 @@ export function inserirSpaPerfil(dados) {
           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
           consentimento_saude_texto || null, consentimento_saude_hash || null,
           consentimento_saude_versao || null,
+          consentimento_saude_canonico_divergente ? 1 : 0, consentimento_saude_key_id || null,
           consentimento_saude_hash || null, consentimento_saude_em || null, existente.id);
     perfil_id = existente.id;
   } else {
@@ -1343,15 +1353,17 @@ export function inserirSpaPerfil(dados) {
       INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
         consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
-        consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
+        consentimento_saude_canonico_divergente, consentimento_saude_key_id)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
            consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
            canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
            consentimento_saude_texto || null, consentimento_saude_hash || null,
-           consentimento_saude_versao || null, consentimento_saude_em || null);
+           consentimento_saude_versao || null, consentimento_saude_em || null,
+           consentimento_saude_canonico_divergente ? 1 : 0, consentimento_saude_key_id || null);
     perfil_id = r.lastInsertRowid;
   }
 

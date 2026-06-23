@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { createHash } from 'crypto';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { requireMaster } from '../middleware/auth.js';
 import {
   listarClientes, buscarClientePorId, buscarClientePorCpf, buscarClientePorPassaporte,
   inserirCliente, atualizarCliente, buscarCliente360,
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
   validarCpfMod11, getDb, logAuditoria,
 } from '../db.js';
+import { recalcularHmacConsentimento } from './spa.js';
 
 const router = Router();
 
@@ -240,50 +239,69 @@ router.get('/anamnese/:perfilId', (req, res) => {
 });
 
 // GET /api/clientes/anamnese/:perfilId/prova-consentimento
-// Endpoint dedicado de auditoria juridica: devolve o texto exato consentido,
-// o hash SHA-256, a versao, o timestamp E revalida sha256(texto)===hash
-// para garantir integridade do registro. Gated por role master + log de
-// auditoria do acesso (rastreabilidade de quem viu a prova).
-router.get('/anamnese/:perfilId/prova-consentimento', requireMaster, (req, res) => {
+// Endpoint dedicado de auditoria juridica: devolve o texto exibido ao
+// hospede, o HMAC-SHA256 (assinado com segredo server-side), key_id,
+// versao, timestamp e cross-check vs canonico. Revalida HMAC(texto)===
+// hash para garantir integridade. Gated por role master + logAuditoria
+// em TODOS os paths (200/400/403/404) para rastreabilidade plena.
+function _logProva(req, status, sucesso, detalhes, recursoId) {
+  try {
+    logAuditoria({
+      ator_username: req.user?.username || null,
+      ator_role: req.user?.role || null,
+      ator_ip: req.ip || null,
+      metodo: 'GET', rota: req.originalUrl,
+      acao: 'prova-consentimento', recurso: 'spa_perfis',
+      recurso_id: recursoId, status, sucesso, detalhes,
+    });
+  } catch {}
+}
+function _exigirMasterComLog(req, res, next) {
+  if (req.user?.role !== 'master') {
+    const recursoId = parseInt(req.params.perfilId) || null;
+    _logProva(req, 403, 0, 'role=' + (req.user?.role || 'nenhum'), recursoId);
+    return res.status(403).json({ ok: false, error: 'Acesso restrito a administradores master' });
+  }
+  next();
+}
+router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   const id = parseInt(req.params.perfilId);
-  if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
+  if (!id) {
+    _logProva(req, 400, 0, 'id invalido', null);
+    return res.status(400).json({ ok: false, error: 'id invalido' });
+  }
   const db = getDb();
   const row = db.prepare(`
     SELECT id, reserva_id, idioma, criado_em,
            consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
-           consentimento_saude_versao, consentimento_saude_em
+           consentimento_saude_versao, consentimento_saude_em,
+           consentimento_saude_canonico_divergente, consentimento_saude_key_id
     FROM spa_perfis WHERE id=?
   `).get(id);
   if (!row) {
-    logAuditoria({
-      ator_username: req.user?.username, ator_role: req.user?.role, ator_ip: req.ip,
-      metodo: 'GET', rota: req.originalUrl, acao: 'prova-consentimento', recurso: 'spa_perfis', recurso_id: id,
-      status: 404, sucesso: 0, detalhes: 'perfil nao encontrado',
-    });
+    _logProva(req, 404, 0, 'perfil nao encontrado', id);
     return res.status(404).json({ ok: false, error: 'Anamnese nao encontrada' });
   }
-  // Revalida integridade: SHA-256(texto) deve bater com hash gravado.
-  // Classificacao cobre todos os cenarios pos e pre-Passo 6:
+  // Revalida integridade: HMAC(texto, segredo) deve bater com hash gravado.
   //  - integro: texto+hash batem
-  //  - adulterado: texto+hash divergem (dado mexido fora do app)
-  //  - legado-sem-prova: consentiu mas falta hash (versao='desconhecida'
-  //    do backfill, 'sem-canonico' do Passo 6, 'nao-enviado' do Passo 6 antigo)
+  //  - adulterado: texto+hash divergem (DB mexido fora do app)
+  //  - legado-sem-prova: consentiu mas sem hash (backfill ou versoes
+  //    antigas do Passo 6 sem texto-cliente)
   //  - sem-consentimento: nao consentiu
+  //  - chave-divergente: hash existe mas foi gerado com key_id diferente
+  //    da atual — sem o segredo antigo nao da pra revalidar (rotacao
+  //    futura). Por ora apenas avisa.
   let integridade;
   if (row.consentimento_saude_texto && row.consentimento_saude_hash) {
-    const recalc = createHash('sha256').update(row.consentimento_saude_texto, 'utf8').digest('hex');
+    const recalc = recalcularHmacConsentimento(row.consentimento_saude_texto);
     integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
   } else if (row.consentimento_saude) {
     integridade = 'legado-sem-prova';
   } else {
     integridade = 'sem-consentimento';
   }
-  logAuditoria({
-    ator_username: req.user?.username, ator_role: req.user?.role, ator_ip: req.ip,
-    metodo: 'GET', rota: req.originalUrl, acao: 'prova-consentimento', recurso: 'spa_perfis', recurso_id: id,
-    status: 200, sucesso: 1, detalhes: 'integridade=' + integridade,
-  });
+  _logProva(req, 200, 1, 'integridade=' + integridade + (row.consentimento_saude_canonico_divergente ? ',canonico-divergente' : ''), id);
   res.json({
     ok: true,
     prova: {
@@ -292,9 +310,11 @@ router.get('/anamnese/:perfilId/prova-consentimento', requireMaster, (req, res) 
       idioma: row.idioma,
       consentimento_saude: !!row.consentimento_saude,
       texto: row.consentimento_saude_texto || null,
-      hash_sha256: row.consentimento_saude_hash || null,
+      hash_hmac_sha256: row.consentimento_saude_hash || null,
+      key_id: row.consentimento_saude_key_id || null,
       versao: row.consentimento_saude_versao || null,
       consentido_em: row.consentimento_saude_em || null,
+      canonico_divergente: !!row.consentimento_saude_canonico_divergente,
       criado_em: row.criado_em,
       integridade,
     },
