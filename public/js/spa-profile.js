@@ -398,8 +398,6 @@ async function handleSubmit(e) {
       successEl.style.display = '';
       setText('success-title',  _locale.success.title);
       setText('success-msg',    _locale.success.message);
-      setText('success-ref-lbl', _locale.success.ref_label);
-      setText('success-ref-id', '#' + json.id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   } catch {
