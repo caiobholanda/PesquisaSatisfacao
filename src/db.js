@@ -1598,13 +1598,14 @@ export function buscarCliente360(id) {
   );
   const anamRespostas = db.prepare(`
     SELECT rp.id, rp.submitted_at AS criado_em, rp.reserva_id,
-           p.slug AS pesquisa_slug, 'resposta_pesquisa' AS fonte,
+           p.slug AS pesquisa_slug, rp.app_origem, 'resposta_pesquisa' AS fonte,
            CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN COALESCE(rv.email2, c.email)
                 ELSE COALESCE(c.email, rv.email) END AS email,
            CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN COALESCE(rv.telefone2, c.telefone)
                 ELSE COALESCE(c.telefone, rv.telefone) END AS telefone,
            NULL AS idioma,
-           CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN 2 ELSE 1 END AS pessoa
+           CASE WHEN rp.app_origem = 'spa-anamnese-p2' THEN 2 ELSE 1 END AS pessoa,
+           CASE WHEN rv.cliente2 IS NOT NULL AND TRIM(rv.cliente2)!='' THEN 1 ELSE 0 END AS reserva_eh_casal
     FROM resposta_pesquisa rp
     JOIN pesquisa p ON p.id = rp.pesquisa_id
     LEFT JOIN reservas rv ON rv.id = rp.reserva_id
@@ -1613,9 +1614,32 @@ export function buscarCliente360(id) {
       AND (rp.cliente_id=? OR rp.reserva_id IN (SELECT id FROM reservas WHERE cliente_id=? OR (cpf IS NOT NULL AND cpf=?)))
     ORDER BY rp.submitted_at DESC
   `).all(id, id, cliente.cpf || '');
-  const anamRespostasFiltrado = anamRespostas.filter(a =>
-    !a.reserva_id || !_perfisExistentes.has(`${a.reserva_id}|${a.pessoa || 1}`)
-  );
+  // Detecta reservas casal LEGADAS (anteriores a app_origem='spa-anamnese-p2'):
+  // 2+ resposta_pesquisa todas com app_origem='spa-anamnese' E reserva eh casal
+  // E nao existe rp diferenciada (-p2). Nesse caso a pessoa derivada do CASE
+  // pode estar errada — preservamos todas as rp sem dedup para nao sumir com
+  // a anamnese do hospede 2.
+  const _rpsPorReserva = new Map();
+  for (const a of anamRespostas) {
+    if (!a.reserva_id) continue;
+    if (!_rpsPorReserva.has(a.reserva_id)) _rpsPorReserva.set(a.reserva_id, []);
+    _rpsPorReserva.get(a.reserva_id).push(a);
+  }
+  const _reservasLegacyCasal = new Set();
+  for (const [resId, rps] of _rpsPorReserva) {
+    const semDiff = rps.filter(r => r.app_origem === 'spa-anamnese').length;
+    const comDiff = rps.filter(r => r.app_origem === 'spa-anamnese-p2').length;
+    if (rps[0]?.reserva_eh_casal && semDiff >= 2 && comDiff === 0) {
+      _reservasLegacyCasal.add(resId);
+    }
+  }
+  const anamRespostasFiltrado = anamRespostas.filter(a => {
+    if (!a.reserva_id) return true;
+    // Casal legado sem diferenciacao: nao confiamos na pessoa derivada,
+    // preservamos todas as rp para garantir visibilidade do hospede 2.
+    if (_reservasLegacyCasal.has(a.reserva_id)) return true;
+    return !_perfisExistentes.has(`${a.reserva_id}|${a.pessoa || 1}`);
+  });
   const anamneses = [...anamPerfis, ...anamRespostasFiltrado]
     .sort((a, b) => (b.criado_em || '').localeCompare(a.criado_em || ''));
   // Pesquisas de SATISFAÇÃO respondidas.
