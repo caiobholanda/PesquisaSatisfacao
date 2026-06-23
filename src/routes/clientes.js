@@ -165,7 +165,22 @@ router.get('/anamnese/:perfilId', (req, res) => {
   let extras = [];
   if (perfil.reserva_id) {
     try {
+      // Casal: descobre se este perfil eh cliente1 ou cliente2 da reserva
+      // para buscar o resposta_pesquisa correto (app_origem espelha o slot).
+      const reserva = db.prepare(
+        'SELECT documento_perfil_id, documento_perfil_id2 FROM reservas WHERE id=?'
+      ).get(perfil.reserva_id);
+      const ehPessoa2 = reserva && reserva.documento_perfil_id2 === id;
+      const appOrigemFiltro = ehPessoa2 ? 'spa-anamnese-p2' : 'spa-anamnese';
       const rp = db.prepare(`
+        SELECT rp.id FROM resposta_pesquisa rp
+        JOIN pesquisa p ON p.id = rp.pesquisa_id
+        WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%' AND rp.app_origem=?
+        ORDER BY rp.id DESC LIMIT 1
+      `).get(perfil.reserva_id, appOrigemFiltro)
+      // Fallback: dados antigos antes da diferenciacao por app_origem podem
+      // ter app_origem='spa-anamnese' para ambos. Tenta sem filtro de origem.
+      || db.prepare(`
         SELECT rp.id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'

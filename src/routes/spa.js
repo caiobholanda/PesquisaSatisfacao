@@ -222,9 +222,13 @@ router.post('/perfil', (req, res) => {
           }
         }
       }
+      // Diferencia cliente1 vs cliente2 em reservas casal via app_origem.
+      // Sem isso, o upsert por (pesquisa_id, reserva_id, app_origem) sobrescreve
+      // a anamnese estruturada do parceiro quando o segundo submete.
+      const _appOrigem = _pessoaReserva === 2 ? 'spa-anamnese-p2' : 'spa-anamnese';
       inserirRespostaPesquisa({
         pesquisa_slug: 'spa-anamnese-v1',
-        app_origem: 'spa-anamnese',
+        app_origem: _appOrigem,
         reserva_id,
         itens,
         ignorar_ativo: true,
