@@ -165,13 +165,21 @@ router.get('/anamnese/:perfilId', (req, res) => {
   let extras = [];
   if (perfil.reserva_id) {
     try {
-      // Casal: descobre se este perfil eh cliente1 ou cliente2 da reserva
-      // para buscar o resposta_pesquisa correto (app_origem espelha o slot).
+      // Identifica pessoa via coluna 'pessoa' do spa_perfis (preenchida pelo
+      // backfill + UPSERT por (reserva_id, pessoa) introduzido no Passo 2).
+      const ehPessoa2 = perfil.pessoa === 2;
+      const appOrigemFiltro = ehPessoa2 ? 'spa-anamnese-p2' : 'spa-anamnese';
+      // Detecta casal com 2 perfis distintos: ambos slots da reserva ocupados
+      // e apontando para registros diferentes. Nesse cenario, fallback sem
+      // app_origem nao pode ser usado — risco de mostrar extras do parceiro
+      // (cross-leak de dado de saude, violacao LGPD).
       const reserva = db.prepare(
         'SELECT documento_perfil_id, documento_perfil_id2 FROM reservas WHERE id=?'
       ).get(perfil.reserva_id);
-      const ehPessoa2 = reserva && reserva.documento_perfil_id2 === id;
-      const appOrigemFiltro = ehPessoa2 ? 'spa-anamnese-p2' : 'spa-anamnese';
+      const ehCasalCom2Perfis = !!(reserva
+        && reserva.documento_perfil_id
+        && reserva.documento_perfil_id2
+        && reserva.documento_perfil_id !== reserva.documento_perfil_id2);
       const rp = db.prepare(`
         SELECT rp.id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
@@ -179,13 +187,14 @@ router.get('/anamnese/:perfilId', (req, res) => {
         ORDER BY rp.id DESC LIMIT 1
       `).get(perfil.reserva_id, appOrigemFiltro)
       // Fallback: dados antigos antes da diferenciacao por app_origem podem
-      // ter app_origem='spa-anamnese' para ambos. Tenta sem filtro de origem.
-      || db.prepare(`
+      // ter app_origem='spa-anamnese' para ambos. So usar quando NAO ha
+      // confusao possivel de identidade (reserva individual ou slot unico).
+      || (ehCasalCom2Perfis ? null : db.prepare(`
         SELECT rp.id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'
         ORDER BY rp.id DESC LIMIT 1
-      `).get(perfil.reserva_id);
+      `).get(perfil.reserva_id));
       if (rp?.id) {
         const itens = db.prepare(
           'SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave FROM resposta_item WHERE resposta_pesquisa_id=?'
