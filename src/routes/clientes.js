@@ -1,10 +1,12 @@
 import { Router } from 'express';
+import { createHash } from 'crypto';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
+import { requireMaster } from '../middleware/auth.js';
 import {
   listarClientes, buscarClientePorId, buscarClientePorCpf, buscarClientePorPassaporte,
   inserirCliente, atualizarCliente, buscarCliente360,
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
-  validarCpfMod11, getDb,
+  validarCpfMod11, getDb, logAuditoria,
 } from '../db.js';
 
 const router = Router();
@@ -234,6 +236,60 @@ router.get('/anamnese/:perfilId', (req, res) => {
       consentimento_marketing: !!perfil.consentimento_marketing,
     },
     extras,
+  });
+});
+
+// GET /api/clientes/anamnese/:perfilId/prova-consentimento
+// Endpoint dedicado de auditoria juridica: devolve o texto exato consentido,
+// o hash SHA-256, a versao, o timestamp E revalida sha256(texto)===hash
+// para garantir integridade do registro. Gated por role master + log de
+// auditoria do acesso (rastreabilidade de quem viu a prova).
+router.get('/anamnese/:perfilId/prova-consentimento', requireMaster, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  const id = parseInt(req.params.perfilId);
+  if (!id) return res.status(400).json({ ok: false, error: 'id invalido' });
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT id, reserva_id, idioma, criado_em,
+           consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
+           consentimento_saude_versao, consentimento_saude_em
+    FROM spa_perfis WHERE id=?
+  `).get(id);
+  if (!row) {
+    logAuditoria({
+      ator_username: req.user?.username, ator_role: req.user?.role, ator_ip: req.ip,
+      metodo: 'GET', rota: req.originalUrl, acao: 'prova-consentimento', recurso: 'spa_perfis', recurso_id: id,
+      status: 404, sucesso: 0, detalhes: 'perfil nao encontrado',
+    });
+    return res.status(404).json({ ok: false, error: 'Anamnese nao encontrada' });
+  }
+  // Revalida integridade: SHA-256(texto) deve bater com hash gravado.
+  let integridade = 'sem-texto';
+  if (row.consentimento_saude_texto && row.consentimento_saude_hash) {
+    const recalc = createHash('sha256').update(row.consentimento_saude_texto, 'utf8').digest('hex');
+    integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
+  } else if (row.consentimento_saude_versao === 'desconhecida') {
+    integridade = 'legado-sem-prova';
+  }
+  logAuditoria({
+    ator_username: req.user?.username, ator_role: req.user?.role, ator_ip: req.ip,
+    metodo: 'GET', rota: req.originalUrl, acao: 'prova-consentimento', recurso: 'spa_perfis', recurso_id: id,
+    status: 200, sucesso: 1, detalhes: 'integridade=' + integridade,
+  });
+  res.json({
+    ok: true,
+    prova: {
+      perfil_id: row.id,
+      reserva_id: row.reserva_id,
+      idioma: row.idioma,
+      consentimento_saude: !!row.consentimento_saude,
+      texto: row.consentimento_saude_texto || null,
+      hash_sha256: row.consentimento_saude_hash || null,
+      versao: row.consentimento_saude_versao || null,
+      consentido_em: row.consentimento_saude_em || null,
+      criado_em: row.criado_em,
+      integridade,
+    },
   });
 });
 

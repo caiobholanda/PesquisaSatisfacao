@@ -1,21 +1,55 @@
 import { Router } from 'express';
 import { createHash } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
 const router = Router();
 
-// Normaliza texto legal antes do hash: NFC + remove BOM + colapsa
-// whitespace e zero-width chars consecutivos + trim. Evita instabilidade
-// de hash por diferencas cosmeticas: NFD vs NFC (macOS APFS), BOM em
-// JSON salvo por editores diferentes, ZWSP/ZWNJ/ZWJ invisiveis.
+// Normaliza texto legal antes do hash: NFC + remove BOM + normaliza
+// CRLF→LF + colapsa apenas espacos/tabs intra-linha (preserva \n entre
+// paragrafos) + trim por linha + remove zero-width chars. Preserva
+// estrutura juridica do texto enquanto neutraliza diferencas cosmeticas:
+// NFD vs NFC (macOS), BOM em JSON, ZWSP/ZWNJ/ZWJ invisiveis.
 function _normalizarTextoLegal(s) {
   if (!s) return '';
   return String(s)
     .normalize('NFC')
     .replace(/^﻿/, '')
-    .replace(/[\s​-‍﻿]+/g, ' ')
+    .replace(/[​-‍﻿]/g, '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(linha => linha.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// Cache em memoria do texto canonico server-side por idioma. Carregado
+// uma vez por idioma na primeira requisicao. Evita ler arquivo a cada
+// POST. Invalidado se o servidor reiniciar (deploy publica novo JSON).
+const _localesDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'locales');
+const _textoCanonicoCache = new Map();
+function _carregarTextoLegalCanonico(idioma) {
+  const lang = (typeof idioma === 'string' && idioma.length <= 8) ? idioma : 'pt-BR';
+  if (_textoCanonicoCache.has(lang)) return _textoCanonicoCache.get(lang);
+  let texto = '';
+  try {
+    const buf = readFileSync(resolve(_localesDir, lang + '.json'), 'utf8');
+    const j = JSON.parse(buf);
+    texto = (j?.legal?.text && typeof j.legal.text === 'string') ? j.legal.text : '';
+  } catch (e) {
+    console.warn('[consentimento] falha ao carregar locale canonico', lang, e.message);
+    if (lang !== 'pt-BR') {
+      const fallback = _carregarTextoLegalCanonico('pt-BR');
+      _textoCanonicoCache.set(lang, fallback);
+      return fallback;
+    }
+  }
+  _textoCanonicoCache.set(lang, texto);
+  return texto;
 }
 
 const LOCALES_VALIDOS = ['pt-BR', 'pt-PT', 'en', 'fr', 'es', 'it', 'de'];
@@ -200,27 +234,43 @@ router.post('/perfil', (req, res) => {
       idioma:                 locale,
       reserva_id,
       pessoa:                 _pessoaReserva,
-      // Prova de consentimento LGPD: hash SHA-256 do texto legal exato
-      // exibido + timestamp. Sem IP (decisao explicita). Backend gera
-      // hash a partir do texto enviado pelo front — nunca confia em
-      // hash calculado no client. Se o front nao mandar texto (versao
-      // antiga do JS), gravamos versao='nao-enviado' para auditoria.
+      // Prova de consentimento LGPD: hash SHA-256 do texto canonico do
+      // servidor (lido de public/locales/{idioma}.json), nao do texto
+      // enviado pelo cliente. Garante que a prova vale o que o servidor
+      // tem como verdade, independente do que o cliente envia. Cliente
+      // pode mandar texto para comparacao — se divergir do canonico,
+      // gravamos versao com sufixo '-divergente' para auditoria.
       ...(() => {
         if (!b.consentimento_saude) return {};
-        const textoCru = b.consentimento_saude_texto;
-        if (!textoCru || typeof textoCru !== 'string') {
+        const agora = new Date().toISOString();
+        const textoCanon = _normalizarTextoLegal(_carregarTextoLegalCanonico(locale));
+        if (!textoCanon) {
+          // Sem texto canonico no servidor — nao podemos provar nada.
+          // Marca versao='sem-canonico' em vez de hashear string vazia.
           return {
-            consentimento_saude_versao: 'nao-enviado',
-            consentimento_saude_em: new Date().toISOString(),
+            consentimento_saude_versao: 'sem-canonico',
+            consentimento_saude_em: agora,
           };
         }
-        const textoNorm = _normalizarTextoLegal(textoCru).slice(0, 50_000);
-        const hash = createHash('sha256').update(textoNorm, 'utf8').digest('hex');
+        const truncado = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
+        const hash = createHash('sha256').update(truncado, 'utf8').digest('hex');
+        let versao = hash.slice(0, 16);
+        // Comparacao com texto do cliente: detecta divergencia (cache stale,
+        // cliente adulterado, JSON publicado mid-sessao). Nao bloqueia, apenas
+        // marca para auditoria.
+        const textoClienteCru = b.consentimento_saude_texto;
+        if (textoClienteCru && typeof textoClienteCru === 'string') {
+          const textoClienteNorm = _normalizarTextoLegal(textoClienteCru);
+          if (textoClienteNorm && textoClienteNorm !== truncado) {
+            versao = versao + '-divergente';
+            console.warn('[consentimento] divergencia cliente vs canonico (lang=' + locale + ')');
+          }
+        }
         return {
-          consentimento_saude_texto: textoNorm,
+          consentimento_saude_texto: truncado,
           consentimento_saude_hash: hash,
-          consentimento_saude_versao: hash.slice(0, 16),
-          consentimento_saude_em: new Date().toISOString(),
+          consentimento_saude_versao: versao,
+          consentimento_saude_em: agora,
         };
       })(),
     });
