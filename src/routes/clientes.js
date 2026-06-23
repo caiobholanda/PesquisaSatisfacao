@@ -6,7 +6,7 @@ import {
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
   validarCpfMod11, getDb, logAuditoria,
 } from '../db.js';
-import { recalcularHmacConsentimento } from './spa.js';
+import { recalcularHmacConsentimento, recalcularSeloComposto } from './spa.js';
 
 const router = Router();
 
@@ -219,23 +219,46 @@ router.get('/anamnese/:perfilId', (req, res) => {
     } catch (e) { console.warn('[anamnese extras]', e?.message); }
   }
 
-  // Filtra campos de prova juridica do payload visivel ao admin: o texto
-  // bruto e o hash SHA-256 nao precisam aparecer no modal — versao e
-  // timestamp sao suficientes para verificacao visual. Texto+hash ficam
-  // gravados no DB para auditoria explicita futura.
-  const { consentimento_saude_texto: _csTxt, consentimento_saude_hash: _csHash, ...perfilSafe } = perfil;
-  res.json({
-    ok: true,
-    anamnese: {
-      ...perfilSafe,
-      rotina_facial: parseArr(perfil.rotina_facial),
-      rotina_corporal: parseArr(perfil.rotina_corporal),
-      canais_marketing: parseArr(perfil.canais_marketing),
-      consentimento_saude: !!perfil.consentimento_saude,
-      consentimento_marketing: !!perfil.consentimento_marketing,
-    },
-    extras,
-  });
+  // Whitelist (allowlist) de campos visiveis no modal admin. Blacklist
+  // (omitir _texto/_hash) era fragil: novas colunas LGPD seriam vazadas
+  // por padrao ao serem adicionadas. Com allowlist, prova bruta SO
+  // chega via endpoint dedicado /prova-consentimento.
+  const anamnese = {
+    id: perfil.id,
+    nome: perfil.nome,
+    sobrenome: perfil.sobrenome,
+    tipo_documento: perfil.tipo_documento,
+    documento: perfil.documento,
+    email: perfil.email,
+    telefone: perfil.telefone,
+    data_nascimento: perfil.data_nascimento,
+    produto_especifico: perfil.produto_especifico,
+    pressao_massagem: perfil.pressao_massagem,
+    info_medica: perfil.info_medica,
+    assinatura_data_url: perfil.assinatura_data_url,
+    idioma: perfil.idioma,
+    reserva_id: perfil.reserva_id,
+    cliente_id: perfil.cliente_id,
+    pessoa: perfil.pessoa,
+    quarto: perfil.quarto,
+    criado_em: perfil.criado_em,
+    reserva_cliente: perfil.reserva_cliente,
+    reserva_cliente2: perfil.reserva_cliente2,
+    reserva_data: perfil.reserva_data,
+    reserva_hora_inicio: perfil.reserva_hora_inicio,
+    reserva_tratamento: perfil.reserva_tratamento,
+    reserva_tratamento2: perfil.reserva_tratamento2,
+    rotina_facial: parseArr(perfil.rotina_facial),
+    rotina_corporal: parseArr(perfil.rotina_corporal),
+    canais_marketing: parseArr(perfil.canais_marketing),
+    consentimento_saude: !!perfil.consentimento_saude,
+    consentimento_marketing: !!perfil.consentimento_marketing,
+    // Apenas metadata de auditoria (sem texto bruto, sem hashes).
+    // Hash/texto/canonico ficam no endpoint dedicado /prova-consentimento (master + audit log).
+    consentimento_saude_versao: perfil.consentimento_saude_versao || null,
+    consentimento_saude_em: perfil.consentimento_saude_em || null,
+  };
+  res.json({ ok: true, anamnese, extras });
 });
 
 // GET /api/clientes/anamnese/:perfilId/prova-consentimento
@@ -256,11 +279,22 @@ function _logProva(req, status, sucesso, detalhes, recursoId) {
     });
   } catch {}
 }
+// Valida perfilId em 3 niveis: regex, faixa, MAX_SAFE_INTEGER.
+// Retorna {ok:true, id} ou {ok:false, motivo}.
+function _validarPerfilId(raw) {
+  if (typeof raw !== 'string' || !raw) return { ok: false, motivo: 'vazio' };
+  if (!/^\d+$/.test(raw)) return { ok: false, motivo: 'formato invalido' };
+  // Limite de 15 digitos: cabe folgadamente em Number.MAX_SAFE_INTEGER
+  // (2^53-1 = 9007199254740991 = 16 digitos), mas 15 garante precisao.
+  if (raw.length > 15) return { ok: false, motivo: 'id muito grande' };
+  const n = parseInt(raw, 10);
+  if (!Number.isSafeInteger(n) || n < 1) return { ok: false, motivo: 'fora de faixa' };
+  return { ok: true, id: n };
+}
 function _exigirMasterComLog(req, res, next) {
   if (req.user?.role !== 'master') {
-    // Nao confiar em parseInt cru — perfilId pode ter caracteres lixo.
-    const raw = req.params.perfilId;
-    const recursoId = (/^\d+$/.test(raw) && parseInt(raw) > 0) ? parseInt(raw) : null;
+    const v = _validarPerfilId(req.params.perfilId);
+    const recursoId = v.ok ? v.id : null;
     _logProva(req, 403, 0, 'role=' + (req.user?.role || 'nenhum'), recursoId);
     return res.status(403).json({ ok: false, error: 'Acesso restrito a administradores master' });
   }
@@ -268,24 +302,20 @@ function _exigirMasterComLog(req, res, next) {
 }
 router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-  // Validacao estrita: somente digitos (impede '12abc' virar 12 ou '0'/'-1').
-  const raw = req.params.perfilId;
-  if (!/^\d+$/.test(raw)) {
-    _logProva(req, 400, 0, 'id formato invalido: ' + String(raw).slice(0, 32), null);
+  const v = _validarPerfilId(req.params.perfilId);
+  if (!v.ok) {
+    _logProva(req, 400, 0, 'id ' + v.motivo + ': ' + String(req.params.perfilId).slice(0, 32), null);
     return res.status(400).json({ ok: false, error: 'id invalido' });
   }
-  const id = parseInt(raw, 10);
-  if (!id || id < 1) {
-    _logProva(req, 400, 0, 'id fora de faixa: ' + raw, null);
-    return res.status(400).json({ ok: false, error: 'id invalido' });
-  }
+  const id = v.id;
   const db = getDb();
   const row = db.prepare(`
     SELECT id, reserva_id, idioma, criado_em,
-           consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
+           documento, consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
            consentimento_saude_versao, consentimento_saude_em,
            consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
-           consentimento_saude_hash_canonico, consentimento_saude_key_id
+           consentimento_saude_hash_canonico, consentimento_saude_key_id,
+           consentimento_saude_alg, consentimento_saude_assinatura_hash
     FROM spa_perfis WHERE id=?
   `).get(id);
   if (!row) {
@@ -301,17 +331,32 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
   //  - chave-divergente: hash existe mas foi gerado com key_id diferente
   //    da atual — sem o segredo antigo nao da pra revalidar (rotacao
   //    futura). Por ora apenas avisa.
-  // Revalida usando o key_id GRAVADO na linha (nao o atual) — permite
-  // rotacao sem invalidar provas antigas. Se a chave nao esta mais no
-  // keyring, marcamos 'chave-desconhecida' (nao 'adulterado'), porque
-  // a falha e operacional (admin retirou chave) e nao indica fraude.
+  // Revalida com o algoritmo GRAVADO na linha (rollback nao quebra prova).
+  //   'hmac-sha256-composto-v1' → revalida selo composto (texto + documento +
+  //                                reserva_id + assinatura_hash + consentido_em)
+  //   'hmac-sha256-v1' / null  → revalida HMAC do texto puro (compat retroativa)
+  // Se o servidor nao suporta o alg gravado, marcamos 'algoritmo-desconhecido'
+  // em vez de 'adulterado' — falha operacional, nao fraude.
   let integridade;
+  const alg = row.consentimento_saude_alg || 'hmac-sha256-v1';
   if (row.consentimento_saude_texto && row.consentimento_saude_hash) {
-    const recalc = recalcularHmacConsentimento(row.consentimento_saude_texto, row.consentimento_saude_key_id);
-    if (recalc === null) {
-      integridade = 'chave-desconhecida';
+    let recalc = null;
+    if (alg === 'hmac-sha256-composto-v1') {
+      recalc = recalcularSeloComposto({
+        texto: row.consentimento_saude_texto,
+        documento: row.documento || '',
+        reserva_id: row.reserva_id || null,
+        assinatura_hash: row.consentimento_saude_assinatura_hash || '',
+        consentido_em: row.consentimento_saude_em || '',
+      }, row.consentimento_saude_key_id);
+    } else if (alg === 'hmac-sha256-v1') {
+      recalc = recalcularHmacConsentimento(row.consentimento_saude_texto, row.consentimento_saude_key_id);
     } else {
-      integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
+      integridade = 'algoritmo-desconhecido';
+    }
+    if (integridade === undefined) {
+      if (recalc === null) integridade = 'chave-desconhecida';
+      else integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
     }
   } else if (row.consentimento_saude) {
     integridade = 'legado-sem-prova';
@@ -328,7 +373,7 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
   } else {
     canonico = 'sem-canonico';
   }
-  _logProva(req, 200, 1, 'integridade=' + integridade + ',canonico=' + canonico, id);
+  _logProva(req, 200, 1, 'integridade=' + integridade + ',canonico=' + canonico + ',alg=' + alg, id);
   res.json({
     ok: true,
     prova: {
@@ -336,10 +381,13 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
       reserva_id: row.reserva_id,
       idioma: row.idioma,
       consentimento_saude: !!row.consentimento_saude,
+      documento: row.documento || null,
       texto: row.consentimento_saude_texto || null,
       hash_hmac_sha256: row.consentimento_saude_hash || null,
       hash_canonico_hmac_sha256: row.consentimento_saude_hash_canonico || null,
+      assinatura_hash_sha256: row.consentimento_saude_assinatura_hash || null,
       key_id: row.consentimento_saude_key_id || null,
+      alg,
       versao: row.consentimento_saude_versao || null,
       consentido_em: row.consentimento_saude_em || null,
       canonico,

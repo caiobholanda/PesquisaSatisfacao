@@ -470,6 +470,23 @@ export function initDb() {
   // ID da chave HMAC usada para gerar o hash. Permite rotacao de
   // segredo: hashes antigos continuam validos com a key_id de origem.
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_key_id TEXT`); } catch {}
+  // Algoritmo da prova. Versionado para permitir migracao futura sem
+  // invalidar provas antigas:
+  //   'hmac-sha256-v1'           = HMAC apenas do texto (Passo 6 D7-D14)
+  //   'hmac-sha256-composto-v1'  = HMAC de {texto,documento,reserva_id,
+  //                                 assinatura_hash,consentido_em}
+  //                                 (Passo 6 D19 — prova autoria + conteudo)
+  // Revalidacao escolhe algoritmo pela coluna; rollback que nao suporta
+  // o alg gravado deve falhar abertamente em vez de marcar adulterado.
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_alg TEXT`); } catch {}
+  // Componentes do selo composto (D19): documento e reserva_id ja sao
+  // colunas regulares; assinatura_hash e o SHA-256 da assinatura_data_url
+  // no momento da gravacao (sem precisar do PNG bruto pra revalidar).
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_assinatura_hash TEXT`); } catch {}
+  // Guard D22 (estado orfao): canonico_divergente=1 sem comparado=1 e
+  // estado fisicamente possivel mas invalido. SQLite nao permite ALTER
+  // ADD CHECK; corrigimos eventuais inconsistencias e prevenimos na app.
+  try { db.exec(`UPDATE spa_perfis SET consentimento_saude_canonico_divergente=0 WHERE consentimento_saude_canonico_comparado IS NULL AND consentimento_saude_canonico_divergente=1`); } catch {}
   // Backfill idempotente: linhas existentes com consentimento marcado mas
   // sem hash viram versao='desconhecida' + em=criado_em. Nao falsificar
   // hash com texto atual — assume-se honestamente que nao ha prova
@@ -1316,7 +1333,13 @@ export function inserirSpaPerfil(dados) {
           consentimento_saude_texto, consentimento_saude_hash,
           consentimento_saude_versao, consentimento_saude_em,
           consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
-          consentimento_saude_hash_canonico, consentimento_saude_key_id } = dados;
+          consentimento_saude_hash_canonico, consentimento_saude_key_id,
+          consentimento_saude_alg, consentimento_saude_assinatura_hash } = dados;
+  // Guard D22: estado orfao do canonico nao pode ser persistido.
+  // Se nao ha comparacao, nao pode ter divergencia gravada como 1.
+  const _safeDivergente = (consentimento_saude_canonico_comparado === 1)
+    ? (consentimento_saude_canonico_divergente ? 1 : 0)
+    : 0;
   const db = getDb();
   const resolvedIdioma = idioma || 'pt-BR';
   const resolvedPessoa = pessoa === 2 ? 2 : 1;
@@ -1345,6 +1368,7 @@ export function inserirSpaPerfil(dados) {
       consentimento_saude_versao=?,
       consentimento_saude_canonico_divergente=?, consentimento_saude_canonico_comparado=?,
       consentimento_saude_hash_canonico=?, consentimento_saude_key_id=?,
+      consentimento_saude_alg=?, consentimento_saude_assinatura_hash=?,
       consentimento_saude_em = CASE
         WHEN consentimento_saude_hash IS NOT NULL AND consentimento_saude_hash = ? THEN consentimento_saude_em
         ELSE ?
@@ -1357,9 +1381,10 @@ export function inserirSpaPerfil(dados) {
           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
           consentimento_saude_texto || null, consentimento_saude_hash || null,
           consentimento_saude_versao || null,
-          consentimento_saude_canonico_divergente ? 1 : 0,
+          _safeDivergente,
           (consentimento_saude_canonico_comparado === 1 ? 1 : null),
           consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null,
+          consentimento_saude_alg || null, consentimento_saude_assinatura_hash || null,
           consentimento_saude_hash || null, consentimento_saude_em || null, existente.id);
     perfil_id = existente.id;
   } else {
@@ -1369,8 +1394,9 @@ export function inserirSpaPerfil(dados) {
         consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
         consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
         consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
-        consentimento_saude_hash_canonico, consentimento_saude_key_id)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        consentimento_saude_hash_canonico, consentimento_saude_key_id,
+        consentimento_saude_alg, consentimento_saude_assinatura_hash)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
@@ -1378,9 +1404,10 @@ export function inserirSpaPerfil(dados) {
            canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
            consentimento_saude_texto || null, consentimento_saude_hash || null,
            consentimento_saude_versao || null, consentimento_saude_em || null,
-           consentimento_saude_canonico_divergente ? 1 : 0,
+           _safeDivergente,
            (consentimento_saude_canonico_comparado === 1 ? 1 : null),
-           consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null);
+           consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null,
+           consentimento_saude_alg || null, consentimento_saude_assinatura_hash || null);
     perfil_id = r.lastInsertRowid;
   }
 

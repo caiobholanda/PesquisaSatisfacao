@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createHmac } from 'crypto';
+import { createHmac, createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -17,37 +17,53 @@ import { fileURLToPath } from 'url';
 const _CONSENT_KEY_ID = process.env.CONSENT_KEY_ID || 'k1';
 const _CONSENT_HMAC_SECRET_ATUAL = process.env.CONSENT_HMAC_SECRET || 'dev-fallback-NO-ROTATION-NO-AUDIT-VALUE';
 const _ehProducao = process.env.NODE_ENV === 'production';
-const _segredoFraco = _CONSENT_HMAC_SECRET_ATUAL.startsWith('dev-fallback');
-// Fail-closed: em producao, segredo ausente/fallback significa que a
-// prova de consentimento pode ser forjada por qualquer um que tenha
-// acesso ao codigo. Aborta o boot — preferimos servidor down a prova
-// forjavel sendo gravada como legitima.
-if (_ehProducao && _segredoFraco) {
+// Forca minima do segredo: 32 bytes de entropia. Aceita 32 bytes raw,
+// 64 chars hex (= 32 bytes), 44 chars base64 (= 32 bytes). Heuristica:
+// >= 32 chars cobre os 3 formatos com margem.
+const _MIN_SECRET_LEN = 32;
+function _segredoForte(s) {
+  if (typeof s !== 'string' || s.length < _MIN_SECRET_LEN) return false;
+  if (s.startsWith('dev-fallback')) return false;
+  return true;
+}
+function _abortarBoot(motivo) {
   console.error('═══════════════════════════════════════════════════════════════');
-  console.error('[consentimento] FATAL: CONSENT_HMAC_SECRET ausente em producao.');
-  console.error('  A prova de consentimento LGPD nao pode ser gravada sem segredo.');
-  console.error('  Configure via:');
+  console.error('[consentimento] FATAL em producao: ' + motivo);
+  console.error('  A prova de consentimento LGPD nao pode ser gravada sem');
+  console.error('  segredo forte. Configure via:');
   console.error('    fly secrets set CONSENT_HMAC_SECRET=$(node -e "console.log(require(\\"crypto\\").randomBytes(32).toString(\\"hex\\"))")');
   console.error('    fly secrets set CONSENT_KEY_ID=k1-2026-06-23');
   console.error('═══════════════════════════════════════════════════════════════');
   process.exit(1);
 }
-if (_segredoFraco) {
-  console.warn('[consentimento] CONSENT_HMAC_SECRET nao configurado — usando fallback dev (NODE_ENV=' + (process.env.NODE_ENV || 'undefined') + ')');
+// Fail-closed forte: em prod, secret ausente/curto/fallback aborta.
+if (_ehProducao && !_segredoForte(_CONSENT_HMAC_SECRET_ATUAL)) {
+  _abortarBoot('CONSENT_HMAC_SECRET ausente, fraco (<32 chars) ou fallback');
+}
+if (!_segredoForte(_CONSENT_HMAC_SECRET_ATUAL)) {
+  console.warn('[consentimento] CONSENT_HMAC_SECRET fraco/ausente — usando para dev (NODE_ENV=' + (process.env.NODE_ENV || 'undefined') + ')');
 }
 const _CONSENT_KEYRING = new Map();
 _CONSENT_KEYRING.set(_CONSENT_KEY_ID, _CONSENT_HMAC_SECRET_ATUAL);
 if (process.env.CONSENT_HMAC_SECRETS_LEGACY) {
-  try {
-    const legacy = JSON.parse(process.env.CONSENT_HMAC_SECRETS_LEGACY);
+  let legacy;
+  try { legacy = JSON.parse(process.env.CONSENT_HMAC_SECRETS_LEGACY); }
+  catch (e) {
+    // Em prod, JSON malformado deve abortar — nao queremos degradar
+    // silenciosamente para "sem chaves legadas".
+    if (_ehProducao) _abortarBoot('CONSENT_HMAC_SECRETS_LEGACY JSON invalido: ' + e.message);
+    console.warn('[consentimento] CONSENT_HMAC_SECRETS_LEGACY JSON invalido — ignorado:', e.message);
+  }
+  if (legacy && typeof legacy === 'object') {
     for (const [kid, secret] of Object.entries(legacy)) {
+      if (_ehProducao && !_segredoForte(secret)) {
+        _abortarBoot('chave legada "' + kid + '" tem segredo fraco/ausente');
+      }
       if (!_CONSENT_KEYRING.has(kid) && typeof secret === 'string' && secret.length > 0) {
         _CONSENT_KEYRING.set(kid, secret);
       }
     }
     console.info('[consentimento] keyring carregado com ' + _CONSENT_KEYRING.size + ' chaves (atual=' + _CONSENT_KEY_ID + ')');
-  } catch (e) {
-    console.warn('[consentimento] CONSENT_HMAC_SECRETS_LEGACY JSON invalido — ignorado:', e.message);
   }
 }
 function _hmacProvaComKey(texto, keyId) {
@@ -66,6 +82,37 @@ export function recalcularHmacConsentimento(texto, keyId) {
   return _hmacProvaComKey(String(texto || ''), keyId || _CONSENT_KEY_ID);
 }
 export function consentKeyIdAtual() { return _CONSENT_KEY_ID; }
+
+// D19: selo composto serializa todos os componentes da prova de
+// conteudo+autoria em JSON canonico (ordem de chaves fixa) antes do
+// HMAC. Mudancas em qualquer componente quebram o selo. Versao 'v1'
+// inclui texto, documento, reserva_id, assinatura_hash, consentido_em.
+export const CONSENT_ALG_ATUAL = 'hmac-sha256-composto-v1';
+export function sha256Hex(s) {
+  return createHash('sha256').update(String(s ?? ''), 'utf8').digest('hex');
+}
+function _serializarSeloComposto(c) {
+  // Ordem fixa, sem caracteres de escape inesperados (JSON.stringify
+  // ja garante isso). Campos null/undefined explicitos para evitar
+  // ambiguidade ('' vs ausente).
+  return JSON.stringify({
+    alg: 'hmac-sha256-composto-v1',
+    texto: String(c.texto ?? ''),
+    documento: String(c.documento ?? ''),
+    reserva_id: c.reserva_id == null ? null : Number(c.reserva_id),
+    assinatura_hash: String(c.assinatura_hash ?? ''),
+    consentido_em: String(c.consentido_em ?? ''),
+  });
+}
+export function selarComposto(componentes, keyId) {
+  const seloRaw = _serializarSeloComposto(componentes);
+  const hmac = _hmacProvaComKey(seloRaw, keyId || _CONSENT_KEY_ID);
+  return hmac;
+}
+export function recalcularSeloComposto(componentes, keyId) {
+  const seloRaw = _serializarSeloComposto(componentes);
+  return _hmacProvaComKey(seloRaw, keyId || _CONSENT_KEY_ID);
+}
 import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
@@ -298,34 +345,36 @@ router.post('/perfil', (req, res) => {
       idioma:                 locale,
       reserva_id,
       pessoa:                 _pessoaReserva,
-      // Prova de consentimento LGPD: hash HMAC-SHA256 do texto EXIBIDO
-      // ao hospede (vindo do cliente), nao do canonico do servidor. A
-      // prova juridica e o que ele leu na tela — nao o que o servidor
-      // tem hoje. O canonico server-side entra apenas como cross-check:
-      // se divergir, marca consentimento_saude_canonico_divergente=1
-      // para auditoria, sem rebaixar o texto do hospede.
-      // HMAC com segredo server-side impede forja por quem so tem o DB.
+      // D19: Selo composto HMAC-SHA256 sobre {texto, documento,
+      // reserva_id, assinatura_hash, consentido_em}. Prova CONTEUDO +
+      // AUTORIA num selo so — sem amarrar ao documento/assinatura, a
+      // prova vale o texto mas nao prova quem consentiu.
       ...(() => {
         if (!b.consentimento_saude) return {};
         const agora = new Date().toISOString();
         const textoExibido = _normalizarTextoLegal(b.consentimento_saude_texto);
         if (!textoExibido) {
-          // Cliente nao enviou texto exibido — nao podemos provar o que
-          // ele viu. Marca versao='sem-texto-cliente' SEM hashear nada
-          // (nunca hashear string vazia como prova).
           return {
             consentimento_saude_versao: 'sem-texto-cliente',
             consentimento_saude_em: agora,
             consentimento_saude_key_id: _CONSENT_KEY_ID,
+            consentimento_saude_alg: CONSENT_ALG_ATUAL,
           };
         }
         const truncadoExibido = textoExibido.length > 50_000 ? textoExibido.slice(0, 50_000) : textoExibido;
-        const hash = _hmacProva(truncadoExibido);
-        // Cross-check com canonico do servidor (mesmo idioma). Sem
-        // fallback para outro idioma — texto de outro idioma seria
-        // vicio de consentimento (LGPD art. 8).
-        //   _comparado=null → nao havia canonico no servidor
-        //   _comparado=1 → havia, foi comparado (use _divergente)
+        const assinaturaHash = b.assinatura_data_url ? sha256Hex(b.assinatura_data_url) : '';
+        const documentoNormalizado = String(b.documento || '').trim();
+        // Selo composto: amarra texto+documento+reserva+assinatura+timestamp.
+        const componentes = {
+          texto: truncadoExibido,
+          documento: documentoNormalizado,
+          reserva_id: reserva_id || null,
+          assinatura_hash: assinaturaHash,
+          consentido_em: agora,
+        };
+        const hashComposto = selarComposto(componentes, _CONSENT_KEY_ID);
+
+        // Cross-check canonico (mesmo idioma, sem fallback).
         let canonicoDivergente = 0;
         let canonicoComparado = null;
         let hashCanonico = null;
@@ -336,8 +385,6 @@ router.post('/perfil', (req, res) => {
             const truncadoCanon = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
             if (truncadoCanon) {
               canonicoComparado = 1;
-              // HMAC do canonico no momento — controlador armazena AMBOS
-              // os lados (exibido = prova; canonico = referencia oficial).
               hashCanonico = _hmacProva(truncadoCanon);
               if (truncadoCanon !== truncadoExibido) {
                 canonicoDivergente = 1;
@@ -348,13 +395,15 @@ router.post('/perfil', (req, res) => {
         } catch (e) { console.warn('[consentimento] cross-check falhou', e?.message); }
         return {
           consentimento_saude_texto: truncadoExibido,
-          consentimento_saude_hash: hash,
-          consentimento_saude_versao: hash.slice(0, 16),
+          consentimento_saude_hash: hashComposto,
+          consentimento_saude_versao: hashComposto.slice(0, 16),
           consentimento_saude_em: agora,
           consentimento_saude_canonico_divergente: canonicoDivergente,
           consentimento_saude_canonico_comparado: canonicoComparado,
           consentimento_saude_hash_canonico: hashCanonico,
           consentimento_saude_key_id: _CONSENT_KEY_ID,
+          consentimento_saude_alg: CONSENT_ALG_ATUAL,
+          consentimento_saude_assinatura_hash: assinaturaHash || null,
         };
       })(),
     });
