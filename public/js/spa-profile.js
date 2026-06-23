@@ -348,6 +348,7 @@ function collectData() {
     pressao_massagem:        pressao,
     info_medica:             (document.getElementById('f-medico')?.value || '').trim(),
     consentimento_saude:     !!document.getElementById('f-consent-saude')?.checked,
+    consentimento_saude_texto: (_locale && _locale.legal && typeof _locale.legal.text === 'string') ? _locale.legal.text : null,
     consentimento_marketing: canais.length > 0,
     canais_marketing:        canais,
     assinatura_data_url:     _sig ? _sig.getDataURL() : null,

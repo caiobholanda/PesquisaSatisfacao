@@ -446,6 +446,18 @@ export function initDb() {
   // Backfill idempotente: registros ja referenciados como pessoa 2 na
   // tabela reservas viram pessoa=2.
   try { db.exec(`UPDATE spa_perfis SET pessoa=2 WHERE id IN (SELECT documento_perfil_id2 FROM reservas WHERE documento_perfil_id2 IS NOT NULL)`); } catch {}
+  // Prova de consentimento LGPD (Passo 6 / Item 7): texto exato exibido +
+  // hash SHA-256 + versao (16 chars do hash) + timestamp. Sem IP por
+  // decisao explicita (timestamp+versao+hash bastam como prova).
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_texto TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_hash TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_versao TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_em TEXT`); } catch {}
+  // Backfill idempotente: linhas existentes com consentimento marcado mas
+  // sem hash viram versao='desconhecida' + em=criado_em. Nao falsificar
+  // hash com texto atual — assume-se honestamente que nao ha prova
+  // robusta dos consentimentos antigos.
+  try { db.exec(`UPDATE spa_perfis SET consentimento_saude_versao='desconhecida', consentimento_saude_em=criado_em WHERE consentimento_saude=1 AND consentimento_saude_versao IS NULL`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN reserva_id INTEGER`); } catch {}
   // PIN hash da terapeuta (login mobile). Aditivo + idempotente.
@@ -1283,7 +1295,9 @@ export function inserirSpaPerfil(dados) {
   const { nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
           rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
-          idioma, reserva_id, pessoa } = dados;
+          idioma, reserva_id, pessoa,
+          consentimento_saude_texto, consentimento_saude_hash,
+          consentimento_saude_versao, consentimento_saude_em } = dados;
   const db = getDb();
   const resolvedIdioma = idioma || 'pt-BR';
   const resolvedPessoa = pessoa === 2 ? 2 : 1;
@@ -1303,24 +1317,31 @@ export function inserirSpaPerfil(dados) {
     db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
       data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
       info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
-      assinatura_data_url=?, idioma=?, pessoa=? WHERE id=?`
+      assinatura_data_url=?, idioma=?, pessoa=?,
+      consentimento_saude_texto=?, consentimento_saude_hash=?,
+      consentimento_saude_versao=?, consentimento_saude_em=? WHERE id=?`
     ).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
           data_nascimento || null, rotina_facial || null, rotina_corporal || null,
           produto_especifico || null, pressao_massagem || null, info_medica || '',
           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
-          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa, existente.id);
+          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
+          consentimento_saude_texto || null, consentimento_saude_hash || null,
+          consentimento_saude_versao || null, consentimento_saude_em || null, existente.id);
     perfil_id = existente.id;
   } else {
     const r = db.prepare(`
       INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
-        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
+        consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
            consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
-           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa);
+           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
+           consentimento_saude_texto || null, consentimento_saude_hash || null,
+           consentimento_saude_versao || null, consentimento_saude_em || null);
     perfil_id = r.lastInsertRowid;
   }
 

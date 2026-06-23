@@ -1,8 +1,16 @@
 import { Router } from 'express';
+import { createHash } from 'crypto';
 import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
 const router = Router();
+
+// Normaliza texto legal antes do hash: trim + colapsa whitespace consecutivo.
+// Evita instabilidade de hash por diferencas cosmeticas no JSON de idioma.
+function _normalizarTextoLegal(s) {
+  if (!s) return '';
+  return String(s).replace(/\s+/g, ' ').trim();
+}
 
 const LOCALES_VALIDOS = ['pt-BR', 'pt-PT', 'en', 'fr', 'es', 'it', 'de'];
 
@@ -186,6 +194,29 @@ router.post('/perfil', (req, res) => {
       idioma:                 locale,
       reserva_id,
       pessoa:                 _pessoaReserva,
+      // Prova de consentimento LGPD: hash SHA-256 do texto legal exato
+      // exibido + timestamp. Sem IP (decisao explicita). Backend gera
+      // hash a partir do texto enviado pelo front — nunca confia em
+      // hash calculado no client. Se o front nao mandar texto (versao
+      // antiga do JS), gravamos versao='nao-enviado' para auditoria.
+      ...(() => {
+        if (!b.consentimento_saude) return {};
+        const textoCru = b.consentimento_saude_texto;
+        if (!textoCru || typeof textoCru !== 'string') {
+          return {
+            consentimento_saude_versao: 'nao-enviado',
+            consentimento_saude_em: new Date().toISOString(),
+          };
+        }
+        const textoNorm = _normalizarTextoLegal(textoCru).slice(0, 50_000);
+        const hash = createHash('sha256').update(textoNorm, 'utf8').digest('hex');
+        return {
+          consentimento_saude_texto: textoNorm,
+          consentimento_saude_hash: hash,
+          consentimento_saude_versao: hash.slice(0, 16),
+          consentimento_saude_em: new Date().toISOString(),
+        };
+      })(),
     });
     // Gravacao paralela ESTRUTURADA (Anamnese configuravel). Falha aqui NAO
     // derruba a submissao publica — spa_perfis ja foi gravado e o cliente
