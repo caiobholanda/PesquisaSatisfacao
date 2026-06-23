@@ -180,7 +180,17 @@ router.get('/anamnese/:perfilId', (req, res) => {
         && reserva.documento_perfil_id
         && reserva.documento_perfil_id2
         && reserva.documento_perfil_id !== reserva.documento_perfil_id2);
-      const rp = db.prepare(`
+      // Em casal com 2 perfis: se NAO existe nenhuma rp diferenciada por
+      // app_origem='spa-anamnese-p2', as rp legadas (todas com 'spa-anamnese')
+      // sao ambiguas — ORDER BY rp.id DESC pode retornar dado do parceiro.
+      // Defesa contra cross-leak: nao exibir extras nesse cenario.
+      const temRpDiferenciada = ehCasalCom2Perfis ? db.prepare(`
+        SELECT 1 FROM resposta_pesquisa rp
+        JOIN pesquisa p ON p.id = rp.pesquisa_id
+        WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%' AND rp.app_origem='spa-anamnese-p2'
+        LIMIT 1
+      `).get(perfil.reserva_id) : true;
+      const rp = (!ehCasalCom2Perfis || temRpDiferenciada) ? (db.prepare(`
         SELECT rp.id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%' AND rp.app_origem=?
@@ -194,7 +204,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'
         ORDER BY rp.id DESC LIMIT 1
-      `).get(perfil.reserva_id));
+      `).get(perfil.reserva_id))) : null;
       if (rp?.id) {
         const itens = db.prepare(
           'SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave FROM resposta_item WHERE resposta_pesquisa_id=?'

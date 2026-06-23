@@ -1630,9 +1630,17 @@ export function buscarCliente360(id) {
   }
   const _reservasLegacyCasal = new Set();
   for (const [resId, rps] of _rpsPorReserva) {
+    if (!rps[0]?.reserva_eh_casal) continue;
     const semDiff = rps.filter(r => r.app_origem === 'spa-anamnese').length;
     const comDiff = rps.filter(r => r.app_origem === 'spa-anamnese-p2').length;
-    if (rps[0]?.reserva_eh_casal && semDiff >= 2 && comDiff === 0) {
+    if (comDiff > 0) continue;
+    // Dispara guard quando faltam perfis para garantir dedup correto:
+    // - 2+ rp undiff sem perfis suficientes (cenario classico legacy)
+    // - 1 rp undiff em casal onde so um dos slots tem spa_perfil (cenario
+    //   parcial onde a rp poderia ser do p2 mas o dedup a colide com p1)
+    const perfilP1Existe = _perfisExistentes.has(`${resId}|1`);
+    const perfilP2Existe = _perfisExistentes.has(`${resId}|2`);
+    if (semDiff >= 1 && (!perfilP1Existe || !perfilP2Existe)) {
       _reservasLegacyCasal.add(resId);
     }
   }
