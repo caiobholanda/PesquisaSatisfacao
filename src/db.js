@@ -462,6 +462,11 @@ export function initDb() {
   //   1    = havia canonico, foi comparado (use o valor de _divergente)
   // Sem essa coluna, _divergente=0 colidia "bate" com "nao comparei".
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_canonico_comparado INTEGER`); } catch {}
+  // HMAC do texto canonico do servidor no momento da gravacao (quando
+  // existia). Permite que o controlador apresente em disputa AMBOS os
+  // lados: o texto exibido ao hospede (prova juridica) E a referencia
+  // oficial (canonico). Sem isso, controlador so tem o lado do titular.
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_hash_canonico TEXT`); } catch {}
   // ID da chave HMAC usada para gerar o hash. Permite rotacao de
   // segredo: hashes antigos continuam validos com a key_id de origem.
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN consentimento_saude_key_id TEXT`); } catch {}
@@ -1311,7 +1316,7 @@ export function inserirSpaPerfil(dados) {
           consentimento_saude_texto, consentimento_saude_hash,
           consentimento_saude_versao, consentimento_saude_em,
           consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
-          consentimento_saude_key_id } = dados;
+          consentimento_saude_hash_canonico, consentimento_saude_key_id } = dados;
   const db = getDb();
   const resolvedIdioma = idioma || 'pt-BR';
   const resolvedPessoa = pessoa === 2 ? 2 : 1;
@@ -1339,7 +1344,7 @@ export function inserirSpaPerfil(dados) {
       consentimento_saude_texto=?, consentimento_saude_hash=?,
       consentimento_saude_versao=?,
       consentimento_saude_canonico_divergente=?, consentimento_saude_canonico_comparado=?,
-      consentimento_saude_key_id=?,
+      consentimento_saude_hash_canonico=?, consentimento_saude_key_id=?,
       consentimento_saude_em = CASE
         WHEN consentimento_saude_hash IS NOT NULL AND consentimento_saude_hash = ? THEN consentimento_saude_em
         ELSE ?
@@ -1354,7 +1359,7 @@ export function inserirSpaPerfil(dados) {
           consentimento_saude_versao || null,
           consentimento_saude_canonico_divergente ? 1 : 0,
           (consentimento_saude_canonico_comparado === 1 ? 1 : null),
-          consentimento_saude_key_id || null,
+          consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null,
           consentimento_saude_hash || null, consentimento_saude_em || null, existente.id);
     perfil_id = existente.id;
   } else {
@@ -1363,8 +1368,9 @@ export function inserirSpaPerfil(dados) {
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
         consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
         consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
-        consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado, consentimento_saude_key_id)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
+        consentimento_saude_hash_canonico, consentimento_saude_key_id)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
@@ -1374,7 +1380,7 @@ export function inserirSpaPerfil(dados) {
            consentimento_saude_versao || null, consentimento_saude_em || null,
            consentimento_saude_canonico_divergente ? 1 : 0,
            (consentimento_saude_canonico_comparado === 1 ? 1 : null),
-           consentimento_saude_key_id || null);
+           consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null);
     perfil_id = r.lastInsertRowid;
   }
 

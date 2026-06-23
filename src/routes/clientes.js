@@ -258,7 +258,9 @@ function _logProva(req, status, sucesso, detalhes, recursoId) {
 }
 function _exigirMasterComLog(req, res, next) {
   if (req.user?.role !== 'master') {
-    const recursoId = parseInt(req.params.perfilId) || null;
+    // Nao confiar em parseInt cru — perfilId pode ter caracteres lixo.
+    const raw = req.params.perfilId;
+    const recursoId = (/^\d+$/.test(raw) && parseInt(raw) > 0) ? parseInt(raw) : null;
     _logProva(req, 403, 0, 'role=' + (req.user?.role || 'nenhum'), recursoId);
     return res.status(403).json({ ok: false, error: 'Acesso restrito a administradores master' });
   }
@@ -266,9 +268,15 @@ function _exigirMasterComLog(req, res, next) {
 }
 router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-  const id = parseInt(req.params.perfilId);
-  if (!id) {
-    _logProva(req, 400, 0, 'id invalido', null);
+  // Validacao estrita: somente digitos (impede '12abc' virar 12 ou '0'/'-1').
+  const raw = req.params.perfilId;
+  if (!/^\d+$/.test(raw)) {
+    _logProva(req, 400, 0, 'id formato invalido: ' + String(raw).slice(0, 32), null);
+    return res.status(400).json({ ok: false, error: 'id invalido' });
+  }
+  const id = parseInt(raw, 10);
+  if (!id || id < 1) {
+    _logProva(req, 400, 0, 'id fora de faixa: ' + raw, null);
     return res.status(400).json({ ok: false, error: 'id invalido' });
   }
   const db = getDb();
@@ -277,7 +285,7 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
            consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
            consentimento_saude_versao, consentimento_saude_em,
            consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
-           consentimento_saude_key_id
+           consentimento_saude_hash_canonico, consentimento_saude_key_id
     FROM spa_perfis WHERE id=?
   `).get(id);
   if (!row) {
@@ -330,6 +338,7 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
       consentimento_saude: !!row.consentimento_saude,
       texto: row.consentimento_saude_texto || null,
       hash_hmac_sha256: row.consentimento_saude_hash || null,
+      hash_canonico_hmac_sha256: row.consentimento_saude_hash_canonico || null,
       key_id: row.consentimento_saude_key_id || null,
       versao: row.consentimento_saude_versao || null,
       consentido_em: row.consentimento_saude_em || null,

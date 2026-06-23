@@ -328,6 +328,7 @@ router.post('/perfil', (req, res) => {
         //   _comparado=1 → havia, foi comparado (use _divergente)
         let canonicoDivergente = 0;
         let canonicoComparado = null;
+        let hashCanonico = null;
         try {
           const textoCanonRaw = _carregarTextoLegalCanonico(locale);
           if (textoCanonRaw && textoCanonRaw.length > 0) {
@@ -335,6 +336,9 @@ router.post('/perfil', (req, res) => {
             const truncadoCanon = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
             if (truncadoCanon) {
               canonicoComparado = 1;
+              // HMAC do canonico no momento — controlador armazena AMBOS
+              // os lados (exibido = prova; canonico = referencia oficial).
+              hashCanonico = _hmacProva(truncadoCanon);
               if (truncadoCanon !== truncadoExibido) {
                 canonicoDivergente = 1;
                 console.warn('[consentimento] cross-check divergente vs canonico (lang=' + locale + ')');
@@ -349,6 +353,7 @@ router.post('/perfil', (req, res) => {
           consentimento_saude_em: agora,
           consentimento_saude_canonico_divergente: canonicoDivergente,
           consentimento_saude_canonico_comparado: canonicoComparado,
+          consentimento_saude_hash_canonico: hashCanonico,
           consentimento_saude_key_id: _CONSENT_KEY_ID,
         };
       })(),
