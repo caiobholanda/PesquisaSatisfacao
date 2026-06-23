@@ -4,22 +4,50 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Segredo HMAC para assinatura da prova de consentimento. Em prod,
-// definir via `fly secrets set CONSENT_HMAC_SECRET=<32+ bytes random>`.
-// Sem segredo configurado, ainda funciona com fallback dev — mas a
-// prova nao tem assinatura criptografica, so checksum. Loga warn no boot.
-const _CONSENT_HMAC_SECRET = process.env.CONSENT_HMAC_SECRET || 'dev-fallback-NO-ROTATION-NO-AUDIT-VALUE';
+// Keyring HMAC para assinatura da prova de consentimento. Suporta
+// rotacao de segredo: cada linha gravada carrega o key_id da chave
+// usada; revalidacao busca o segredo correto pelo key_id.
+//
+// Em producao:
+//   fly secrets set CONSENT_HMAC_SECRET=<32+ bytes random>
+//   fly secrets set CONSENT_KEY_ID=k2-2026-12-01   (ao rotacionar)
+//   fly secrets set CONSENT_HMAC_SECRETS_LEGACY='{"k1-2026-06-23":"<segredo antigo>"}'
+// O segredo ativo (ATUAL) e usado para novas gravacoes. Chaves legadas
+// continuam validas para revalidacao.
 const _CONSENT_KEY_ID = process.env.CONSENT_KEY_ID || 'k1';
-if (_CONSENT_HMAC_SECRET.startsWith('dev-fallback')) {
+const _CONSENT_HMAC_SECRET_ATUAL = process.env.CONSENT_HMAC_SECRET || 'dev-fallback-NO-ROTATION-NO-AUDIT-VALUE';
+if (_CONSENT_HMAC_SECRET_ATUAL.startsWith('dev-fallback')) {
   console.warn('[consentimento] CONSENT_HMAC_SECRET nao configurado — usando fallback dev (nao apto para producao)');
 }
-function _hmacProva(texto) {
-  return createHmac('sha256', _CONSENT_HMAC_SECRET).update(texto, 'utf8').digest('hex');
+const _CONSENT_KEYRING = new Map();
+_CONSENT_KEYRING.set(_CONSENT_KEY_ID, _CONSENT_HMAC_SECRET_ATUAL);
+if (process.env.CONSENT_HMAC_SECRETS_LEGACY) {
+  try {
+    const legacy = JSON.parse(process.env.CONSENT_HMAC_SECRETS_LEGACY);
+    for (const [kid, secret] of Object.entries(legacy)) {
+      if (!_CONSENT_KEYRING.has(kid) && typeof secret === 'string' && secret.length > 0) {
+        _CONSENT_KEYRING.set(kid, secret);
+      }
+    }
+    console.info('[consentimento] keyring carregado com ' + _CONSENT_KEYRING.size + ' chaves (atual=' + _CONSENT_KEY_ID + ')');
+  } catch (e) {
+    console.warn('[consentimento] CONSENT_HMAC_SECRETS_LEGACY JSON invalido — ignorado:', e.message);
+  }
 }
-// Exportado para o endpoint de verificacao em clientes.js (mesmo
-// segredo, mesmo algoritmo).
-export function recalcularHmacConsentimento(texto) {
-  return _hmacProva(String(texto || ''));
+function _hmacProvaComKey(texto, keyId) {
+  const secret = _CONSENT_KEYRING.get(keyId);
+  if (!secret) return null;
+  return createHmac('sha256', secret).update(texto, 'utf8').digest('hex');
+}
+function _hmacProva(texto) {
+  return _hmacProvaComKey(texto, _CONSENT_KEY_ID);
+}
+// Revalidacao usa o key_id ESPECIFICO da linha. Sem isso, rotacao de
+// segredo invalidaria provas antigas (marcando-as como 'adulterado'
+// falsamente). Retorna null se key_id desconhecido (chave nao esta no
+// keyring atual — provavelmente foi retirado sem migrar para LEGACY).
+export function recalcularHmacConsentimento(texto, keyId) {
+  return _hmacProvaComKey(String(texto || ''), keyId || _CONSENT_KEY_ID);
 }
 export function consentKeyIdAtual() { return _CONSENT_KEY_ID; }
 import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';

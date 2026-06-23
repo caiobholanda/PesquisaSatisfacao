@@ -292,10 +292,18 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
   //  - chave-divergente: hash existe mas foi gerado com key_id diferente
   //    da atual — sem o segredo antigo nao da pra revalidar (rotacao
   //    futura). Por ora apenas avisa.
+  // Revalida usando o key_id GRAVADO na linha (nao o atual) — permite
+  // rotacao sem invalidar provas antigas. Se a chave nao esta mais no
+  // keyring, marcamos 'chave-desconhecida' (nao 'adulterado'), porque
+  // a falha e operacional (admin retirou chave) e nao indica fraude.
   let integridade;
   if (row.consentimento_saude_texto && row.consentimento_saude_hash) {
-    const recalc = recalcularHmacConsentimento(row.consentimento_saude_texto);
-    integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
+    const recalc = recalcularHmacConsentimento(row.consentimento_saude_texto, row.consentimento_saude_key_id);
+    if (recalc === null) {
+      integridade = 'chave-desconhecida';
+    } else {
+      integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
+    }
   } else if (row.consentimento_saude) {
     integridade = 'legado-sem-prova';
   } else {
