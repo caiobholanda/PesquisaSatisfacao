@@ -264,12 +264,20 @@ router.get('/anamnese/:perfilId/prova-consentimento', requireMaster, (req, res) 
     return res.status(404).json({ ok: false, error: 'Anamnese nao encontrada' });
   }
   // Revalida integridade: SHA-256(texto) deve bater com hash gravado.
-  let integridade = 'sem-texto';
+  // Classificacao cobre todos os cenarios pos e pre-Passo 6:
+  //  - integro: texto+hash batem
+  //  - adulterado: texto+hash divergem (dado mexido fora do app)
+  //  - legado-sem-prova: consentiu mas falta hash (versao='desconhecida'
+  //    do backfill, 'sem-canonico' do Passo 6, 'nao-enviado' do Passo 6 antigo)
+  //  - sem-consentimento: nao consentiu
+  let integridade;
   if (row.consentimento_saude_texto && row.consentimento_saude_hash) {
     const recalc = createHash('sha256').update(row.consentimento_saude_texto, 'utf8').digest('hex');
     integridade = (recalc === row.consentimento_saude_hash) ? 'integro' : 'adulterado';
-  } else if (row.consentimento_saude_versao === 'desconhecida') {
+  } else if (row.consentimento_saude) {
     integridade = 'legado-sem-prova';
+  } else {
+    integridade = 'sem-consentimento';
   }
   logAuditoria({
     ator_username: req.user?.username, ator_role: req.user?.role, ator_ip: req.ip,
