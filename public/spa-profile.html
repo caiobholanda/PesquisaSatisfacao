@@ -195,6 +195,10 @@
     .spa-input.err, .spa-textarea.err { border-color: var(--err); background: var(--err-bg); }
     .spa-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c6f5a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .75rem center; padding-right: 2rem; cursor: pointer; }
     .spa-textarea { resize: vertical; min-height: 96px; }
+    .spa-doc-row { display: flex; gap: .5rem; align-items: stretch; }
+    .spa-doc-row .spa-select { width: 130px; flex: 0 0 130px; }
+    .spa-doc-row .spa-input  { flex: 1 1 auto; min-width: 0; }
+    .spa-hint { display: block; font-size: .7rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: #8c7e6f; margin-top: .15rem; font-style: italic; }
 
     .spa-error-msg {
       font-size: .68rem; color: var(--err); font-weight: 600;
@@ -448,18 +452,20 @@
           <span class="spa-error-msg" id="err-sobrenome" style="display:none"></span>
         </div>
 
-        <div class="spa-field">
-          <label class="spa-label" for="f-doc-tipo"><span id="lbl-doc-tipo">Tipo de documento</span></label>
-          <select class="spa-select" id="f-doc-tipo">
-            <option value="cpf" id="opt-cpf">CPF</option>
-            <option value="passport" id="opt-passport">Passaporte</option>
-          </select>
-        </div>
-
-        <div class="spa-field">
-          <label class="spa-label" for="f-doc-num"><span id="lbl-doc-num">Número do documento</span> <span class="req">*</span></label>
-          <input class="spa-input" id="f-doc-num" type="text" autocomplete="off">
+        <div class="spa-field spa-field-full">
+          <label class="spa-label" for="f-doc-num">
+            <span id="lbl-doc-num">Documento</span> <span class="req">*</span>
+            <span class="spa-hint" id="lbl-doc-hint">— informe primeiro para autopreencher dados já cadastrados</span>
+          </label>
+          <div class="spa-doc-row">
+            <select class="spa-select" id="f-doc-tipo" aria-label="Tipo de documento">
+              <option value="cpf" id="opt-cpf">CPF</option>
+              <option value="passport" id="opt-passport">Passaporte</option>
+            </select>
+            <input class="spa-input" id="f-doc-num" type="text" autocomplete="off">
+          </div>
           <span class="spa-error-msg" id="err-doc" style="display:none"></span>
+          <span id="lbl-doc-tipo" style="display:none">Tipo de documento</span>
         </div>
 
         <div class="spa-field">
@@ -626,6 +632,6 @@
 
 </div><!-- /spa-page -->
 
-<script src="/js/spa-profile.js?v=19"></script>
+<script src="/js/spa-profile.js?v=20"></script>
 </body>
 </html>

@@ -454,6 +454,7 @@ function applyLocale(L) {
   setText('opt-cpf',         L.doc.cpf);
   setText('opt-passport',    L.doc.passport);
   setText('lbl-doc-num',     L.doc.number_label);
+  if (L.doc.number_hint) setText('lbl-doc-hint', L.doc.number_hint);
   setText('lbl-email',       L.fields.email);
   setText('lbl-telefone',    L.fields.phone);
   setText('lbl-nascimento',  L.fields.dob);

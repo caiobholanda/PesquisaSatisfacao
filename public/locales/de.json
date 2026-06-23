@@ -38,7 +38,8 @@
     "type_label": "Dokumententyp",
     "cpf": "CPF",
     "passport": "Reisepass",
-    "number_label": "Dokumentennummer",
+    "number_label": "Dokument",
+    "number_hint": "— zuerst eingeben, um vorhandene Daten automatisch auszufüllen",
     "cpf_placeholder": "000.000.000-00",
     "passport_placeholder": "Reisepassnummer"
   },

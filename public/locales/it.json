@@ -38,7 +38,8 @@
     "type_label": "Tipo di documento",
     "cpf": "CPF",
     "passport": "Passaporto",
-    "number_label": "Numero documento",
+    "number_label": "Documento",
+    "number_hint": "— inserisca prima per riempire automaticamente i dati già registrati",
     "cpf_placeholder": "000.000.000-00",
     "passport_placeholder": "Numero passaporto"
   },
