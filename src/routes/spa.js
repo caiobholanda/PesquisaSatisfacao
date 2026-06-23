@@ -185,6 +185,7 @@ router.post('/perfil', (req, res) => {
       assinatura_data_url:    sanDataUrl(b.assinatura_data_url),
       idioma:                 locale,
       reserva_id,
+      pessoa:                 _pessoaReserva,
     });
     // Gravacao paralela ESTRUTURADA (Anamnese configuravel). Falha aqui NAO
     // derruba a submissao publica — spa_perfis ja foi gravado e o cliente

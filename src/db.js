@@ -438,6 +438,14 @@ export function initDb() {
   try { db.exec(`ALTER TABLE reservas    ADD COLUMN quarto TEXT`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN quarto TEXT`); } catch {}
+  // Identidade da pessoa dentro da reserva (1 = principal, 2 = casal).
+  // Passa a ser a chave de upsert em (reserva_id, pessoa) — sem isso, o
+  // hospede 2 de um casal sobrescrevia a anamnese do hospede 1 quando
+  // ambos preenchiam no mesmo idioma.
+  try { db.exec(`ALTER TABLE spa_perfis  ADD COLUMN pessoa INTEGER NOT NULL DEFAULT 1`); } catch {}
+  // Backfill idempotente: registros ja referenciados como pessoa 2 na
+  // tabela reservas viram pessoa=2.
+  try { db.exec(`UPDATE spa_perfis SET pessoa=2 WHERE id IN (SELECT documento_perfil_id2 FROM reservas WHERE documento_perfil_id2 IS NOT NULL)`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN reserva_id INTEGER`); } catch {}
   // PIN hash da terapeuta (login mobile). Aditivo + idempotente.
@@ -445,6 +453,7 @@ export function initDb() {
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cpf       ON reservas(cpf)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_spa_perfis_cliente ON spa_perfis(cliente_id)`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_spa_perfis_reserva_pessoa ON spa_perfis(reserva_id, pessoa)`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_feedback_cliente   ON feedback(cliente_id)`); } catch {}
 
   seedTratamentosGranSpa();
@@ -1274,14 +1283,16 @@ export function inserirSpaPerfil(dados) {
   const { nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
           rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
-          idioma, reserva_id } = dados;
+          idioma, reserva_id, pessoa } = dados;
   const db = getDb();
   const resolvedIdioma = idioma || 'pt-BR';
+  const resolvedPessoa = pessoa === 2 ? 2 : 1;
 
-  // Upsert: reenvio na mesma (reserva_id, idioma) substitui registro anterior.
-  // Idiomas diferentes na mesma reserva coexistem como registros separados.
+  // Upsert por (reserva_id, pessoa): garante que o hospede 2 nao sobrescreva
+  // a anamnese do hospede 1 em reservas casal, mesmo quando ambos preenchem
+  // no mesmo idioma. O idioma vira coluna comum (sobrescrita no reenvio).
   const existente = reserva_id
-    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND idioma=? LIMIT 1').get(reserva_id, resolvedIdioma)
+    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? LIMIT 1').get(reserva_id, resolvedPessoa)
     : null;
 
   let perfil_id;
@@ -1289,29 +1300,33 @@ export function inserirSpaPerfil(dados) {
     db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
       data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
       info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
-      assinatura_data_url=?, idioma=? WHERE id=?`
+      assinatura_data_url=?, idioma=?, pessoa=? WHERE id=?`
     ).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
           data_nascimento || null, rotina_facial || null, rotina_corporal || null,
           produto_especifico || null, pressao_massagem || null, info_medica || '',
           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
-          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, existente.id);
+          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa, existente.id);
     perfil_id = existente.id;
   } else {
     const r = db.prepare(`
       INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
-        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
            consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
-           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null);
+           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa);
     perfil_id = r.lastInsertRowid;
   }
 
+  // Amarra ao slot certo da reserva: documento_perfil_id (pessoa 1) ou
+  // documento_perfil_id2 (pessoa 2). Sem isso, ambas as colunas poderiam
+  // apontar para o mesmo registro em reservas casal.
   if (reserva_id) {
-    db.prepare('UPDATE reservas SET documento_perfil_id=? WHERE id=?').run(perfil_id, reserva_id);
+    const col = resolvedPessoa === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
+    db.prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(perfil_id, reserva_id);
   }
   return perfil_id;
 }
