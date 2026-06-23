@@ -5,11 +5,17 @@ import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.j
 
 const router = Router();
 
-// Normaliza texto legal antes do hash: trim + colapsa whitespace consecutivo.
-// Evita instabilidade de hash por diferencas cosmeticas no JSON de idioma.
+// Normaliza texto legal antes do hash: NFC + remove BOM + colapsa
+// whitespace e zero-width chars consecutivos + trim. Evita instabilidade
+// de hash por diferencas cosmeticas: NFD vs NFC (macOS APFS), BOM em
+// JSON salvo por editores diferentes, ZWSP/ZWNJ/ZWJ invisiveis.
 function _normalizarTextoLegal(s) {
   if (!s) return '';
-  return String(s).replace(/\s+/g, ' ').trim();
+  return String(s)
+    .normalize('NFC')
+    .replace(/^﻿/, '')
+    .replace(/[\s​-‍﻿]+/g, ' ')
+    .trim();
 }
 
 const LOCALES_VALIDOS = ['pt-BR', 'pt-PT', 'en', 'fr', 'es', 'it', 'de'];

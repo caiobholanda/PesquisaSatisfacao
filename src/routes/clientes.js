@@ -218,10 +218,15 @@ router.get('/anamnese/:perfilId', (req, res) => {
     } catch (e) { console.warn('[anamnese extras]', e?.message); }
   }
 
+  // Filtra campos de prova juridica do payload visivel ao admin: o texto
+  // bruto e o hash SHA-256 nao precisam aparecer no modal — versao e
+  // timestamp sao suficientes para verificacao visual. Texto+hash ficam
+  // gravados no DB para auditoria explicita futura.
+  const { consentimento_saude_texto: _csTxt, consentimento_saude_hash: _csHash, ...perfilSafe } = perfil;
   res.json({
     ok: true,
     anamnese: {
-      ...perfil,
+      ...perfilSafe,
       rotina_facial: parseArr(perfil.rotina_facial),
       rotina_corporal: parseArr(perfil.rotina_corporal),
       canais_marketing: parseArr(perfil.canais_marketing),
