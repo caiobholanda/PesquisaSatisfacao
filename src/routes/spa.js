@@ -324,15 +324,21 @@ router.post('/perfil', (req, res) => {
         // Cross-check com canonico do servidor (mesmo idioma). Sem
         // fallback para outro idioma — texto de outro idioma seria
         // vicio de consentimento (LGPD art. 8).
+        //   _comparado=null → nao havia canonico no servidor
+        //   _comparado=1 → havia, foi comparado (use _divergente)
         let canonicoDivergente = 0;
+        let canonicoComparado = null;
         try {
           const textoCanonRaw = _carregarTextoLegalCanonico(locale);
           if (textoCanonRaw && textoCanonRaw.length > 0) {
             const textoCanon = _normalizarTextoLegal(textoCanonRaw);
             const truncadoCanon = textoCanon.length > 50_000 ? textoCanon.slice(0, 50_000) : textoCanon;
-            if (truncadoCanon && truncadoCanon !== truncadoExibido) {
-              canonicoDivergente = 1;
-              console.warn('[consentimento] cross-check divergente vs canonico (lang=' + locale + ')');
+            if (truncadoCanon) {
+              canonicoComparado = 1;
+              if (truncadoCanon !== truncadoExibido) {
+                canonicoDivergente = 1;
+                console.warn('[consentimento] cross-check divergente vs canonico (lang=' + locale + ')');
+              }
             }
           }
         } catch (e) { console.warn('[consentimento] cross-check falhou', e?.message); }
@@ -342,6 +348,7 @@ router.post('/perfil', (req, res) => {
           consentimento_saude_versao: hash.slice(0, 16),
           consentimento_saude_em: agora,
           consentimento_saude_canonico_divergente: canonicoDivergente,
+          consentimento_saude_canonico_comparado: canonicoComparado,
           consentimento_saude_key_id: _CONSENT_KEY_ID,
         };
       })(),

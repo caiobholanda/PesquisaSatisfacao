@@ -276,7 +276,8 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
     SELECT id, reserva_id, idioma, criado_em,
            consentimento_saude, consentimento_saude_texto, consentimento_saude_hash,
            consentimento_saude_versao, consentimento_saude_em,
-           consentimento_saude_canonico_divergente, consentimento_saude_key_id
+           consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
+           consentimento_saude_key_id
     FROM spa_perfis WHERE id=?
   `).get(id);
   if (!row) {
@@ -309,7 +310,17 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
   } else {
     integridade = 'sem-consentimento';
   }
-  _logProva(req, 200, 1, 'integridade=' + integridade + (row.consentimento_saude_canonico_divergente ? ',canonico-divergente' : ''), id);
+  // Cross-check com 3 estados:
+  //   'sem-canonico'       → nao havia canonico no servidor no momento da gravacao
+  //   'bate'               → canonico existia e e identico ao texto exibido
+  //   'diverge'            → canonico existia e difere do texto exibido (cache/edit mid-sessao)
+  let canonico;
+  if (row.consentimento_saude_canonico_comparado === 1) {
+    canonico = row.consentimento_saude_canonico_divergente ? 'diverge' : 'bate';
+  } else {
+    canonico = 'sem-canonico';
+  }
+  _logProva(req, 200, 1, 'integridade=' + integridade + ',canonico=' + canonico, id);
   res.json({
     ok: true,
     prova: {
@@ -322,7 +333,7 @@ router.get('/anamnese/:perfilId/prova-consentimento', _exigirMasterComLog, (req,
       key_id: row.consentimento_saude_key_id || null,
       versao: row.consentimento_saude_versao || null,
       consentido_em: row.consentimento_saude_em || null,
-      canonico_divergente: !!row.consentimento_saude_canonico_divergente,
+      canonico,
       criado_em: row.criado_em,
       integridade,
     },
