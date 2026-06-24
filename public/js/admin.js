@@ -922,8 +922,10 @@ function _iniciarEnvioAnamnesePessoa(pessoa) {
   enviarPreMassagemReserva();
 }
 
-// Abre modal readonly da anamnese preenchida. Faz GET no detalhe (sempre
-// fresh) e renderiza os campos de spa_perfis com seguranca.
+// Abre o modal completo de anamnese preenchida — delega para
+// _abrirModalAnamnesePreenchida(perfilId) reusado da tela Clientes 360.
+// Esse modal renderiza TODOS os campos da anamnese + perguntas extras
+// dinamicas + assinatura, com tradução de rotulos e agrupamento por seção.
 async function abrirAnamneseReadonly(reservaId, pessoa) {
   if (!reservaId) return;
   const p = pessoa === 2 ? 2 : 1;
@@ -934,83 +936,13 @@ async function abrirAnamneseReadonly(reservaId, pessoa) {
     if (!d.ok) { showToast('Não foi possível carregar a anamnese.'); return; }
     const pdata = p === 2 ? d.pessoa2 : d.pessoa1;
     if (!pdata || !pdata.anamnese) { showToast('Anamnese ainda não foi preenchida.'); return; }
-    _renderAnamneseReadonly(d.reserva, pdata.anamnese, p);
-    const ov = document.getElementById('anam-view-overlay');
-    ov.style.zIndex = '4500'; // garante render acima do resdet-overlay (4000)
-    ov.style.display = 'flex';
+    const perfilId = pdata.anamnese.id;
+    if (!perfilId) { showToast('Anamnese sem id de perfil.'); return; }
+    await _abrirModalAnamnesePreenchida(perfilId);
   } catch (e) {
     console.error('[abrirAnamneseReadonly]', e);
     showToast('Erro ao carregar anamnese.');
   }
-}
-
-function _safeArrAnam(v) {
-  if (Array.isArray(v)) return v;
-  if (typeof v === 'string') {
-    const s = v.trim();
-    if (!s) return [];
-    if (s.startsWith('[')) { try { return JSON.parse(s); } catch { return [s]; } }
-    return [s];
-  }
-  return v ? [v] : [];
-}
-
-function _renderAnamneseReadonly(reserva, a, pessoa) {
-  const nome = pessoa === 2 ? reserva.cliente2 : reserva.cliente;
-  document.getElementById('anam-view-title').textContent =
-    `Anamnese — ${nome || `Hóspede ${pessoa}`}`;
-  const facial = _safeArrAnam(a.rotina_facial);
-  const corporal = _safeArrAnam(a.rotina_corporal);
-  const canais = _safeArrAnam(a.canais_marketing);
-  const sim = v => v ? 'Sim' : 'Não';
-  const docLabel = a.tipo_documento === 'passaporte' ? 'Passaporte' : 'CPF';
-  document.getElementById('anam-view-body').innerHTML = `
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Identificação</div>
-      <div class="anam-view-grid">
-        <div><div class="anam-view-label">Nome</div><div class="anam-view-val">${escHtml(((a.nome||'') + ' ' + (a.sobrenome||'')).trim() || '—')}</div></div>
-        <div><div class="anam-view-label">${docLabel}</div><div class="anam-view-val mono">${escHtml(a.documento || '—')}</div></div>
-        <div><div class="anam-view-label">Data de nascimento</div><div class="anam-view-val">${a.data_nascimento ? escHtml(a.data_nascimento) : '—'}</div></div>
-        <div><div class="anam-view-label">Idioma</div><div class="anam-view-val">${escHtml(a.idioma || 'pt-BR')}</div></div>
-      </div>
-    </div>
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Contato</div>
-      <div class="anam-view-grid">
-        <div><div class="anam-view-label">E-mail</div><div class="anam-view-val">${escHtml(a.email || '—')}</div></div>
-        <div><div class="anam-view-label">Telefone</div><div class="anam-view-val mono">${escHtml(a.telefone || '—')}</div></div>
-        <div><div class="anam-view-label">Quarto</div><div class="anam-view-val">${escHtml(a.quarto || '—')}</div></div>
-      </div>
-    </div>
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Preferências</div>
-      <div class="anam-view-row"><div class="anam-view-label">Rotina facial</div><div class="anam-view-val">${facial.length ? facial.map(escHtml).join(', ') : '—'}</div></div>
-      <div class="anam-view-row"><div class="anam-view-label">Rotina corporal</div><div class="anam-view-val">${corporal.length ? corporal.map(escHtml).join(', ') : '—'}</div></div>
-      <div class="anam-view-row"><div class="anam-view-label">Produto específico</div><div class="anam-view-val">${escHtml(a.produto_especifico || '—')}</div></div>
-      <div class="anam-view-row"><div class="anam-view-label">Pressão de massagem</div><div class="anam-view-val">${escHtml(a.pressao_massagem || '—')}</div></div>
-    </div>
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Saúde</div>
-      <div class="anam-view-row"><div class="anam-view-label">Informações médicas</div><div class="anam-view-val" style="white-space:pre-wrap">${a.info_medica ? escHtml(a.info_medica) : '—'}</div></div>
-      <div class="anam-view-row"><div class="anam-view-label">Consentimento saúde</div><div class="anam-view-val">${sim(a.consentimento_saude)}</div></div>
-    </div>
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Marketing</div>
-      <div class="anam-view-row"><div class="anam-view-label">Consentimento marketing</div><div class="anam-view-val">${sim(a.consentimento_marketing)}</div></div>
-      <div class="anam-view-row"><div class="anam-view-label">Canais</div><div class="anam-view-val">${canais.length ? canais.map(escHtml).join(', ') : '—'}</div></div>
-    </div>
-    ${a.assinatura_data_url ? `
-    <div class="anam-view-section">
-      <div class="anam-view-section-title">Assinatura</div>
-      <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:.5rem;display:flex;align-items:center;justify-content:center">
-        <img src="${a.assinatura_data_url}" alt="Assinatura" style="max-width:100%;max-height:140px;display:block">
-      </div>
-    </div>` : ''}
-    <div class="anam-view-section" style="margin-bottom:0">
-      <div class="anam-view-section-title">Registro</div>
-      <div class="anam-view-row"><div class="anam-view-label">Preenchida em</div><div class="anam-view-val">${a.criado_em ? fmtDataHoraBR(a.criado_em) : '—'}</div></div>
-    </div>
-  `;
 }
 
 // Popup distribuidor para reserva CASAL. Mostra estado de cada hospede
@@ -2991,10 +2923,6 @@ window.calVerDetalhes = calVerDetalhes;
 
 document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
-
-// Modal de visualizacao readonly da anamnese preenchida
-document.getElementById('anam-view-x')?.addEventListener('click', () => { document.getElementById('anam-view-overlay').style.display = 'none'; });
-document.getElementById('anam-view-fechar')?.addEventListener('click', () => { document.getElementById('anam-view-overlay').style.display = 'none'; });
 
 // Modal idioma pré-massagem
 const _closeLangOverlay = () => {
