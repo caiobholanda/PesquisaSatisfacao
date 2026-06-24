@@ -28,8 +28,12 @@ function _computarEsp(funcao, bilingue, vinculo) {
 router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
 
 router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
-  const { nome, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
+  const { nome, matricula, funcao, vinculo, bilingue, disponibilidade, excecoes } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
+  if (excecoes !== undefined) {
+    const erroExc = _validarExcecoes(excecoes);
+    if (erroExc) return res.status(400).json({ ok: false, error: erroExc });
+  }
   const resolvedFuncao = funcao?.trim() || 'Massoterapeuta';
   const resolvedVinculo = vinculo?.trim() || null;
   const resolvedBilingue = bilingue ? 1 : 0;
@@ -40,9 +44,34 @@ router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
     vinculo: resolvedVinculo,
     bilingue: resolvedBilingue,
     disponibilidade: disponibilidade ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade)) : null,
+    excecoes: excecoes ? (typeof excecoes === 'string' ? excecoes : JSON.stringify(excecoes)) : null,
   });
   res.status(201).json({ ok: true, id });
 });
+
+function _validarExcecoes(excecoes) {
+  if (!excecoes) return null;
+  let arr;
+  try { arr = typeof excecoes === 'string' ? JSON.parse(excecoes) : excecoes; }
+  catch { return 'Exceções: JSON inválido'; }
+  if (!Array.isArray(arr)) return 'Exceções devem ser uma lista';
+  const SPA_INI = 8 * 60, SPA_FIM = 22 * 60;
+  const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  const timeRe = /^\d{2}:\d{2}$/;
+  for (const e of arr) {
+    if (!e || typeof e !== 'object') return 'Exceção inválida';
+    if (!dateRe.test(e.data || '')) return `Exceção: data inválida (${e.data})`;
+    if (!['disponivel', 'indisponivel'].includes(e.tipo)) return `Exceção ${e.data}: tipo deve ser disponivel ou indisponivel`;
+    if (!timeRe.test(e.inicio || '') || !timeRe.test(e.fim || '')) return `Exceção ${e.data}: horário inválido`;
+    const ini = toMin(e.inicio), fim = toMin(e.fim);
+    if (Number.isNaN(ini) || Number.isNaN(fim)) return `Exceção ${e.data}: horário inválido`;
+    if (ini < SPA_INI) return `Exceção ${e.data}: início não pode ser antes das 08:00`;
+    if (fim > SPA_FIM) return `Exceção ${e.data}: fim não pode ser após 22:00`;
+    if (fim <= ini) return `Exceção ${e.data}: fim deve ser após o início`;
+  }
+  return null;
+}
 
 function _validarDisp(disponibilidade) {
   if (!disponibilidade) return null;
@@ -62,11 +91,15 @@ function _validarDisp(disponibilidade) {
 }
 
 router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
-  const { nome, ativo = 1, matricula, funcao, vinculo, bilingue, disponibilidade } = req.body || {};
+  const { nome, ativo = 1, matricula, funcao, vinculo, bilingue, disponibilidade, excecoes } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
   if (disponibilidade !== undefined) {
     const erroDisp = _validarDisp(disponibilidade);
     if (erroDisp) return res.status(400).json({ ok: false, error: erroDisp });
+  }
+  if (excecoes !== undefined) {
+    const erroExc = _validarExcecoes(excecoes);
+    if (erroExc) return res.status(400).json({ ok: false, error: erroExc });
   }
   const existing = buscarMassagistaById(parseInt(req.params.id));
   if (!existing) return res.status(404).json({ ok: false, error: 'Não encontrado' });
@@ -85,6 +118,9 @@ router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
   if (disponibilidade !== undefined) opts.disponibilidade = disponibilidade
     ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade))
     : null;
+  if (excecoes !== undefined) opts.excecoes = (Array.isArray(excecoes) && excecoes.length)
+    ? JSON.stringify(excecoes)
+    : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null);
 
   atualizarMassagista(parseInt(req.params.id), nome, ativo ? 1 : 0, opts);
   res.json({ ok: true });

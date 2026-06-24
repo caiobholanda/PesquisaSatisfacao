@@ -2474,6 +2474,24 @@
     .disp-row input[type=checkbox] { width:15px; height:15px; accent-color:var(--gold-dark); cursor:pointer; flex-shrink:0; }
     .disp-row-off { font-size:.75rem; color:var(--muted); font-style:italic; }
 
+    /* Exceções pontuais no modal */
+    .exc-row { display:flex; align-items:center; gap:.5rem; padding:.3rem .5rem; border-radius:6px; background:var(--surface2); flex-wrap:wrap; }
+    .exc-row input[type=date], .exc-row select, .exc-row input[type=time] {
+      font-family:var(--mono); font-size:.78rem; padding:.25rem .4rem;
+      border:1px solid var(--border); border-radius:5px; background:var(--surface); color:var(--text);
+    }
+    .exc-row input[type=date] { width:130px; }
+    .exc-row select { font-family:var(--font); width:130px; }
+    .exc-row input[type=time] { width:84px; }
+    .exc-row .exc-sep { font-size:.75rem; color:var(--muted); }
+    .exc-row .exc-del {
+      margin-left:auto; background:none; border:1px solid var(--border); color:var(--muted);
+      width:24px; height:24px; border-radius:4px; cursor:pointer; font-size:.85rem; line-height:1;
+      display:inline-flex; align-items:center; justify-content:center; transition:color .12s, border-color .12s;
+    }
+    .exc-row .exc-del:hover { color:var(--danger); border-color:var(--danger); }
+    .exc-empty { font-size:.75rem; color:var(--muted); font-style:italic; padding:.4rem 0; }
+
     /* Combo info box */
     .res-combo-box {
       margin-top: 0.6rem;
@@ -4153,6 +4171,16 @@
       <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
         <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala Semanal</div>
         <div id="mgmt-m-disp-grid" style="display:flex;flex-direction:column;gap:.375rem"></div>
+      </div>
+      <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;flex-wrap:wrap">
+          <div>
+            <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Exceções Pontuais</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.15rem">Liberar (folga) ou disponibilizar fora da escala em uma data específica</div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="mgmt-m-add-exc">+ Adicionar exceção</button>
+        </div>
+        <div id="mgmt-m-exc-list" style="display:flex;flex-direction:column;gap:.375rem"></div>
       </div>
     </div>
     <div class="res-modal-err" id="mgmt-m-err"></div>

@@ -153,6 +153,7 @@ export function initDb() {
     'vinculo TEXT',
     `bilingue INTEGER NOT NULL DEFAULT 0`,
     'disponibilidade TEXT',
+    'excecoes TEXT',
   ]) {
     try { db.exec(`ALTER TABLE massagistas ADD COLUMN ${col}`); } catch {}
   }
@@ -720,7 +721,7 @@ export function listarMassagistasComStats() {
   return getDb().prepare(`
     SELECT
       m.id, m.nome, m.ativo, m.created_at,
-      m.matricula, m.especialidade_original, m.funcao, m.vinculo, m.bilingue, m.disponibilidade,
+      m.matricula, m.especialidade_original, m.funcao, m.vinculo, m.bilingue, m.disponibilidade, m.excecoes,
       COUNT(f.id) AS total_avaliacoes,
       SUM(CASE WHEN f.recomenda = 'sim' THEN 1 ELSE 0 END) AS rec_sim
     FROM massagistas m
@@ -730,16 +731,16 @@ export function listarMassagistasComStats() {
   `).all();
 }
 export function inserirMassagista(nome, opts = {}) {
-  const { matricula = null, especialidade_original = null, funcao = 'Massoterapeuta', vinculo = null, bilingue = 0, disponibilidade = null } = opts;
+  const { matricula = null, especialidade_original = null, funcao = 'Massoterapeuta', vinculo = null, bilingue = 0, disponibilidade = null, excecoes = null } = opts;
   return getDb().prepare(
-    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(nome.trim(), matricula, especialidade_original, funcao, vinculo, bilingue ? 1 : 0, disponibilidade).lastInsertRowid;
+    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade, excecoes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(nome.trim(), matricula, especialidade_original, funcao, vinculo, bilingue ? 1 : 0, disponibilidade, excecoes).lastInsertRowid;
 }
 export function atualizarMassagista(id, nome, ativo, opts = {}) {
   const sets = ['nome=?', 'ativo=?'];
   const vals = [nome.trim(), ativo];
-  for (const k of ['matricula', 'especialidade_original', 'funcao', 'vinculo', 'disponibilidade']) {
+  for (const k of ['matricula', 'especialidade_original', 'funcao', 'vinculo', 'disponibilidade', 'excecoes']) {
     if (opts[k] !== undefined) { sets.push(`${k}=?`); vals.push(opts[k]); }
   }
   if (opts.bilingue !== undefined) { sets.push('bilingue=?'); vals.push(opts.bilingue ? 1 : 0); }

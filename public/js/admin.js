@@ -1262,6 +1262,81 @@ function _coletarDisp() {
   return disp;
 }
 
+// ── Exceções pontuais (libera/disponibiliza data+faixa específica) ──
+function _excRowHtml(exc) {
+  const data = exc?.data || '';
+  const tipo = exc?.tipo === 'disponivel' ? 'disponivel' : 'indisponivel';
+  const ini = exc?.inicio || '08:00';
+  const fim = exc?.fim || '22:00';
+  return `<div class="exc-row">
+    <input type="date" class="exc-data" value="${data}">
+    <select class="exc-tipo">
+      <option value="indisponivel" ${tipo==='indisponivel'?'selected':''}>Liberar (folga)</option>
+      <option value="disponivel" ${tipo==='disponivel'?'selected':''}>Disponibilizar</option>
+    </select>
+    <input type="time" class="exc-ini" min="08:00" max="22:00" value="${ini}">
+    <span class="exc-sep">–</span>
+    <input type="time" class="exc-fim" min="08:00" max="22:00" value="${fim}">
+    <button type="button" class="exc-del" title="Remover">×</button>
+  </div>`;
+}
+function _renderExcecoes(excecoes) {
+  const list = document.getElementById('mgmt-m-exc-list');
+  if (!list) return;
+  const arr = Array.isArray(excecoes) ? excecoes : [];
+  if (!arr.length) {
+    list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+  } else {
+    list.innerHTML = arr.map(_excRowHtml).join('');
+  }
+  list.querySelectorAll('.exc-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.exc-row').remove();
+      if (!list.querySelector('.exc-row')) {
+        list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+      }
+    });
+  });
+}
+function _coletarExcecoes() {
+  const list = document.getElementById('mgmt-m-exc-list');
+  if (!list) return [];
+  const out = [];
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  for (const row of list.querySelectorAll('.exc-row')) {
+    const data = row.querySelector('.exc-data').value;
+    const tipo = row.querySelector('.exc-tipo').value;
+    const inicio = row.querySelector('.exc-ini').value;
+    const fim = row.querySelector('.exc-fim').value;
+    if (!data || !inicio || !fim) return { erro: 'Exceção: preencha data, início e fim.' };
+    if (!dateRe.test(data)) return { erro: `Exceção: data inválida (${data}).` };
+    const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
+    if (iniMin < 8 * 60) return { erro: `Exceção ${data}: início não pode ser antes das 08:00.` };
+    if (fimMin > 22 * 60) return { erro: `Exceção ${data}: fim não pode ser depois das 22:00.` };
+    if (fimMin <= iniMin) return { erro: `Exceção ${data}: fim deve ser após o início.` };
+    out.push({ data, tipo, inicio, fim });
+  }
+  return out;
+}
+document.getElementById('mgmt-m-add-exc')?.addEventListener('click', () => {
+  const list = document.getElementById('mgmt-m-exc-list');
+  if (!list) return;
+  const empty = list.querySelector('.exc-empty');
+  if (empty) empty.remove();
+  const today = new Date();
+  const iso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = _excRowHtml({ data: iso, tipo: 'indisponivel', inicio: '08:00', fim: '22:00' });
+  const row = wrap.firstElementChild;
+  list.appendChild(row);
+  row.querySelector('.exc-del').addEventListener('click', () => {
+    row.remove();
+    if (!list.querySelector('.exc-row')) {
+      list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+    }
+  });
+});
+
 window.openEditMassagista = (id, nome, ativo) => {
   _editMId = id;
   document.getElementById('mgmt-m-sub').textContent = nome;
@@ -1276,6 +1351,12 @@ window.openEditMassagista = (id, nome, ativo) => {
   document.getElementById('mgmt-m-bilingue').checked = !!m?.bilingue;
   const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
   _renderDispGrid(disp);
+  let excs = [];
+  if (m?.excecoes) {
+    try { excs = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excs = []; }
+    if (!Array.isArray(excs)) excs = [];
+  }
+  _renderExcecoes(excs);
   _modalOpen = true;
   document.getElementById('mgmt-m-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
@@ -1301,7 +1382,9 @@ document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   try {
     const disponibilidade = _coletarDisp();
     if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade }) });
+    const excecoes = _coletarExcecoes();
+    if (excecoes?.erro) { err.textContent = excecoes.erro; btn.disabled = false; return; }
+    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade, excecoes }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
@@ -1904,9 +1987,45 @@ function _hmToMin(s) {
 }
 
 function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
-  if (!m.disponibilidade) return true;
-  const disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade;
+  // Sem escala definida: sempre disponível (compat preservada)
+  if (!m.disponibilidade && !m.excecoes) return true;
   if (!data) return true;
+
+  // Exceções têm prioridade sobre a escala semanal naquela data específica.
+  // Regras:
+  //   - "indisponivel" que sobrepõe a faixa pedida -> bloqueia (safety first)
+  //   - "disponivel" que CONTÉM totalmente a faixa pedida -> libera (override aditivo)
+  let excArr = [];
+  if (m.excecoes) {
+    try { excArr = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excArr = []; }
+    if (!Array.isArray(excArr)) excArr = [];
+  }
+  const resIni = horaInicio ? _hmToMin(horaInicio) : null;
+  const resFim = horaFim ? _hmToMin(horaFim) : null;
+  const excsDoDia = excArr.filter(e => e?.data === data);
+  if (excsDoDia.length) {
+    for (const e of excsDoDia) {
+      if (e.tipo !== 'indisponivel') continue;
+      const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
+      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
+      if (resIni === null) return false;
+      const rFim = resFim ?? resIni;
+      // Bloqueia se há qualquer overlap entre [resIni, rFim] e [eIni, eFim]
+      if (resIni < eFim && rFim > eIni) return false;
+    }
+    for (const e of excsDoDia) {
+      if (e.tipo !== 'disponivel') continue;
+      const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
+      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
+      if (resIni === null) return true;
+      const rFim = resFim ?? resIni;
+      if (resIni >= eIni && rFim <= eFim) return true;
+    }
+  }
+
+  // Fallback: escala semanal
+  if (!m.disponibilidade) return false;
+  const disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade;
   const DOW_KEYS = ['dom','seg','ter','qua','qui','sex','sab'];
   const dow = DOW_KEYS[new Date(data + 'T12:00:00').getDay()];
   const faixa = disp[dow];
@@ -1916,8 +2035,6 @@ function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
   if (parts.length !== 2) return true;
   const escIni = _hmToMin(parts[0].trim());
   const escFim = _hmToMin(parts[1].trim());
-  const resIni = _hmToMin(horaInicio);
-  const resFim = horaFim ? _hmToMin(horaFim) : null;
   return resIni >= escIni && (resFim === null || resFim <= escFim);
 }
 
