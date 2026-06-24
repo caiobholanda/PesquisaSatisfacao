@@ -67,6 +67,10 @@ function _hhmmToMin(s) {
 }
 
 router.post('/', ...podeEscreverSpa, (req, res) => {
+  // Diagnostico: captura QUALQUER erro do handler com stack completo,
+  // preservando os returns/throws ja existentes (CONFLITO_SALA, CONFLITO_PROF).
+  // Logging server-side detalhado; resposta ao cliente continua generica.
+  try {
   const {
     sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
@@ -251,6 +255,27 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       return res.status(409).json({ ok: false, error: 'Massoterapeuta já tem atendimento neste horário', tipo: 'massagista', conflito: e.conflito });
     }
     throw e;
+  }
+  } catch (e) {
+    // Sanitiza payload: remove documentos antes de logar (LGPD).
+    const safeBody = { ...(req.body || {}) };
+    for (const k of ['doc','doc2','cpf','cpf2','tipo_doc','tipo_doc2']) delete safeBody[k];
+    console.error('[POST /api/reservas] FALHA', {
+      sala: req.body?.sala,
+      tipo_cliente: req.body?.tipo_cliente,
+      data: req.body?.data,
+      hora_inicio: req.body?.hora_inicio,
+      hora_fim: req.body?.hora_fim,
+      massagista_id: req.body?.massagista_id,
+      tipo_massagem_id: req.body?.tipo_massagem_id,
+      linha: req.body?.linha,
+      quarto: req.body?.quarto,
+      msg: e?.message,
+      code: e?.code,
+      stack: e?.stack,
+    });
+    if (res.headersSent) return;
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
   }
 });
 
