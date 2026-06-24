@@ -2826,6 +2826,7 @@ async function calVerDetalhes(id) {
       if (d0?.ok && d0.reserva) {
         const idx = _reservas.findIndex(x => x.id === id);
         if (idx >= 0) Object.assign(_reservas[idx], d0.reserva);
+        else _reservas.push(d0.reserva); // reserva criada apos ultimo loadReservas
       }
     }
   } catch {}
