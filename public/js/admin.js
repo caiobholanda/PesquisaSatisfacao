@@ -926,8 +926,16 @@ function _iniciarEnvioAnamnesePessoa(pessoa) {
 // _abrirModalAnamnesePreenchida(perfilId) reusado da tela Clientes 360.
 // Esse modal renderiza TODOS os campos da anamnese + perguntas extras
 // dinamicas + assinatura, com tradução de rotulos e agrupamento por seção.
+// Guard contra clique duplo: in-flight flag evita 2 overlays sobrepostos.
+let _anamReadonlyAbrindo = false;
 async function abrirAnamneseReadonly(reservaId, pessoa) {
   if (!reservaId) return;
+  if (_anamReadonlyAbrindo) return; // ja existe uma abertura em curso
+  // Detecta tambem overlay ja aberto no DOM (titulo "Anamnese preenchida")
+  const jaAberto = Array.from(document.querySelectorAll('h2'))
+    .some(h => h.textContent.trim() === 'Anamnese preenchida');
+  if (jaAberto) return;
+  _anamReadonlyAbrindo = true;
   const p = pessoa === 2 ? 2 : 1;
   try {
     const res = await api(`/api/reservas/${reservaId}/detalhe`);
@@ -942,6 +950,8 @@ async function abrirAnamneseReadonly(reservaId, pessoa) {
   } catch (e) {
     console.error('[abrirAnamneseReadonly]', e);
     showToast('Erro ao carregar anamnese.');
+  } finally {
+    _anamReadonlyAbrindo = false;
   }
 }
 
