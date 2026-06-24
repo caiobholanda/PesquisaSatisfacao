@@ -3810,7 +3810,7 @@
             <input type="text" id="res-inp-tel" placeholder="(85) 9 9999-9999" autocomplete="tel" inputmode="tel">
           </div>
         </div>
-        <div class="res-fg">
+        <div class="res-fg" id="res-fg-tratamento">
           <label>Tratamento</label>
           <div class="res-cb" id="res-cb-trat">
             <div class="res-cb-wrap">
@@ -3830,8 +3830,12 @@
             <label>Hora de início <span style="color:var(--danger)">*</span></label>
             <input type="time" id="res-inp-hora-inicio" min="08:00" max="21:45" step="900">
           </div>
+          <div class="res-fg" id="res-fg-hora-fim-manual" style="display:none">
+            <label>Hora final <span style="color:var(--danger)">*</span></label>
+            <input type="time" id="res-inp-hora-fim-manual" min="08:15" max="22:00" step="900">
+          </div>
         </div>
-        <div class="res-fg">
+        <div class="res-fg" id="res-fg-massagista">
           <label>
             Massoterapeuta <span style="color:var(--danger)">*</span>
             <label class="res-flt-bilingue-label" style="display:inline-flex;align-items:center;gap:.3rem;margin-left:.7rem;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.78rem;cursor:pointer">

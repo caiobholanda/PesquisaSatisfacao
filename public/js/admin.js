@@ -1675,6 +1675,26 @@ function calSetTipo2(tipo) {
 document.querySelectorAll('[data-tipo2]').forEach(btn => btn.addEventListener('click', () => calSetTipo2(btn.dataset.tipo2)));
 
 function _isCasal() { return (_resSala === 3 || _resSala === 4) && !!document.getElementById('res-chk-casal')?.checked; }
+function _isEspBeleza() { return _resSala === 5; }
+function _aplicarVisibilidadeSala() {
+  const espBeleza = _isEspBeleza();
+  const fgTrat = document.getElementById('res-fg-tratamento');
+  const fgMass = document.getElementById('res-fg-massagista');
+  const fgHfManual = document.getElementById('res-fg-hora-fim-manual');
+  if (fgTrat) fgTrat.style.display = espBeleza ? 'none' : '';
+  if (fgMass) fgMass.style.display = espBeleza ? 'none' : '';
+  if (fgHfManual) fgHfManual.style.display = espBeleza ? '' : 'none';
+  if (espBeleza) {
+    if (_cbTrat) _cbTrat.clear();
+    const massInp = document.getElementById('res-inp-massagista');
+    if (massInp) massInp.value = '';
+    if (_cbMass) _cbMass.clear();
+    document.getElementById('res-extra-info').innerHTML = '';
+  } else {
+    const hfm = document.getElementById('res-inp-hora-fim-manual');
+    if (hfm) hfm.value = '';
+  }
+}
 
 function _syncTratListToSecond() {
   const src = document.getElementById('res-cb-trat-list');
@@ -2191,6 +2211,7 @@ function calOpenModal(salaId, data, hora) {
   // Wire atalhos rapidos "Hoje / Amanha / +7 dias" (idempotente)
   _wireAtalhosData(_hojeFt);
   document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
+  _aplicarVisibilidadeSala();
   loadTratamentosModal();
   loadMassagistasModal();
   const flt = document.getElementById('res-flt-bilingue');
@@ -2272,6 +2293,35 @@ function calAtualizarHoraFim() {
   }
 
   _resHoraInicio = inicio;
+
+  if (_isEspBeleza()) {
+    const hfManual = document.getElementById('res-inp-hora-fim-manual')?.value || '';
+    if (!hfManual) {
+      _resHoraFim = null;
+      tempoEl.textContent = `início ${inicio} · informe a hora final`;
+      return;
+    }
+    const fimMinM = calTimeMin(hfManual);
+    if (fimMinM <= iniMin) {
+      _resHoraFim = null;
+      tempoEl.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ hora final deve ser maior que ${inicio}</span>`;
+      stripEl.style.borderColor = 'var(--danger)';
+      stripEl.style.background = 'var(--danger-dim)';
+      return;
+    }
+    if (fimMinM > CAL_H_END * 60) {
+      _resHoraFim = null;
+      tempoEl.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ ${hfManual} ultrapassa fechamento do spa (${String(CAL_H_END).padStart(2,'0')}:00)</span>`;
+      stripEl.style.borderColor = 'var(--danger)';
+      stripEl.style.background = 'var(--danger-dim)';
+      return;
+    }
+    _resHoraFim = hfManual;
+    const durMin = fimMinM - iniMin;
+    tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· ${durMin} min</span>`;
+    return;
+  }
+
   if (!trat.value || !dur) {
     _resHoraFim = null;
     tempoEl.textContent = trat.value ? `${inicio} (tratamento sem duração)` : `início ${inicio} · selecione um tratamento`;
@@ -2530,6 +2580,8 @@ document.getElementById('conflito-overlay').addEventListener('click', e => {
 
 document.getElementById('res-inp-hora-inicio').addEventListener('input', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-inicio').addEventListener('change', calAtualizarHoraFim);
+document.getElementById('res-inp-hora-fim-manual')?.addEventListener('input', calAtualizarHoraFim);
+document.getElementById('res-inp-hora-fim-manual')?.addEventListener('change', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-inicio').addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
 document.getElementById('res-inp-data')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
 document.getElementById('res-flt-bilingue')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
@@ -2826,7 +2878,9 @@ document.querySelectorAll('.res-room-btn').forEach(btn=>{
       });
       const _s2 = document.getElementById('res2-sel-tipo-doc'); if (_s2) { _s2.value='cpf'; _s2.dispatchEvent(new Event('change')); }
     }
+    _aplicarVisibilidadeSala();
     _syncCasalUI();
+    calAtualizarHoraFim();
   });
 });
 
@@ -2898,10 +2952,14 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     if (!ok) { err.textContent='Telefone inválido. Use BR (85 99999-9999) ou internacional (+33 6 12 34 56 78).'; document.getElementById('res-inp-tel')?.focus(); return; }
   }
   if(!horaInicio){err.textContent='Informe a hora de início.';return;}
-  if(!tratamento){err.textContent='Selecione o tratamento.';return;}
-  if(!_resHoraFim){
-    err.textContent='Horário inválido: o tratamento ultrapassaria o expediente do spa (fecha às 22:00).';
-    return;
+  if (_isEspBeleza()) {
+    if (!_resHoraFim) { err.textContent='Informe a hora final (deve ser maior que a de início e dentro do expediente do spa).'; document.getElementById('res-inp-hora-fim-manual')?.focus(); return; }
+  } else {
+    if(!tratamento){err.textContent='Selecione o tratamento.';return;}
+    if(!_resHoraFim){
+      err.textContent='Horário inválido: o tratamento ultrapassaria o expediente do spa (fecha às 22:00).';
+      return;
+    }
   }
   if(!data){err.textContent='Informe a data.';return;}
   // Bloqueia agendamento no passado. Comparação em hora de Fortaleza.
@@ -2940,9 +2998,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     if (!linha) { err.textContent='Selecione a linha do tratamento facial (Immortelle ou Source Réotier).'; return; }
   }
 
-  // Massoterapeuta obrigatória
+  // Massoterapeuta obrigatória (exceto Espaço Beleza)
   const massagistaId = document.getElementById('res-inp-massagista')?.value ? +document.getElementById('res-inp-massagista').value : null;
-  if (!massagistaId) { err.textContent = 'Selecione a massoterapeuta que vai atender.'; return; }
+  if (!_isEspBeleza() && !massagistaId) { err.textContent = 'Selecione a massoterapeuta que vai atender.'; return; }
 
   // Casal: campos pessoa 2 — TODOS OPCIONAIS. Se NADA estiver preenchido,
   // pessoa 2 e' ignorada (sala 3 pode ser usada por uma pessoa so).

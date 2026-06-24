@@ -83,7 +83,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   }
   if (!sala || !tipo_cliente || !cliente?.trim() || !email?.trim() || !data || !hora_inicio || !hora_fim)
     return res.status(400).json({ ok: false, error: 'Campos obrigatórios ausentes' });
-  if (!massagista_id)
+  // Espaço Beleza (sala 5): nao exige massoterapeuta nem tratamento.
+  if (+sala !== 5 && !massagista_id)
     return res.status(400).json({ ok: false, error: 'Selecione uma massoterapeuta para o atendimento' });
   if (!['hospede', 'passante'].includes(tipo_cliente))
     return res.status(400).json({ ok: false, error: 'Tipo de cliente inválido' });
