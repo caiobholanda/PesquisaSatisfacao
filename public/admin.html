@@ -532,11 +532,15 @@
       box-shadow: 0 6px 24px rgba(0,0,0,.08);
       padding: .35rem; display: flex; flex-direction: column;
     }
-    .multi-dd-opt {
+    .multi-dd-panel { min-width: 180px; }
+    .filter-group .multi-dd-opt {
       display: flex; align-items: center; gap: .5rem;
       padding: .4rem .55rem; border-radius: 4px;
       font-size: .85rem; color: var(--text); cursor: pointer;
       white-space: nowrap;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
     }
     .multi-dd-opt:hover { background: var(--bg); }
     .multi-dd-opt input[type=checkbox] { accent-color: var(--gold, var(--muted2)); cursor: pointer; }
