@@ -4354,6 +4354,46 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
   const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  // Render de um item extra (pergunta dinamica). Mesma logica anterior da
+  // antiga "Secao 8" — agora invocado dentro de cada secao alvo.
+  const renderExtra = (it) => {
+    if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return linhaLista(it.rotulo, it.valor_texto_rotulos);
+    if (it.escala_opcao_rotulo) return linhaCampo(it.rotulo, it.escala_opcao_rotulo);
+    if (it.valor_texto_rotulo) return linhaCampo(it.rotulo, it.valor_texto_rotulo);
+    if (it.valor_texto) {
+      try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return linhaLista(it.rotulo, arr); } catch {}
+      return linhaCampo(it.rotulo, it.valor_texto);
+    }
+    if (it.escala_opcao_chave) return linhaCampo(it.rotulo, it.escala_opcao_chave);
+    if (it.valor_numerico != null) return linhaCampo(it.rotulo, String(it.valor_numerico));
+    return '';
+  };
+  // Agrupa extras por secao_chave e ordena por pergunta_ordem ASC.
+  // Espelha o posicionamento do form cliente:
+  //   dados_pessoais -> ao final da Secao 1
+  //   saude_rotinas  -> ao final da Secao 5 (Info medica)
+  //   consentimentos -> ao final da Secao 6
+  //   custom (chave nao reconhecida) -> bloco proprio antes da Assinatura
+  //   sem secao (NULL) -> bloco "Outros" antes da Assinatura
+  const _SECOES_NATIVAS = new Set(['dados_pessoais', 'saude_rotinas', 'consentimentos']);
+  const _grupoExtras = { dados_pessoais: [], saude_rotinas: [], consentimentos: [] };
+  const _extrasCustom = new Map(); // chave -> { titulo, itens[] }
+  const _extrasOrfaos = [];
+  for (const it of extras) {
+    const ch = it.secao_chave;
+    if (ch && _SECOES_NATIVAS.has(ch)) _grupoExtras[ch].push(it);
+    else if (ch) {
+      if (!_extrasCustom.has(ch)) _extrasCustom.set(ch, { titulo: it.secao_titulo || ch, itens: [], ordem: it.secao_ordem ?? 999 });
+      _extrasCustom.get(ch).itens.push(it);
+    } else _extrasOrfaos.push(it);
+  }
+  const _ordPerg = (a, b) => (a.pergunta_ordem ?? 999) - (b.pergunta_ordem ?? 999);
+  for (const k of Object.keys(_grupoExtras)) _grupoExtras[k].sort(_ordPerg);
+  for (const g of _extrasCustom.values()) g.itens.sort(_ordPerg);
+  const _customOrdenadas = [..._extrasCustom.values()].sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999));
+  const _renderGrupo = (arr) => arr.map(renderExtra).join('');
+  const _blocosCustom = _customOrdenadas.map(g => `${secaoTitulo(g.titulo)}${_renderGrupo(g.itens)}`).join('');
+  const _blocoOrfaos = _extrasOrfaos.length ? `${secaoTitulo('Outros')}${_renderGrupo(_extrasOrfaos)}` : '';
   // Valor truncado em 1000 chars pelo bug antigo do san() — rejeitar: nunca é imagem válida
   const _sigUrl = typeof a.assinatura_data_url === 'string' && a.assinatura_data_url.startsWith('data:image') && a.assinatura_data_url.length > 1000 ? a.assinatura_data_url : null;
   const assinaturaHtml = _sigUrl
@@ -4381,6 +4421,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${linhaCampo('Telefone', a.telefone)}
         ${linhaCampo('Data de nascimento', fmtData(a.data_nascimento))}
         ${linhaCampo('Quarto', a.quarto || 'Passante')}
+        ${_renderGrupo(_grupoExtras.dados_pessoais)}
 
         ${secaoTitulo('2. Rotina facial')}
         ${linhaLista('Itens usados', a.rotina_facial)}
@@ -4394,30 +4435,19 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
 
         ${secaoTitulo('5. Informações médicas')}
         ${linhaCampo('Info médica relevante', a.info_medica)}
+        ${_renderGrupo(_grupoExtras.saude_rotinas)}
 
         ${secaoTitulo('6. Consentimentos')}
         ${linhaBool('Apto a realizar tratamento', a.consentimento_saude)}
         ${linhaBool('Marketing autorizado', a.consentimento_marketing)}
         ${linhaLista('Canais autorizados', a.canais_marketing)}
+        ${_renderGrupo(_grupoExtras.consentimentos)}
+
+        ${_blocosCustom}
+        ${_blocoOrfaos}
 
         ${secaoTitulo('7. Assinatura')}
         <div style="padding:.6rem 0">${assinaturaHtml}</div>
-
-        ${extras.length ? `
-        ${secaoTitulo('8. Perguntas adicionais')}
-        ${extras.map(it => {
-          // Prioridade: rotulos resolvidos pelo backend (Sim, Ombros, etc)
-          if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) return linhaLista(it.rotulo, it.valor_texto_rotulos);
-          if (it.escala_opcao_rotulo) return linhaCampo(it.rotulo, it.escala_opcao_rotulo);
-          if (it.valor_texto_rotulo) return linhaCampo(it.rotulo, it.valor_texto_rotulo);
-          if (it.valor_texto) {
-            try { const arr = JSON.parse(it.valor_texto); if (Array.isArray(arr) && arr.length) return linhaLista(it.rotulo, arr); } catch {}
-            return linhaCampo(it.rotulo, it.valor_texto);
-          }
-          if (it.escala_opcao_chave) return linhaCampo(it.rotulo, it.escala_opcao_chave);
-          if (it.valor_numerico != null) return linhaCampo(it.rotulo, String(it.valor_numerico));
-          return '';
-        }).join('')}` : ''}
       </div>
       <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
         <button class="btn btn-outline" data-act="close">Fechar</button>

@@ -192,7 +192,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
         LIMIT 1
       `).get(perfil.reserva_id) : true;
       const rp = (!ehCasalCom2Perfis || temRpDiferenciada) ? (db.prepare(`
-        SELECT rp.id FROM resposta_pesquisa rp
+        SELECT rp.id, rp.pesquisa_id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%' AND rp.app_origem=?
         ORDER BY rp.id DESC LIMIT 1
@@ -201,7 +201,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
       // ter app_origem='spa-anamnese' para ambos. So usar quando NAO ha
       // confusao possivel de identidade (reserva individual ou slot unico).
       || (ehCasalCom2Perfis ? null : db.prepare(`
-        SELECT rp.id FROM resposta_pesquisa rp
+        SELECT rp.id, rp.pesquisa_id FROM resposta_pesquisa rp
         JOIN pesquisa p ON p.id = rp.pesquisa_id
         WHERE rp.reserva_id=? AND p.slug LIKE 'spa-anamnese%'
         ORDER BY rp.id DESC LIMIT 1
@@ -210,9 +210,28 @@ router.get('/anamnese/:perfilId', (req, res) => {
         const itens = db.prepare(
           'SELECT pergunta_chave, valor_texto, valor_numerico, escala_opcao_chave FROM resposta_item WHERE resposta_pesquisa_id=?'
         ).all(rp.id);
+        // Lookup secao_chave/titulo/ordem por pergunta_chave dentro da pesquisa.
+        // Usado pelo modal admin para renderizar cada extra na MESMA secao
+        // em que foi criada no editor (espelha posicionamento do form cliente).
+        const stmtSecao = db.prepare(`
+          SELECT ps.chave AS secao_chave, ps.ordem AS secao_ordem,
+                 pst.titulo AS secao_titulo, pp.ordem AS pergunta_ordem
+          FROM pergunta_satisfacao pq
+          JOIN pesquisa_pergunta pp ON pp.pergunta_id = pq.id AND pp.pesquisa_id = ?
+          LEFT JOIN pesquisa_secao ps ON ps.id = pp.secao_id
+          LEFT JOIN pesquisa_secao_traducao pst ON pst.pesquisa_secao_id = ps.id AND pst.idioma = 'pt-BR'
+          WHERE pq.chave = ? LIMIT 1
+        `);
         for (const it of itens) {
           if (LEGACY_ANAM.has(it.pergunta_chave)) continue;
           _enriquecerItemResposta(db, it, 'pt-BR');
+          try {
+            const s = stmtSecao.get(rp.pesquisa_id, it.pergunta_chave);
+            it.secao_chave    = s?.secao_chave    || null;
+            it.secao_titulo   = s?.secao_titulo   || null;
+            it.secao_ordem    = s?.secao_ordem    ?? null;
+            it.pergunta_ordem = s?.pergunta_ordem ?? null;
+          } catch { /* tolerante: extra fica sem secao -> bloco "Outros" */ }
           extras.push(it);
         }
       }
