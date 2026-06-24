@@ -1280,12 +1280,20 @@ function _excRowHtml(exc) {
     <button type="button" class="exc-del" title="Remover">×</button>
   </div>`;
 }
+function _hojeISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 function _renderExcecoes(excecoes) {
   const list = document.getElementById('mgmt-m-exc-list');
   if (!list) return;
-  const arr = Array.isArray(excecoes) ? excecoes : [];
+  const hoje = _hojeISO();
+  // Exceções são pontuais: ao passar a data, não fazem mais efeito. Ocultamos
+  // do UI (e o _coletarExcecoes não as reenvia, então o save efetivamente
+  // expurga as passadas do banco).
+  const arr = (Array.isArray(excecoes) ? excecoes : []).filter(e => e?.data && e.data >= hoje);
   if (!arr.length) {
-    list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+    list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
   } else {
     list.innerHTML = arr.map(_excRowHtml).join('');
   }
@@ -1293,7 +1301,7 @@ function _renderExcecoes(excecoes) {
     btn.addEventListener('click', () => {
       btn.closest('.exc-row').remove();
       if (!list.querySelector('.exc-row')) {
-        list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+        list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
       }
     });
   });
@@ -1332,7 +1340,7 @@ document.getElementById('mgmt-m-add-exc')?.addEventListener('click', () => {
   row.querySelector('.exc-del').addEventListener('click', () => {
     row.remove();
     if (!list.querySelector('.exc-row')) {
-      list.innerHTML = '<div class="exc-empty">Nenhuma exceção cadastrada.</div>';
+      list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
     }
   });
 });
