@@ -3780,6 +3780,13 @@ function _hcResetSalas(){
   document.addEventListener('click', e => {
     if (!dd.contains(e.target)) { panel.hidden = true; btn.setAttribute('aria-expanded','false'); }
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !panel.hidden) {
+      panel.hidden = true;
+      btn.setAttribute('aria-expanded','false');
+      btn.focus();
+    }
+  });
   document.getElementById('hc-salas-all')?.addEventListener('change', e => {
     if (e.target.checked) _hcSalaCbs().forEach(cb => cb.checked = false);
     _hcUpdateSalasLabel();

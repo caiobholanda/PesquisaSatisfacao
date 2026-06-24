@@ -213,6 +213,10 @@
     @media (max-width: 700px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
+    /* Histórico de Atendimentos: 4 KPIs (não usa Sessões/Respondidas/Taxa/Pendentes em 5 colunas) */
+    #hc-kpis { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1100px) { #hc-kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px)  { #hc-kpis { grid-template-columns: 1fr; } }
 
     .kpi {
       background: var(--surface);
@@ -514,17 +518,27 @@
       align-items: flex-end;
     }
 
-    .multi-dd { position: relative; min-width: 170px; }
+    .multi-dd { position: relative; min-width: 180px; }
     .multi-dd-btn {
       display: flex; align-items: center; justify-content: space-between;
       width: 100%; gap: .5rem;
       background: var(--bg); color: var(--text);
       border: 1px solid var(--border); border-radius: 6px;
-      padding: .5rem .65rem; font-size: .875rem; font-family: inherit;
+      padding: 0.5625rem 0.75rem; font-size: 0.9rem; font-family: var(--font);
       cursor: pointer; text-align: left;
+      transition: border-color .2s, background .2s;
     }
     .multi-dd-btn:hover { border-color: var(--muted); }
-    .multi-dd-caret { font-size: .7rem; color: var(--muted); }
+    .multi-dd-btn:focus-visible,
+    .multi-dd-btn[aria-expanded="true"] {
+      outline: none; border-color: var(--gold); background: var(--surface);
+    }
+    .multi-dd-btn > span:first-child {
+      flex: 1 1 auto; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .multi-dd-caret { flex: 0 0 auto; font-size: .7rem; color: var(--muted); transition: transform .2s; }
+    .multi-dd-btn[aria-expanded="true"] .multi-dd-caret { transform: rotate(180deg); color: var(--gold); }
     .multi-dd-panel {
       position: absolute; top: calc(100% + 4px); left: 0; z-index: 50;
       min-width: 100%;
@@ -533,18 +547,32 @@
       padding: .35rem; display: flex; flex-direction: column;
     }
     .multi-dd-panel { min-width: 180px; }
-    .multi-dd-panel[hidden] { display: none; }
-    .filter-group .multi-dd-opt {
-      display: flex; align-items: center; gap: .5rem;
-      padding: .4rem .55rem; border-radius: 4px;
-      font-size: .85rem; color: var(--text); cursor: pointer;
+    /* fix: garante fechamento via atributo [hidden] mesmo com display:flex acima */
+    .multi-dd-panel[hidden] { display: none !important; }
+    .filter-group .multi-dd-opt,
+    .multi-dd-opt {
+      display: flex; align-items: center; gap: .55rem;
+      padding: .45rem .6rem; border-radius: 4px;
+      font-size: .875rem; color: var(--text); cursor: pointer;
       white-space: nowrap;
       text-transform: none;
       letter-spacing: normal;
       font-weight: 400;
+      line-height: 1.2;
+      user-select: none;
+      transition: background .12s;
     }
+    .multi-dd-opt > span { flex: 1 1 auto; }
     .multi-dd-opt:hover { background: var(--bg); }
-    .multi-dd-opt input[type=checkbox] { accent-color: var(--gold, var(--muted2)); cursor: pointer; }
+    .multi-dd-opt:focus-within { background: var(--bg); box-shadow: inset 0 0 0 1px var(--gold); }
+    /* fix: regra global input{width:100%} estica os checkboxes do dropdown */
+    .multi-dd-panel input[type="checkbox"],
+    .multi-dd-opt input[type="checkbox"] {
+      width: 16px; height: 16px;
+      flex: 0 0 auto;
+      accent-color: var(--gold-dark);
+      margin: 0; cursor: pointer;
+    }
     .multi-dd-sep { height: 1px; background: var(--border); margin: .25rem .25rem; }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -553,7 +581,10 @@
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
+    .table-wrap > table { min-width: 100%; }
 
     .table-head {
       padding: 1.125rem 1.5rem;
@@ -590,6 +621,7 @@
       text-align: left;
       border-bottom: 1px solid var(--border);
       background: var(--surface2);
+      position: sticky; top: 0; z-index: 3;
     }
 
     td {
@@ -600,7 +632,8 @@
     }
 
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--surface2); }
+    tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 45%, transparent); }
+    tbody tr:hover td { background: var(--surface2); }
 
     .badge {
       display: inline-block;
