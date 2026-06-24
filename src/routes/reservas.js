@@ -310,10 +310,15 @@ router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
     ? `https://${req.get('host')}`
     : `${req.protocol}://${req.get('host')}`;
   const baseUrl = `${origin}/spa-profile.html`;
+  const ehCasal = !!(reserva.cliente2 && reserva.cliente2.trim());
 
-  // Reserva CASAL (cliente2 preenchido): gera 2 tokens distintos, um por
-  // hospede. Cada um recebe seu proprio link e nao da bagunca no preenchimento.
-  if (reserva.cliente2 && reserva.cliente2.trim()) {
+  // Suporte opcional a { pessoa: 1|2 } no body: gera o token APENAS dessa pessoa
+  // em reserva casal, sem sobrescrever o token da outra. Sem `pessoa`: mantem
+  // comportamento legado (casal gera ambos; individual gera 1).
+  const pessoaRaw = req.body?.pessoa;
+  const pessoaEspec = (pessoaRaw === 1 || pessoaRaw === 2) ? pessoaRaw : null;
+
+  if (ehCasal && pessoaEspec === null) {
     const token1 = gerarDocumentoToken(reserva.id, 1);
     const token2 = gerarDocumentoToken(reserva.id, 2);
     return res.json({
@@ -324,9 +329,12 @@ router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
     });
   }
 
-  // Reserva individual: 1 token so (compat com clients que ja consomem esse shape)
-  const token = gerarDocumentoToken(reserva.id, 1);
-  res.json({ ok: true, casal: false, token, nome: reserva.cliente, telefone: reserva.telefone,
+  // Pessoa especifica (casal com pessoa=N) OU reserva individual.
+  const p = pessoaEspec || 1;
+  const token = gerarDocumentoToken(reserva.id, p);
+  const nome = p === 2 ? reserva.cliente2 : reserva.cliente;
+  const telefone = p === 2 ? reserva.telefone2 : reserva.telefone;
+  res.json({ ok: true, casal: false, pessoa: p, token, nome, telefone,
     baseUrl, url: `${baseUrl}?t=${token}` });
 });
 

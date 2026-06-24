@@ -741,16 +741,50 @@ function _estadoBtnFicha(r) {
   */
 }
 
+// Estado real da anamnese por pessoa, derivado dos campos do backend.
+// Independente das janelas de tempo do MODO TEMP — usa o vinculo do perfil
+// (respondida) e a presenca/expiry do token (enviada/expirada).
+function _estadoAnamnese(r, pessoa = 1) {
+  if (!r) return 'nao_enviada';
+  const perfilField = pessoa === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
+  const tokenField  = pessoa === 2 ? 'documento_token2'      : 'documento_token';
+  const expiryField = pessoa === 2 ? 'documento_token_expiry2' : 'documento_token_expiry';
+  if (r[perfilField]) return 'respondida';
+  if (r[tokenField]) {
+    if (r[expiryField]) {
+      const exp = new Date(r[expiryField]).getTime();
+      if (Number.isFinite(exp) && Date.now() > exp) return 'expirada';
+    }
+    return 'enviada';
+  }
+  return 'nao_enviada';
+}
+
 function _aplicarEstadoBtnFicha(btn, estado) {
   if (!btn) return;
-  btn.disabled = estado !== 'ok';
   btn.dataset.estadoFicha = estado;
-  if (estado === 'enviada') {
-    btn.textContent = 'Anamnese já enviada';
+  btn.onclick = null;
+  if (estado === 'respondida') {
+    btn.disabled = false;
+    btn.textContent = 'Ver anamnese';
+    btn.dataset.action = 'ver-anamnese-pessoa';
+    btn.dataset.pessoa = '1';
+  } else if (estado === 'enviada') {
+    btn.disabled = true;
+    btn.textContent = 'Anamnese enviada';
+    btn.dataset.action = 'enviar-pre-massagem';
+    delete btn.dataset.pessoa;
   } else if (estado === 'fora_prazo') {
+    btn.disabled = true;
     btn.textContent = 'Prazo encerrado';
+    btn.dataset.action = 'enviar-pre-massagem';
+    delete btn.dataset.pessoa;
   } else {
+    // nao_enviada, expirada, ok (legado modo-temp): permite envio.
+    btn.disabled = false;
     btn.textContent = 'Enviar anamnese';
+    btn.dataset.action = 'enviar-pre-massagem';
+    delete btn.dataset.pessoa;
   }
 }
 
@@ -862,6 +896,11 @@ function _modalLinksCasal({ titulo, descricao, h1, h2, msgFn }) {
   document.body.appendChild(ov);
 }
 
+// Pessoa-alvo do fluxo de envio de anamnese. 0 = comportamento legado
+// (casal envia ambos; individual envia 1). 1 ou 2 = envia apenas aquela
+// pessoa em reserva casal.
+let _pessoaAnamneseAlvo = 0;
+
 function enviarPreMassagemReserva() {
   if (!_resDetAtual) return;
   const estado = _estadoBtnFicha(_resDetAtual);
@@ -876,6 +915,164 @@ function enviarPreMassagemReserva() {
     </div>
   `).join('');
   document.getElementById('lang-overlay').style.display = 'flex';
+}
+
+function _iniciarEnvioAnamnesePessoa(pessoa) {
+  _pessoaAnamneseAlvo = pessoa === 2 ? 2 : 1;
+  enviarPreMassagemReserva();
+}
+
+// Abre modal readonly da anamnese preenchida. Faz GET no detalhe (sempre
+// fresh) e renderiza os campos de spa_perfis com seguranca.
+async function abrirAnamneseReadonly(reservaId, pessoa) {
+  if (!reservaId) return;
+  const p = pessoa === 2 ? 2 : 1;
+  try {
+    const res = await api(`/api/reservas/${reservaId}/detalhe`);
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { showToast('Não foi possível carregar a anamnese.'); return; }
+    const pdata = p === 2 ? d.pessoa2 : d.pessoa1;
+    if (!pdata || !pdata.anamnese) { showToast('Anamnese ainda não foi preenchida.'); return; }
+    _renderAnamneseReadonly(d.reserva, pdata.anamnese, p);
+    document.getElementById('anam-view-overlay').style.display = 'flex';
+  } catch (e) {
+    console.error('[abrirAnamneseReadonly]', e);
+    showToast('Erro ao carregar anamnese.');
+  }
+}
+
+function _safeArrAnam(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (!s) return [];
+    if (s.startsWith('[')) { try { return JSON.parse(s); } catch { return [s]; } }
+    return [s];
+  }
+  return v ? [v] : [];
+}
+
+function _renderAnamneseReadonly(reserva, a, pessoa) {
+  const nome = pessoa === 2 ? reserva.cliente2 : reserva.cliente;
+  document.getElementById('anam-view-title').textContent =
+    `Anamnese — ${nome || `Hóspede ${pessoa}`}`;
+  const facial = _safeArrAnam(a.rotina_facial);
+  const corporal = _safeArrAnam(a.rotina_corporal);
+  const canais = _safeArrAnam(a.canais_marketing);
+  const sim = v => v ? 'Sim' : 'Não';
+  const docLabel = a.tipo_documento === 'passaporte' ? 'Passaporte' : 'CPF';
+  document.getElementById('anam-view-body').innerHTML = `
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Identificação</div>
+      <div class="anam-view-grid">
+        <div><div class="anam-view-label">Nome</div><div class="anam-view-val">${escHtml(((a.nome||'') + ' ' + (a.sobrenome||'')).trim() || '—')}</div></div>
+        <div><div class="anam-view-label">${docLabel}</div><div class="anam-view-val mono">${escHtml(a.documento || '—')}</div></div>
+        <div><div class="anam-view-label">Data de nascimento</div><div class="anam-view-val">${a.data_nascimento ? escHtml(a.data_nascimento) : '—'}</div></div>
+        <div><div class="anam-view-label">Idioma</div><div class="anam-view-val">${escHtml(a.idioma || 'pt-BR')}</div></div>
+      </div>
+    </div>
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Contato</div>
+      <div class="anam-view-grid">
+        <div><div class="anam-view-label">E-mail</div><div class="anam-view-val">${escHtml(a.email || '—')}</div></div>
+        <div><div class="anam-view-label">Telefone</div><div class="anam-view-val mono">${escHtml(a.telefone || '—')}</div></div>
+        <div><div class="anam-view-label">Quarto</div><div class="anam-view-val">${escHtml(a.quarto || '—')}</div></div>
+      </div>
+    </div>
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Preferências</div>
+      <div class="anam-view-row"><div class="anam-view-label">Rotina facial</div><div class="anam-view-val">${facial.length ? facial.map(escHtml).join(', ') : '—'}</div></div>
+      <div class="anam-view-row"><div class="anam-view-label">Rotina corporal</div><div class="anam-view-val">${corporal.length ? corporal.map(escHtml).join(', ') : '—'}</div></div>
+      <div class="anam-view-row"><div class="anam-view-label">Produto específico</div><div class="anam-view-val">${escHtml(a.produto_especifico || '—')}</div></div>
+      <div class="anam-view-row"><div class="anam-view-label">Pressão de massagem</div><div class="anam-view-val">${escHtml(a.pressao_massagem || '—')}</div></div>
+    </div>
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Saúde</div>
+      <div class="anam-view-row"><div class="anam-view-label">Informações médicas</div><div class="anam-view-val" style="white-space:pre-wrap">${a.info_medica ? escHtml(a.info_medica) : '—'}</div></div>
+      <div class="anam-view-row"><div class="anam-view-label">Consentimento saúde</div><div class="anam-view-val">${sim(a.consentimento_saude)}</div></div>
+    </div>
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Marketing</div>
+      <div class="anam-view-row"><div class="anam-view-label">Consentimento marketing</div><div class="anam-view-val">${sim(a.consentimento_marketing)}</div></div>
+      <div class="anam-view-row"><div class="anam-view-label">Canais</div><div class="anam-view-val">${canais.length ? canais.map(escHtml).join(', ') : '—'}</div></div>
+    </div>
+    ${a.assinatura_data_url ? `
+    <div class="anam-view-section">
+      <div class="anam-view-section-title">Assinatura</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:.5rem;display:flex;align-items:center;justify-content:center">
+        <img src="${a.assinatura_data_url}" alt="Assinatura" style="max-width:100%;max-height:140px;display:block">
+      </div>
+    </div>` : ''}
+    <div class="anam-view-section" style="margin-bottom:0">
+      <div class="anam-view-section-title">Registro</div>
+      <div class="anam-view-row"><div class="anam-view-label">Preenchida em</div><div class="anam-view-val">${a.criado_em ? fmtDataHoraBR(a.criado_em) : '—'}</div></div>
+    </div>
+  `;
+}
+
+// Popup distribuidor para reserva CASAL. Mostra estado de cada hospede
+// (preenchida / aguardando / nao enviada / expirada) e oferece a acao
+// contextual em cada linha.
+function abrirAnamneseCasalPopup() {
+  const r = _resDetAtual;
+  if (!r) return;
+  const ov = document.createElement('div');
+  ov.className = 'res-modal-overlay';
+  ov.style.display = 'flex';
+  ov.style.zIndex = '4500';
+  const linha = (pessoa) => {
+    const nome = pessoa === 2 ? r.cliente2 : r.cliente;
+    const estado = _estadoAnamnese(r, pessoa);
+    let chipCls = 'none', chipTxt = 'Não enviada';
+    if (estado === 'respondida') { chipCls = 'ok';   chipTxt = 'Preenchida'; }
+    else if (estado === 'enviada')  { chipCls = 'pend'; chipTxt = 'Aguardando preenchimento'; }
+    else if (estado === 'expirada') { chipCls = 'exp';  chipTxt = 'Token expirado'; }
+    let btn;
+    if (estado === 'respondida') {
+      btn = `<button class="btn btn-outline btn-sm" data-anam-cas-ver="${pessoa}">Ver anamnese</button>`;
+    } else if (estado === 'enviada') {
+      btn = `<button class="btn btn-outline btn-sm" disabled>Anamnese enviada</button>`;
+    } else {
+      btn = `<button class="btn btn-gold btn-sm" data-anam-cas-enviar="${pessoa}">Enviar anamnese</button>`;
+    }
+    return `
+      <div class="anam-cas-card">
+        <div class="anam-cas-hd">
+          <div class="anam-cas-nome">Hóspede ${pessoa}: ${escHtml(nome || '—')}</div>
+          <span class="anam-cas-chip ${chipCls}">${chipTxt}</span>
+        </div>
+        <div class="anam-cas-actions">${btn}</div>
+      </div>
+    `;
+  };
+  ov.innerHTML = `
+    <div class="res-modal" style="max-width:560px">
+      <div class="res-modal-hd">
+        <div>
+          <div class="res-modal-title">Anamnese — Reserva Casal</div>
+          <div class="res-modal-sub">Cada hóspede tem sua própria anamnese</div>
+        </div>
+        <button class="res-modal-x" data-anam-cas-close="1">✕</button>
+      </div>
+      <div class="res-modal-body">
+        ${linha(1)}
+        ${linha(2)}
+      </div>
+      <div class="res-modal-ft" style="justify-content:flex-end">
+        <button class="btn btn-gold" data-anam-cas-close="1">Fechar</button>
+      </div>
+    </div>
+  `;
+  ov.addEventListener('click', e => {
+    const t = e.target;
+    if (t.dataset.anamCasClose) { ov.remove(); return; }
+    const ver = t.dataset.anamCasVer;
+    if (ver) { ov.remove(); abrirAnamneseReadonly(r.id, +ver); return; }
+    const env = t.dataset.anamCasEnviar;
+    if (env) { ov.remove(); _iniciarEnvioAnamnesePessoa(+env); }
+  });
+  document.body.appendChild(ov);
 }
 
 // ── Event delegation ──
@@ -908,6 +1105,8 @@ function setupDelegation() {
     else if (action === 'del-user')          { deletarUsuario(+el.dataset.id, el.dataset.nome); }
     else if (action === 'liberar-pesquisa')  { liberarPesquisaReserva(+el.dataset.id); }
     else if (action === 'enviar-pre-massagem'){ enviarPreMassagemReserva(); }
+    else if (action === 'abrir-anamnese-casal'){ abrirAnamneseCasalPopup(); }
+    else if (action === 'ver-anamnese-pessoa'){ abrirAnamneseReadonly(_resDetAtual?.id, +el.dataset.pessoa || 1); }
     else if (action === 'sel-lang') {
       _langSelected = el.dataset.lang;
       document.querySelectorAll('.lang-card').forEach(c => c.classList.toggle('selected', c.dataset.lang === _langSelected));
@@ -2000,25 +2199,33 @@ function renderCalDia() {
           const casalBadge = res.cliente2
             ? `<span style="background:rgba(139,74,107,.18);color:var(--sala-s4-text,#4a1f38);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0">🤝 S3+4</span>`
             : '';
+          // Badge anamnese: aparece quando ao menos uma anamnese foi PREENCHIDA
+          // (documento_perfil_id vinculado). Em casal mostra contador 1/2 ou 2/2.
+          const _anamP1Ok = !!res.documento_perfil_id;
+          const _anamP2Ok = !!res.documento_perfil_id2;
+          const _anamN = (_anamP1Ok ? 1 : 0) + (res.cliente2 && _anamP2Ok ? 1 : 0);
+          const anamBadge = _anamN > 0
+            ? `<span class="cal-anam-badge" title="Anamnese preenchida${res.cliente2 ? ' ('+_anamN+'/2)' : ''}">✓${res.cliente2 ? ' '+_anamN+'/2' : ''}</span>`
+            : '';
           let inner = '';
           if (modo === 'compact') {
             // Ultra compacto: nome + GC badge + horario na mesma linha
             inner = `
               <div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                ${gcBadge}${casalBadge}
+                ${gcBadge}${casalBadge}${anamBadge}
                 <span style="overflow:hidden;text-overflow:ellipsis">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span>
               </div>
               <div style="font-size:.7rem;opacity:.85;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.hora_inicio}–${res.hora_fim}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''}</div>
             `;
           } else if (modo === 'medium') {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
             `;
           } else {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
               ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' &amp; '+escHtml(res.massagista_nome2):''}</div>`:''}
@@ -2606,7 +2813,20 @@ document.getElementById('res-inp-massagista').addEventListener('change', _render
 document.getElementById('res-inp-tratamento2').addEventListener('change', calAtualizarHoraFim);
 
 // Modal de detalhes da reserva
-function calVerDetalhes(id) {
+async function calVerDetalhes(id) {
+  // Refetch leve: garante que o estado de anamnese (enviada/respondida)
+  // reflete o backend agora — captura mudancas feitas entre o ultimo
+  // loadReservas() e este clique (ex: hospede preencheu).
+  try {
+    const r0 = await api(`/api/reservas/${id}/detalhe`);
+    if (r0) {
+      const d0 = await r0.json();
+      if (d0?.ok && d0.reserva) {
+        const idx = _reservas.findIndex(x => x.id === id);
+        if (idx >= 0) Object.assign(_reservas[idx], d0.reserva);
+      }
+    }
+  } catch {}
   const r = _reservas.find(x => x.id === id);
   if (!r) return;
   _resDetAtual = r;
@@ -2621,7 +2841,20 @@ function calVerDetalhes(id) {
   const btnFicha = document.getElementById('resdet-ficha');
   if (btnFicha) {
     btnFicha.style.display = ehEspBeleza ? 'none' : '';
-    if (!ehEspBeleza) { btnFicha.dataset.id = r.id; _aplicarEstadoBtnFicha(btnFicha, _estadoBtnFicha(r)); }
+    if (!ehEspBeleza) {
+      btnFicha.dataset.id = r.id;
+      if (r.cliente2) {
+        // Casal: botao unico abre popup distribuidor (estado por pessoa la dentro).
+        btnFicha.disabled = false;
+        btnFicha.textContent = 'Anamnese (hóspedes)';
+        btnFicha.dataset.action = 'abrir-anamnese-casal';
+        btnFicha.dataset.estadoFicha = 'casal';
+        delete btnFicha.dataset.pessoa;
+        btnFicha.onclick = null;
+      } else {
+        _aplicarEstadoBtnFicha(btnFicha, _estadoAnamnese(r, 1));
+      }
+    }
   }
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
@@ -2756,6 +2989,10 @@ window.calVerDetalhes = calVerDetalhes;
 document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 
+// Modal de visualizacao readonly da anamnese preenchida
+document.getElementById('anam-view-x')?.addEventListener('click', () => { document.getElementById('anam-view-overlay').style.display = 'none'; });
+document.getElementById('anam-view-fechar')?.addEventListener('click', () => { document.getElementById('anam-view-overlay').style.display = 'none'; });
+
 // Modal idioma pré-massagem
 const _closeLangOverlay = () => { document.getElementById('lang-overlay').style.display = 'none'; };
 document.getElementById('lang-x').addEventListener('click', _closeLangOverlay);
@@ -2766,7 +3003,11 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
   const btn = document.getElementById('lang-confirmar');
   btn.disabled = true; btn.textContent = 'Gerando…';
   try {
-    const res = await api(`/api/reservas/${r.id}/gerar-ficha`, { method: 'POST', body: '{}' });
+    // Envia { pessoa: N } se o fluxo foi disparado pelo popup casal pra
+    // uma pessoa especifica. Senao envia {} (legado: casal gera ambos).
+    const pessoaAlvo = (r.cliente2 && (_pessoaAnamneseAlvo === 1 || _pessoaAnamneseAlvo === 2)) ? _pessoaAnamneseAlvo : 0;
+    const body = pessoaAlvo ? JSON.stringify({ pessoa: pessoaAlvo }) : '{}';
+    const res = await api(`/api/reservas/${r.id}/gerar-ficha`, { method: 'POST', body });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { alert('Erro ao gerar ficha: ' + (d.error || '')); return; }
@@ -2777,8 +3018,32 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     // ⚠️ MODO TEMPORARIO: nao marca para permitir reenvio.
     // _fichasEnviadas.add(r.id);
     _closeLangOverlay();
+
+    // Atualiza estado local pra UI refletir sem refetch.
+    // Backend setou expiry de 48h; copiamos pro cache.
+    const _futExp = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    if (d.casal) {
+      _resDetAtual.documento_token  = d.hospede1?.token || _resDetAtual.documento_token;
+      _resDetAtual.documento_token2 = d.hospede2?.token || _resDetAtual.documento_token2;
+      _resDetAtual.documento_token_expiry  = _futExp;
+      _resDetAtual.documento_token_expiry2 = _futExp;
+    } else {
+      const p = d.pessoa || 1;
+      if (p === 2) {
+        _resDetAtual.documento_token2 = d.token;
+        _resDetAtual.documento_token_expiry2 = _futExp;
+      } else {
+        _resDetAtual.documento_token = d.token;
+        _resDetAtual.documento_token_expiry = _futExp;
+      }
+    }
+    // Reset do alvo
+    _pessoaAnamneseAlvo = 0;
+
     const btnFicha = document.getElementById('resdet-ficha');
-    _aplicarEstadoBtnFicha(btnFicha, 'enviada');
+    if (btnFicha && !_resDetAtual.cliente2) {
+      _aplicarEstadoBtnFicha(btnFicha, _estadoAnamnese(_resDetAtual, 1));
+    }
 
     if (d.casal) {
       // RESERVA CASAL: 2 links distintos, 1 por hospede. Cada um tem seu
