@@ -2593,10 +2593,19 @@ function calVerDetalhes(id) {
   const r = _reservas.find(x => x.id === id);
   if (!r) return;
   _resDetAtual = r;
+  // Espaco Beleza (sala 5) nao tem anamnese nem pesquisa de satisfacao —
+  // esconde os dois botoes no modal de detalhes. Salas 1-4 inalteradas.
+  const ehEspBeleza = +r.sala === 5;
   const btnLib = document.getElementById('resdet-liberar');
-  if (btnLib) { btnLib.dataset.id = r.id; _aplicarEstadoLiberada(btnLib, _estadoBtnLiberar(r)); }
+  if (btnLib) {
+    btnLib.style.display = ehEspBeleza ? 'none' : '';
+    if (!ehEspBeleza) { btnLib.dataset.id = r.id; _aplicarEstadoLiberada(btnLib, _estadoBtnLiberar(r)); }
+  }
   const btnFicha = document.getElementById('resdet-ficha');
-  if (btnFicha) { btnFicha.dataset.id = r.id; _aplicarEstadoBtnFicha(btnFicha, _estadoBtnFicha(r)); }
+  if (btnFicha) {
+    btnFicha.style.display = ehEspBeleza ? 'none' : '';
+    if (!ehEspBeleza) { btnFicha.dataset.id = r.id; _aplicarEstadoBtnFicha(btnFicha, _estadoBtnFicha(r)); }
+  }
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
   const salaCls = sala ? sala.cls : 's1';
