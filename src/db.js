@@ -432,6 +432,39 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_auditoria_acao    ON auditoria(acao);
   `);
 
+  // Migration: atualiza CHECK(sala IN (...)) em DBs antigos. Versoes pre
+  // sala 4/5 criaram reservas com CHECK(sala IN (1,2,3)); CREATE TABLE IF
+  // NOT EXISTS nao redefine constraint, entao sala 5 (Espaco Beleza) e
+  // sala 4 batiam SQLITE_CONSTRAINT_CHECK ao tentar inserir. Idempotente:
+  // so executa se o CHECK atual nao for exatamente (1,2,3,4,5).
+  try {
+    const row = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='reservas'`).get();
+    if (row?.sql) {
+      const checkRe = /CHECK\s*\(\s*sala\s+IN\s*\([^)]*\)\s*\)/i;
+      const jaAtualizadoRe = /CHECK\s*\(\s*sala\s+IN\s*\(\s*1\s*,\s*2\s*,\s*3\s*,\s*4\s*,\s*5\s*\)\s*\)/i;
+      if (checkRe.test(row.sql) && !jaAtualizadoRe.test(row.sql)) {
+        const novoSql = row.sql.replace(checkRe, 'CHECK(sala IN (1,2,3,4,5))');
+        const sv = db.pragma('schema_version', { simple: true });
+        db.unsafeMode(true);
+        try {
+          db.exec(`PRAGMA writable_schema = 1`);
+          db.prepare(`UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = 'reservas'`).run(novoSql);
+          db.exec(`PRAGMA writable_schema = 0`);
+          // Bumpa schema_version pra SQLite reparsear o schema na proxima query.
+          db.exec(`PRAGMA schema_version = ${sv + 1}`);
+        } finally {
+          db.unsafeMode(false);
+        }
+        const ic = db.prepare(`PRAGMA integrity_check`).get();
+        if (ic?.integrity_check !== 'ok') {
+          console.error('[migration sala CHECK] integrity_check falhou:', ic);
+        } else {
+          console.log('[migration sala CHECK] aplicado: sala IN (1,2,3,4,5)');
+        }
+      }
+    }
+  } catch (e) { console.error('[migration sala CHECK]', e?.message || e); }
+
   // Vínculos cliente_id/cpf adicionados de forma idempotente.
   try { db.exec(`ALTER TABLE reservas    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE reservas    ADD COLUMN cpf TEXT`); } catch {}

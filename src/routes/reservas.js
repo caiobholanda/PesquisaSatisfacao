@@ -216,7 +216,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       {
         linha: linha?.trim() || null,
         tipo_massagem_id: tipo_massagem_id ? +tipo_massagem_id : null,
-        massagista_id: +massagista_id,
+        // sala 5 (Espaco Beleza) nao tem massoterapeuta: grava NULL, nao 0.
+        massagista_id: massagista_id ? +massagista_id : null,
         criado_por,
         cliente2: cliente2?.trim() || null,
         tipo_cliente2: tipo_cliente2 || null,
