@@ -908,18 +908,24 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
   } = opts;
   const db = getDb();
 
-  // Conflito de sala (salas 3 e 4 são o mesmo espaço físico — checar ambas)
-  const conflitoSala = (sala === 3 || sala === 4)
-    ? db.prepare(`
-        SELECT id, cliente, hora_inicio, hora_fim FROM reservas
-        WHERE (sala = 3 OR sala = 4) AND data = ?
-        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-      `).get(data, horaInicio, horaFim)
-    : db.prepare(`
-        SELECT id, cliente, hora_inicio, hora_fim FROM reservas
-        WHERE sala = ? AND data = ?
-        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-      `).get(sala, data, horaInicio, horaFim);
+  // Conflito de sala. Salas 3 e 4 compartilham espaco fisico SOMENTE quando
+  // a reserva (nova ou existente) eh CASAL — sinalizado por cliente2 != null.
+  // Se ambas forem individuais, 3 e 4 sao independentes.
+  const novaCasal = !!(cliente2 && String(cliente2).trim());
+  const isSala34 = (sala === 3 || sala === 4);
+  const conflitoSala = db.prepare(`
+    SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+    WHERE data = ?
+      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      AND (
+        sala = ?
+        OR (
+          ? = 1 AND sala IN (3, 4)
+          AND (? = 1 OR (cliente2 IS NOT NULL AND TRIM(cliente2) != ''))
+        )
+      )
+    LIMIT 1
+  `).get(data, horaInicio, horaFim, sala, isSala34 ? 1 : 0, novaCasal ? 1 : 0);
   if (conflitoSala) {
     const e = new Error('CONFLITO_SALA');
     e.code = 'CONFLITO_SALA';

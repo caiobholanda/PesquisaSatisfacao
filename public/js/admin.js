@@ -1675,6 +1675,14 @@ function calSetTipo2(tipo) {
 document.querySelectorAll('[data-tipo2]').forEach(btn => btn.addEventListener('click', () => calSetTipo2(btn.dataset.tipo2)));
 
 function _isCasal() { return (_resSala === 3 || _resSala === 4) && !!document.getElementById('res-chk-casal')?.checked; }
+// Detecta se uma reserva existente eh CASAL (Sala 3+4 unidas). Prefere o
+// campo explicito r.casal quando o backend passar a expor; fallback para
+// inferencia por presenca de cliente2 (estado atual do schema).
+function isReservaCasal(r) {
+  if (!r) return false;
+  if (r.casal === true || r.casal === 1) return true;
+  return !!(r.cliente2 && String(r.cliente2).trim());
+}
 function _isEspBeleza() { return _resSala === 5; }
 function _aplicarVisibilidadeSala() {
   const espBeleza = _isEspBeleza();
@@ -1938,18 +1946,21 @@ function renderCalDia() {
     html+=`<div class="cal-time-cell${halfClass}">${timeStr}</div>`;
     CAL_ROOMS.forEach(room=>{
       const res=dayRes.find(r=>r.sala===room.id&&calTimeMin(r.hora_inicio)<slotE&&calTimeMin(r.hora_fim)>slotS);
-      // Sala 4: verificar se está bloqueada por reserva na sala 3 (mesmo espaço físico)
-      if (!res && room.id === 4) {
-        const s3block = dayRes.find(r => r.sala === 3 && calTimeMin(r.hora_inicio) < slotE && calTimeMin(r.hora_fim) > slotS);
-        if (s3block) {
-          const isFirst = calTimeMin(s3block.hora_inicio) >= slotS && calTimeMin(s3block.hora_inicio) < slotE;
+      // Salas 3 e 4 compartilham espaco fisico SOMENTE quando a reserva
+      // existente eh CASAL (cliente2 preenchido). Reservas individuais
+      // em 3 nao bloqueiam 4 — e vice-versa.
+      if (!res && (room.id === 3 || room.id === 4)) {
+        const outraSala = room.id === 3 ? 4 : 3;
+        const blocker = dayRes.find(r => r.sala === outraSala && isReservaCasal(r) && calTimeMin(r.hora_inicio) < slotE && calTimeMin(r.hora_fim) > slotS);
+        if (blocker) {
+          const isFirst = calTimeMin(blocker.hora_inicio) >= slotS && calTimeMin(blocker.hora_inicio) < slotE;
           if (isFirst) {
-            const rs3 = calTimeMin(s3block.hora_inicio), re3 = calTimeMin(s3block.hora_fim);
+            const rs3 = calTimeMin(blocker.hora_inicio), re3 = calTimeMin(blocker.hora_fim);
             const topPx = ((rs3 - slotS) / SLOT_MIN) * CAL_SLOT_PX + 2;
             const ht = ((re3 - rs3) / SLOT_MIN) * CAL_SLOT_PX - 4;
             html += `<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
               <div style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;border-radius:6px;background:var(--sala-s3-dim);border-left:3px dashed var(--sala-s3);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.65">
-                <span style="font-size:.65rem;color:var(--sala-s3-text);text-align:center;line-height:1.4">Bloqueada<br>(Sala 3 em uso)</span>
+                <span style="font-size:.65rem;color:var(--sala-s3-text);text-align:center;line-height:1.4">Bloqueada<br>(Sala ${outraSala} em uso)</span>
               </div>
             </div>`;
           } else {
@@ -2391,16 +2402,22 @@ function _atualizarComboLinhaPreco() {
   wrap.innerHTML = html;
 }
 
-// Detecta conflito local (sala ou profissional)
-function calDetectarConflito(sala, massagistaId, data, horaInicio, horaFim, excluirId) {
-  // Salas 3 e 4 são o mesmo espaço físico — checar ambas
-  const salasVerif = (sala === 3 || sala === 4) ? [3, 4] : [sala];
-  const conflitoSala = _reservas.find(r =>
-    salasVerif.includes(r.sala) &&
-    r.data === data &&
-    r.id !== excluirId &&
-    !(r.hora_fim <= horaInicio || r.hora_inicio >= horaFim)
-  );
+// Detecta conflito local (sala ou profissional).
+// novaCasal: indica se a NOVA reserva sendo criada/editada eh casal.
+// Regra de cruzamento entre salas 3 e 4: ha conflito se a nova reserva
+// for casal OU a reserva existente for casal. Duas individuais em 3 e 4
+// no mesmo horario sao permitidas (espacos independentes).
+function calDetectarConflito(sala, massagistaId, data, horaInicio, horaFim, excluirId, novaCasal) {
+  const conflitoSala = _reservas.find(r => {
+    if (r.id === excluirId) return false;
+    if (r.data !== data) return false;
+    if (r.hora_fim <= horaInicio || r.hora_inicio >= horaFim) return false;
+    if (r.sala === sala) return true;
+    if ((sala === 3 || sala === 4) && (r.sala === 3 || r.sala === 4)) {
+      return !!novaCasal || isReservaCasal(r);
+    }
+    return false;
+  });
   if (conflitoSala) return { tipo: 'sala', reserva: conflitoSala };
   // Profissional
   if (massagistaId) {
@@ -3060,10 +3077,11 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   }
 
   // Verificação local de conflito antes de bater no servidor
-  const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim);
+  const _novaCasal = _isCasal() && _p2Preenchida;
+  const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, undefined, _novaCasal);
   if (conflitoLocal) { calMostrarConflito(conflitoLocal); return; }
   if (_p2Preenchida && massagistaId2) {
-    const c2 = calDetectarConflito(sala, massagistaId2, data, horaInicio, _resHoraFim, null);
+    const c2 = calDetectarConflito(sala, massagistaId2, data, horaInicio, _resHoraFim, null, _novaCasal);
     if (c2 && c2.tipo === 'massagista') { calMostrarConflito(c2); return; }
   }
 
@@ -3096,7 +3114,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       }
       if (res.status === 409) {
         await loadReservas();
-        const c = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim);
+        const c = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, undefined, _novaCasal);
         if (c) { calMostrarConflito(c); return; }
       }
       err.textContent = d.error || 'Erro ao salvar.';
