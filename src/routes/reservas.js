@@ -19,11 +19,19 @@ router.get('/', (req, res) => {
 });
 
 router.get('/historico', (req, res) => {
-  const { from, to, sala, busca, limit, offset } = req.query;
+  const { from, to, busca, limit, offset } = req.query;
+  // sala aceita: ?sala=1, ?sala=1&sala=2, ?sala=1,2 (retrocompat)
+  const salaRaw = req.query.sala;
+  const salaList = []
+    .concat(salaRaw == null ? [] : salaRaw)
+    .flatMap(v => String(v).split(','))
+    .map(v => parseInt(v, 10))
+    .filter(n => Number.isInteger(n) && n >= 1 && n <= 5);
+  const salas = [...new Set(salaList)];
   const result = listarTodasReservas({
     from: from || null,
     to: to || null,
-    sala: sala || null,
+    salas,
     busca: busca || null,
     limit: limit ? +limit : 100,
     offset: offset ? +offset : 0,

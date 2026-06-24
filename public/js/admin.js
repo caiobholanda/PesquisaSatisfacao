@@ -3729,11 +3729,54 @@ document.getElementById('btn-hc-filtrar').addEventListener('click',()=>loadHisto
 document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   document.getElementById('hc-from').value='';
   document.getElementById('hc-to').value='';
-  document.getElementById('hc-sala').value='';
+  _hcResetSalas();
   const st = document.getElementById('hc-status'); if (st) st.value = 'todos';
   document.getElementById('hc-busca').value='';
   loadHistoricoClientes();
 });
+
+const HC_SALAS_LABEL = { 1:'Sala 1', 2:'Sala 2', 3:'Sala 3', 4:'Sala 4', 5:'Espaço Beleza' };
+function _hcSalaCbs(){ return Array.from(document.querySelectorAll('.hc-salas-cb')); }
+function _hcSelectedSalas(){ return _hcSalaCbs().filter(cb=>cb.checked).map(cb=>cb.value); }
+function _hcUpdateSalasLabel(){
+  const sel = _hcSelectedSalas();
+  const allCb = document.getElementById('hc-salas-all');
+  const label = document.getElementById('hc-salas-label');
+  if (!sel.length || sel.length === _hcSalaCbs().length) {
+    if (allCb) allCb.checked = true;
+    label.textContent = 'Todas';
+  } else {
+    if (allCb) allCb.checked = false;
+    label.textContent = sel.length === 1
+      ? HC_SALAS_LABEL[sel[0]]
+      : `${sel.length} salas`;
+  }
+}
+function _hcResetSalas(){
+  _hcSalaCbs().forEach(cb => cb.checked = false);
+  const allCb = document.getElementById('hc-salas-all'); if (allCb) allCb.checked = true;
+  _hcUpdateSalasLabel();
+}
+(function _hcWireSalasDropdown(){
+  const btn = document.getElementById('hc-salas-btn');
+  const panel = document.getElementById('hc-salas-panel');
+  const dd = document.getElementById('hc-salas-dd');
+  if (!btn || !panel || !dd) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = !panel.hidden;
+    panel.hidden = open;
+    btn.setAttribute('aria-expanded', String(!open));
+  });
+  document.addEventListener('click', e => {
+    if (!dd.contains(e.target)) { panel.hidden = true; btn.setAttribute('aria-expanded','false'); }
+  });
+  document.getElementById('hc-salas-all')?.addEventListener('change', e => {
+    if (e.target.checked) _hcSalaCbs().forEach(cb => cb.checked = false);
+    _hcUpdateSalasLabel();
+  });
+  _hcSalaCbs().forEach(cb => cb.addEventListener('change', _hcUpdateSalasLabel));
+})();
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 
@@ -3743,12 +3786,15 @@ const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
 function _hcParams(off=0) {
   const from  = document.getElementById('hc-from').value || '';
   const to    = document.getElementById('hc-to').value || '';
-  const sala  = document.getElementById('hc-sala').value || '';
+  const salas = _hcSelectedSalas();
   const busca = document.getElementById('hc-busca').value.trim() || '';
   const p = new URLSearchParams({ limit: _hcLimit, offset: off });
   if (from)  p.set('from',  from);
   if (to)    p.set('to',    to);
-  if (sala)  p.set('sala',  sala);
+  // Não envia 'sala' quando nenhuma (ou todas) está marcada → backend retorna tudo.
+  if (salas.length && salas.length < _hcSalaCbs().length) {
+    salas.forEach(v => p.append('sala', v));
+  }
   if (busca) p.set('busca', busca);
   return p.toString();
 }

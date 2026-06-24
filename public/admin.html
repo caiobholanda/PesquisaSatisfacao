@@ -514,6 +514,34 @@
       align-items: flex-end;
     }
 
+    .multi-dd { position: relative; min-width: 170px; }
+    .multi-dd-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; gap: .5rem;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: .5rem .65rem; font-size: .875rem; font-family: inherit;
+      cursor: pointer; text-align: left;
+    }
+    .multi-dd-btn:hover { border-color: var(--muted); }
+    .multi-dd-caret { font-size: .7rem; color: var(--muted); }
+    .multi-dd-panel {
+      position: absolute; top: calc(100% + 4px); left: 0; z-index: 50;
+      min-width: 100%;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.08);
+      padding: .35rem; display: flex; flex-direction: column;
+    }
+    .multi-dd-opt {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .4rem .55rem; border-radius: 4px;
+      font-size: .85rem; color: var(--text); cursor: pointer;
+      white-space: nowrap;
+    }
+    .multi-dd-opt:hover { background: var(--bg); }
+    .multi-dd-opt input[type=checkbox] { accent-color: var(--gold, var(--muted2)); cursor: pointer; }
+    .multi-dd-sep { height: 1px; background: var(--border); margin: .25rem .25rem; }
+
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        TABLE
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -3430,14 +3458,21 @@
         </div>
         <div class="filter-group">
           <label>Sala</label>
-          <select id="hc-sala">
-            <option value="">Todas</option>
-            <option value="1">Sala 1</option>
-            <option value="2">Sala 2</option>
-            <option value="3">Sala 3</option>
-            <option value="4">Sala 4</option>
-            <option value="5">Espaço Beleza</option>
-          </select>
+          <div id="hc-salas-dd" class="multi-dd">
+            <button type="button" id="hc-salas-btn" class="multi-dd-btn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="hc-salas-label">Todas</span>
+              <span class="multi-dd-caret">▾</span>
+            </button>
+            <div id="hc-salas-panel" class="multi-dd-panel" role="listbox" aria-multiselectable="true" hidden>
+              <label class="multi-dd-opt"><input type="checkbox" id="hc-salas-all" checked> <span>Todas</span></label>
+              <div class="multi-dd-sep"></div>
+              <label class="multi-dd-opt"><input type="checkbox" class="hc-salas-cb" value="1"> <span>Sala 1</span></label>
+              <label class="multi-dd-opt"><input type="checkbox" class="hc-salas-cb" value="2"> <span>Sala 2</span></label>
+              <label class="multi-dd-opt"><input type="checkbox" class="hc-salas-cb" value="3"> <span>Sala 3</span></label>
+              <label class="multi-dd-opt"><input type="checkbox" class="hc-salas-cb" value="4"> <span>Sala 4</span></label>
+              <label class="multi-dd-opt"><input type="checkbox" class="hc-salas-cb" value="5"> <span>Espaço Beleza</span></label>
+            </div>
+          </div>
         </div>
         <div class="filter-group">
           <label>Pesquisa</label>

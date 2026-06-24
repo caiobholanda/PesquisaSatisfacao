@@ -828,13 +828,21 @@ export function listarReservasSemana(from, to) {
   ).all(from, to);
 }
 
-export function listarTodasReservas({ from, to, sala, busca, limit = 100, offset = 0 } = {}) {
+export function listarTodasReservas({ from, to, sala, salas, busca, limit = 100, offset = 0 } = {}) {
   const db = getDb();
   const conds = [];
   const params = [];
+  // Normaliza: aceita 'salas' (array) novo ou 'sala' (escalar) legado.
+  const salasNorm = (Array.isArray(salas) ? salas : (sala != null && sala !== '' ? [sala] : []))
+    .map(n => parseInt(n, 10))
+    .filter(n => Number.isInteger(n) && n >= 1 && n <= 5);
+  const salasUniq = [...new Set(salasNorm)];
   if (from)   { conds.push('r.data >= ?');   params.push(from); }
   if (to)     { conds.push('r.data <= ?');   params.push(to); }
-  if (sala)   { conds.push('r.sala = ?');    params.push(+sala); }
+  if (salasUniq.length) {
+    conds.push(`r.sala IN (${salasUniq.map(() => '?').join(',')})`);
+    params.push(...salasUniq);
+  }
   if (busca)  { conds.push('(LOWER(r.cliente) LIKE ? OR LOWER(r.email) LIKE ?)'); params.push(`%${busca.toLowerCase()}%`, `%${busca.toLowerCase()}%`); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const total = db.prepare(`SELECT COUNT(*) AS t FROM reservas r ${where}`).get(...params).t;
