@@ -1264,10 +1264,14 @@ function _coletarDisp() {
 
 // ── Exceções pontuais (libera/disponibiliza data+faixa específica) ──
 function _excRowHtml(exc) {
-  const data = exc?.data || '';
+  // Defesa em profundidade: dados podem ter vindo corrompidos do DB. Aceita
+  // só formatos esperados e usa fallback seguro caso contrario.
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  const timeRe = /^\d{2}:\d{2}$/;
+  const data = dateRe.test(exc?.data || '') ? exc.data : '';
   const tipo = exc?.tipo === 'disponivel' ? 'disponivel' : 'indisponivel';
-  const ini = exc?.inicio || '08:00';
-  const fim = exc?.fim || '22:00';
+  const ini = timeRe.test(exc?.inicio || '') ? exc.inicio : '08:00';
+  const fim = timeRe.test(exc?.fim || '') ? exc.fim : '22:00';
   return `<div class="exc-row">
     <input type="date" class="exc-data" value="${data}">
     <select class="exc-tipo">
@@ -1311,7 +1315,9 @@ function _coletarExcecoes() {
   if (!list) return [];
   const out = [];
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-  for (const row of list.querySelectorAll('.exc-row')) {
+  const rows = list.querySelectorAll('.exc-row');
+  if (rows.length > 365) return { erro: 'Máximo de 365 exceções por massoterapeuta.' };
+  for (const row of rows) {
     const data = row.querySelector('.exc-data').value;
     const tipo = row.querySelector('.exc-tipo').value;
     const inicio = row.querySelector('.exc-ini').value;
@@ -2031,9 +2037,12 @@ function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
     }
   }
 
-  // Fallback: escala semanal
-  if (!m.disponibilidade) return false;
-  const disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade;
+  // Fallback: escala semanal. Sem disponibilidade = sempre disponível (compat).
+  if (!m.disponibilidade) return true;
+  let disp;
+  try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
+  catch { return true; }
+  if (!disp) return true;
   const DOW_KEYS = ['dom','seg','ter','qua','qui','sex','sab'];
   const dow = DOW_KEYS[new Date(data + 'T12:00:00').getDay()];
   const faixa = disp[dow];

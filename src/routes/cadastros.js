@@ -44,7 +44,9 @@ router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
     vinculo: resolvedVinculo,
     bilingue: resolvedBilingue,
     disponibilidade: disponibilidade ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade)) : null,
-    excecoes: excecoes ? (typeof excecoes === 'string' ? excecoes : JSON.stringify(excecoes)) : null,
+    excecoes: (Array.isArray(excecoes) && excecoes.length)
+      ? JSON.stringify(excecoes)
+      : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null),
   });
   res.status(201).json({ ok: true, id });
 });
@@ -55,6 +57,7 @@ function _validarExcecoes(excecoes) {
   try { arr = typeof excecoes === 'string' ? JSON.parse(excecoes) : excecoes; }
   catch { return 'Exceções: JSON inválido'; }
   if (!Array.isArray(arr)) return 'Exceções devem ser uma lista';
+  if (arr.length > 365) return 'Máximo de 365 exceções por massoterapeuta';
   const SPA_INI = 8 * 60, SPA_FIM = 22 * 60;
   const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
