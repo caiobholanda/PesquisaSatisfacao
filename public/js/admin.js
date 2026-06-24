@@ -935,7 +935,9 @@ async function abrirAnamneseReadonly(reservaId, pessoa) {
     const pdata = p === 2 ? d.pessoa2 : d.pessoa1;
     if (!pdata || !pdata.anamnese) { showToast('Anamnese ainda não foi preenchida.'); return; }
     _renderAnamneseReadonly(d.reserva, pdata.anamnese, p);
-    document.getElementById('anam-view-overlay').style.display = 'flex';
+    const ov = document.getElementById('anam-view-overlay');
+    ov.style.zIndex = '4500'; // garante render acima do resdet-overlay (4000)
+    ov.style.display = 'flex';
   } catch (e) {
     console.error('[abrirAnamneseReadonly]', e);
     showToast('Erro ao carregar anamnese.');
@@ -2994,7 +2996,11 @@ document.getElementById('anam-view-x')?.addEventListener('click', () => { docume
 document.getElementById('anam-view-fechar')?.addEventListener('click', () => { document.getElementById('anam-view-overlay').style.display = 'none'; });
 
 // Modal idioma pré-massagem
-const _closeLangOverlay = () => { document.getElementById('lang-overlay').style.display = 'none'; };
+const _closeLangOverlay = () => {
+  document.getElementById('lang-overlay').style.display = 'none';
+  // Reseta alvo pra evitar vazamento entre fluxos (casal cancelado → individual).
+  _pessoaAnamneseAlvo = 0;
+};
 document.getElementById('lang-x').addEventListener('click', _closeLangOverlay);
 document.getElementById('lang-cancelar').addEventListener('click', _closeLangOverlay);
 document.getElementById('lang-confirmar').addEventListener('click', async () => {
