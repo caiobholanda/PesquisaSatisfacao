@@ -1576,6 +1576,7 @@ const CAL_ROOMS = [
   { id: 2, nome: 'Sala 2', tipo: 'Individual', cap: 1, cls: 's2' },
   { id: 3, nome: 'Sala 3', tipo: 'Individual', cap: 1, cls: 's3' },
   { id: 4, nome: 'Sala 4', tipo: 'Individual', cap: 1, cls: 's4' },
+  { id: 5, nome: 'Espaço Beleza', tipo: 'Individual', cap: 1, cls: 's5' },
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
@@ -3678,7 +3679,7 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 
-const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4' };
+const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
 const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
 
 function _hcParams(off=0) {

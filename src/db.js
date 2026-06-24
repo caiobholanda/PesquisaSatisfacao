@@ -80,7 +80,7 @@ export function initDb() {
 
     CREATE TABLE IF NOT EXISTS reservas (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sala INTEGER NOT NULL CHECK(sala IN (1,2,3)),
+      sala INTEGER NOT NULL CHECK(sala IN (1,2,3,4,5)),
       cliente TEXT NOT NULL,
       tipo_cliente TEXT,
       apto TEXT,
