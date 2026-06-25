@@ -304,6 +304,9 @@ router.get('/item/:id', requireAuth, (req, res) => {
     }
   } catch (e) { console.warn('[feedback/item extras]', e?.message); }
 
+  // Strip metadados que nunca aparecem na UI (auditoria 2026-06-25).
+  // email/telefone/apto seguem porque o drawer exibe pra equipe admin.
+  if (item) { delete item.ip_address; delete item.user_agent; }
   res.json({ ok: true, item, extras });
 });
 
