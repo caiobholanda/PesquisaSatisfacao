@@ -1782,15 +1782,23 @@ function renderReceitaSection(d) {
       ? `<span class="receita-bonus" title="${escHtmlSafe(m.bonus_label || '')}">+${(m.bonus_pct * 100).toFixed(0)}%</span>`
       : `<span style="color:var(--muted)">—</span>`;
 
-    const detalhe = (m.por_terapia || []).map(t =>
-      `<tr><td>${escHtmlSafe(t.terapia)}</td><td class="num">${t.atendimentos}</td><td class="num">${fmtBRL(t.receita)}</td></tr>`
-    ).join('');
+    const detalhe = (m.por_terapia || []).map(t => {
+      const semPreco = t.atendimentos > 0 && (!t.receita || t.receita === 0);
+      const warn = semPreco ? ' <span title="Preço não cadastrado neste tipo de massagem — auditar tipos_massagem.preco" style="color:var(--warn,#C49A2D);cursor:help">⚠️</span>' : '';
+      return `<tr><td>${escHtmlSafe(t.terapia)}</td><td class="num">${t.atendimentos}</td><td class="num">${fmtBRL(t.receita)}${warn}</td></tr>`;
+    }).join('');
+
+    // Mês com atendimento mas receita zero → preço faltando em algum tipo de massagem.
+    const mesSemPreco = m.atendimentos > 0 && (!m.receita || m.receita === 0);
+    const receitaCell = mesSemPreco
+      ? `${fmtBRL(m.receita)} <span title="Há atendimento(s) sem preço cadastrado no tipo de massagem" style="color:var(--warn,#C49A2D);cursor:help">⚠️</span>`
+      : fmtBRL(m.receita);
 
     rows.push(`
       <tr data-mes="${mes}" class="mes-row">
         <td class="mes">${MESES_NOME[mes - 1]}</td>
         <td class="num">${m.atendimentos}</td>
-        <td class="num">${fmtBRL(m.receita)}</td>
+        <td class="num">${receitaCell}</td>
         <td>${notaCell}</td>
         <td>${bonusCell}</td>
         <td class="num comissao">${fmtBRL(m.comissao)}</td>
