@@ -1102,7 +1102,6 @@ function setupDelegation() {
 })();
 
 document.getElementById('btn-open-massagistas').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
-document.getElementById('btn-back-massagistas').addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-back-historico').addEventListener('click', () => showView('view-massagistas'));
 
 document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); });
