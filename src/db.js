@@ -927,9 +927,17 @@ const FAIXAS_FATOR = { NORMAL: 1.0, P10: 0.9, P20: 0.8, P30: 0.7, P50: 0.5 };
 // (terapias avulsas nao listadas no seed). Idempotente (procura por nome).
 export function seedReceitaTerapias({ jsonPath } = {}) {
   const db = getDb();
-  const file = jsonPath || path.join(__dirname, '..', 'data', 'receita-2026.json');
-  if (!fs.existsSync(file)) {
-    console.warn(`[receita] arquivo nao encontrado: ${file} - seed ignorado`);
+  // IMPORTANTE: o JSON vive em seed-data/, NAO em data/. Em prod o Fly.io
+  // monta um volume persistente em /app/data, o que sobrescreve qualquer
+  // arquivo da imagem nessa pasta. seed-data/ fica na imagem read-only.
+  const candidatos = [
+    jsonPath,
+    path.join(__dirname, '..', 'seed-data', 'receita-2026.json'),
+    path.join(__dirname, '..', 'data', 'receita-2026.json'), // fallback historico
+  ].filter(Boolean);
+  const file = candidatos.find(p => fs.existsSync(p));
+  if (!file) {
+    console.warn(`[receita] JSON nao encontrado em: ${candidatos.join(' | ')} - seed ignorado`);
     return;
   }
   const data = JSON.parse(fs.readFileSync(file, 'utf8'));
