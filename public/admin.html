@@ -3208,6 +3208,18 @@
           <p class="page-sub">Horários semanais por massoterapeuta</p>
         </div>
       </div>
+      <div class="mgmt-list-card" style="margin-bottom:1rem">
+        <div class="mgmt-list-card-header" style="padding-bottom:0.75rem;align-items:flex-start;gap:.75rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <span class="mgmt-list-card-title">Exceções pontuais</span>
+            <div style="font-size:0.8125rem;color:var(--muted);margin-top:.15rem">Liberações ou disponibilizações fora da escala em datas específicas. Somem automaticamente após a data.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btn-add-excecao-global" type="button">+ Adicionar exceção</button>
+        </div>
+        <div id="excecoes-global-list" style="padding:0 1.5rem 1.5rem">
+          <div class="mgmt-empty">Carregando…</div>
+        </div>
+      </div>
       <div class="mgmt-list-card">
         <div class="mgmt-list-card-header" style="padding-bottom:0.75rem">
           <span class="mgmt-list-card-title">Escala semanal</span>
@@ -4172,21 +4184,56 @@
         <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala Semanal</div>
         <div id="mgmt-m-disp-grid" style="display:flex;flex-direction:column;gap:.375rem"></div>
       </div>
-      <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;flex-wrap:wrap">
-          <div>
-            <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Exceções Pontuais</div>
-            <div style="font-size:.7rem;color:var(--muted);margin-top:.15rem">Liberar (folga) ou disponibilizar fora da escala em uma data específica</div>
-          </div>
-          <button type="button" class="btn btn-outline btn-sm" id="mgmt-m-add-exc">+ Adicionar exceção</button>
-        </div>
-        <div id="mgmt-m-exc-list" style="display:flex;flex-direction:column;gap:.375rem"></div>
-      </div>
     </div>
     <div class="res-modal-err" id="mgmt-m-err"></div>
     <div class="res-modal-ft">
       <button class="btn btn-outline" id="mgmt-m-cancelar">Cancelar</button>
       <button class="btn btn-gold" id="mgmt-m-salvar">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR EXCECAO PONTUAL -->
+<div class="res-modal-overlay" id="mgmt-exc-overlay" style="display:none">
+  <div class="res-modal" style="max-width:480px">
+    <div class="res-modal-hd">
+      <div>
+        <div class="res-modal-title">Nova exceção pontual</div>
+        <div class="res-modal-sub">Liberar (folga) ou disponibilizar fora da escala</div>
+      </div>
+      <button class="res-modal-x" id="mgmt-exc-x" type="button">✕</button>
+    </div>
+    <div class="res-modal-body">
+      <div class="res-fg">
+        <label>Massoterapeuta <span style="color:var(--danger)">*</span></label>
+        <select id="mgmt-exc-mass" style="width:100%"></select>
+      </div>
+      <div class="res-fg">
+        <label>Data <span style="color:var(--danger)">*</span></label>
+        <input type="date" id="mgmt-exc-data">
+      </div>
+      <div class="res-fg">
+        <label>Tipo <span style="color:var(--danger)">*</span></label>
+        <select id="mgmt-exc-tipo" style="width:100%">
+          <option value="indisponivel">Liberar (folga)</option>
+          <option value="disponivel">Disponibilizar</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="res-fg" style="margin:0">
+          <label>Início <span style="color:var(--danger)">*</span></label>
+          <input type="time" id="mgmt-exc-ini" min="08:00" max="22:00" value="08:00">
+        </div>
+        <div class="res-fg" style="margin:0">
+          <label>Fim <span style="color:var(--danger)">*</span></label>
+          <input type="time" id="mgmt-exc-fim" min="08:00" max="22:00" value="22:00">
+        </div>
+      </div>
+    </div>
+    <div class="res-modal-err" id="mgmt-exc-err"></div>
+    <div class="res-modal-ft">
+      <button class="btn btn-outline" id="mgmt-exc-cancelar" type="button">Cancelar</button>
+      <button class="btn btn-gold" id="mgmt-exc-salvar" type="button">Salvar exceção</button>
     </div>
   </div>
 </div>
@@ -4336,6 +4383,6 @@
   <div id="drawer-content"></div>
 </div>
 
-<script src="/js/admin.js?v=92"></script>
+<script src="/js/admin.js?v=93"></script>
 </body>
 </html>

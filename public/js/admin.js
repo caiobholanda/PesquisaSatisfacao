@@ -1264,92 +1264,127 @@ function _coletarDisp() {
 }
 
 // ── Exceções pontuais (libera/disponibiliza data+faixa específica) ──
-function _excRowHtml(exc) {
-  // Defesa em profundidade: dados podem ter vindo corrompidos do DB. Aceita
-  // só formatos esperados e usa fallback seguro caso contrario.
-  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-  const timeRe = /^\d{2}:\d{2}$/;
-  const data = dateRe.test(exc?.data || '') ? exc.data : '';
-  const tipo = exc?.tipo === 'disponivel' ? 'disponivel' : 'indisponivel';
-  const ini = timeRe.test(exc?.inicio || '') ? exc.inicio : '08:00';
-  const fim = timeRe.test(exc?.fim || '') ? exc.fim : '22:00';
-  return `<div class="exc-row">
-    <input type="date" class="exc-data" value="${data}">
-    <select class="exc-tipo">
-      <option value="indisponivel" ${tipo==='indisponivel'?'selected':''}>Liberar (folga)</option>
-      <option value="disponivel" ${tipo==='disponivel'?'selected':''}>Disponibilizar</option>
-    </select>
-    <input type="time" class="exc-ini" min="08:00" max="22:00" value="${ini}">
-    <span class="exc-sep">–</span>
-    <input type="time" class="exc-fim" min="08:00" max="22:00" value="${fim}">
-    <button type="button" class="exc-del" title="Remover">×</button>
-  </div>`;
-}
+// Exibidas em bloco único no topo da view-escala, listando exceções ativas
+// de todas as massagistas. Persistência continua via PUT /api/massagistas/:id
+// no campo `excecoes` (JSON na coluna da própria massagista).
 function _hojeISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function _renderExcecoes(excecoes) {
-  const list = document.getElementById('mgmt-m-exc-list');
+function _parseExcecoes(raw) {
+  if (!raw) return [];
+  try {
+    const v = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+function _fmtDataBR(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function renderExcecoesGlobal() {
+  const list = document.getElementById('excecoes-global-list');
   if (!list) return;
   const hoje = _hojeISO();
-  // Exceções são pontuais: ao passar a data, não fazem mais efeito. Ocultamos
-  // do UI (e o _coletarExcecoes não as reenvia, então o save efetivamente
-  // expurga as passadas do banco).
-  const arr = (Array.isArray(excecoes) ? excecoes : []).filter(e => e?.data && e.data >= hoje);
-  if (!arr.length) {
-    list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
-  } else {
-    list.innerHTML = arr.map(_excRowHtml).join('');
-  }
-  list.querySelectorAll('.exc-del').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.exc-row').remove();
-      if (!list.querySelector('.exc-row')) {
-        list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
-      }
-    });
-  });
-}
-function _coletarExcecoes() {
-  const list = document.getElementById('mgmt-m-exc-list');
-  if (!list) return [];
-  const out = [];
-  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-  const rows = list.querySelectorAll('.exc-row');
-  if (rows.length > 365) return { erro: 'Máximo de 365 exceções por massoterapeuta.' };
-  for (const row of rows) {
-    const data = row.querySelector('.exc-data').value;
-    const tipo = row.querySelector('.exc-tipo').value;
-    const inicio = row.querySelector('.exc-ini').value;
-    const fim = row.querySelector('.exc-fim').value;
-    if (!data || !inicio || !fim) return { erro: 'Exceção: preencha data, início e fim.' };
-    if (!dateRe.test(data)) return { erro: `Exceção: data inválida (${data}).` };
-    const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
-    if (iniMin < 8 * 60) return { erro: `Exceção ${data}: início não pode ser antes das 08:00.` };
-    if (fimMin > 22 * 60) return { erro: `Exceção ${data}: fim não pode ser depois das 22:00.` };
-    if (fimMin <= iniMin) return { erro: `Exceção ${data}: fim deve ser após o início.` };
-    out.push({ data, tipo, inicio, fim });
-  }
-  return out;
-}
-document.getElementById('mgmt-m-add-exc')?.addEventListener('click', () => {
-  const list = document.getElementById('mgmt-m-exc-list');
-  if (!list) return;
-  const empty = list.querySelector('.exc-empty');
-  if (empty) empty.remove();
-  const today = new Date();
-  const iso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  const wrap = document.createElement('div');
-  wrap.innerHTML = _excRowHtml({ data: iso, tipo: 'indisponivel', inicio: '08:00', fim: '22:00' });
-  const row = wrap.firstElementChild;
-  list.appendChild(row);
-  row.querySelector('.exc-del').addEventListener('click', () => {
-    row.remove();
-    if (!list.querySelector('.exc-row')) {
-      list.innerHTML = '<div class="exc-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
+  const linhas = [];
+  for (const m of (_massagistas || [])) {
+    if (!m.ativo) continue;
+    for (const e of _parseExcecoes(m.excecoes)) {
+      if (!e?.data || e.data < hoje) continue;
+      linhas.push({ mid: m.id, mnome: m.nome, ...e });
     }
+  }
+  linhas.sort((a, b) => (a.data === b.data ? a.mnome.localeCompare(b.mnome) : a.data.localeCompare(b.data)));
+  if (!linhas.length) {
+    list.innerHTML = '<div class="mgmt-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
+    return;
+  }
+  list.innerHTML = '<div style="display:flex;flex-direction:column;gap:.375rem">' + linhas.map(l => {
+    const tipoTxt = l.tipo === 'disponivel' ? 'Disponibilizar' : 'Liberar (folga)';
+    const tipoCor = l.tipo === 'disponivel' ? 'var(--gold,#b88a3d)' : 'var(--muted)';
+    return `<div class="exc-row-global" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.5rem .75rem;border:1px solid var(--border-soft);border-radius:6px;background:var(--surface)">
+      <span style="font-weight:500;flex:1;min-width:140px">${escHtml(l.mnome)}</span>
+      <span style="font-size:.85rem;color:var(--text)">${_fmtDataBR(l.data)}</span>
+      <span style="font-size:.8rem;color:${tipoCor};font-weight:500">${tipoTxt}</span>
+      <span style="font-size:.85rem;color:var(--text)">${l.inicio} – ${l.fim}</span>
+      <button type="button" class="btn btn-outline btn-sm" data-act="del-exc-global" data-mid="${l.mid}" data-data="${l.data}" data-ini="${l.inicio}" data-fim="${l.fim}" title="Remover">×</button>
+    </div>`;
+  }).join('') + '</div>';
+  list.querySelectorAll('[data-act="del-exc-global"]').forEach(btn => {
+    btn.addEventListener('click', () => _excecaoGlobalDel(+btn.dataset.mid, btn.dataset.data, btn.dataset.ini, btn.dataset.fim));
   });
+}
+async function _excecaoGlobalDel(mid, data, ini, fim) {
+  const m = (_massagistas || []).find(x => x.id === mid);
+  if (!m) { showToast('Massoterapeuta não encontrada.'); return; }
+  if (!confirm(`Remover exceção de ${m.nome} em ${_fmtDataBR(data)} (${ini}–${fim})?`)) return;
+  const atuais = _parseExcecoes(m.excecoes);
+  const novas = atuais.filter(e => !(e?.data === data && e?.inicio === ini && e?.fim === fim));
+  const res = await api(`/api/massagistas/${mid}`, { method: 'PUT', body: JSON.stringify({ nome: m.nome, ativo: m.ativo ? 1 : 0, excecoes: novas }) });
+  if (!res) return;
+  const d = await res.json();
+  if (!d.ok) { showToast(d.error || 'Erro ao remover.'); return; }
+  _massagistasModal = [];
+  loadEscala();
+}
+document.getElementById('btn-add-excecao-global')?.addEventListener('click', () => {
+  const sel = document.getElementById('mgmt-exc-mass');
+  const err = document.getElementById('mgmt-exc-err');
+  if (!sel) return;
+  err.textContent = '';
+  const ativas = (_massagistas || []).filter(m => m.ativo);
+  if (!ativas.length) { showToast('Nenhuma massoterapeuta ativa.'); return; }
+  sel.innerHTML = ativas.map(m => `<option value="${m.id}">${escHtml(m.nome)}</option>`).join('');
+  document.getElementById('mgmt-exc-data').value = _hojeISO();
+  document.getElementById('mgmt-exc-tipo').value = 'indisponivel';
+  document.getElementById('mgmt-exc-ini').value = '08:00';
+  document.getElementById('mgmt-exc-fim').value = '22:00';
+  _modalOpen = true;
+  document.getElementById('mgmt-exc-overlay').style.display = 'flex';
+  setTimeout(() => sel.focus(), 50);
+});
+function _closeMgmtExc() {
+  _modalOpen = false;
+  document.getElementById('mgmt-exc-overlay').style.display = 'none';
+}
+document.getElementById('mgmt-exc-x')?.addEventListener('click', _closeMgmtExc);
+document.getElementById('mgmt-exc-cancelar')?.addEventListener('click', _closeMgmtExc);
+document.getElementById('mgmt-exc-salvar')?.addEventListener('click', async () => {
+  const err = document.getElementById('mgmt-exc-err');
+  err.textContent = '';
+  const mid = +document.getElementById('mgmt-exc-mass').value;
+  const data = document.getElementById('mgmt-exc-data').value;
+  const tipo = document.getElementById('mgmt-exc-tipo').value;
+  const inicio = document.getElementById('mgmt-exc-ini').value;
+  const fim = document.getElementById('mgmt-exc-fim').value;
+  if (!mid) { err.textContent = 'Selecione a massoterapeuta.'; return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { err.textContent = 'Data inválida.'; return; }
+  if (data < _hojeISO()) { err.textContent = 'Data não pode ser no passado.'; return; }
+  if (!inicio || !fim) { err.textContent = 'Preencha início e fim.'; return; }
+  const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
+  if (iniMin < 8 * 60) { err.textContent = 'Início não pode ser antes das 08:00.'; return; }
+  if (fimMin > 22 * 60) { err.textContent = 'Fim não pode ser depois das 22:00.'; return; }
+  if (fimMin <= iniMin) { err.textContent = 'Fim deve ser após o início.'; return; }
+  const m = (_massagistas || []).find(x => x.id === mid);
+  if (!m) { err.textContent = 'Massoterapeuta não encontrada.'; return; }
+  const atuais = _parseExcecoes(m.excecoes);
+  if (atuais.some(e => e?.data === data && e?.inicio === inicio && e?.fim === fim)) {
+    err.textContent = 'Já existe exceção igual para essa massoterapeuta.'; return;
+  }
+  if (atuais.length >= 365) { err.textContent = 'Máximo de 365 exceções por massoterapeuta.'; return; }
+  const novas = [...atuais, { data, tipo, inicio, fim }];
+  const btn = document.getElementById('mgmt-exc-salvar');
+  btn.disabled = true;
+  try {
+    const res = await api(`/api/massagistas/${mid}`, { method: 'PUT', body: JSON.stringify({ nome: m.nome, ativo: m.ativo ? 1 : 0, excecoes: novas }) });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
+    _massagistasModal = [];
+    _closeMgmtExc();
+    loadEscala();
+  } finally { btn.disabled = false; }
 });
 
 window.openEditMassagista = (id, nome, ativo) => {
@@ -1366,12 +1401,6 @@ window.openEditMassagista = (id, nome, ativo) => {
   document.getElementById('mgmt-m-bilingue').checked = !!m?.bilingue;
   const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
   _renderDispGrid(disp);
-  let excs = [];
-  if (m?.excecoes) {
-    try { excs = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excs = []; }
-    if (!Array.isArray(excs)) excs = [];
-  }
-  _renderExcecoes(excs);
   _modalOpen = true;
   document.getElementById('mgmt-m-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
@@ -1397,9 +1426,7 @@ document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   try {
     const disponibilidade = _coletarDisp();
     if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const excecoes = _coletarExcecoes();
-    if (excecoes?.erro) { err.textContent = excecoes.erro; btn.disabled = false; return; }
-    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade, excecoes }) });
+    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
@@ -1455,6 +1482,7 @@ async function loadEscala() {
   }
   _massagistas = d.items || [];
   renderEscala(_massagistas);
+  renderExcecoesGlobal();
 }
 
 function renderEscala(massagistas) {
