@@ -3885,21 +3885,15 @@ document.getElementById('btn-open-relatorios').addEventListener('click',()=>show
 // btn-back-relatorio-mensal e funcoes loadRelatorioMensal/loadCruzamento
 // removidos — funcionalidade unificada no Historico de Clientes.
 document.getElementById('btn-open-qualidade')?.addEventListener('click', () => { showView('view-qualidade'); loadQualidade(); });
-document.getElementById('btn-back-qualidade')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-ql-atualizar')?.addEventListener('click', () => loadQualidade());
 
 // ── Abas Qualidade ─────────────────────────────────────────────────────────
+// Estado visual (cor, underline, peso) é responsabilidade do CSS via
+// .ql-tab.is-active. Aqui só fazemos toggle de classe + display dos panes.
 document.querySelectorAll('.ql-tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.ql-tab').forEach(b => {
-      b.classList.remove('is-active');
-      b.style.borderBottomColor = 'transparent';
-      b.style.color = 'var(--muted)';
-    });
+    document.querySelectorAll('.ql-tab').forEach(b => b.classList.remove('is-active'));
     btn.classList.add('is-active');
-    btn.style.borderBottomColor = 'var(--accent)';
-    btn.style.color = '';
-    btn.style.fontWeight = '600';
     const tab = btn.dataset.tab;
     document.getElementById('ql-tab-visao').style.display     = tab === 'visao'     ? '' : 'none';
     document.getElementById('ql-tab-pesquisas').style.display = tab === 'pesquisas' ? '' : 'none';
@@ -3989,9 +3983,9 @@ async function loadQualidadeVisao() {
     const atual = m.valor_atual != null ? m.valor_atual.toFixed(2) : '—';
     const alvo = m.alvo != null ? m.alvo.toFixed(1) : '—';
     let badge;
-    if (m.atingido === true)  badge = '<span style="color:var(--success);font-weight:600">✓ Atingida</span>';
-    else if (m.atingido === false) badge = '<span style="color:var(--danger);font-weight:600">✗ Abaixo</span>';
-    else                            badge = '<span style="color:var(--muted)">—</span>';
+    if (m.atingido === true)       badge = '<span class="ql-status-ok">✓ Atingida</span>';
+    else if (m.atingido === false) badge = '<span class="ql-status-fail">✗ Abaixo</span>';
+    else                           badge = '<span class="ql-status-na">—</span>';
     return `<tr>
       <td>${escHtml(rotulo)}</td>
       <td style="text-align:center;font-variant-numeric:tabular-nums">${atual}</td>
@@ -4016,13 +4010,13 @@ async function loadPesquisasAdmin() {
     const body = document.getElementById('qp-list');
     body.innerHTML = d.items.map(p => `
       <tr>
-        <td><code style="font-size:.78rem">${escHtml(p.slug)}</code></td>
+        <td><span class="ql-code-chip">${escHtml(p.slug)}</span></td>
         <td>${escHtml(p.titulo)}</td>
         <td><span class="badge">${escHtml(p.app_escopo)}</span></td>
         <td style="text-align:center">v${p.versao}</td>
-        <td style="text-align:center">${p.publicada_em ? '<span style="color:var(--success)">●</span>' : '<span style="color:var(--muted)">○</span>'}</td>
+        <td style="text-align:center">${p.publicada_em ? '<span class="ql-pub-dot">●</span>' : '<span class="ql-pub-dot off">○</span>'}</td>
         <td style="text-align:center">${p.ativo ? 'Sim' : 'Não'}</td>
-        <td style="text-align:right;white-space:nowrap">
+        <td class="ql-actions">
           <button class="btn btn-outline btn-sm" data-act="edit" data-id="${p.id}">Editar</button>
           <button class="btn btn-outline btn-sm" data-act="${p.publicada_em ? 'despub' : 'pub'}" data-id="${p.id}">${p.publicada_em ? 'Despublicar' : 'Publicar'}</button>
           <button class="btn btn-outline btn-sm" data-act="clone" data-id="${p.id}">Clonar</button>
@@ -4066,19 +4060,19 @@ async function openEditorPesquisa(id) {
   const editor = document.getElementById('qp-editor');
   editor.style.display = '';
   editor.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <h3 style="margin:0">Editar pesquisa: <code>${escHtml(p.slug)}</code> v${p.versao}</h3>
+    <div class="ql-editor-head">
+      <h3 class="ql-section-title">Editar pesquisa: <span class="ql-code-chip">${escHtml(p.slug)}</span> <span class="ql-secao-meta">v${p.versao}</span></h3>
       <button class="btn btn-outline btn-sm" id="qp-ed-close">Fechar</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem">
-      <label style="display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">Título
-        <input id="qp-ed-titulo" value="${escHtml(p.titulo || '')}" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">
+    <div class="ql-form-grid">
+      <label class="ql-field">Título
+        <input id="qp-ed-titulo" class="ql-input" value="${escHtml(p.titulo || '')}">
       </label>
-      <label style="display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">App escopo
-        <input id="qp-ed-app" value="${escHtml(p.app_escopo || 'spa')}" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">
+      <label class="ql-field">App escopo
+        <input id="qp-ed-app" class="ql-input" value="${escHtml(p.app_escopo || 'spa')}">
       </label>
-      <label style="grid-column:span 2;display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)">Descrição
-        <textarea id="qp-ed-desc" rows="2" style="padding:.5rem;border:1px solid var(--border);background:var(--bg)">${escHtml(p.descricao || '')}</textarea>
+      <label class="ql-field ql-field-wide">Descrição
+        <textarea id="qp-ed-desc" class="ql-input" rows="2">${escHtml(p.descricao || '')}</textarea>
       </label>
     </div>
     <div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
@@ -4112,23 +4106,25 @@ async function renderEditorSecoes(pesquisaId) {
     if (r) { const d = await r.json(); if (d.ok) cfg = d.pesquisa; }
   } catch {}
   const wrap = document.getElementById('qp-ed-secoes');
+  const formNovaSecao = `
+    <div class="ql-inline-add">
+      <input id="qp-novasecao-chave" class="ql-input" placeholder="chave da seção">
+      <input id="qp-novasecao-titulo" class="ql-input flex-grow" placeholder="título pt-BR">
+      <button class="btn btn-outline btn-sm" id="qp-novasecao-add">+ Seção</button>
+    </div>`;
   if (!cfg) {
     wrap.innerHTML = `
       <div class="empty">Esta pesquisa não está publicada ainda — publique-a para visualizar as seções e perguntas associadas.</div>
-      <div style="margin-top:.8rem;display:flex;gap:.5rem">
-        <input id="qp-novasecao-chave" placeholder="chave da seção" style="padding:.4rem;border:1px solid var(--border);background:var(--bg)">
-        <input id="qp-novasecao-titulo" placeholder="título pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);flex:1">
-        <button class="btn btn-outline btn-sm" id="qp-novasecao-add">+ Seção</button>
-      </div>
+      ${formNovaSecao}
     `;
   } else {
     wrap.innerHTML = `
-      <h4 style="margin:0 0 .6rem 0">Seções e perguntas</h4>
+      <h4 class="ql-section-title" style="margin:0 0 .6rem 0;font-size:1rem">Seções e perguntas</h4>
       ${cfg.secoes.map(s => `
-        <div style="border:1px solid var(--border);padding:.8rem;margin-bottom:.6rem;border-radius:6px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <div class="ql-secao-card">
+          <div class="ql-secao-head">
             <strong>${escHtml(s.titulo)}</strong>
-            <span style="color:var(--muted);font-size:.78rem">ordem ${s.ordem} · ${s.perguntas.length} pergunta(s)</span>
+            <span class="ql-secao-meta">ordem ${s.ordem} · ${s.perguntas.length} pergunta(s)</span>
           </div>
           ${s.perguntas.length ? `
             <table style="width:100%;font-size:.85rem">
@@ -4136,21 +4132,17 @@ async function renderEditorSecoes(pesquisaId) {
               <tbody>
                 ${s.perguntas.map(q => `
                   <tr>
-                    <td>${escHtml(q.rotulo)} <code style="color:var(--muted);font-size:.72rem">${escHtml(q.chave)}</code></td>
+                    <td>${escHtml(q.rotulo)} <span class="ql-code-chip">${escHtml(q.chave)}</span></td>
                     <td style="text-align:center">${escHtml(q.tipo)}</td>
-                    <td style="text-align:center">${q.obrigatoria ? '●' : '○'}</td>
+                    <td style="text-align:center">${q.obrigatoria ? '<span class="ql-pub-dot">●</span>' : '<span class="ql-pub-dot off">○</span>'}</td>
                   </tr>
                 `).join('')}
               </tbody>
             </table>
-          ` : '<div style="color:var(--muted);font-size:.85rem">Sem perguntas associadas.</div>'}
+          ` : '<div class="ql-meta-empty">Sem perguntas associadas.</div>'}
         </div>
       `).join('')}
-      <div style="margin-top:.8rem;display:flex;gap:.5rem">
-        <input id="qp-novasecao-chave" placeholder="chave da seção" style="padding:.4rem;border:1px solid var(--border);background:var(--bg)">
-        <input id="qp-novasecao-titulo" placeholder="título pt-BR" style="padding:.4rem;border:1px solid var(--border);background:var(--bg);flex:1">
-        <button class="btn btn-outline btn-sm" id="qp-novasecao-add">+ Seção</button>
-      </div>
+      ${formNovaSecao}
     `;
   }
   document.getElementById('qp-novasecao-add')?.addEventListener('click', async () => {
@@ -4171,16 +4163,16 @@ async function renderEditorMetas(pesquisaId, metas) {
   const mq = metas?.por_questionario || [];
   const mp = metas?.por_pergunta || [];
   wrap.innerHTML = `
-    <h4 style="margin:0 0 .6rem 0">Metas configuradas</h4>
+    <h4 class="ql-section-title" style="margin:0 0 .6rem 0;font-size:1rem">Metas configuradas</h4>
     <div style="font-size:.85rem">
       <strong>Por questionário:</strong>
-      ${mq.length ? '<ul style="margin:.3rem 0 .6rem 1rem">' + mq.map(m => `<li>${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span style="color:var(--muted)"> nenhuma</span>'}
+      ${mq.length ? '<ul class="ql-meta-list">' + mq.map(m => `<li>${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span class="ql-meta-empty"> nenhuma</span>'}
       <strong>Por pergunta:</strong>
-      ${mp.length ? '<ul style="margin:.3rem 0 .6rem 1rem">' + mp.map(m => `<li><code style="font-size:.78rem">${escHtml(m.chave)}</code> — ${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span style="color:var(--muted)"> nenhuma</span>'}
+      ${mp.length ? '<ul class="ql-meta-list">' + mp.map(m => `<li><span class="ql-code-chip">${escHtml(m.chave)}</span> — ${escHtml(m.tipo_meta)} ≥ ${m.valor_alvo}</li>`).join('') + '</ul>' : '<span class="ql-meta-empty"> nenhuma</span>'}
     </div>
-    <div style="margin-top:.8rem;display:flex;gap:.4rem;align-items:end;flex-wrap:wrap">
-      <label style="font-size:.78rem;color:var(--muted)">Meta de % recomenda
-        <input id="qp-meta-reco" type="number" min="0" max="100" step="1" placeholder="90" style="display:block;padding:.4rem;border:1px solid var(--border);background:var(--bg);width:90px">
+    <div class="ql-inline-add">
+      <label class="ql-field">Meta de % recomenda
+        <input id="qp-meta-reco" class="ql-input" type="number" min="0" max="100" step="1" placeholder="90" style="width:110px">
       </label>
       <button class="btn btn-outline btn-sm" id="qp-meta-reco-save">Salvar % recomenda</button>
     </div>
@@ -4223,10 +4215,10 @@ async function loadBiblioteca() {
       if (dp.ok) {
         document.getElementById('qb-perg-list').innerHTML = dp.items.map(p => `
           <tr>
-            <td><code style="font-size:.78rem">${escHtml(p.chave)}</code><div style="color:var(--muted);font-size:.72rem">${escHtml(p.rotulo || '')}</div></td>
+            <td><span class="ql-code-chip">${escHtml(p.chave)}</span><div class="ql-pergunta-sub">${escHtml(p.rotulo || '')}</div></td>
             <td>${escHtml(p.tipo)}</td>
             <td>${escHtml(p.escala_chave || '—')}</td>
-            <td style="text-align:center">${p.ativo ? '●' : '○'}</td>
+            <td style="text-align:center">${p.ativo ? '<span class="ql-pub-dot">●</span>' : '<span class="ql-pub-dot off">○</span>'}</td>
           </tr>
         `).join('');
       }
@@ -4236,7 +4228,7 @@ async function loadBiblioteca() {
       if (de.ok) {
         document.getElementById('qb-esc-list').innerHTML = de.items.map(e => `
           <tr>
-            <td><code style="font-size:.78rem">${escHtml(e.chave)}</code></td>
+            <td><span class="ql-code-chip">${escHtml(e.chave)}</span></td>
             <td>${escHtml(e.tipo)}</td>
             <td style="font-size:.78rem">${e.opcoes.map(o => escHtml(o.rotulo || o.chave)).join(' · ')}</td>
           </tr>
@@ -4365,7 +4357,6 @@ document.getElementById('btn-novo-usuario')?.addEventListener('click', () => {
 document.getElementById('btn-cancel-form-usuario').addEventListener('click', fecharFormUsuario);
 
 document.getElementById('btn-open-usuarios').addEventListener('click',()=>{ showView('view-usuarios'); loadUsuarios(); });
-document.getElementById('btn-back-usuarios').addEventListener('click',()=>showView('view-main'));
 
 async function loadUsuarios() {
   // Preenche card "você está logado como"
@@ -4476,7 +4467,6 @@ window.deletarUsuario = async (id, nome) => {
 };
 
 // btn-open-historico-clientes removido — sub-aba "Atendimentos" em Relatórios.
-document.getElementById('btn-back-historico-clientes')?.addEventListener('click',()=>showView('view-main'));
 document.getElementById('btn-hc-filtrar').addEventListener('click',()=>loadHistoricoClientes());
 document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   document.getElementById('hc-from').value='';
@@ -4839,8 +4829,6 @@ let _cliSelId = null;
 document.getElementById('btn-open-clientes')?.addEventListener('click', () => {
   showView('view-clientes'); initClienteView();
 });
-document.getElementById('btn-back-clientes')?.addEventListener('click', () => showView('view-main'));
-
 function initClienteView() {
   const inp = document.getElementById('cli-q');
   if (inp) {
@@ -4936,7 +4924,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
 
     <!-- abas -->
     <div class="cli-tabs" style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
-      <button class="cli-tab is-active" data-t="trat"  style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600;color:var(--text)">Tratamentos <span class="badge">${reservas.length}</span></button>
+      <button class="cli-tab is-active" data-t="trat"  style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid var(--gold);cursor:pointer;font-weight:600;color:var(--gold)">Tratamentos <span class="badge">${reservas.length}</span></button>
       <button class="cli-tab" data-t="anam" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Anamneses <span class="badge">${anamneses.length}</span></button>
       <button class="cli-tab" data-t="pesq" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Pesquisas <span class="badge">${pesquisas.length}</span></button>
       <button class="cli-tab" data-t="prod" style="padding:.5rem .9rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Produtos <span class="badge">${produtos.length}</span></button>
@@ -4951,7 +4939,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
     det.querySelectorAll('.cli-tab').forEach(t => {
       t.classList.remove('is-active'); t.style.borderBottomColor = 'transparent'; t.style.color = 'var(--muted)';
     });
-    b.classList.add('is-active'); b.style.borderBottomColor = 'var(--accent)'; b.style.color = 'var(--text)';
+    b.classList.add('is-active'); b.style.borderBottomColor = 'var(--gold)'; b.style.color = 'var(--gold)';
     const t = b.dataset.t;
     det.querySelectorAll('.cli-pane').forEach(p => p.style.display = 'none');
     document.getElementById('cli-pane-' + t).style.display = '';
@@ -5897,9 +5885,6 @@ let _audTotal = 0;
 document.getElementById('btn-open-auditoria')?.addEventListener('click', () => {
   showView('view-auditoria');
 });
-document.getElementById('btn-back-auditoria')?.addEventListener('click', () => {
-  showView('view-usuarios');
-});
 document.getElementById('btn-aud-reload')?.addEventListener('click', () => loadAuditoria());
 document.getElementById('btn-aud-filtrar')?.addEventListener('click', () => { _audPage = 0; loadAuditoria(); });
 document.getElementById('btn-aud-limpar')?.addEventListener('click', () => {
@@ -6050,7 +6035,6 @@ const _ANAMX_TIPO_LABEL = {
 };
 
 document.getElementById('btn-open-anamnese-editor')?.addEventListener('click', () => showView('view-anamnese-editor'));
-document.getElementById('btn-back-anamnese-editor')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-anam-reload')?.addEventListener('click', () => initAnamneseEditor());
 
 async function initAnamneseEditor() {
@@ -7742,7 +7726,6 @@ let _pesqPesquisaId = null;
 let _pesqEstrutura  = null;
 
 document.getElementById('btn-open-pesquisa-editor')?.addEventListener('click', () => showView('view-pesquisa-editor'));
-document.getElementById('btn-back-pesquisa-editor')?.addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-pesq-reload')?.addEventListener('click', () => initPesquisaEditor());
 
 async function initPesquisaEditor() {

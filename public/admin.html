@@ -3004,6 +3004,203 @@
     @media (max-width: 860px) { .hist-analysis-grid { grid-template-columns: 1fr; } }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       GESTÃO DA QUALIDADE
+       Tema duplo (light/dark) usando exclusivamente variáveis CSS já
+       existentes: --bg, --surface, --surface2, --border, --text, --muted,
+       --gold, --gold-dim, --success, --danger. Nenhuma cor hardcoded.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .ql-tabs {
+      display: flex;
+      gap: .25rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+    }
+    .ql-tab {
+      position: relative;
+      padding: .65rem 1.1rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted2);
+      font-family: var(--font);
+      font-size: .82rem;
+      font-weight: 500;
+      letter-spacing: .02em;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color .2s ease, border-color .2s ease, background-color .2s ease;
+    }
+    .ql-tab:hover { color: var(--text); background: var(--gold-dim); }
+    .ql-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--gold); }
+    .ql-tab.is-active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      font-weight: 600;
+    }
+
+    .ql-filters {
+      display: flex;
+      gap: .55rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .ql-filters label {
+      font-size: .74rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .ql-input {
+      padding: .42rem .6rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .85rem;
+      transition: border-color .2s ease, box-shadow .2s ease, background-color .3s ease;
+    }
+    .ql-input:hover { border-color: var(--muted); }
+    .ql-input:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+      background: var(--surface);
+    }
+    .ql-input::placeholder { color: var(--muted); opacity: .7; }
+
+    .ql-section-title {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 400;
+      letter-spacing: .02em;
+      color: var(--text);
+      margin: 0;
+    }
+    .ql-section-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .6rem;
+      gap: .75rem;
+    }
+    .ql-column-grid {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .ql-column { flex: 1; min-width: 360px; }
+
+    .ql-editor-panel {
+      margin-top: 1.5rem;
+      padding: 1.25rem 1.25rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    :root[data-theme="dark"] .ql-editor-panel {
+      box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 0 0 1px var(--border-soft);
+    }
+    .ql-editor-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .ql-editor-head .ql-section-title { font-size: 1.05rem; }
+
+    .ql-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .8rem;
+      margin-bottom: 1rem;
+    }
+    .ql-form-grid .ql-field-wide { grid-column: span 2; }
+    .ql-field {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      font-size: .74rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .ql-field > .ql-input,
+    .ql-field > textarea.ql-input { text-transform: none; letter-spacing: normal; color: var(--text); font-size: .88rem; }
+
+    .ql-inline-add {
+      margin-top: .85rem;
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .ql-inline-add .ql-input { flex: 0 1 auto; }
+    .ql-inline-add .ql-input.flex-grow { flex: 1 1 200px; }
+
+    .ql-secao-card {
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      padding: .85rem 1rem;
+      margin-bottom: .6rem;
+      border-radius: 6px;
+    }
+    .ql-secao-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .5rem;
+      gap: .75rem;
+    }
+    .ql-secao-meta { color: var(--muted); font-size: .76rem; }
+
+    .ql-code-chip {
+      display: inline-block;
+      padding: .08rem .4rem;
+      background: var(--gold-dim);
+      color: var(--gold-dark);
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: 0;
+    }
+    :root[data-theme="dark"] .ql-code-chip { color: var(--muted2); }
+
+    .ql-status-ok   { color: var(--success); font-weight: 600; }
+    .ql-status-fail { color: var(--danger);  font-weight: 600; }
+    .ql-status-na   { color: var(--muted); }
+
+    .ql-pub-dot      { color: var(--success); font-size: 1rem; line-height: 1; }
+    .ql-pub-dot.off  { color: var(--muted); opacity: .6; }
+
+    .ql-actions { text-align: right; white-space: nowrap; }
+    .ql-actions .btn + .btn { margin-left: .35rem; }
+
+    .ql-pergunta-sub {
+      color: var(--muted);
+      font-size: .72rem;
+      margin-top: .15rem;
+    }
+
+    .ql-meta-list {
+      margin: .3rem 0 .8rem 1rem;
+      padding: 0;
+      list-style: disc;
+      color: var(--text);
+    }
+    .ql-meta-list li { padding: .1rem 0; font-size: .85rem; }
+    .ql-meta-empty   { color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 720px) {
+      .ql-form-grid { grid-template-columns: 1fr; }
+      .ql-form-grid .ql-field-wide { grid-column: auto; }
+      .ql-tab { padding: .55rem .75rem; font-size: .78rem; }
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        ANIMATIONS
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     @keyframes fadeUp {
@@ -3466,7 +3663,6 @@
     <!-- ── VIEW: Gestão da Qualidade ── -->
     <div id="view-qualidade" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-qualidade">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Admin</span>
@@ -3477,20 +3673,20 @@
       </div>
 
       <!-- Abas -->
-      <div class="ql-tabs" style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)">
-        <button class="ql-tab is-active" data-tab="visao" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;font-weight:600">Visão Geral</button>
-        <button class="ql-tab" data-tab="pesquisas" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Pesquisas</button>
-        <button class="ql-tab" data-tab="biblioteca" style="padding:.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted)">Biblioteca</button>
+      <div class="ql-tabs" role="tablist">
+        <button class="ql-tab is-active" data-tab="visao" role="tab">Visão Geral</button>
+        <button class="ql-tab" data-tab="pesquisas" role="tab">Pesquisas</button>
+        <button class="ql-tab" data-tab="biblioteca" role="tab">Biblioteca</button>
       </div>
 
-      <!-- ABA: Visão Geral (existente) -->
+      <!-- ABA: Visão Geral -->
       <div id="ql-tab-visao" class="ql-tab-pane">
-        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
-          <label style="font-size:.78rem;color:var(--muted)">Pesquisa</label>
-          <select id="ql-slug" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)"></select>
-          <label style="font-size:.78rem;color:var(--muted)">Período</label>
-          <input type="date" id="ql-from" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-          <input type="date" id="ql-to" style="padding:.4rem;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+        <div class="ql-filters">
+          <label for="ql-slug">Pesquisa</label>
+          <select id="ql-slug" class="ql-input"></select>
+          <label for="ql-from">Período</label>
+          <input type="date" id="ql-from" class="ql-input">
+          <input type="date" id="ql-to" class="ql-input">
           <button class="btn btn-outline btn-sm" id="btn-ql-atualizar">Atualizar</button>
         </div>
         <div class="kpi-grid" style="margin-bottom:1.5rem">
@@ -3518,7 +3714,7 @@
         <div class="table-wrap">
           <div class="table-head">
             <h2>Metas por pergunta</h2>
-            <span id="ql-count"></span>
+            <span id="ql-count" class="ql-secao-meta"></span>
           </div>
           <table>
             <thead>
@@ -3537,7 +3733,7 @@
 
       <!-- ABA: Pesquisas -->
       <div id="ql-tab-pesquisas" class="ql-tab-pane" style="display:none">
-        <div style="display:flex;gap:.5rem;margin-bottom:1rem;align-items:center">
+        <div class="ql-filters">
           <button class="btn btn-primary btn-sm" id="btn-qp-nova">+ Nova pesquisa</button>
           <button class="btn btn-outline btn-sm" id="btn-qp-reload">Recarregar</button>
         </div>
@@ -3551,15 +3747,15 @@
             <tbody id="qp-list"></tbody>
           </table>
         </div>
-        <div id="qp-editor" style="display:none;margin-top:1.5rem;padding:1rem;border:1px solid var(--border);border-radius:6px"></div>
+        <div id="qp-editor" class="ql-editor-panel" style="display:none"></div>
       </div>
 
       <!-- ABA: Biblioteca -->
       <div id="ql-tab-biblioteca" class="ql-tab-pane" style="display:none">
-        <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
-          <div style="flex:1;min-width:360px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-              <h3 style="margin:0">Perguntas</h3>
+        <div class="ql-column-grid">
+          <div class="ql-column">
+            <div class="ql-section-bar">
+              <h3 class="ql-section-title">Perguntas</h3>
               <button class="btn btn-primary btn-sm" id="btn-qb-nova-perg">+ Nova pergunta</button>
             </div>
             <div class="table-wrap">
@@ -3569,9 +3765,9 @@
               </table>
             </div>
           </div>
-          <div style="flex:1;min-width:360px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-              <h3 style="margin:0">Escalas</h3>
+          <div class="ql-column">
+            <div class="ql-section-bar">
+              <h3 class="ql-section-title">Escalas</h3>
               <button class="btn btn-primary btn-sm" id="btn-qb-nova-esc">+ Nova escala</button>
             </div>
             <div class="table-wrap">
@@ -3588,7 +3784,6 @@
     <!-- ── VIEW: Clientes 360 ── -->
     <div id="view-clientes" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-clientes">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Spa</span>
@@ -3623,7 +3818,6 @@
     <!-- ── VIEW: Histórico de Clientes ── -->
     <div id="view-historico-clientes" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-historico-clientes">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Spa</span>
@@ -3781,7 +3975,6 @@
     <!-- ── VIEW: Editor da Pesquisa de Satisfação (espelho da anamnese) ── -->
     <div id="view-pesquisa-editor" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-pesquisa-editor">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Admin</span>
@@ -3811,7 +4004,6 @@
     <!-- ── VIEW: Histórico do Sistema (Auditoria) ── -->
     <div id="view-auditoria" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-auditoria">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Admin</span>
@@ -3889,7 +4081,6 @@
 
     <div id="view-usuarios" class="view-page" style="display:none">
       <div class="page-hero">
-        <button class="btn-back" id="btn-back-usuarios">← Voltar</button>
         <div>
           <div class="page-hero-eyebrow">
             <span class="page-num">Admin</span>
