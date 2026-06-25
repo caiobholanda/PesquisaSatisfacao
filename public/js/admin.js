@@ -1974,7 +1974,11 @@ async function carregarReceitaMassagista(id) {
 }
 
 // ── Histórico de Massagista ──
-window.showHistoricoMassagista = async (id, nome) => {
+// Function declaration (hoisted) — init() em :1106 chama esta função via
+// showApp()->restauração de _vst.view='view-historico' ANTES desta linha ser
+// alcançada na avaliação top-to-bottom. Function expression atribuída a window
+// causava ReferenceError no F5 com histId valido (auditoria 2026-06-25).
+async function showHistoricoMassagista(id, nome) {
   showView('view-historico');
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
   sessionStorage.setItem('_vst', JSON.stringify({ ...st, view: 'view-historico', histId: id, histNome: nome }));
@@ -2148,7 +2152,7 @@ window.showHistoricoMassagista = async (id, nome) => {
         </tbody>
       </table>
     </div>`;
-};
+}
 
 // ── Reservas de Salas ────────────────────────────────────────
 
