@@ -5,9 +5,22 @@
 //
 // Uso: node scripts/test-janela-anamnese.js
 
+// Replica _normalizarHHMM do backend pra cobrir os mesmos casos.
+function normalizarHHMM(s) {
+  if (typeof s !== 'string') return null;
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const h = String(+m[1]).padStart(2, '0');
+  const mi = m[2];
+  if (+h > 23 || +mi > 59) return null;
+  return `${h}:${mi}`;
+}
+
 function estaDentroDaJanela(data, hora_inicio, agora = Date.now()) {
   if (!data || !hora_inicio) return true; // sem data -> sem gate
-  const inicio = new Date(`${data}T${hora_inicio}:00-03:00`).getTime();
+  const hhmm = normalizarHHMM(hora_inicio);
+  if (!hhmm) return true; // fail-open intencional
+  const inicio = new Date(`${data}T${hhmm}:00-03:00`).getTime();
   if (!Number.isFinite(inicio)) return true;
   return agora <= inicio + 10 * 60 * 1000;
 }
@@ -28,12 +41,23 @@ const cenarios = [
   ['1h apos hora_inicio (fora)',           '2026-06-25', '13:00',  60, false],
   ['data sem hora_inicio',                 '2026-06-25', '',        0, true], // sem gate
   ['hora_inicio invalido',                 '2026-06-25', 'INVALID', 5, true], // graceful
+  // Dados sujos no banco — normalizacao
+  ['hora_inicio legado "9:30" (sem pad)',  '2026-06-25', '9:30',   -5, true],  // antes do limite
+  ['hora_inicio legado "9:30" expirado',   '2026-06-25', '9:30',   15, false], // depois +10min
+  ['hora_inicio "13:00:00" (HH:MM:SS)',    '2026-06-25', '13:00:00', 5, true], // normaliza
+  ['hora_inicio "13:00:00" expirado',      '2026-06-25', '13:00:00', 15, false],
+  ['hora invalido "25:00"',                '2026-06-25', '25:00',   0, true], // null -> fail-open
 ];
 
 let ok = 0, fail = 0;
 const linhas = [];
 for (const [desc, data, hora, offset, esperado] of cenarios) {
-  const inicioISO = `${data}T${hora || '00:00'}:00-03:00`;
+  // Normaliza pra construir o "agora" — se nao normalizar, o teste com
+  // "9:30" ou "13:00:00" tem Invalid Date no helper e a comparacao fica
+  // sem sentido. Quando o input e' invalido pra normalizacao (ex: "25:00"
+  // ou "INVALID"), usa-se a data sem offset como referencia.
+  const hhmm = normalizarHHMM(hora) || '00:00';
+  const inicioISO = `${data}T${hhmm}:00-03:00`;
   const agora = agoraOffset(inicioISO, offset);
   const got = estaDentroDaJanela(data, hora, agora);
   const pass = got === esperado;

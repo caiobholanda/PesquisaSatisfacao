@@ -736,11 +736,35 @@ function _estadoBtnFicha(r) {
   // — modo-temp manteve o reenvio livre. A trava real de uso unico do CLIENTE
   // que preenche o link e' no backend (gate em reservas.documento_perfil_id);
   // aqui no admin a unica regra ativa e' a janela de tempo.
+  //
+  // TZ: usa -03:00 fixo (Fortaleza) pra bater EXATAMENTE com o gate backend
+  // em src/routes/reservas.js (sem isso, divergencia se admin estiver em
+  // outro fuso). slice(0,5) defende contra dados sujos no banco (HH:MM:SS).
   if (!r || !r.data || !r.hora_inicio) return 'ok';
-  const inicio = new Date(`${r.data}T${r.hora_inicio}:00`).getTime();
+  // Normaliza "9:30" -> "09:30" e "13:00:00" -> "13:00". Bate com a logica
+  // do backend (_normalizarHHMM em src/routes/reservas.js).
+  const raw = String(r.hora_inicio);
+  const m = raw.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return 'ok';
+  const h = String(+m[1]).padStart(2, '0');
+  if (+h > 23 || +m[2] > 59) return 'ok';
+  const inicio = new Date(`${r.data}T${h}:${m[2]}:00-03:00`).getTime();
   if (!Number.isFinite(inicio)) return 'ok';
   if (Date.now() > inicio + 10 * 60 * 1000) return 'fora_prazo';
   return 'ok';
+}
+
+// Combina estado da anamnese (respondida/enviada/expirada/nao_enviada) com a
+// janela de tempo. Prioridade: respondida > enviada > fora_prazo > expirada >
+// nao_enviada. Razao: se ja foi respondida ou enviada, NAO interessa o relogio
+// — admin sempre acessa anamnese antiga / nao reenvia em cima do token vivo.
+// So' bloqueia "fora_prazo" quando nao_enviada (incluindo expirada — 48h
+// permite reenvio segundo o modo-temp, mas a janela de 10min nao).
+function _estadoFinalBtnFicha(r, pessoa = 1) {
+  const estAna = _estadoAnamnese(r, pessoa);
+  if (estAna === 'respondida' || estAna === 'enviada') return estAna;
+  if (_estadoBtnFicha(r) === 'fora_prazo') return 'fora_prazo';
+  return estAna;
 }
 
 // Estado real da anamnese por pessoa, derivado dos campos do backend.
@@ -969,16 +993,21 @@ function abrirAnamneseCasalPopup() {
   ov.style.zIndex = '4500';
   const linha = (pessoa) => {
     const nome = pessoa === 2 ? r.cliente2 : r.cliente;
-    const estado = _estadoAnamnese(r, pessoa);
+    // _estadoFinalBtnFicha combina anamnese + janela de tempo (10min apos
+    // hora_inicio). Casal compartilha a janela porque tem uma sessao so'.
+    const estado = _estadoFinalBtnFicha(r, pessoa);
     let chipCls = 'none', chipTxt = 'Não enviada';
     if (estado === 'respondida') { chipCls = 'ok';   chipTxt = 'Preenchida'; }
     else if (estado === 'enviada')  { chipCls = 'pend'; chipTxt = 'Aguardando preenchimento'; }
     else if (estado === 'expirada') { chipCls = 'exp';  chipTxt = 'Token expirado'; }
+    else if (estado === 'fora_prazo') { chipCls = 'exp'; chipTxt = 'Tempo expirado'; }
     let btn;
     if (estado === 'respondida') {
       btn = `<button class="btn btn-outline btn-sm" data-anam-cas-ver="${pessoa}">Ver anamnese</button>`;
     } else if (estado === 'enviada') {
       btn = `<button class="btn btn-outline btn-sm" disabled>Anamnese enviada</button>`;
+    } else if (estado === 'fora_prazo') {
+      btn = `<button class="btn btn-outline btn-sm" disabled>Tempo para enviar anamnese expirado</button>`;
     } else {
       btn = `<button class="btn btn-gold btn-sm" data-anam-cas-enviar="${pessoa}">Enviar anamnese</button>`;
     }
@@ -2961,7 +2990,7 @@ async function calVerDetalhes(id) {
         delete btnFicha.dataset.pessoa;
         btnFicha.onclick = null;
       } else {
-        _aplicarEstadoBtnFicha(btnFicha, _estadoAnamnese(r, 1));
+        _aplicarEstadoBtnFicha(btnFicha, _estadoFinalBtnFicha(r, 1));
       }
     }
   }
@@ -3161,7 +3190,7 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
 
     const btnFicha = document.getElementById('resdet-ficha');
     if (btnFicha && !_resDetAtual.cliente2) {
-      _aplicarEstadoBtnFicha(btnFicha, _estadoAnamnese(_resDetAtual, 1));
+      _aplicarEstadoBtnFicha(btnFicha, _estadoFinalBtnFicha(_resDetAtual, 1));
     }
 
     if (d.casal) {

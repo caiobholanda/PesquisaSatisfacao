@@ -61,9 +61,27 @@ const SPA_OPEN_MIN = 8 * 60;   // 08:00
 const SPA_CLOSE_MIN = 22 * 60; // 22:00
 function _hhmmToMin(s) {
   if (typeof s !== 'string') return NaN;
-  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  // Hora deve ter 2 digitos (\d{2}) — evita aceitar "9:30" que e' valido
+  // semanticamente mas quebra `new Date('YYYY-MM-DDTH:MM:00-03:00')` (ISO
+  // exige HH com 2 digitos), o que causaria bypass acidental do gate de
+  // janela de envio em src/routes/reservas.js POST /:id/gerar-ficha.
+  const m = s.match(/^(\d{2}):(\d{2})$/);
   if (!m) return NaN;
   return (+m[1]) * 60 + (+m[2]);
+}
+
+// Normaliza hora_inicio para "HH:MM" estrito antes de usar em new Date().
+// Cobre dados legados que possam ter "9:30" (H:MM) ou "13:00:00" (HH:MM:SS).
+// Retorna null se nao conseguir normalizar (gate deixa passar — fail-open
+// e' intencional pra nao quebrar geracao em registros antigos).
+function _normalizarHHMM(s) {
+  if (typeof s !== 'string') return null;
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const h = String(+m[1]).padStart(2, '0');
+  const mi = m[2];
+  if (+h > 23 || +mi > 59) return null;
+  return `${h}:${mi}`;
 }
 
 router.post('/', ...podeEscreverSpa, (req, res) => {
@@ -314,13 +332,18 @@ router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   //
   // Timezone: Fortaleza/CE = UTC-3 fixo (Ceara nao adota horario de verao).
   // Hardcoded -03:00 evita depender do TZ do container Fly.io.
+  // slice(0,5) defende contra hora_inicio sujo no banco (ex: 'HH:MM:SS' que
+  // quebraria o parse ISO -> NaN -> bypass acidental).
   if (reserva.data && reserva.hora_inicio) {
-    const inicioMs = new Date(`${reserva.data}T${reserva.hora_inicio}:00-03:00`).getTime();
-    if (Number.isFinite(inicioMs)) {
-      const limiteMs = inicioMs + 10 * 60 * 1000;
-      if (Date.now() > limiteMs) {
-        return res.status(409).json({ ok: false, error: 'tempo_expirado',
-          message: 'Tempo para enviar anamnese expirado' });
+    const hhmm = _normalizarHHMM(reserva.hora_inicio);
+    if (hhmm) {
+      const inicioMs = new Date(`${reserva.data}T${hhmm}:00-03:00`).getTime();
+      if (Number.isFinite(inicioMs)) {
+        const limiteMs = inicioMs + 10 * 60 * 1000;
+        if (Date.now() > limiteMs) {
+          return res.status(409).json({ ok: false, error: 'tempo_expirado',
+            message: 'Tempo para enviar anamnese expirado' });
+        }
       }
     }
   }
