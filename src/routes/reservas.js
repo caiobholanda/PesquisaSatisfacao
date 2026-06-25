@@ -306,6 +306,25 @@ router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
 router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
+
+  // Janela de envio: anamnese so' pode ser enviada ate' 10min APOS o
+  // hora_inicio da sessao. Apos isso, botao no admin fica desabilitado
+  // ("Tempo para enviar anamnese expirado"). Backend e' a fonte da verdade
+  // — bater na API direto apos a janela tambem e' recusado.
+  //
+  // Timezone: Fortaleza/CE = UTC-3 fixo (Ceara nao adota horario de verao).
+  // Hardcoded -03:00 evita depender do TZ do container Fly.io.
+  if (reserva.data && reserva.hora_inicio) {
+    const inicioMs = new Date(`${reserva.data}T${reserva.hora_inicio}:00-03:00`).getTime();
+    if (Number.isFinite(inicioMs)) {
+      const limiteMs = inicioMs + 10 * 60 * 1000;
+      if (Date.now() > limiteMs) {
+        return res.status(409).json({ ok: false, error: 'tempo_expirado',
+          message: 'Tempo para enviar anamnese expirado' });
+      }
+    }
+  }
+
   const origin = process.env.NODE_ENV === 'production'
     ? `https://${req.get('host')}`
     : `${req.protocol}://${req.get('host')}`;

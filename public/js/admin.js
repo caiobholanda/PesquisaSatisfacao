@@ -731,15 +731,16 @@ const _pesquisasLiberadas = new Set();
 const _fichasEnviadas = new Set();
 
 function _estadoBtnFicha(r) {
-  // ⚠️ MODO TEMPORARIO: anamnese enviavel a qualquer hora e quantas vezes
-  // quiser. Reverter quando user disser "volte o tempo como era antes".
-  return 'ok';
-  /* VERSAO ORIGINAL:
-  if (_fichasEnviadas.has(r.id)) return 'enviada';
+  // Janela de envio: anamnese pode ser enviada ate' 10min APOS o hora_inicio.
+  // O estado 'enviada' (rastreado em _fichasEnviadas) NAO bloqueia mais reenvio
+  // — modo-temp manteve o reenvio livre. A trava real de uso unico do CLIENTE
+  // que preenche o link e' no backend (gate em reservas.documento_perfil_id);
+  // aqui no admin a unica regra ativa e' a janela de tempo.
+  if (!r || !r.data || !r.hora_inicio) return 'ok';
   const inicio = new Date(`${r.data}T${r.hora_inicio}:00`).getTime();
-  if (Date.now() > inicio) return 'fora_prazo';
+  if (!Number.isFinite(inicio)) return 'ok';
+  if (Date.now() > inicio + 10 * 60 * 1000) return 'fora_prazo';
   return 'ok';
-  */
 }
 
 // Estado real da anamnese por pessoa, derivado dos campos do backend.
@@ -777,7 +778,7 @@ function _aplicarEstadoBtnFicha(btn, estado) {
     delete btn.dataset.pessoa;
   } else if (estado === 'fora_prazo') {
     btn.disabled = true;
-    btn.textContent = 'Prazo encerrado';
+    btn.textContent = 'Tempo para enviar anamnese expirado';
     btn.dataset.action = 'enviar-pre-massagem';
     delete btn.dataset.pessoa;
   } else {
@@ -3118,7 +3119,17 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     const res = await api(`/api/reservas/${r.id}/gerar-ficha`, { method: 'POST', body });
     if (!res) return;
     const d = await res.json();
-    if (!d.ok) { alert('Erro ao gerar ficha: ' + (d.error || '')); return; }
+    if (!d.ok) {
+      // Janela de envio expirada: backend recusa com 409. Mostra texto
+      // amigavel exato e re-renderiza o detalhe para o botao ficar travado.
+      if (d.error === 'tempo_expirado') {
+        alert(d.message || 'Tempo para enviar anamnese expirado');
+        _closeLangOverlay();
+        return;
+      }
+      alert('Erro ao gerar ficha: ' + (d.error || ''));
+      return;
+    }
 
     const baseMsg = (nome, url) =>
       `Olá, *${nome || 'hóspede'}*! 😊\n\nPara prepararmos sua experiência no *Gran SPA by L'Occitane*, pedimos que preencha a ficha de saúde antes do seu tratamento:\n\n👉 ${url}\n\n*Hotel Gran Marquise* 🌿`;
