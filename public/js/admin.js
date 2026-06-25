@@ -1089,6 +1089,16 @@ function setupDelegation() {
   });
 }
 
+// Estado de massagistas: declarado ANTES do IIFE init() porque
+// showApp()->showView('view-massagistas')->renderMassagistas() roda
+// sincrono e le _massagistas. Como sessionStorage._vst.view pode
+// restaurar a view de massagistas em F5, declarar como let abaixo do
+// IIFE colocava a leitura na Temporal Dead Zone -> ReferenceError.
+let _tabMassagistas = 'ativas';
+let _massagistas = [];
+let _editMId = null;
+let _editTId = null;
+
 // ── Init ──
 (function init() {
   setupDelegation();
@@ -1117,10 +1127,8 @@ document.getElementById('btn-header-home')?.addEventListener('click', () => { sh
 // scripts em /scripts ou as telas de cadastro convencionais.
 
 // ── Massagistas ──
-let _tabMassagistas = 'ativas';
-let _massagistas = [];
-let _editMId = null;
-let _editTId = null;
+// Estado (_tabMassagistas, _massagistas, _editMId, _editTId) declarado
+// no topo do arquivo para evitar TDZ via showApp()->showView() sincrono.
 
 document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(btn => {
   btn.addEventListener('click', () => {
