@@ -671,6 +671,7 @@ function showView(id) {
   // ativa. Carrega os dados da view que acabou de ser ativada também.
   renderTabsRelatorios(id);
   if (id === 'view-historico-clientes') loadHistoricoClientes();
+  if (id === 'view-escala') loadEscala();
   if (id === 'view-anamnese-editor') initAnamneseEditor();
   if (id === 'view-pesquisa-editor') initPesquisaEditor();
 }
@@ -1074,7 +1075,7 @@ document.getElementById('btn-open-massagistas').addEventListener('click', () => 
 document.getElementById('btn-back-massagistas').addEventListener('click', () => showView('view-main'));
 document.getElementById('btn-back-historico').addEventListener('click', () => showView('view-massagistas'));
 
-document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); loadEscala(); });
+document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); });
 document.getElementById('btn-back-escala').addEventListener('click', () => showView('view-main'));
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
