@@ -1099,6 +1099,10 @@ function setupDelegation() {
 // IIFE colocava a leitura na Temporal Dead Zone -> ReferenceError.
 let _tabMassagistas = 'ativas';
 let _massagistas = [];
+// Distingue "ainda não tentei carregar" (mostra Carregando…) de
+// "carreguei e veio vazio" (mostra Nenhuma…). Evita mensagem enganosa
+// no boot/F5 enquanto a API ainda não respondeu.
+let _massagistasLoaded = false;
 let _editMId = null;
 let _editTId = null;
 
@@ -1115,7 +1119,7 @@ let _editTId = null;
 })();
 
 document.getElementById('btn-open-massagistas').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
-document.getElementById('btn-back-historico').addEventListener('click', () => showView('view-massagistas'));
+document.getElementById('btn-back-historico').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 
 document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); });
 document.getElementById('btn-back-escala').addEventListener('click', () => showView('view-main'));
@@ -1147,13 +1151,21 @@ async function loadMassagistas() {
   let res, d;
   try {
     res = await api('/api/massagistas');
-    if (!res) return;
+    if (!res) {
+      // 401/403 — api() já tratou (logout/toast). Marca como tentado pra
+      // sair do "Carregando…" e mostrar empty state coerente.
+      _massagistasLoaded = true;
+      renderMassagistas();
+      return;
+    }
     d = await res.json();
   } catch {
     document.getElementById('list-massagistas').innerHTML = '<div class="mgmt-empty">Erro ao carregar profissionais.</div>';
+    _massagistasLoaded = true;
     return;
   }
   _massagistas = d.items || [];
+  _massagistasLoaded = true;
   renderMassagistas();
   if (document.getElementById('view-escala')?.style.display !== 'none') renderEscala(_massagistas);
 }
@@ -1161,6 +1173,13 @@ async function loadMassagistas() {
 function renderMassagistas() {
   const el = document.getElementById('list-massagistas');
   const busca = (document.getElementById('search-massagistas').value || '').toLowerCase().trim();
+
+  // Antes da primeira carga concluir, evita exibir "Nenhuma…" (enganoso) —
+  // mostra Carregando… e dispara a carga caso ainda não tenha sido feita.
+  if (!_massagistasLoaded && _massagistas.length === 0) {
+    el.innerHTML = '<div class="mgmt-empty">Carregando…</div>';
+    return;
+  }
 
   const ativas = _massagistas.filter(m => m.ativo);
   const inativas = _massagistas.filter(m => !m.ativo);
@@ -1522,6 +1541,7 @@ async function loadEscala() {
     return;
   }
   _massagistas = d.items || [];
+  _massagistasLoaded = true;
   renderEscala(_massagistas);
   renderExcecoesGlobal();
 }
