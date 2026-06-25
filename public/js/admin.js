@@ -1810,7 +1810,9 @@ function renderReceitaSection(d) {
             <div class="receita-detail-head">Detalhe por terapia · ${MESES_NOME[mes - 1]}/${ano}</div>
             <table>
               <tbody>
-                ${detalhe || '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Sem terapias registradas</td></tr>'}
+                ${detalhe || (m.atendimentos > 0
+                  ? `<tr><td colspan="3" style="text-align:center;color:var(--warn,#C49A2D)"><span style="cursor:help" title="A reserva foi cadastrada sem tipo de massagem — agregação não consegue agrupar por terapia">⚠️</span> ${m.atendimentos} atendimento(s) sem tipo de massagem cadastrado na reserva</td></tr>`
+                  : '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Sem terapias registradas</td></tr>')}
               </tbody>
             </table>
           </div>
