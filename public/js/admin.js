@@ -1179,7 +1179,8 @@ function renderMassagistas() {
   }
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => {
     const tot = m.total_avaliacoes || 0;
-    const pctRec = tot > 0 ? Math.round((m.rec_sim || 0) / tot * 100) : null;
+    const respondentes = (m.rec_sim || 0) + (m.rec_nao || 0);
+    const pctRec = respondentes > 0 ? Math.round((m.rec_sim || 0) / respondentes * 100) : null;
     const statHtml = tot > 0
       ? `<span class="mgmt-item-stat">${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
       : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
@@ -2014,7 +2015,9 @@ async function showHistoricoMassagista(id, nome) {
   const avgs = items.map(r => avgRowMass(r, ehBilingue)).filter(v => v !== null).map(Number);
   const mediaGeral = avgs.length ? (avgs.reduce((a, b) => a + b, 0) / avgs.length).toFixed(2) : null;
   const recSim = items.filter(r => r.recomenda === 'sim').length;
-  const pctRec = total > 0 ? (recSim / total * 100).toFixed(0) : null;
+  const recNao = items.filter(r => r.recomenda === 'nao').length;
+  const respondentes = recSim + recNao;
+  const pctRec = respondentes > 0 ? (recSim / respondentes * 100).toFixed(0) : null;
   const naoPortugues = items.filter(r => !ehIdiomaPortugues(r.idioma_detectado)).length;
 
   document.getElementById('hist-kpi-row').innerHTML = `

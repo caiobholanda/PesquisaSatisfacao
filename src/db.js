@@ -696,7 +696,9 @@ export function statsFeedback({ from, to } = {}) {
   const mediaGeral = todasNotas.length ? +(todasNotas.reduce((a, b) => a + b, 0) / todasNotas.length).toFixed(2) : null;
 
   const recSim = recomenda.find(r => r.recomenda === 'sim')?.t || 0;
-  const pctRecomenda = total > 0 ? +(recSim / total * 100).toFixed(1) : 0;
+  const recNao = recomenda.find(r => r.recomenda === 'nao')?.t || 0;
+  const respondentesRec = recSim + recNao;
+  const pctRecomenda = respondentesRec > 0 ? +(recSim / respondentesRec * 100).toFixed(1) : 0;
 
   const distribuicoes = {
     servicos_expectativa: distNotas(items, 'servicos_expectativa'),
@@ -746,8 +748,15 @@ function seedMassoterapeutasGranSpa() {
 }
 
 // ── Massagistas ──
+// Whitelist explícita: pin_hash NUNCA volta dessa função (auditoria 2026-06-25).
+// Quem precisa do hash pra autenticar (login da terapeuta) usa buscarMassagistaPorNome.
 export function listarMassagistas() {
-  return getDb().prepare('SELECT * FROM massagistas ORDER BY nome ASC').all();
+  return getDb().prepare(`
+    SELECT id, nome, ativo, created_at, matricula, especialidade_original,
+           funcao, vinculo, bilingue, disponibilidade, excecoes
+    FROM massagistas
+    ORDER BY nome ASC
+  `).all();
 }
 export function buscarMassagistaById(id) {
   return getDb().prepare('SELECT * FROM massagistas WHERE id=?').get(id) || null;
@@ -759,7 +768,8 @@ export function listarMassagistasComStats() {
       m.id, m.nome, m.ativo, m.created_at,
       m.matricula, m.especialidade_original, m.funcao, m.vinculo, m.bilingue, m.disponibilidade, m.excecoes,
       COUNT(f.id) AS total_avaliacoes,
-      SUM(CASE WHEN f.recomenda = 'sim' THEN 1 ELSE 0 END) AS rec_sim
+      SUM(CASE WHEN f.recomenda = 'sim' THEN 1 ELSE 0 END) AS rec_sim,
+      SUM(CASE WHEN f.recomenda = 'nao' THEN 1 ELSE 0 END) AS rec_nao
     FROM massagistas m
     LEFT JOIN feedback f ON LOWER(f.nome_massoterapeuta) = LOWER(m.nome)
     GROUP BY m.id
@@ -1246,9 +1256,19 @@ export function deletarTipoMassagem(id) {
   return getDb().prepare('DELETE FROM tipos_massagem WHERE id=?').run(id).changes;
 }
 
+// Whitelist explícita — evita expor PII (email, telefone, ip, user_agent)
+// ao front. Drawer de detalhe usa endpoint separado (GET /api/feedback/item/:id)
+// que faz seu próprio controle. Auditoria 2026-06-25.
 export function historicoMassagista(nome) {
   return getDb()
-    .prepare(`SELECT * FROM feedback WHERE LOWER(nome_massoterapeuta) = LOWER(?) ORDER BY submitted_at DESC`)
+    .prepare(`
+      SELECT id, nome, recomenda, submitted_at, tratamento_realizado, idioma_detectado,
+             servicos_expectativa, servicos_explicacao, servicos_atitude, servicos_tecnica, servicos_comentario,
+             instalacoes_conforto, instalacoes_organizacao, instalacoes_conveniencia, instalacoes_comentario
+      FROM feedback
+      WHERE LOWER(nome_massoterapeuta) = LOWER(?)
+      ORDER BY submitted_at DESC
+    `)
     .all(nome);
 }
 

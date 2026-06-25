@@ -134,8 +134,10 @@ router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
 router.get('/massagistas/:id/historico', (req, res) => {
   const m = listarMassagistas().find(m => m.id === parseInt(req.params.id));
   if (!m) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  // Nunca expor pin_hash ao front (auditoria 2026-06-25).
+  const { pin_hash, ...massagistaSafe } = m;
   const items = historicoMassagista(m.nome);
-  res.json({ ok: true, massagista: m, items });
+  res.json({ ok: true, massagista: massagistaSafe, items });
 });
 
 // Receita & comissao por mes. Fonte: reservas do sistema (data <= hoje) +
