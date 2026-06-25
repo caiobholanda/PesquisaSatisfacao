@@ -173,7 +173,10 @@ function showApp() {
   showView(view);
   if (view === 'view-massagistas') { loadMassagistas(); }
   else if (view === 'view-tipos') { loadTipos(); }
-  else if (view === 'view-historico' && st.histId) { showHistoricoMassagista(st.histId, st.histNome); }
+  else if (view === 'view-historico') {
+    if (st.histId) showHistoricoMassagista(st.histId, st.histNome);
+    else { showView('view-massagistas'); loadMassagistas(); }
+  }
   else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
