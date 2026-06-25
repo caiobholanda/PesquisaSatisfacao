@@ -1729,9 +1729,11 @@ function renderReceitaSection(d) {
           <span class="num">02</span>
           <h3>Receita & Comissão</h3>
           <span class="ano-pill">${ano}</span>
+          <button class="btn btn-outline btn-sm" id="btn-comissao-regras" style="margin-left:auto">⚙ Regras</button>
         </div>
-        <div class="receita-empty">Sem lançamentos de receita para esta profissional em ${ano}.</div>
+        <div class="receita-empty">Sem atendimentos registrados para esta profissional em ${ano}.</div>
       </section>`;
+    el.querySelector('#btn-comissao-regras')?.addEventListener('click', abrirModalRegrasComissao);
     return;
   }
 
@@ -1767,22 +1769,10 @@ function renderReceitaSection(d) {
     if (!m) {
       rows.push(`<tr class="empty-month">
         <td class="mes">${MESES_NOME[mes - 1]}</td>
-        <td class="num">—</td><td class="num">—</td><td>—</td><td>—</td><td>—</td><td class="num">—</td><td></td>
+        <td class="num">—</td><td class="num">—</td><td>—</td><td>—</td><td class="num">—</td><td></td>
       </tr>`);
       continue;
     }
-    const dist = m.distribuicao;
-    const distTotal = (dist.NORMAL||0) + (dist.P10||0) + (dist.P20||0) + (dist.P30||0) + (dist.P50||0);
-    const seg = (n) => distTotal ? ((n / distTotal) * 100).toFixed(2) : 0;
-    const distBar = distTotal ? `
-      <div class="faixa-bar" title="Normal ${dist.NORMAL} / P10 ${dist.P10} / P20 ${dist.P20} / P30 ${dist.P30} / P50 ${dist.P50}">
-        ${dist.NORMAL ? `<span class="fx-NORMAL" style="width:${seg(dist.NORMAL)}%"></span>` : ''}
-        ${dist.P10    ? `<span class="fx-P10"    style="width:${seg(dist.P10)}%"></span>`    : ''}
-        ${dist.P20    ? `<span class="fx-P20"    style="width:${seg(dist.P20)}%"></span>`    : ''}
-        ${dist.P30    ? `<span class="fx-P30"    style="width:${seg(dist.P30)}%"></span>`    : ''}
-        ${dist.P50    ? `<span class="fx-P50"    style="width:${seg(dist.P50)}%"></span>`    : ''}
-      </div>` : '—';
-
     const NOTA_MAX_LOCAL = 9;
     const notaCell = m.nota_media != null
       ? `<span class="receita-nota">${Math.round((m.nota_media / NOTA_MAX_LOCAL) * 100)}%</span>`
@@ -1800,14 +1790,13 @@ function renderReceitaSection(d) {
         <td class="mes">${MESES_NOME[mes - 1]}</td>
         <td class="num">${m.atendimentos}</td>
         <td class="num">${fmtBRL(m.receita)}</td>
-        <td>${distBar}</td>
         <td>${notaCell}</td>
         <td>${bonusCell}</td>
         <td class="num comissao">${fmtBRL(m.comissao)}</td>
         <td class="num"><span class="receita-expand-icon">›</span></td>
       </tr>
       <tr class="receita-detail-row" data-detail="${mes}" style="display:none">
-        <td colspan="8" style="padding:0">
+        <td colspan="7" style="padding:0">
           <div class="receita-detail">
             <div class="receita-detail-head">Detalhe por terapia · ${MESES_NOME[mes - 1]}/${ano}</div>
             <table>
@@ -1828,7 +1817,6 @@ function renderReceitaSection(d) {
             <th>Mês</th>
             <th class="num">Atend.</th>
             <th class="num">Receita</th>
-            <th>Faixas de desconto</th>
             <th>Nota</th>
             <th>Bônus</th>
             <th class="num">Comissão</th>
@@ -1845,7 +1833,7 @@ function renderReceitaSection(d) {
     <div class="receita-foot">
       <span class="pill">Base <strong>${((regras.base_rate || 0) * 100).toFixed(0)}%</strong> sobre receita</span>
       ${tiers}
-      <span style="margin-left:auto;color:var(--muted);font-style:italic">Fonte: planilha SPA 2026 · faixas de desconto 0/10/20/30/50%</span>
+      <span style="margin-left:auto;color:var(--muted);font-style:italic">Fonte: reservas do sistema (data ≤ hoje)</span>
     </div>`;
 
   el.innerHTML = `
@@ -1854,11 +1842,14 @@ function renderReceitaSection(d) {
         <span class="num">02</span>
         <h3>Receita & Comissão</h3>
         <span class="ano-pill">${ano}</span>
+        <button class="btn btn-outline btn-sm" id="btn-comissao-regras" style="margin-left:auto">⚙ Regras</button>
       </div>
       ${cards}
       ${tabela}
       ${foot}
     </section>`;
+
+  el.querySelector('#btn-comissao-regras')?.addEventListener('click', abrirModalRegrasComissao);
 
   // Expand/collapse linhas
   el.querySelectorAll('tr.mes-row').forEach(tr => {
@@ -1870,6 +1861,99 @@ function renderReceitaSection(d) {
       det.style.display = opened ? 'none' : '';
       tr.classList.toggle('expanded', !opened);
     });
+  });
+}
+
+// ── Modal: editar Regras de Comissão (% base + tiers) ──
+async function abrirModalRegrasComissao() {
+  let cfg;
+  try {
+    const r = await api('/api/comissao/regras');
+    if (!r) return;
+    cfg = await r.json();
+    if (!cfg.ok) throw new Error(cfg.error || 'erro');
+  } catch (e) {
+    alert('Não foi possível carregar as regras: ' + (e?.message || e));
+    return;
+  }
+  let tiers = Array.isArray(cfg.tiers) ? [...cfg.tiers] : [];
+  let baseRate = Number(cfg.base_rate) || 0;
+
+  const ov = document.createElement('div');
+  ov.className = 'res-modal-overlay show';
+  ov.innerHTML = `
+    <div class="res-modal" style="max-width:560px">
+      <div class="res-modal-hd">
+        <div class="res-modal-title">⚙ Regras de Comissão</div>
+        <button class="res-modal-x" type="button" data-close>✕</button>
+      </div>
+      <div class="res-modal-body">
+        <div class="res-fg" style="margin-bottom:1rem">
+          <label>Comissão base sobre receita (%)</label>
+          <input type="number" id="cfg-base" min="0" max="100" step="0.5" value="${(baseRate*100).toFixed(2)}" style="width:140px">
+          <small style="color:var(--muted);display:block;margin-top:.25rem">Aplicada sobre a receita mensal antes do bônus.</small>
+        </div>
+        <div style="margin-bottom:.5rem;font-weight:600;color:var(--gold)">Tiers de bônus por nota</div>
+        <small style="color:var(--muted);display:block;margin-bottom:.5rem">Nota em escala 0-9. Maior bônus que satisfaz nota_média ≥ min_nota é aplicado.</small>
+        <div id="cfg-tiers"></div>
+        <button class="btn btn-outline btn-sm" id="cfg-add-tier" type="button" style="margin-top:.5rem">+ Novo tier</button>
+        <div class="res-modal-err" id="cfg-err" style="margin-top:.75rem"></div>
+      </div>
+      <div class="res-modal-ft">
+        <button class="btn btn-outline" type="button" data-close>Cancelar</button>
+        <button class="btn btn-gold" id="cfg-save" type="button">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  function renderTiers() {
+    const wrap = ov.querySelector('#cfg-tiers');
+    wrap.innerHTML = tiers.map((t, i) => `
+      <div class="cfg-tier-row" data-i="${i}" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;padding:.5rem;background:var(--surface2);border-radius:6px">
+        <div style="flex:0 0 auto"><small style="color:var(--muted)">min_nota</small><br>
+          <input type="number" class="cfg-min" min="0" max="9" step="0.1" value="${t.min_nota}" style="width:80px"></div>
+        <div style="flex:0 0 auto"><small style="color:var(--muted)">bônus %</small><br>
+          <input type="number" class="cfg-bonus" min="0" max="100" step="0.5" value="${(t.bonus*100).toFixed(2)}" style="width:80px"></div>
+        <div style="flex:1"><small style="color:var(--muted)">rótulo</small><br>
+          <input type="text" class="cfg-label" value="${escHtmlSafe(t.label||'')}" style="width:100%" maxlength="80"></div>
+        <button class="btn btn-outline btn-sm cfg-del" type="button" title="Remover" style="flex:0 0 auto;align-self:flex-end">×</button>
+      </div>`).join('') || '<div style="color:var(--muted);font-style:italic;padding:.5rem">Nenhum tier — comissão será só a % base.</div>';
+    wrap.querySelectorAll('.cfg-del').forEach(b => b.addEventListener('click', () => {
+      const i = +b.closest('.cfg-tier-row').dataset.i;
+      tiers.splice(i, 1); renderTiers();
+    }));
+  }
+  renderTiers();
+
+  ov.querySelector('#cfg-add-tier').addEventListener('click', () => {
+    tiers.push({ min_nota: 7.0, bonus: 0.01, label: 'Novo tier' });
+    renderTiers();
+  });
+  ov.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => ov.remove()));
+  ov.querySelector('#cfg-save').addEventListener('click', async () => {
+    const err = ov.querySelector('#cfg-err');
+    err.textContent = '';
+    const base = Number(ov.querySelector('#cfg-base').value) / 100;
+    const rowEls = ov.querySelectorAll('.cfg-tier-row');
+    const payloadTiers = [...rowEls].map(row => ({
+      min_nota: Number(row.querySelector('.cfg-min').value),
+      bonus:    Number(row.querySelector('.cfg-bonus').value) / 100,
+      label:    row.querySelector('.cfg-label').value.trim(),
+    }));
+    try {
+      const r = await api('/api/comissao/regras', {
+        method: 'PUT', body: JSON.stringify({ base_rate: base, tiers: payloadTiers })
+      });
+      if (!r) return;
+      const d = await r.json();
+      if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
+      ov.remove();
+      // Recarrega receita pra refletir as novas regras
+      const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
+      if (st.histId) carregarReceitaMassagista(st.histId);
+    } catch (e) {
+      err.textContent = 'Erro de rede: ' + (e?.message || e);
+    }
   });
 }
 

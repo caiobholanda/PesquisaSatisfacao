@@ -239,6 +239,15 @@ export function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_receita_lanc_ano_mes ON receita_lancamentos(ano, mes);
     CREATE INDEX IF NOT EXISTS idx_receita_lanc_mass    ON receita_lancamentos(massagista_id, ano, mes);
+
+    CREATE TABLE IF NOT EXISTS comissao_config (
+      id INTEGER PRIMARY KEY CHECK(id=1),
+      base_rate REAL NOT NULL,
+      tiers TEXT NOT NULL,
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT OR IGNORE INTO comissao_config (id, base_rate, tiers)
+    VALUES (1, 0.10, '[{"min_nota":8.5,"bonus":0.05,"label":"+5% por excelência (≥94%)"},{"min_nota":7.5,"bonus":0.02,"label":"+2% por bom desempenho (≥83%)"}]');
   `);
 
   // ── Modulo Gestao da Qualidade / Pesquisas configuraveis ─────────────────
@@ -1082,17 +1091,138 @@ export function notaMediaPorMes(massagistaNome, ano) {
   return out; // ex: { 1: 8.2, 2: 7.6, ... } na escala 0-9
 }
 
-// Calcula comissao por mes combinando receita (planilha) + nota (feedback).
+// Config de comissão (1 linha em comissao_config). Defaults seedados em initDb.
+export function getComissaoConfig() {
+  const row = getDb().prepare(`SELECT base_rate, tiers FROM comissao_config WHERE id=1`).get();
+  if (!row) return { base_rate: COMMISSION_BASE_RATE, tiers: COMMISSION_BONUS_TIERS };
+  let tiers = [];
+  try { tiers = JSON.parse(row.tiers); } catch { tiers = COMMISSION_BONUS_TIERS; }
+  return { base_rate: row.base_rate, tiers };
+}
+export function setComissaoConfig({ base_rate, tiers }) {
+  if (typeof base_rate !== 'number' || base_rate < 0 || base_rate > 1) {
+    throw new Error('base_rate deve ser número entre 0 e 1');
+  }
+  if (!Array.isArray(tiers)) throw new Error('tiers deve ser array');
+  const norm = tiers.map(t => {
+    const min_nota = Number(t.min_nota), bonus = Number(t.bonus);
+    if (!Number.isFinite(min_nota) || min_nota < 0 || min_nota > 9) throw new Error('min_nota fora do range 0-9');
+    if (!Number.isFinite(bonus) || bonus < 0 || bonus > 1) throw new Error('bonus fora do range 0-1');
+    return { min_nota, bonus, label: String(t.label || '').slice(0, 80) };
+  }).sort((a,b) => b.min_nota - a.min_nota);
+  getDb().prepare(`UPDATE comissao_config SET base_rate=?, tiers=?, atualizado_em=datetime('now') WHERE id=1`)
+    .run(base_rate, JSON.stringify(norm));
+  return { base_rate, tiers: norm };
+}
+
+// Receita derivada das RESERVAS do sistema (substitui leitura da planilha).
+// Regras (definidas pelo usuário):
+//   - Só reservas com data <= hoje
+//   - massagista_id E massagista_id2 contam cada uma 1 atendimento + preço cheio
+//   - Preço = tipos_massagem.preco (tabela base; sem faixas de desconto)
+export function agregarReceitaPorMesDoSistema(massagistaId, ano) {
+  const db = getDb();
+  const hoje = new Date().toISOString().slice(0, 10);
+  // UNION: linha por reserva onde a massagista atua como id OU id2.
+  // Cada lado conta 1 atendimento + preço cheio (decisão do usuário).
+  const sql = `
+    WITH atend AS (
+      SELECT r.data, r.tipo_massagem_id, t.nome AS terapia, COALESCE(t.preco, 0) AS preco
+      FROM reservas r
+      LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id
+      WHERE r.massagista_id = ?
+        AND r.data <= ?
+        AND substr(r.data, 1, 4) = ?
+      UNION ALL
+      SELECT r.data, r.tipo_massagem_id2 AS tipo_massagem_id, t.nome AS terapia, COALESCE(t.preco, 0) AS preco
+      FROM reservas r
+      LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id2
+      WHERE r.massagista_id2 = ?
+        AND r.data <= ?
+        AND substr(r.data, 1, 4) = ?
+    )
+    SELECT CAST(substr(data, 6, 2) AS INTEGER) AS mes,
+           COUNT(*) AS atendimentos,
+           SUM(preco) AS receita
+    FROM atend
+    GROUP BY mes
+    ORDER BY mes
+  `;
+  let rows;
+  try {
+    rows = db.prepare(sql).all(massagistaId, hoje, String(ano), massagistaId, hoje, String(ano));
+  } catch (e) {
+    // Fallback: schema pode não ter tipo_massagem_id2/massagista_id2 em deploys antigos.
+    // Conta só o lado primário.
+    const fb = db.prepare(`
+      SELECT CAST(substr(r.data, 6, 2) AS INTEGER) AS mes,
+             COUNT(*) AS atendimentos,
+             SUM(COALESCE(t.preco, 0)) AS receita
+      FROM reservas r
+      LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id
+      WHERE r.massagista_id = ? AND r.data <= ? AND substr(r.data, 1, 4) = ?
+      GROUP BY mes ORDER BY mes
+    `).all(massagistaId, hoje, String(ano));
+    rows = fb;
+  }
+
+  // Detalhe por terapia (mesmo UNION).
+  const sqlPor = `
+    WITH atend AS (
+      SELECT r.data, r.tipo_massagem_id, t.id AS tipo_id, t.nome AS terapia, COALESCE(t.preco,0) AS preco
+      FROM reservas r
+      LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id
+      WHERE r.massagista_id = ? AND r.data <= ? AND substr(r.data,1,4) = ?
+      UNION ALL
+      SELECT r.data, r.tipo_massagem_id2, t.id AS tipo_id, t.nome AS terapia, COALESCE(t.preco,0) AS preco
+      FROM reservas r
+      LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id2
+      WHERE r.massagista_id2 = ? AND r.data <= ? AND substr(r.data,1,4) = ?
+    )
+    SELECT CAST(substr(data,6,2) AS INTEGER) AS mes, tipo_id, terapia,
+           COUNT(*) AS atendimentos, SUM(preco) AS receita
+    FROM atend
+    WHERE tipo_id IS NOT NULL
+    GROUP BY mes, tipo_id, terapia
+    ORDER BY mes, receita DESC
+  `;
+  let porTerapia = [];
+  try {
+    porTerapia = db.prepare(sqlPor).all(massagistaId, hoje, String(ano), massagistaId, hoje, String(ano));
+  } catch {}
+
+  const porTerapiaByMes = new Map();
+  for (const p of porTerapia) {
+    if (!porTerapiaByMes.has(p.mes)) porTerapiaByMes.set(p.mes, []);
+    porTerapiaByMes.get(p.mes).push({ tipo_id: p.tipo_id, terapia: p.terapia || '—', atendimentos: p.atendimentos, receita: p.receita });
+  }
+
+  const meses = rows.map(r => ({
+    mes: r.mes,
+    atendimentos: r.atendimentos || 0,
+    receita: r.receita || 0,
+    por_terapia: porTerapiaByMes.get(r.mes) || [],
+  }));
+  const total = {
+    atendimentos: meses.reduce((s,m)=>s+m.atendimentos, 0),
+    receita:      meses.reduce((s,m)=>s+m.receita, 0),
+  };
+  return { ano, meses, total };
+}
+
+// Calcula comissao por mes a partir das reservas (sistema) + nota media (feedback).
+// Config (base + tiers) lida de comissao_config — editável via UI sem deploy.
 export function calcularComissaoPorMes(massagistaId, massagistaNome, ano) {
-  const receita = agregarReceitaPorMes(massagistaId, ano);
+  const receita = agregarReceitaPorMesDoSistema(massagistaId, ano);
   const notas   = notaMediaPorMes(massagistaNome, ano);
+  const cfg     = getComissaoConfig();
 
   const meses = receita.meses.map(m => {
     const nota = notas[m.mes] ?? null;
-    const base = m.receita * COMMISSION_BASE_RATE;
+    const base = m.receita * cfg.base_rate;
     let bonusPct = 0, bonusLabel = null;
     if (nota != null) {
-      for (const tier of COMMISSION_BONUS_TIERS) {
+      for (const tier of cfg.tiers) {
         if (nota >= tier.min_nota) { bonusPct = tier.bonus; bonusLabel = tier.label; break; }
       }
     }
@@ -1107,10 +1237,8 @@ export function calcularComissaoPorMes(massagistaId, massagistaNome, ano) {
   };
   return {
     ano, meses, total,
-    regras: {
-      base_rate: COMMISSION_BASE_RATE,
-      tiers: COMMISSION_BONUS_TIERS,
-    },
+    regras: { base_rate: cfg.base_rate, tiers: cfg.tiers },
+    fonte: 'sistema',
   };
 }
 

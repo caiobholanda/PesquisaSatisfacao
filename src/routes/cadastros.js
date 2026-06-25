@@ -7,6 +7,7 @@ import {
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
+  getComissaoConfig, setComissaoConfig,
 } from '../db.js';
 
 const router = Router();
@@ -137,8 +138,8 @@ router.get('/massagistas/:id/historico', (req, res) => {
   res.json({ ok: true, massagista: m, items });
 });
 
-// Receita & comissao por mes. Fonte: planilha SPA 2026 (data/receita-2026.json
-// seedada em receita_lancamentos) + nota media do feedback do mesmo periodo.
+// Receita & comissao por mes. Fonte: reservas do sistema (data <= hoje) +
+// nota media do feedback + regras configuráveis em comissao_config.
 // Default: ano atual. ?ano=2026 para forcar.
 router.get('/massagistas/:id/receita', (req, res) => {
   const m = listarMassagistas().find(m => m.id === parseInt(req.params.id));
@@ -166,6 +167,22 @@ router.post('/massagistas/:id/pin', ...podeEscreverSpa, async (req, res) => {
   const hash = await bcrypt.hash(String(pin), 10);
   setMassagistaPinHash(m.id, hash);
   res.json({ ok: true });
+});
+
+// ── Comissão: regras (% base + tiers de bônus por nota) ──
+// GET livre p/ autenticado (tela do histórico exibe regras junto).
+// PUT exige podeEscreverSpa (master/spa) — não permite admin nem satisfacao.
+router.get('/comissao/regras', (_req, res) => {
+  res.json({ ok: true, ...getComissaoConfig() });
+});
+router.put('/comissao/regras', ...podeEscreverSpa, (req, res) => {
+  try {
+    const { base_rate, tiers } = req.body || {};
+    const out = setComissaoConfig({ base_rate: Number(base_rate), tiers });
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e?.message || 'Erro ao salvar regras' });
+  }
 });
 
 // ── Tipos de Massagem ──
