@@ -2020,8 +2020,10 @@ async function showHistoricoMassagista(id, nome) {
 
   const items = d.items || [];
   const total = items.length;
-  const massObj = _massagistas.find(m => m.id === id);
-  const ehBilingue = !!(massObj?.bilingue);
+  // Usa massagista do payload da API direto — _massagistas (cache da lista) pode
+  // estar vazio quando o F5/restore cai direto em view-historico antes de
+  // loadMassagistas rodar. PII whitelist preserva o campo bilingue.
+  const ehBilingue = !!(d?.massagista?.bilingue);
   const avgs = items.map(r => avgRowMass(r, ehBilingue)).filter(v => v !== null).map(Number);
   const mediaGeral = avgs.length ? (avgs.reduce((a, b) => a + b, 0) / avgs.length).toFixed(2) : null;
   const recSim = items.filter(r => r.recomenda === 'sim').length;
@@ -2054,9 +2056,9 @@ async function showHistoricoMassagista(id, nome) {
     return;
   }
 
-  function computeDist(campo) {
+  function computeDist(campo, lista) {
     const dist = { otimo: 0, bom: 0, regular: 0, ruim: 0, total: 0 };
-    for (const r of items) {
+    for (const r of (lista || items)) {
       const v = r[campo];
       if (v && v in dist) { dist[v]++; dist.total++; }
     }
@@ -2082,9 +2084,15 @@ async function showHistoricoMassagista(id, nome) {
     { campo: 'instalacoes_conveniencia', label: 'Itens de conveniência' },
   ];
 
-  const servicosHtml = HIST_SERVICOS.map(({ campo, label }) =>
-    `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(items, campo))}</div>${renderDistBar(computeDist(campo))}</div>`
-  ).join('');
+  // Regra de exclusão: quando a profissional NÃO é bilíngue, hóspedes em idioma
+  // não-PT NÃO conseguem entender a "explicação dos benefícios" — esse quesito
+  // é descontado da média e da distribuição. Os outros quesitos seguem com todos.
+  const servicosHtml = HIST_SERVICOS.map(({ campo, label }) => {
+    const filtrados = (!ehBilingue && campo === 'servicos_explicacao')
+      ? items.filter(r => ehIdiomaPortugues(r.idioma_detectado))
+      : items;
+    return `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(filtrados, campo))}</div>${renderDistBar(computeDist(campo, filtrados))}</div>`;
+  }).join('');
   const instalacoesHtml = HIST_INSTALACOES.map(({ campo, label }) =>
     `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(items, campo))}</div>${renderDistBar(computeDist(campo))}</div>`
   ).join('');
@@ -2140,9 +2148,8 @@ async function showHistoricoMassagista(id, nome) {
         <tbody>
           ${items.map(r => {
             const avg = avgRowMass(r, ehBilingue);
-            const idiomaOk = ehBilingue || ehIdiomaPortugues(r.idioma_detectado);
             const idiomaBadge = r.idioma_detectado && !ehIdiomaPortugues(r.idioma_detectado)
-              ? `<span class="badge" style="background:var(--warn-dim,#FEF3CD);color:var(--warn,#C49A2D);font-size:.68rem" title="Explicação excluída da média">${r.idioma_detectado.toUpperCase()}</span>`
+              ? `<span class="badge" style="background:var(--warn-dim,#FEF3CD);color:var(--warn,#C49A2D);font-size:.68rem" title="${ehBilingue ? 'Profissional bilíngue — explicação INCLUÍDA na média' : 'Explicação excluída da média'}">${r.idioma_detectado.toUpperCase()}</span>`
               : (r.idioma_detectado ? `<span style="color:var(--muted);font-size:.75rem">pt</span>` : '—');
             const recBadge = r.recomenda === 'sim'
               ? '<span class="badge badge-hospede">Sim</span>'
