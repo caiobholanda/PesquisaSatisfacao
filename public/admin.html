@@ -1385,23 +1385,25 @@
     }
 
     .btn-back {
-      background: none;
-      border: 1px solid var(--border);
+      background: var(--gold-dim, rgba(201,169,97,.16));
+      border: 1px solid var(--gold);
+      border-radius: 6px;
       font-family: var(--font);
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: .09em;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: .08em;
       text-transform: uppercase;
-      color: var(--muted2);
+      color: var(--gold);
       cursor: pointer;
-      padding: 0.4375rem 0.875rem;
-      transition: border-color .15s, color .15s;
+      padding: 0.55rem 1.05rem;
+      transition: background .15s, color .15s, transform .12s;
       white-space: nowrap;
       flex-shrink: 0;
       margin-top: 0.625rem;
     }
 
-    .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-back:hover { background: var(--gold); color: var(--bg); }
+    .btn-back:active { transform: scale(.98); }
 
     .page-nav-row {
       display: flex;
