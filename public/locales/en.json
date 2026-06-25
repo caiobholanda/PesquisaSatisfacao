@@ -113,5 +113,9 @@
     "title": "Form submitted successfully!",
     "message": "Your profile has been recorded. The therapist will confirm your availability for treatment.",
     "ref_label": "Reference"
+  },
+  "already_answered": {
+    "title": "This intake form has already been submitted.",
+    "message": "Thank you for your response! If you have any questions, please contact the SPA reception."
   }
 }

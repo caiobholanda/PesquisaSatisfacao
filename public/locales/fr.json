@@ -113,5 +113,9 @@
     "title": "Formulaire envoyé avec succès !",
     "message": "Votre profil a été enregistré. Le thérapeute confirmera votre disponibilité pour le soin.",
     "ref_label": "Référence"
+  },
+  "already_answered": {
+    "title": "Ce formulaire a déjà été envoyé.",
+    "message": "Merci pour votre réponse ! En cas de question, veuillez contacter la réception du SPA."
   }
 }

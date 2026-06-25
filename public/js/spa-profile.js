@@ -389,6 +389,11 @@ async function handleSubmit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(collectData()),
     });
+    // 409 ja_respondida: corrida perdida ou repost. Mostra mesma tela do GET.
+    if (res.status === 409) {
+      _mostrarJaRespondida();
+      return;
+    }
     const json = await res.json();
     if (!res.ok) throw new Error(json.erro || 'Erro');
 
@@ -405,6 +410,23 @@ async function handleSubmit(e) {
     if (genErr) { genErr.textContent = _locale.errors.server; genErr.style.display = ''; }
     if (btn) btn.disabled = false;
     if (txt) txt.textContent = _locale.buttons.submit;
+  }
+}
+
+// Esconde form/lang-bar e exibe a tela "anamnese ja respondida" no idioma atual.
+function _mostrarJaRespondida() {
+  const formEl    = document.getElementById('spa-form');
+  const successEl = document.getElementById('spa-success');
+  const alreadyEl = document.getElementById('spa-already-answered');
+  if (formEl)    formEl.style.display = 'none';
+  if (successEl) successEl.style.display = 'none';
+  if (alreadyEl) {
+    alreadyEl.style.display = '';
+    if (_locale && _locale.already_answered) {
+      setText('already-title', _locale.already_answered.title);
+      setText('already-msg',   _locale.already_answered.message);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
@@ -663,12 +685,21 @@ function init() {
 
     if (token) {
       _docToken = token;
+      // Inclui o body mesmo quando !ok — precisamos detectar ja_respondida
+      // (que vem como 200 com {ok:false, ja_respondida:true}).
       fetch('/api/spa/documento?t=' + encodeURIComponent(token))
-        .then(r => r.ok ? r.json() : null)
+        .then(r => r.json().catch(() => null))
         .then(d => {
+          // Link de uso unico ja consumido: respeita locale do link e mostra
+          // a tela "ja respondida" — sem dados do hospede, sem form.
+          if (d && d.ja_respondida) {
+            const langJa = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
+            Promise.resolve(loadLocale(langJa)).then(() => _mostrarJaRespondida());
+            return;
+          }
           // BUG-A fix: token invalido/expirado nao pode TRAVAR a pagina
           // sem locale. Sempre chama loadLocale, mesmo quando d=null.
-          if (d) {
+          if (d && d.ok !== false) {
             // So aplica locale do documento se admin NAO forcou um lang na URL
             if (d.locale && !_langForcadoNaURL) lang = d.locale;
             if (d.hospede_nome) {

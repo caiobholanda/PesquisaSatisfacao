@@ -113,5 +113,9 @@
     "title": "Formular erfolgreich abgesendet!",
     "message": "Ihr Profil wurde erfasst. Der Therapeut bestätigt Ihre Verfügbarkeit für die Behandlung.",
     "ref_label": "Referenz"
+  },
+  "already_answered": {
+    "title": "Dieses Anamneseformular wurde bereits eingereicht.",
+    "message": "Vielen Dank für Ihre Antwort! Bei Fragen wenden Sie sich bitte an die SPA-Rezeption."
   }
 }

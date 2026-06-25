@@ -113,5 +113,9 @@
     "title": "¡Formulario enviado con éxito!",
     "message": "Su perfil ha sido registrado. El terapeuta confirmará su disponibilidad para el tratamiento.",
     "ref_label": "Referencia"
+  },
+  "already_answered": {
+    "title": "Esta anamnesis ya fue respondida.",
+    "message": "¡Gracias por su respuesta! Si tiene alguna duda, hable con la recepción del SPA."
   }
 }

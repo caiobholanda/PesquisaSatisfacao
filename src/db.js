@@ -1337,7 +1337,8 @@ export function buscarDocumentoToken(token) {
            r.cliente2, r.email2, r.telefone2, r.apto2 AS quarto2,
            c.data_nascimento AS cli_nascimento,
            r.documento_token, r.documento_token2,
-           r.documento_token_expiry, r.documento_token_expiry2
+           r.documento_token_expiry, r.documento_token_expiry2,
+           r.documento_perfil_id, r.documento_perfil_id2
     FROM reservas r
     LEFT JOIN clientes c ON c.id = r.cliente_id
     WHERE r.documento_token = ? OR r.documento_token2 = ?
@@ -1359,6 +1360,11 @@ export function buscarDocumentoToken(token) {
   */
   if (!row) return null;
   const pessoa = (row.documento_token2 === token) ? 2 : 1;
+  // ja_respondida: o slot da pessoa em reservas ja aponta para um spa_perfis.
+  // Esse e o gate de "link de uso unico" — checado tanto no GET /documento
+  // quanto na transacao do POST /perfil (UPDATE condicional WHERE _perfil_id IS NULL).
+  const _perfilIdSlot = pessoa === 2 ? row.documento_perfil_id2 : row.documento_perfil_id;
+  const ja_respondida = _perfilIdSlot != null;
   return {
     reserva_id:    row.reserva_id,
     hospede_nome:  pessoa === 2 ? (row.cliente2  || '') : (row.cliente  || ''),
@@ -1370,6 +1376,7 @@ export function buscarDocumentoToken(token) {
     servico:       row.servico,
     locale:        row.locale,
     pessoa,
+    ja_respondida,
   };
 }
 
@@ -1465,6 +1472,126 @@ export function inserirSpaPerfil(dados) {
   if (reserva_id) {
     const col = resolvedPessoa === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
     db.prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(perfil_id, reserva_id);
+  }
+  return perfil_id;
+}
+
+// Trava atomica de "link de uso unico" para anamnese.
+// Envolve a gravacao do perfil + a marcacao em reservas (documento_perfil_id ou _id2)
+// numa transacao com BEGIN IMMEDIATE. O passo-chave e' o UPDATE condicional
+// com `AND documento_perfil_id IS NULL` — se changes===0, outro envio ja venceu
+// a corrida e nos abortamos com Error('ANAMNESE_JA_RESPONDIDA').
+// Reqer reserva_id valido — chamadores sem token nao devem usar essa funcao.
+export function inserirSpaPerfilComLock(dados) {
+  const { reserva_id, pessoa } = dados;
+  if (!reserva_id) {
+    throw new Error('RESERVA_ID_OBRIGATORIO');
+  }
+  const resolvedPessoa = pessoa === 2 ? 2 : 1;
+  const col = resolvedPessoa === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
+
+  const db = getDb();
+  // Pre-check fora da transacao da' uma resposta amigavel ja no comeco
+  // (evita rodar todo o INSERT/UPDATE pra descobrir no fim que tava travado).
+  // A trava REAL e' o UPDATE condicional dentro da transacao — esta linha
+  // e' apenas otimizacao + erro mais cedo.
+  const pre = db.prepare(`SELECT ${col} AS slot FROM reservas WHERE id=?`).get(reserva_id);
+  if (pre && pre.slot != null) {
+    throw new Error('ANAMNESE_JA_RESPONDIDA');
+  }
+
+  // Transacao IMMEDIATE: pega write-lock no inicio, serializando concorrentes.
+  // better-sqlite3 e' sincrono — no mesmo processo, transacoes ja serializam.
+  // A IMMEDIATE protege contra outro processo (improvável aqui, mas defensivo).
+  const tx = db.transaction((d) => {
+    // 1) Insere/atualiza spa_perfis (replica logica de inserirSpaPerfil)
+    const perfil_id = _inserirSpaPerfilCore(d);
+    // 2) Gate atomico: UPDATE so' grava se o slot estiver NULL.
+    const r = db.prepare(
+      `UPDATE reservas SET ${col}=? WHERE id=? AND ${col} IS NULL`
+    ).run(perfil_id, reserva_id);
+    if (r.changes === 0) {
+      // Outro envio venceu a corrida — aborta a transacao.
+      throw new Error('ANAMNESE_JA_RESPONDIDA');
+    }
+    return perfil_id;
+  }).immediate;
+  return tx(dados);
+}
+
+// Logica do inserirSpaPerfil SEM o UPDATE de reservas no final.
+// Extraida pra ser reutilizada por inserirSpaPerfilComLock dentro da transacao.
+// Mantem inserirSpaPerfil exportada inalterada para compatibilidade.
+function _inserirSpaPerfilCore(dados) {
+  const { nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
+          rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
+          consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
+          idioma, reserva_id, pessoa,
+          consentimento_saude_texto, consentimento_saude_hash,
+          consentimento_saude_versao, consentimento_saude_em,
+          consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
+          consentimento_saude_hash_canonico, consentimento_saude_key_id,
+          consentimento_saude_alg, consentimento_saude_assinatura_hash } = dados;
+  const _safeDivergente = (consentimento_saude_canonico_comparado === 1)
+    ? (consentimento_saude_canonico_divergente ? 1 : 0)
+    : 0;
+  const db = getDb();
+  const resolvedIdioma = idioma || 'pt-BR';
+  const resolvedPessoa = pessoa === 2 ? 2 : 1;
+  const existente = reserva_id
+    ? db.prepare('SELECT id FROM spa_perfis WHERE reserva_id=? AND pessoa=? ORDER BY criado_em DESC, id DESC LIMIT 1').get(reserva_id, resolvedPessoa)
+    : null;
+  let perfil_id;
+  if (existente) {
+    db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
+      data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
+      info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
+      assinatura_data_url=?, idioma=?, pessoa=?,
+      consentimento_saude_texto=?, consentimento_saude_hash=?,
+      consentimento_saude_versao=?,
+      consentimento_saude_canonico_divergente=?, consentimento_saude_canonico_comparado=?,
+      consentimento_saude_hash_canonico=?, consentimento_saude_key_id=?,
+      consentimento_saude_alg=?, consentimento_saude_assinatura_hash=?,
+      consentimento_saude_em = CASE
+        WHEN consentimento_saude_hash IS NOT NULL AND consentimento_saude_hash = ? THEN consentimento_saude_em
+        ELSE ?
+      END
+      WHERE id=?`
+    ).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
+          data_nascimento || null, rotina_facial || null, rotina_corporal || null,
+          produto_especifico || null, pressao_massagem || null, info_medica || '',
+          consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
+          canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
+          consentimento_saude_texto || null, consentimento_saude_hash || null,
+          consentimento_saude_versao || null,
+          _safeDivergente,
+          (consentimento_saude_canonico_comparado === 1 ? 1 : null),
+          consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null,
+          consentimento_saude_alg || null, consentimento_saude_assinatura_hash || null,
+          consentimento_saude_hash || null, consentimento_saude_em || null, existente.id);
+    perfil_id = existente.id;
+  } else {
+    const r = db.prepare(`
+      INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
+        rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
+        consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
+        consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
+        consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
+        consentimento_saude_hash_canonico, consentimento_saude_key_id,
+        consentimento_saude_alg, consentimento_saude_assinatura_hash)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
+           data_nascimento || null, rotina_facial || null, rotina_corporal || null,
+           produto_especifico || null, pressao_massagem || null, info_medica || '',
+           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
+           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
+           consentimento_saude_texto || null, consentimento_saude_hash || null,
+           consentimento_saude_versao || null, consentimento_saude_em || null,
+           _safeDivergente,
+           (consentimento_saude_canonico_comparado === 1 ? 1 : null),
+           consentimento_saude_hash_canonico || null, consentimento_saude_key_id || null,
+           consentimento_saude_alg || null, consentimento_saude_assinatura_hash || null);
+    perfil_id = r.lastInsertRowid;
   }
   return perfil_id;
 }

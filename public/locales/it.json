@@ -113,5 +113,9 @@
     "title": "Modulo inviato con successo!",
     "message": "Il suo profilo è stato registrato. Il terapista confermerà la disponibilità per il trattamento.",
     "ref_label": "Riferimento"
+  },
+  "already_answered": {
+    "title": "Questa anamnesi è già stata inviata.",
+    "message": "Grazie per la sua risposta! In caso di domande, contatti la reception della SPA."
   }
 }

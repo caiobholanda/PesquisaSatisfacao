@@ -148,7 +148,7 @@ export function recalcularSeloComposto(componentes, keyId) {
   const seloRaw = _serializarSeloComposto(componentes);
   return _hmacProvaComKey(seloRaw, keyId || _CONSENT_KEY_ID);
 }
-import { buscarDocumentoToken, inserirSpaPerfil, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
+import { buscarDocumentoToken, inserirSpaPerfil, inserirSpaPerfilComLock, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
 const router = Router();
@@ -228,6 +228,17 @@ router.get('/documento', (req, res) => {
   if (!token) return res.status(400).json({ ok: false, error: 'Token ausente' });
   const row = buscarDocumentoToken(token);
   if (!row) return res.status(404).json({ ok: false, error: 'Token inválido ou expirado' });
+  const localeSeguro = LOCALES_VALIDOS.includes(row.locale) ? row.locale : 'pt-BR';
+  // Link de uso unico: se ja foi respondido por essa pessoa, retorna flag
+  // e o locale para o frontend mostrar mensagem amigavel no idioma certo.
+  // NAO retorna dados do hospede (nao e' modo leitura).
+  if (row.ja_respondida) {
+    return res.json({
+      ok: false,
+      ja_respondida: true,
+      locale: localeSeguro,
+    });
+  }
   res.json({
     hospede_nome:     row.hospede_nome     || '',
     hospede_email:    row.hospede_email    || '',
@@ -236,7 +247,7 @@ router.get('/documento', (req, res) => {
     hospede_quarto:   row.hospede_quarto   || '',
     hospede_data_nascimento: row.hospede_data_nascimento || '',
     servico:          row.servico          || '',
-    locale:           LOCALES_VALIDOS.includes(row.locale) ? row.locale : 'pt-BR',
+    locale:           localeSeguro,
   });
 });
 
@@ -349,19 +360,26 @@ router.post('/perfil', (req, res) => {
   // exclusivamente uma (reserva, pessoa) — pessoa 1 (cliente principal)
   // ou pessoa 2 (cliente2 em reservas casal). Cada hospede preenche
   // sua propria anamnese sem sobrescrever a do outro.
-  let reserva_id = null;
-  let _pessoaReserva = 1;
-  if (b.documento_token) {
-    const row = buscarDocumentoToken(b.documento_token);
-    if (row) {
-      reserva_id = row.reserva_id;
-      _pessoaReserva = row.pessoa === 2 ? 2 : 1;
-      if (locale) vincularDocumentoToken(reserva_id, locale);
-    }
+  // Link de uso unico: token e' OBRIGATORIO. Sem token, nao temos slot
+  // pra travar a corrida — recusa antes de gravar qualquer coisa.
+  if (!b.documento_token) {
+    return res.status(400).json({ ok: false, error: 'token_obrigatorio' });
   }
+  const _tokenRow = buscarDocumentoToken(b.documento_token);
+  if (!_tokenRow) {
+    return res.status(404).json({ ok: false, error: 'token_invalido' });
+  }
+  // Curto-circuito amigavel: se ja respondida, retorna 409 ANTES de
+  // processar payload pesado (assinatura base64, HMAC, etc).
+  if (_tokenRow.ja_respondida) {
+    return res.status(409).json({ ok: false, error: 'ja_respondida' });
+  }
+  const reserva_id = _tokenRow.reserva_id;
+  const _pessoaReserva = _tokenRow.pessoa === 2 ? 2 : 1;
+  if (locale) vincularDocumentoToken(reserva_id, locale);
 
   try {
-    const id = inserirSpaPerfil({
+    const id = inserirSpaPerfilComLock({
       nome, sobrenome,
       tipo_documento:         san(b.tipo_documento) || 'cpf',
       documento:              san(b.documento),
@@ -497,17 +515,19 @@ router.post('/perfil', (req, res) => {
     if (quartoLimpo) {
       try { getDb().prepare('UPDATE spa_perfis SET quarto=? WHERE id=?').run(quartoLimpo, id); } catch {}
     }
-    // Amarra o spa_perfil ao slot certo da reserva (hospede 1 ou 2).
-    if (reserva_id) {
-      const col = _pessoaReserva === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
-      try { getDb().prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(id, reserva_id); } catch {}
-    }
+    // NOTA: amarracao spa_perfil <-> reserva (documento_perfil_id / _id2) ja
+    // foi feita DENTRO da transacao em inserirSpaPerfilComLock — e' o proprio
+    // UPDATE condicional que faz o gate de uso unico. Nao reaplicar aqui.
     res.json({
       ok: true, id,
       quarto: quartoLimpo || null,
       gran_class: quartoLimpo ? isGranClass(quartoLimpo) : false,
     });
   } catch (err) {
+    // Trava de uso unico: corrida perdida (outro envio venceu) ou pre-check.
+    if (err && err.message === 'ANAMNESE_JA_RESPONDIDA') {
+      return res.status(409).json({ ok: false, error: 'ja_respondida' });
+    }
     console.error('spa/perfil error:', err);
     res.status(500).json({ ok: false, error: 'Erro ao salvar' });
   }
