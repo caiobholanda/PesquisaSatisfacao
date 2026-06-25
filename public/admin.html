@@ -1742,6 +1742,132 @@
       color: var(--text);
     }
 
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       RECEITA & COMISSÃO (histórico)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .receita-section {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .receita-head {
+      display: flex; align-items: baseline; gap: 1rem;
+      padding: 1.1rem 1.5rem .9rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .receita-head .num {
+      font-family: var(--serif); font-size: .85rem; color: var(--gold);
+      letter-spacing: .14em; text-transform: uppercase;
+    }
+    .receita-head h3 {
+      font-family: var(--serif); font-weight: 400;
+      font-size: 1.35rem; letter-spacing: -.005em; color: var(--text);
+      margin: 0;
+    }
+    .receita-head .ano-pill {
+      margin-left: auto; font-size: .72rem; color: var(--muted);
+      letter-spacing: .1em; text-transform: uppercase;
+    }
+    .receita-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 900px) { .receita-cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .receita-cards { grid-template-columns: 1fr; } }
+    .receita-card { background: var(--surface); padding: 1.1rem 1.3rem 1.2rem; }
+    .receita-card-label {
+      font-size: .68rem; font-weight: 500; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: .55rem;
+    }
+    .receita-card-val {
+      font-family: var(--font); font-size: 1.65rem; font-weight: 400;
+      line-height: 1; color: var(--text);
+    }
+    .receita-card-val.gold { color: var(--gold); }
+    .receita-card-sub { font-size: .72rem; color: var(--muted); margin-top: .35rem; }
+
+    .receita-table-wrap { padding: .25rem 0 .5rem; }
+    .receita-table { width: 100%; border-collapse: collapse; }
+    .receita-table thead th {
+      font-size: .65rem; font-weight: 500; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      padding: .85rem 1rem .65rem; text-align: left;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .receita-table thead th.num { text-align: right; }
+    .receita-table tbody td {
+      padding: .85rem 1rem; border-bottom: 1px solid var(--border-soft);
+      font-size: .9rem; color: var(--text); vertical-align: middle;
+    }
+    .receita-table tbody tr:hover { background: var(--gold-dim); cursor: pointer; }
+    .receita-table tbody tr.empty-month { color: var(--muted); }
+    .receita-table tbody tr.empty-month:hover { background: transparent; cursor: default; }
+    .receita-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .receita-table tbody td.mes {
+      font-family: var(--serif); font-weight: 400; letter-spacing: .04em;
+      color: var(--text); text-transform: uppercase; font-size: .9rem;
+    }
+    .receita-table tbody td.comissao { color: var(--gold); font-weight: 500; }
+    .receita-bonus {
+      display: inline-block; font-size: .68rem; padding: .15rem .5rem;
+      border: 1px solid var(--gold); border-radius: 999px;
+      color: var(--gold); margin-left: .4rem; letter-spacing: .04em;
+    }
+    .receita-nota {
+      display: inline-block; font-variant-numeric: tabular-nums;
+      font-size: .9rem; color: var(--text);
+    }
+    .receita-nota.dim { color: var(--muted); }
+    .receita-expand-icon {
+      display: inline-block; transition: transform .15s;
+      color: var(--muted); margin-left: .35rem;
+    }
+    tr.expanded .receita-expand-icon { transform: rotate(90deg); color: var(--gold); }
+
+    .faixa-bar {
+      display: flex; height: 8px; width: 110px; gap: 1px;
+      border-radius: 4px; overflow: hidden; background: var(--border-soft);
+    }
+    .faixa-bar > span { display: block; height: 100%; }
+    .faixa-bar .fx-NORMAL { background: var(--gold); }
+    .faixa-bar .fx-P10    { background: var(--gold-dark); opacity: .85; }
+    .faixa-bar .fx-P20    { background: var(--gold-dark); opacity: .65; }
+    .faixa-bar .fx-P30    { background: var(--gold-dark); opacity: .45; }
+    .faixa-bar .fx-P50    { background: var(--gold-dark); opacity: .28; }
+
+    .receita-detail {
+      background: var(--surface2); padding: 1rem 1.5rem 1.2rem;
+    }
+    .receita-detail-head {
+      font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: .6rem;
+    }
+    .receita-detail table { width: 100%; border-collapse: collapse; }
+    .receita-detail td {
+      padding: .45rem .25rem; font-size: .85rem; color: var(--text);
+      border-bottom: 1px dashed var(--border-soft);
+    }
+    .receita-detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .receita-detail td:first-child { color: var(--muted2); }
+
+    .receita-foot {
+      padding: .9rem 1.5rem 1.1rem; border-top: 1px solid var(--border-soft);
+      font-size: .72rem; color: var(--muted); display: flex;
+      gap: 1.2rem; flex-wrap: wrap; align-items: center;
+    }
+    .receita-foot .pill {
+      display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--muted2);
+      letter-spacing: .04em;
+    }
+    .receita-foot .pill strong { color: var(--gold); font-weight: 500; }
+
+    .receita-empty {
+      padding: 2rem 1.5rem; text-align: center; color: var(--muted);
+      font-size: .85rem; font-style: italic;
+    }
+
     /* Header compacto só na tela de reservas */
     #view-reservas .page-hero {
       margin-bottom: .9rem;
@@ -3286,6 +3412,7 @@
       <div class="hist-kpi-row" id="hist-kpi-row">
         <div class="hist-kpi"><div class="hist-kpi-label">Carregando…</div></div>
       </div>
+      <div id="hist-receita"></div>
       <div id="hist-list"></div>
     </div>
 

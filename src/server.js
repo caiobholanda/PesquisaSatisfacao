@@ -6,7 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto, seedReceitaTerapias } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -333,4 +333,9 @@ initDb();
 try { seedQualidadeSpa(); } catch (err) { console.error('[Qualidade] seed falhou:', err.message); }
 try { seedAnamneseSpa(); } catch (err) { console.error('[Anamnese] seed falhou:', err.message); }
 try { seedAnamneseOpcoes(); } catch (err) { console.error('[Anamnese-Opcoes] seed falhou:', err.message); }
+// Seed idempotente da receita 2026 da planilha (data/receita-2026.json).
+// Roda sempre: upsert por chave (ano,mes,mass,tipo,faixa). Edicoes manuais
+// na tabela serao preservadas a menos que o JSON tenha valor para a mesma
+// chave (nesse caso o JSON ganha).
+try { seedReceitaTerapias(); } catch (err) { console.error('[Receita] seed falhou:', err.message); }
 app.listen(PORT, () => console.log(`[Gran SPA] Servidor rodando na porta ${PORT}`));

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -213,6 +214,32 @@ export function initDb() {
   `);
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
+
+  // ── Modulo Receita & Comissao (planilha SPA 2026) ────────────────────────
+  // Tabela de lancamentos manuais de receita por (massagista, terapia, faixa
+  // de desconto, mes). Fonte: planilha RECEITA TERAPIAS - SPA 2026.xlsx.
+  // Idempotente: a UNIQUE(...) permite reseed com INSERT OR REPLACE sem
+  // duplicar. NAO mexe em reservas/feedback.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS receita_lancamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ano INTEGER NOT NULL,
+      mes INTEGER NOT NULL,
+      massagista_id INTEGER NOT NULL REFERENCES massagistas(id) ON DELETE CASCADE,
+      tipo_massagem_id INTEGER NOT NULL REFERENCES tipos_massagem(id) ON DELETE CASCADE,
+      faixa_desconto TEXT NOT NULL CHECK(faixa_desconto IN ('NORMAL','P10','P20','P30','P50')),
+      quantidade INTEGER NOT NULL DEFAULT 0,
+      preco_base REAL NOT NULL,
+      preco_aplicado REAL NOT NULL,
+      receita REAL NOT NULL,
+      fonte TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(ano, mes, massagista_id, tipo_massagem_id, faixa_desconto)
+    );
+    CREATE INDEX IF NOT EXISTS idx_receita_lanc_ano_mes ON receita_lancamentos(ano, mes);
+    CREATE INDEX IF NOT EXISTS idx_receita_lanc_mass    ON receita_lancamentos(massagista_id, ano, mes);
+  `);
 
   // ── Modulo Gestao da Qualidade / Pesquisas configuraveis ─────────────────
   // Additive-only. Nenhuma das tabelas existentes (feedback, reservas, etc.) e'
@@ -838,6 +865,247 @@ export function seedTratamentosGranSpa() {
     db.prepare("INSERT OR REPLACE INTO system_meta (chave, valor) VALUES ('tipos_massagem_seeded','1')").run();
   } catch {}
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Modulo Receita & Comissao
+// Fonte: planilha RECEITA TERAPIAS - SPA 2026.xlsx (data/receita-2026.json)
+//
+// AJUSTE DE COMISSAO (alteravel sem deploy de codigo: editar e redeploy):
+//   COMMISSION_BASE_RATE = % base sobre receita liquida do mes
+//   COMMISSION_BONUS_TIERS = bonus aplicado quando nota media do mes >= min
+//
+// Calculo:
+//   bonus  = primeiro tier cuja nota_media >= min (encontrado nessa ordem)
+//   liquid = comissao_base * (1 + bonus)
+//
+// Escala interna: 0-9 (alinhada com NOTA_MAP existente; otimo=9, bom=6, ...).
+// min_nota e' em pontos 0-9: 8.5 ~= 94%, 7.5 ~= 83%.
+export const COMMISSION_BASE_RATE = 0.10;            // 10%
+export const COMMISSION_BONUS_TIERS = [
+  { min_nota: 8.5, bonus: 0.05, label: '+5% por excelencia (≥94%)' },
+  { min_nota: 7.5, bonus: 0.02, label: '+2% por bom desempenho (≥83%)' },
+];
+
+// Mapeamento nome-planilha -> nome-no-sistema (seed atual tipos_massagem).
+// As terapias com valor `null` ainda nao existem no seed: serao criadas
+// pelo seedReceitaTerapias com o nome exato da planilha.
+const PLANILHA_TO_SEED_NOME = {
+  'RELAXANTE':                          'Relaxante aromacologia',
+  'REVITALIZANTE':                       null,
+  'DEEP TISSUE':                        'Deep tissue',
+  'SIGNATURE LAVANDA':                  'Signature lavanda',
+  'BEM ESTAR DA FUTURA MAMÃE':          'Bem estar da futura mamãe',
+  'TRAT. DESINTOXICANTE DE AMENDOA':    'Desintoxicante de amêndoa',
+  'MODELADORA AMENDOA':                 'Modelador amêndoa',
+  'IMMORTELLE (ROSTO)':                  null,
+  'MASCULINA CADE':                      null,
+  'POWER NAP':                          'Power nap',
+  'REFLEXOLOGIA':                       'Massagem pés com óleos essenciais',
+  'ESFOLIAÇÃO CORPORAL':                'Esfoliação corporal nutritiva Karité',
+  'MASCARA CORPORAL':                   'Máscara corporal ultra hidratante Karité',
+  'FABULOSA KARITE':                    'Fabulosa com karité',
+  'NUTRIÇÃO INTENSA':                   'Nutrição intensa karité',
+  'TERAPIA DO SONO':                    'Terapia do sono restaurador',
+  'RE ENERGIZANTE PEDRAS DO SOL':       'Reenergizante pedras do sol',
+  'GRAN SUBLIME':                       'Gran sublime',
+  'GRAN RELAXAMENTO':                   'Gran relaxamento',
+  'RITUAL DETOX':                       'Ritual detox',
+  'PACOTE DAY SPA':                      null,
+  'DIA DA NOIVA OPC. 1':                 null,
+  'DIA DA NOIVA OPC. 2':                 null,
+  'DIA DO NOIVO OPC.2':                  null,
+  'PACOTE CASAL':                        null,
+  'PACOTE GRUPO':                        null,
+  'PACOTE 5 MASSAGEM ( 60 MIN )':        null,
+  'PACOTE 10 MASSAGEM ( 60 MIN )':       null,
+};
+
+const FAIXAS_FATOR = { NORMAL: 1.0, P10: 0.9, P20: 0.8, P30: 0.7, P50: 0.5 };
+
+// Seed: garante os tipos_massagem que existem na planilha mas nao no seed
+// original. Marca com categoria 'Pacote' (vendas agregadas) ou 'Receita'
+// (terapias avulsas nao listadas no seed). Idempotente (procura por nome).
+export function seedReceitaTerapias({ jsonPath } = {}) {
+  const db = getDb();
+  const file = jsonPath || path.join(__dirname, '..', 'data', 'receita-2026.json');
+  if (!fs.existsSync(file)) {
+    console.warn(`[receita] arquivo nao encontrado: ${file} - seed ignorado`);
+    return;
+  }
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+  // 1) Garantir tipos_massagem extras (nome exato da planilha)
+  // Categorias: terapias avulsas faltantes -> 'Receita'; combos/pacotes -> 'Pacote'
+  const EXTRAS = [
+    { nome: 'REVITALIZANTE',                 preco: 445,     categoria: 'Receita', duracao: 50, ativo: 1 },
+    { nome: 'IMMORTELLE (ROSTO)',            preco: 445,     categoria: 'Facial',  duracao: 50, ativo: 1 },
+    { nome: 'MASCULINA CADE',                preco: 445,     categoria: 'Receita', duracao: 50, ativo: 1 },
+    { nome: 'PACOTE DAY SPA',                preco: 1309,    categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'DIA DA NOIVA OPC. 1',           preco: 2898,    categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'DIA DA NOIVA OPC. 2',           preco: 2035.5,  categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'DIA DO NOIVO OPC.2',            preco: 1046,    categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'PACOTE CASAL',                  preco: 422.5,   categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'PACOTE GRUPO',                  preco: 263,     categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'PACOTE 5 MASSAGEM ( 60 MIN )',  preco: 422.75,  categoria: 'Pacote',  duracao: null, ativo: 1 },
+    { nome: 'PACOTE 10 MASSAGEM ( 60 MIN )', preco: 378.25,  categoria: 'Pacote',  duracao: null, ativo: 1 },
+  ];
+  const findByNome = db.prepare('SELECT id FROM tipos_massagem WHERE LOWER(nome)=LOWER(?)');
+  const insTipo    = db.prepare(`INSERT INTO tipos_massagem (nome, descricao, duracao_min, preco, tipo, categoria, ativo) VALUES (?, ?, ?, ?, 'individual', ?, ?)`);
+  for (const t of EXTRAS) {
+    if (findByNome.get(t.nome)) continue;
+    insTipo.run(t.nome, null, t.duracao, t.preco, t.categoria, t.ativo);
+  }
+
+  // 2) Resolver IDs: massagistas por matricula, tipos por nome (mapa).
+  const massByMatricula = new Map();
+  for (const row of db.prepare('SELECT id, nome, matricula FROM massagistas').all()) {
+    if (row.matricula) massByMatricula.set(row.matricula, row.id);
+  }
+  const tipoIdByPlanilha = new Map();
+  for (const [planilhaNome, seedNome] of Object.entries(PLANILHA_TO_SEED_NOME)) {
+    const procurar = seedNome || planilhaNome;
+    const row = findByNome.get(procurar);
+    if (row) tipoIdByPlanilha.set(planilhaNome, row.id);
+    else console.warn(`[receita] tipo_massagem nao resolvido: "${planilhaNome}" -> "${procurar}"`);
+  }
+  const precosBase = data.precos_base || {};
+
+  // 3) Upsert lancamentos. Idempotente via UNIQUE(ano,mes,mass,tipo,faixa).
+  const upsert = db.prepare(`
+    INSERT INTO receita_lancamentos (ano, mes, massagista_id, tipo_massagem_id, faixa_desconto, quantidade, preco_base, preco_aplicado, receita, fonte, atualizado_em)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(ano, mes, massagista_id, tipo_massagem_id, faixa_desconto)
+    DO UPDATE SET quantidade=excluded.quantidade, preco_base=excluded.preco_base,
+                  preco_aplicado=excluded.preco_aplicado, receita=excluded.receita,
+                  fonte=excluded.fonte, atualizado_em=datetime('now')
+  `);
+
+  let inserted = 0, skipped = 0;
+  const tx = db.transaction(() => {
+    for (const l of data.lancamentos) {
+      const massId = massByMatricula.get(l.matricula);
+      const tipoId = tipoIdByPlanilha.get(l.terapia);
+      const precoBase = precosBase[l.terapia];
+      if (!massId || !tipoId || !precoBase) { skipped++; continue; }
+      const fator = FAIXAS_FATOR[l.faixa];
+      const precoAplicado = precoBase * fator;
+      const receita = precoAplicado * l.quantidade;
+      upsert.run(l.ano, l.mes, massId, tipoId, l.faixa, l.quantidade,
+                 precoBase, precoAplicado, receita, data.fonte || 'planilha-2026');
+      inserted++;
+    }
+  });
+  tx();
+  console.log(`[receita] seed concluido: ${inserted} lancamentos${skipped ? `, ${skipped} ignorados` : ''}.`);
+}
+
+// Agrega receita por mes para uma massagista, no ano informado.
+// Retorna { meses: [...], total: {...} }.
+export function agregarReceitaPorMes(massagistaId, ano) {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT mes,
+           SUM(quantidade) AS atendimentos,
+           SUM(receita)    AS receita,
+           SUM(CASE WHEN faixa_desconto='NORMAL' THEN quantidade ELSE 0 END) AS qty_normal,
+           SUM(CASE WHEN faixa_desconto='P10'    THEN quantidade ELSE 0 END) AS qty_p10,
+           SUM(CASE WHEN faixa_desconto='P20'    THEN quantidade ELSE 0 END) AS qty_p20,
+           SUM(CASE WHEN faixa_desconto='P30'    THEN quantidade ELSE 0 END) AS qty_p30,
+           SUM(CASE WHEN faixa_desconto='P50'    THEN quantidade ELSE 0 END) AS qty_p50
+    FROM receita_lancamentos
+    WHERE massagista_id = ? AND ano = ?
+    GROUP BY mes
+    ORDER BY mes
+  `).all(massagistaId, ano);
+
+  const porTerapia = db.prepare(`
+    SELECT mes, t.id AS tipo_id, t.nome AS terapia,
+           SUM(quantidade) AS atendimentos, SUM(receita) AS receita
+    FROM receita_lancamentos r
+    JOIN tipos_massagem t ON t.id = r.tipo_massagem_id
+    WHERE massagista_id = ? AND ano = ?
+    GROUP BY mes, t.id, t.nome
+    ORDER BY mes, receita DESC
+  `).all(massagistaId, ano);
+
+  const porTerapiaByMes = new Map();
+  for (const p of porTerapia) {
+    if (!porTerapiaByMes.has(p.mes)) porTerapiaByMes.set(p.mes, []);
+    porTerapiaByMes.get(p.mes).push({ tipo_id: p.tipo_id, terapia: p.terapia, atendimentos: p.atendimentos, receita: p.receita });
+  }
+
+  const meses = rows.map(r => ({
+    mes: r.mes,
+    atendimentos: r.atendimentos || 0,
+    receita: r.receita || 0,
+    distribuicao: { NORMAL: r.qty_normal||0, P10: r.qty_p10||0, P20: r.qty_p20||0, P30: r.qty_p30||0, P50: r.qty_p50||0 },
+    por_terapia: porTerapiaByMes.get(r.mes) || [],
+  }));
+  const total = {
+    atendimentos: meses.reduce((s,m)=>s+m.atendimentos, 0),
+    receita:      meses.reduce((s,m)=>s+m.receita, 0),
+  };
+  return { ano, meses, total };
+}
+
+// Nota media de uma massagista em (ano, mes), considerando o feedback.
+// Reusa a escala 0-9 do sistema (NOTA_MAP / NOTA_MAX definidos acima).
+const CAMPOS_NOTA_RECEITA = ['servicos_expectativa','servicos_explicacao','servicos_atitude','servicos_tecnica'];
+
+export function notaMediaPorMes(massagistaNome, ano) {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT * FROM feedback
+    WHERE LOWER(nome_massoterapeuta) = LOWER(?)
+      AND substr(submitted_at, 1, 4) = ?
+  `).all(massagistaNome, String(ano));
+  const acc = new Map(); // mes -> { soma, n }
+  for (const r of rows) {
+    const mes = parseInt((r.submitted_at || '').slice(5,7), 10);
+    if (!mes) continue;
+    const notas = CAMPOS_NOTA_RECEITA.map(c => notaNum(r[c])).filter(v => v != null);
+    if (!notas.length) continue;
+    const media = notas.reduce((a,b)=>a+b, 0) / notas.length;
+    if (!acc.has(mes)) acc.set(mes, { soma: 0, n: 0 });
+    const slot = acc.get(mes); slot.soma += media; slot.n += 1;
+  }
+  const out = {};
+  for (const [mes, { soma, n }] of acc) out[mes] = soma / n;
+  return out; // ex: { 1: 8.2, 2: 7.6, ... } na escala 0-9
+}
+
+// Calcula comissao por mes combinando receita (planilha) + nota (feedback).
+export function calcularComissaoPorMes(massagistaId, massagistaNome, ano) {
+  const receita = agregarReceitaPorMes(massagistaId, ano);
+  const notas   = notaMediaPorMes(massagistaNome, ano);
+
+  const meses = receita.meses.map(m => {
+    const nota = notas[m.mes] ?? null;
+    const base = m.receita * COMMISSION_BASE_RATE;
+    let bonusPct = 0, bonusLabel = null;
+    if (nota != null) {
+      for (const tier of COMMISSION_BONUS_TIERS) {
+        if (nota >= tier.min_nota) { bonusPct = tier.bonus; bonusLabel = tier.label; break; }
+      }
+    }
+    const comissao = base * (1 + bonusPct);
+    return { ...m, nota_media: nota, comissao_base: base, bonus_pct: bonusPct, bonus_label: bonusLabel, comissao };
+  });
+
+  const total = {
+    atendimentos: meses.reduce((s,m)=>s+m.atendimentos, 0),
+    receita:      meses.reduce((s,m)=>s+m.receita, 0),
+    comissao:     meses.reduce((s,m)=>s+m.comissao, 0),
+  };
+  return {
+    ano, meses, total,
+    regras: {
+      base_rate: COMMISSION_BASE_RATE,
+      tiers: COMMISSION_BONUS_TIERS,
+    },
+  };
+}
+
 export function deletarTipoMassagem(id) {
   return getDb().prepare('DELETE FROM tipos_massagem WHERE id=?').run(id).changes;
 }

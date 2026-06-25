@@ -6,6 +6,7 @@ import {
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
+  calcularComissaoPorMes,
 } from '../db.js';
 
 const router = Router();
@@ -134,6 +135,17 @@ router.get('/massagistas/:id/historico', (req, res) => {
   if (!m) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   const items = historicoMassagista(m.nome);
   res.json({ ok: true, massagista: m, items });
+});
+
+// Receita & comissao por mes. Fonte: planilha SPA 2026 (data/receita-2026.json
+// seedada em receita_lancamentos) + nota media do feedback do mesmo periodo.
+// Default: ano atual. ?ano=2026 para forcar.
+router.get('/massagistas/:id/receita', (req, res) => {
+  const m = listarMassagistas().find(m => m.id === parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  const ano = parseInt(req.query.ano) || new Date().getFullYear();
+  const data = calcularComissaoPorMes(m.id, m.nome, ano);
+  res.json({ ok: true, massagista: { id: m.id, nome: m.nome }, ...data });
 });
 
 router.delete('/massagistas/:id', ...podeEscreverSpa, (req, res) => {

@@ -1,0 +1,3109 @@
+{
+  "ano": 2026,
+  "geradoEm": "2026-06-25T16:22:50.552Z",
+  "fonte": "RECEITA TERAPIAS - SPA 2026.xlsx",
+  "precos_base": {
+    "RELAXANTE": 445,
+    "REVITALIZANTE": 445,
+    "DEEP TISSUE": 445,
+    "SIGNATURE LAVANDA": 445,
+    "BEM ESTAR DA FUTURA MAMÃE": 445,
+    "TRAT. DESINTOXICANTE DE AMENDOA": 445,
+    "MODELADORA AMENDOA": 445,
+    "IMMORTELLE (ROSTO)": 445,
+    "MASCULINA CADE": 445,
+    "POWER NAP": 218,
+    "REFLEXOLOGIA": 272,
+    "ESFOLIAÇÃO CORPORAL": 272,
+    "MASCARA CORPORAL": 359,
+    "FABULOSA KARITE": 445,
+    "FABULOSA KARITE__divergencias": [
+      {
+        "preco": 445,
+        "blocos": 34
+      },
+      {
+        "preco": 560,
+        "blocos": 8
+      }
+    ],
+    "NUTRIÇÃO INTENSA": 560,
+    "TERAPIA DO SONO": 560,
+    "RE ENERGIZANTE PEDRAS DO SOL": 445,
+    "GRAN SUBLIME": 663,
+    "GRAN RELAXAMENTO": 613,
+    "RITUAL DETOX": 663,
+    "PACOTE DAY SPA": 1309,
+    "DIA DA NOIVA OPC. 1": 2898,
+    "DIA DA NOIVA OPC. 2": 2035.5,
+    "DIA DO NOIVO OPC.2": 1046,
+    "PACOTE CASAL": 422.5,
+    "PACOTE GRUPO": 263,
+    "PACOTE 5 MASSAGEM ( 60 MIN )": 422.75,
+    "PACOTE 10 MASSAGEM ( 60 MIN )": 378.25
+  },
+  "faixas": [
+    {
+      "codigo": "NORMAL",
+      "desconto_pct": 0
+    },
+    {
+      "codigo": "P10",
+      "desconto_pct": 10
+    },
+    {
+      "codigo": "P20",
+      "desconto_pct": 20
+    },
+    {
+      "codigo": "P30",
+      "desconto_pct": 30
+    },
+    {
+      "codigo": "P50",
+      "desconto_pct": 50
+    }
+  ],
+  "lancamentos": [
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001573",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "BEM ESTAR DA FUTURA MAMÃE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001614",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P50",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001881",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 14
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001981",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "DIA DA NOIVA OPC. 2",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010001711",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "POWER NAP",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 1,
+      "matricula": "0010002052",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001573",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001614",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001881",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001981",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010001711",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "RITUAL DETOX",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 2,
+      "matricula": "0010002052",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 8
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "DIA DA NOIVA OPC. 2",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001614",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001881",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 8
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 8
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "POWER NAP",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "P20",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001981",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 8
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "DIA DA NOIVA OPC. 2",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010001711",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 3,
+      "matricula": "0010002052",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "MASCARA CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "RITUAL DETOX",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001573",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 8
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "MASCARA CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "RITUAL DETOX",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001614",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 17
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P50",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "POWER NAP",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001881",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010001711",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 4,
+      "matricula": "0010002052",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "GRAN SUBLIME",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001573",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 10
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001614",
+      "terapia": "PACOTE 10 MASSAGEM ( 60 MIN )",
+      "faixa": "P20",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 15
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "TERAPIA DO SONO",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "RE ENERGIZANTE PEDRAS DO SOL",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001881",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001981",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 4
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 5
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "RELAXANTE",
+      "faixa": "P20",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 7
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "MODELADORA AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "IMMORTELLE (ROSTO)",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "POWER NAP",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "REFLEXOLOGIA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "ESFOLIAÇÃO CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "MASCARA CORPORAL",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "RITUAL DETOX",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "PACOTE DAY SPA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "DIA DA NOIVA OPC. 2",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 6
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010001711",
+      "terapia": "PACOTE GRUPO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "NORMAL",
+      "quantidade": 11
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "RELAXANTE",
+      "faixa": "P10",
+      "quantidade": 9
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "NORMAL",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "DEEP TISSUE",
+      "faixa": "P10",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "SIGNATURE LAVANDA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "TRAT. DESINTOXICANTE DE AMENDOA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "POWER NAP",
+      "faixa": "P10",
+      "quantidade": 3
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "FABULOSA KARITE",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "NUTRIÇÃO INTENSA",
+      "faixa": "P10",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "GRAN RELAXAMENTO",
+      "faixa": "NORMAL",
+      "quantidade": 1
+    },
+    {
+      "ano": 2026,
+      "mes": 5,
+      "matricula": "0010002052",
+      "terapia": "PACOTE CASAL",
+      "faixa": "NORMAL",
+      "quantidade": 2
+    }
+  ]
+}

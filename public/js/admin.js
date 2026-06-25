@@ -1695,6 +1695,190 @@ document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
   } finally { btn.disabled = false; }
 });
 
+// ── Receita & Comissão (histórico) ─────────────────────────────────────
+const MESES_NOME = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const fmtBRL = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtBRLshort = v => {
+  const n = Number(v) || 0;
+  if (n >= 1000) return 'R$ ' + (n / 1000).toFixed(1).replace('.', ',') + 'k';
+  return 'R$ ' + n.toFixed(0);
+};
+const escHtmlSafe = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function renderReceitaSection(d) {
+  const el = document.getElementById('hist-receita');
+  if (!el) return;
+  const ano = d.ano;
+  const total = d.total || { atendimentos: 0, receita: 0, comissao: 0 };
+  const ticket = total.atendimentos > 0 ? total.receita / total.atendimentos : 0;
+
+  if (!d.meses || d.meses.length === 0) {
+    el.innerHTML = `
+      <section class="receita-section">
+        <div class="receita-head">
+          <span class="num">02</span>
+          <h3>Receita & Comissão</h3>
+          <span class="ano-pill">${ano}</span>
+        </div>
+        <div class="receita-empty">Sem lançamentos de receita para esta profissional em ${ano}.</div>
+      </section>`;
+    return;
+  }
+
+  const cards = `
+    <div class="receita-cards">
+      <div class="receita-card">
+        <div class="receita-card-label">Receita YTD</div>
+        <div class="receita-card-val gold">${fmtBRLshort(total.receita)}</div>
+        <div class="receita-card-sub">${fmtBRL(total.receita)}</div>
+      </div>
+      <div class="receita-card">
+        <div class="receita-card-label">Atendimentos YTD</div>
+        <div class="receita-card-val">${total.atendimentos}</div>
+        <div class="receita-card-sub">em ${d.meses.length} ${d.meses.length === 1 ? 'mês' : 'meses'}</div>
+      </div>
+      <div class="receita-card">
+        <div class="receita-card-label">Ticket médio</div>
+        <div class="receita-card-val">${fmtBRLshort(ticket)}</div>
+        <div class="receita-card-sub">${fmtBRL(ticket)}</div>
+      </div>
+      <div class="receita-card">
+        <div class="receita-card-label">Comissão YTD</div>
+        <div class="receita-card-val gold">${fmtBRLshort(total.comissao)}</div>
+        <div class="receita-card-sub">${fmtBRL(total.comissao)}</div>
+      </div>
+    </div>`;
+
+  // Constroi todas as linhas dos 12 meses (preenche vazios para visao completa)
+  const mesesIdx = new Map(d.meses.map(m => [m.mes, m]));
+  const rows = [];
+  for (let mes = 1; mes <= 12; mes++) {
+    const m = mesesIdx.get(mes);
+    if (!m) {
+      rows.push(`<tr class="empty-month">
+        <td class="mes">${MESES_NOME[mes - 1]}</td>
+        <td class="num">—</td><td class="num">—</td><td>—</td><td>—</td><td>—</td><td class="num">—</td><td></td>
+      </tr>`);
+      continue;
+    }
+    const dist = m.distribuicao;
+    const distTotal = (dist.NORMAL||0) + (dist.P10||0) + (dist.P20||0) + (dist.P30||0) + (dist.P50||0);
+    const seg = (n) => distTotal ? ((n / distTotal) * 100).toFixed(2) : 0;
+    const distBar = distTotal ? `
+      <div class="faixa-bar" title="Normal ${dist.NORMAL} / P10 ${dist.P10} / P20 ${dist.P20} / P30 ${dist.P30} / P50 ${dist.P50}">
+        ${dist.NORMAL ? `<span class="fx-NORMAL" style="width:${seg(dist.NORMAL)}%"></span>` : ''}
+        ${dist.P10    ? `<span class="fx-P10"    style="width:${seg(dist.P10)}%"></span>`    : ''}
+        ${dist.P20    ? `<span class="fx-P20"    style="width:${seg(dist.P20)}%"></span>`    : ''}
+        ${dist.P30    ? `<span class="fx-P30"    style="width:${seg(dist.P30)}%"></span>`    : ''}
+        ${dist.P50    ? `<span class="fx-P50"    style="width:${seg(dist.P50)}%"></span>`    : ''}
+      </div>` : '—';
+
+    const NOTA_MAX_LOCAL = 9;
+    const notaCell = m.nota_media != null
+      ? `<span class="receita-nota">${Math.round((m.nota_media / NOTA_MAX_LOCAL) * 100)}%</span>`
+      : `<span class="receita-nota dim">s/ nota</span>`;
+    const bonusCell = m.bonus_pct > 0
+      ? `<span class="receita-bonus" title="${escHtmlSafe(m.bonus_label || '')}">+${(m.bonus_pct * 100).toFixed(0)}%</span>`
+      : `<span style="color:var(--muted)">—</span>`;
+
+    const detalhe = (m.por_terapia || []).map(t =>
+      `<tr><td>${escHtmlSafe(t.terapia)}</td><td class="num">${t.atendimentos}</td><td class="num">${fmtBRL(t.receita)}</td></tr>`
+    ).join('');
+
+    rows.push(`
+      <tr data-mes="${mes}" class="mes-row">
+        <td class="mes">${MESES_NOME[mes - 1]}</td>
+        <td class="num">${m.atendimentos}</td>
+        <td class="num">${fmtBRL(m.receita)}</td>
+        <td>${distBar}</td>
+        <td>${notaCell}</td>
+        <td>${bonusCell}</td>
+        <td class="num comissao">${fmtBRL(m.comissao)}</td>
+        <td class="num"><span class="receita-expand-icon">›</span></td>
+      </tr>
+      <tr class="receita-detail-row" data-detail="${mes}" style="display:none">
+        <td colspan="8" style="padding:0">
+          <div class="receita-detail">
+            <div class="receita-detail-head">Detalhe por terapia · ${MESES_NOME[mes - 1]}/${ano}</div>
+            <table>
+              <tbody>
+                ${detalhe || '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Sem terapias registradas</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>`);
+  }
+
+  const tabela = `
+    <div class="receita-table-wrap">
+      <table class="receita-table">
+        <thead>
+          <tr>
+            <th>Mês</th>
+            <th class="num">Atend.</th>
+            <th class="num">Receita</th>
+            <th>Faixas de desconto</th>
+            <th>Nota</th>
+            <th>Bônus</th>
+            <th class="num">Comissão</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    </div>`;
+
+  const regras = d.regras || {};
+  const tiers = (regras.tiers || []).map(t => `<span class="pill">${escHtmlSafe(t.label)}</span>`).join('');
+  const foot = `
+    <div class="receita-foot">
+      <span class="pill">Base <strong>${((regras.base_rate || 0) * 100).toFixed(0)}%</strong> sobre receita</span>
+      ${tiers}
+      <span style="margin-left:auto;color:var(--muted);font-style:italic">Fonte: planilha SPA 2026 · faixas de desconto 0/10/20/30/50%</span>
+    </div>`;
+
+  el.innerHTML = `
+    <section class="receita-section">
+      <div class="receita-head">
+        <span class="num">02</span>
+        <h3>Receita & Comissão</h3>
+        <span class="ano-pill">${ano}</span>
+      </div>
+      ${cards}
+      ${tabela}
+      ${foot}
+    </section>`;
+
+  // Expand/collapse linhas
+  el.querySelectorAll('tr.mes-row').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const mes = tr.dataset.mes;
+      const det = el.querySelector(`tr.receita-detail-row[data-detail="${mes}"]`);
+      if (!det) return;
+      const opened = det.style.display !== 'none';
+      det.style.display = opened ? 'none' : '';
+      tr.classList.toggle('expanded', !opened);
+    });
+  });
+}
+
+async function carregarReceitaMassagista(id) {
+  const ano = new Date().getFullYear();
+  try {
+    const res = await api(`/api/massagistas/${id}/receita?ano=${ano}`);
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) {
+      document.getElementById('hist-receita').innerHTML = '';
+      return;
+    }
+    renderReceitaSection(d);
+  } catch (e) {
+    document.getElementById('hist-receita').innerHTML = '';
+  }
+}
+
 // ── Histórico de Massagista ──
 window.showHistoricoMassagista = async (id, nome) => {
   showView('view-historico');
@@ -1703,6 +1887,10 @@ window.showHistoricoMassagista = async (id, nome) => {
   document.getElementById('hist-title').textContent = nome;
   document.getElementById('hist-kpi-row').innerHTML = '<div class="hist-kpi"><div class="hist-kpi-label">Carregando…</div></div>';
   document.getElementById('hist-list').innerHTML = '';
+  const recEl = document.getElementById('hist-receita');
+  if (recEl) recEl.innerHTML = '';
+  // Carrega receita & comissao em paralelo (nao bloqueia render do historico).
+  carregarReceitaMassagista(id);
 
   let res, d;
   try {
