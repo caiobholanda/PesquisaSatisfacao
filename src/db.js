@@ -1469,9 +1469,12 @@ export function inserirSpaPerfil(dados) {
   // Amarra ao slot certo da reserva: documento_perfil_id (pessoa 1) ou
   // documento_perfil_id2 (pessoa 2). Sem isso, ambas as colunas poderiam
   // apontar para o mesmo registro em reservas casal.
+  // DEFESA EM PROFUNDIDADE: o `AND ${col} IS NULL` replica o gate de uso unico
+  // tambem na funcao legada. Se algum codigo futuro chamar inserirSpaPerfil
+  // (sem lock), nao consegue bypassar a trava silenciosamente.
   if (reserva_id) {
     const col = resolvedPessoa === 2 ? 'documento_perfil_id2' : 'documento_perfil_id';
-    db.prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(perfil_id, reserva_id);
+    db.prepare(`UPDATE reservas SET ${col}=? WHERE id=? AND ${col} IS NULL`).run(perfil_id, reserva_id);
   }
   return perfil_id;
 }

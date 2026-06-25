@@ -148,7 +148,7 @@ export function recalcularSeloComposto(componentes, keyId) {
   const seloRaw = _serializarSeloComposto(componentes);
   return _hmacProvaComKey(seloRaw, keyId || _CONSENT_KEY_ID);
 }
-import { buscarDocumentoToken, inserirSpaPerfil, inserirSpaPerfilComLock, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
+import { buscarDocumentoToken, inserirSpaPerfilComLock, vincularDocumentoToken, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
 import { inserirRespostaPesquisa, buscarPesquisaPublicada } from '../qualidade.js';
 
 const router = Router();
