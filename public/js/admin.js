@@ -2078,11 +2078,11 @@ async function showHistoricoMassagista(id, nome) {
     { campo: 'servicos_atitude', label: 'Atitude e qualidade dos serviços' },
     { campo: 'servicos_tecnica', label: 'Técnica e habilidade' },
   ];
-  const HIST_INSTALACOES = [
-    { campo: 'instalacoes_conforto', label: 'Conforto e conservação da estrutura' },
-    { campo: 'instalacoes_organizacao', label: 'Organização da sala e atmosfera' },
-    { campo: 'instalacoes_conveniencia', label: 'Itens de conveniência' },
-  ];
+  // Instalações foi removida desta tela: não conta como avaliação da
+  // massoterapeuta (avgRowMass já era exclusivo de serviços). Bloco 02 antigo
+  // (Instalações) e subseção "Sobre instalações" do bloco de Comentários
+  // foram retirados. Drawer da pesquisa e tela de Qualidade continuam
+  // exibindo instalações — escopo só do histórico por profissional.
 
   // Regra de exclusão: quando a profissional NÃO é bilíngue, hóspedes em idioma
   // não-PT NÃO conseguem entender a "explicação dos benefícios" — esse quesito
@@ -2093,42 +2093,28 @@ async function showHistoricoMassagista(id, nome) {
       : items;
     return `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(filtrados, campo))}</div>${renderDistBar(computeDist(campo, filtrados))}</div>`;
   }).join('');
-  const instalacoesHtml = HIST_INSTALACOES.map(({ campo, label }) =>
-    `<div class="q-row"><div class="q-label-row"><div class="q-label">${label}</div>${renderMediaBadge(avgCampo(items, campo))}</div>${renderDistBar(computeDist(campo))}</div>`
-  ).join('');
 
   const comentariosServicos = items
     .filter(r => r.servicos_comentario)
     .map(r => ({ texto: r.servicos_comentario, nome: r.nome, data: r.submitted_at }));
-  const comentariosInst = items
-    .filter(r => r.instalacoes_comentario)
-    .map(r => ({ texto: r.instalacoes_comentario, nome: r.nome, data: r.submitted_at }));
-  const temComentarios = comentariosServicos.length > 0 || comentariosInst.length > 0;
+  const temComentarios = comentariosServicos.length > 0;
 
   document.getElementById('hist-list').innerHTML = `
     <div class="hist-analysis-grid">
-      <div class="analysis-block">
+      <div class="analysis-block full">
         <div class="block-head">
           <span class="block-num">01</span>
           <h3 class="block-title">Serviços</h3>
         </div>
         ${servicosHtml}
       </div>
-      <div class="analysis-block">
-        <div class="block-head">
-          <span class="block-num">02</span>
-          <h3 class="block-title">Instalações</h3>
-        </div>
-        ${instalacoesHtml}
-      </div>
       ${temComentarios ? `
       <div class="analysis-block full">
         <div class="block-head">
-          <span class="block-num">03</span>
+          <span class="block-num">02</span>
           <h3 class="block-title">Comentários</h3>
         </div>
         ${renderTextoGroup('Sobre serviços', comentariosServicos)}
-        ${renderTextoGroup('Sobre instalações', comentariosInst)}
       </div>` : ''}
     </div>
 
