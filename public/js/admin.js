@@ -399,8 +399,6 @@ async function loadTable() {
   if (!d.ok) return;
   _total = d.total;
 
-  document.getElementById('tbl-count').textContent = `${d.total} resultado${d.total !== 1 ? 's' : ''}`;
-
   const tbody = document.getElementById('tbl-body');
   const empty = document.getElementById('tbl-empty');
 
@@ -408,6 +406,14 @@ async function loadTable() {
   const busca = (document.getElementById('f-busca').value || '').toLowerCase();
   let items = d.items;
   if (busca) items = items.filter(r => r.nome?.toLowerCase().includes(busca) || r.email?.toLowerCase().includes(busca));
+
+  // Contador reflete o subset realmente exibido: usa d.total quando nao ha
+  // busca, ou items.length quando a busca client-side filtrou linhas.
+  const totalExibido = busca ? items.length : d.total;
+  const totalLabel = busca && items.length !== d.total
+    ? `${items.length} de ${d.total} resultado${d.total !== 1 ? 's' : ''}`
+    : `${totalExibido} resultado${totalExibido !== 1 ? 's' : ''}`;
+  document.getElementById('tbl-count').textContent = totalLabel;
 
   if (!items.length) { tbody.innerHTML = ''; empty.style.display = ''; }
   else {
@@ -602,6 +608,12 @@ window.openDrawer = openDrawer;
 
 document.getElementById('btn-close-drawer').addEventListener('click', closeDrawer);
 document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+// Tecla ESC fecha o drawer (atalho de teclado pareando outros modais).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!document.getElementById('drawer').classList.contains('open')) return;
+  closeDrawer();
+});
 function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
