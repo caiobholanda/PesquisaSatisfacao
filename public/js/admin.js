@@ -1763,11 +1763,11 @@ function renderEscala(massagistas) {
   const chipNome = document.getElementById('escala-prof-chip-nome');
   if (_escalaFiltroNome) {
     if (sub) sub.textContent = 'Escala de trabalho mensal';
-    if (chip) chip.classList.add('visible');
+    if (chip) chip.style.display = 'inline-flex';
     if (chipNome) chipNome.textContent = _escalaFiltroNome;
   } else {
     if (sub) sub.textContent = 'Horários por massoterapeuta';
-    if (chip) chip.classList.remove('visible');
+    if (chip) chip.style.display = 'none';
   }
   const ativas = _escalaFiltroId
     ? massagistas.filter(m => m.ativo && m.id === _escalaFiltroId)
@@ -1779,9 +1779,15 @@ function renderEscala(massagistas) {
 
   const _cellHtml = (m, dia) => {
     const info = _escalaGetCellInfo(m, dia);
-    const cls = { on:'escala-td-on', compat:'escala-td-on', off:'escala-td-off', folga:'escala-td-folga', extra:'escala-td-extra', exc:'escala-td-exc' }[info.tipo] || 'escala-td-off';
-    const titleAttr = info.title ? ` title="${escHtml(info.title)}"` : '';
-    return `<span class="${cls}"${titleAttr}>${info.texto || '—'}</span>`;
+    const ta = info.title ? ` title="${escHtml(info.title)}"` : '';
+    if (info.tipo === 'off')    return `<span class="escala-td-off"${ta}>—</span>`;
+    if (info.tipo === 'folga')  return `<span class="escala-td-folga"${ta}>folga</span>`;
+    if (info.tipo === 'compat') return `<span class="escala-td-on"${ta}><span class="et-ini">✓</span></span>`;
+    // on / exc / extra: duas linhas (início e fim)
+    const parts = (info.texto || '').split('–');
+    const ini = parts[0] || '', fim = parts[1] || '';
+    const cls = info.tipo === 'extra' ? 'escala-td-extra' : info.tipo === 'exc' ? 'escala-td-exc' : 'escala-td-on';
+    return `<span class="${cls}"${ta}><span class="et-ini">${ini}</span>${fim ? `<span class="et-fim">${fim}</span>` : ''}</span>`;
   };
 
   wrap.innerHTML = `
@@ -1794,7 +1800,7 @@ function renderEscala(massagistas) {
       <thead>
         <tr>
           <th>Profissional</th>
-          ${dias.map(d => `<th class="${d.isHoje ? 'escala-th-hoje' : ''}${d.isFds ? ' escala-th-fds' : ''}" title="${d.dowAbrev}">${String(d.num).padStart(2,'0')}<br><small>${d.dowAbrev}</small></th>`).join('')}
+          ${dias.map(d => `<th class="${d.isHoje ? 'escala-th-hoje' : ''}${d.isFds ? ' escala-th-fds' : ''}" title="${d.dowAbrev} ${String(d.num).padStart(2,'0')}"><span class="et-dia-num">${String(d.num).padStart(2,'0')}</span><span class="et-dia-dow">${d.dowAbrev}</span></th>`).join('')}
           <th></th>
         </tr>
       </thead>

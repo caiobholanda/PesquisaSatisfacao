@@ -2580,49 +2580,116 @@
     }
 
     /* ── Escala Mensal ── */
-    .escala-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.75rem; min-width:600px; }
-    .escala-table th { padding:.45rem .28rem .4rem; text-align:center; font-size:.6rem; font-weight:600; letter-spacing:.04em; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; background:var(--surface); line-height:1.25; transition:background .15s, color .15s; }
-    .escala-table th small { font-size:.53rem; font-weight:400; display:block; opacity:.65; text-transform:uppercase; letter-spacing:.05em; margin-top:.1rem; }
-    .escala-table th:first-child { text-align:left; padding:.45rem 1rem; font-size:.63rem; text-transform:uppercase; letter-spacing:.08em; }
-    .escala-table td { padding:.38rem .28rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; background:var(--surface); transition:background .1s; }
-    .escala-table td:first-child { font-size:.8rem; font-weight:500; min-width:155px; max-width:230px; padding:.38rem 1rem; white-space:normal; word-break:break-word; line-height:1.3; border-right:1px solid var(--border-soft); }
-    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; box-shadow:3px 0 8px rgba(0,0,0,.07); }
-    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.38rem .625rem; box-shadow:-3px 0 8px rgba(0,0,0,.07); }
+    .escala-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.75rem; min-width:520px; }
+
+    /* Cabeçalho dos dias */
+    .escala-table th {
+      padding:.5rem .22rem .45rem;
+      text-align:center; font-size:.58rem; font-weight:700; letter-spacing:.03em;
+      color:var(--muted); border-bottom:2px solid var(--border);
+      white-space:nowrap; background:var(--surface); line-height:1.2;
+      transition:background .15s, color .15s;
+    }
+    .escala-table th .et-dia-num { display:block; font-size:.72rem; font-weight:700; line-height:1; margin-bottom:.12rem; }
+    .escala-table th .et-dia-dow { display:block; font-size:.52rem; font-weight:400; text-transform:uppercase; letter-spacing:.06em; opacity:.6; }
+    .escala-table th:first-child { text-align:left; padding:.5rem 1.125rem; font-size:.62rem; text-transform:uppercase; letter-spacing:.09em; }
+
+    /* Células */
+    .escala-table td {
+      padding:.35rem .2rem; border-bottom:1px solid var(--border-soft);
+      vertical-align:middle; background:var(--surface); transition:background .1s;
+    }
+    .escala-table td:first-child {
+      font-size:.8rem; font-weight:600;
+      min-width:150px; max-width:190px; width:190px;
+      padding:.35rem 1.125rem;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      border-right:2px solid var(--border);
+    }
+
+    /* Sticky + sombras */
+    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; box-shadow:4px 0 10px rgba(0,0,0,.09); }
+    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.35rem .625rem; box-shadow:-4px 0 10px rgba(0,0,0,.09); }
     .escala-table thead th:first-child, .escala-table thead th:last-child { z-index:3; }
     .escala-table td:not(:first-child):not(:last-child) { text-align:center; }
-    /* Today column */
-    .escala-th-hoje { background:var(--gold) !important; color:var(--bg) !important; font-weight:700 !important; }
-    .escala-td-hoje { background:color-mix(in srgb, var(--gold) 8%, var(--surface)) !important; }
-    /* Weekend columns */
-    .escala-th-fds { background:var(--surface2) !important; }
-    .escala-td-fds:not(.escala-td-hoje) { background:color-mix(in srgb, var(--border-soft) 80%, var(--surface)); }
-    .escala-table tr:hover td { background:var(--surface2); }
-    .escala-table tr:hover .escala-td-hoje { background:color-mix(in srgb, var(--gold) 14%, var(--surface2)) !important; }
+
+    /* Hoje */
+    .escala-th-hoje { background:var(--gold) !important; color:var(--bg) !important; }
+    .escala-th-hoje .et-dia-num { font-size:.78rem; }
+    .escala-td-hoje { background:color-mix(in srgb, var(--gold) 9%, var(--surface)) !important; }
+
+    /* Fins de semana */
+    .escala-th-fds { background:var(--surface2) !important; opacity:1; }
+    .escala-th-fds .et-dia-dow { opacity:.45; }
+    .escala-td-fds:not(.escala-td-hoje) { background:color-mix(in srgb, var(--border) 14%, var(--surface)); }
+
+    /* Hover */
+    .escala-table tr:hover td:not(.escala-td-hoje) { background:var(--surface2); }
+    .escala-table tr:hover .escala-td-hoje { background:color-mix(in srgb, var(--gold) 15%, var(--surface2)) !important; }
     .escala-table tr:last-child td { border-bottom:none; }
-    /* Cell content types */
-    .escala-td-on  { font-family:var(--mono); font-size:.65rem; color:var(--success); white-space:nowrap; letter-spacing:-.01em; }
-    .escala-td-off { color:var(--border); font-size:.9rem; line-height:1; }
-    .escala-td-folga { font-size:.58rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--danger); background:var(--danger-dim); padding:.12rem .3rem; border-radius:3px; white-space:nowrap; }
-    .escala-td-extra { font-family:var(--mono); font-size:.65rem; color:var(--gold); white-space:nowrap; letter-spacing:-.01em; font-weight:500; }
-    .escala-td-exc  { font-family:var(--mono); font-size:.65rem; color:var(--success); white-space:nowrap; letter-spacing:-.01em; }
-    .escala-td-exc::after { content:'✦'; font-size:.42rem; vertical-align:super; color:var(--gold); margin-left:1px; line-height:0; }
-    /* Navigation */
-    .escala-nav { display:flex; align-items:center; gap:.875rem; padding:1.125rem 1.5rem .625rem; }
-    .escala-nav-label { font-family:var(--serif); font-size:1.0625rem; font-weight:300; letter-spacing:.06em; color:var(--text); min-width:170px; text-align:center; }
-    /* Legend */
-    .escala-legenda { display:flex; flex-wrap:wrap; gap:.5rem 1.75rem; align-items:center; padding:.875rem 1.5rem; border-top:1px solid var(--border-soft); font-size:.7rem; color:var(--muted); }
-    .escala-legenda-item { display:inline-flex; align-items:center; gap:.4rem; }
-    /* Prof chip in hero */
-    .escala-prof-chip { display:none; align-items:center; gap:.5rem; margin-top:.5rem; padding:.3rem .8rem .3rem .55rem; background:var(--gold-dim); border:1px solid rgba(138,107,31,.28); border-radius:3px; width:fit-content; }
-    .escala-prof-chip.visible { display:inline-flex; }
-    .escala-prof-chip::before { content:''; display:block; width:3px; height:1em; background:var(--gold); border-radius:2px; flex-shrink:0; }
-    .escala-prof-chip-nome { font-family:var(--serif); font-size:.875rem; font-weight:400; letter-spacing:.04em; color:var(--gold); }
-    /* Exception rows */
+
+    /* ── Conteúdo das células ── */
+    /* Pill de horário (trabalhando) */
+    .escala-td-on {
+      display:inline-flex; flex-direction:column; align-items:center;
+      background:color-mix(in srgb, var(--success) 11%, transparent);
+      border-radius:4px; padding:.1rem .22rem; min-width:30px; gap:0; cursor:default;
+    }
+    .et-ini { font-family:var(--mono); font-size:.68rem; font-weight:700; color:var(--success); line-height:1.25; }
+    .et-fim { font-family:var(--mono); font-size:.56rem; color:var(--success); opacity:.6; line-height:1.25; }
+
+    /* Sem horário */
+    .escala-td-off { color:var(--border); font-size:1rem; line-height:1; display:inline-block; }
+
+    /* Folga / bloqueio */
+    .escala-td-folga {
+      display:inline-block; font-size:.55rem; font-weight:800;
+      letter-spacing:.07em; text-transform:uppercase;
+      color:var(--danger); background:var(--danger-dim);
+      padding:.12rem .28rem; border-radius:3px; cursor:default;
+    }
+
+    /* Disponível extra (exceção) */
+    .escala-td-extra {
+      display:inline-flex; flex-direction:column; align-items:center;
+      background:color-mix(in srgb, var(--gold) 14%, transparent);
+      border-radius:4px; padding:.1rem .22rem; min-width:30px; gap:0; cursor:default;
+    }
+    .escala-td-extra .et-ini { color:var(--gold); }
+    .escala-td-extra .et-fim { color:var(--gold); }
+
+    /* Exceção parcial */
+    .escala-td-exc {
+      display:inline-flex; flex-direction:column; align-items:center; position:relative;
+      background:color-mix(in srgb, var(--success) 11%, transparent);
+      border-radius:4px; padding:.1rem .22rem; min-width:30px; gap:0; cursor:default;
+    }
+    .escala-td-exc::after { content:'✦'; position:absolute; top:-.12rem; right:-.12rem; font-size:.42rem; color:var(--gold); line-height:1; }
+
+    /* Navegação do mês */
+    .escala-nav { display:flex; align-items:center; gap:1rem; padding:1.125rem 1.5rem .75rem; border-bottom:1px solid var(--border-soft); margin-bottom:.5rem; }
+    .escala-nav-label { font-family:var(--serif); font-size:1.125rem; font-weight:300; letter-spacing:.08em; color:var(--text); min-width:175px; text-align:center; }
+
+    /* Legenda */
+    .escala-legenda { display:flex; flex-wrap:wrap; gap:.5rem 2rem; align-items:center; padding:.875rem 1.5rem; border-top:1px solid var(--border-soft); font-size:.7rem; color:var(--muted); }
+    .escala-legenda-item { display:inline-flex; align-items:center; gap:.5rem; }
+
+    /* Chip da massoterapeuta no hero */
+    .escala-prof-chip {
+      display:inline-flex; align-items:center; gap:.55rem; margin-top:.625rem;
+      padding:.35rem .9rem .35rem .6rem;
+      background:var(--gold-dim); border:1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+      border-radius:4px;
+    }
+    .escala-prof-chip::before { content:''; display:block; width:3px; height:1.1em; background:var(--gold); border-radius:2px; flex-shrink:0; }
+    .escala-prof-chip-nome { font-family:var(--serif); font-size:.9375rem; font-weight:400; letter-spacing:.05em; color:var(--gold); }
+
+    /* Exceções */
     .exc-row-global { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.5rem .875rem; border:1px solid var(--border-soft); border-left:3px solid var(--muted); border-radius:4px; background:var(--surface); transition:background .12s; }
     .exc-row-global:hover { background:var(--surface2); }
-    .exc-row-nome { font-weight:500; flex:1; min-width:140px; font-size:.875rem; color:var(--text); }
-    .exc-row-data { font-size:.8rem; color:var(--text); font-family:var(--mono); }
-    .exc-row-tipo { font-size:.72rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+    .exc-row-nome { font-weight:600; flex:1; min-width:140px; font-size:.85rem; color:var(--text); }
+    .exc-row-data { font-size:.8rem; color:var(--muted); font-family:var(--mono); }
+    .exc-row-tipo { font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
     .exc-tipo-disp { color:var(--gold); border-left:2px solid var(--gold); padding-left:.4rem; }
     .exc-tipo-indisp { color:var(--muted); }
     .exc-row-hora { font-size:.8rem; color:var(--text); font-family:var(--mono); }
