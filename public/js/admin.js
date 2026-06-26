@@ -526,7 +526,7 @@ async function openDrawer(id) {
   _modalOpen = true;
 
   const res = await api(`/api/feedback/item/${id}`);
-  if (!res) return;
+  if (!res) { content.innerHTML = '<div class="detail-section" style="color:var(--danger)">Erro ao carregar detalhes. Tente novamente.</div>'; return; }
   const d = await res.json();
   const r = d.item;
   if (!r) { content.innerHTML = '<div class="detail-section" style="color:var(--danger)">Avaliação não encontrada.</div>'; return; }
@@ -665,6 +665,7 @@ async function _popularSelectMassoterapeutas() {
 
 // ── Navegação entre views ──
 function showView(id) {
+  if (document.getElementById('drawer')?.classList.contains('open')) closeDrawer();
   // Lista completa de views.
   ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
     const el = document.getElementById(v);
@@ -1863,6 +1864,7 @@ function renderEscala(massagistas) {
       <span class="escala-legenda-item"><span class="escala-td-exc">08–17</span> tem exceção</span>
       <span class="escala-legenda-item"><span class="escala-td-extra">09–13</span> disponível extra</span>
       <span class="escala-legenda-item"><span class="escala-td-folga">folga</span> bloqueio</span>
+      <span class="escala-legenda-item"><span class="escala-td-off">—</span> não trabalha</span>
     </div>`;
 
   wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {
