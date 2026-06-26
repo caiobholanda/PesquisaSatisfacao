@@ -169,7 +169,9 @@ function showApp() {
   try { aplicarRoleNaUI((currentUserPayload() || {}).role); } catch {}
   loadAll(); // sempre carrega dados do painel principal em background
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
-  const view = st.view || 'view-reservas';
+  const _escalaParam = new URLSearchParams(location.search).get('escala');
+  if (_escalaParam) _escalaFiltroId = +_escalaParam;
+  const view = _escalaParam ? 'view-escala' : (st.view || 'view-reservas');
   showView(view);
   if (view === 'view-massagistas') { loadMassagistas(); }
   else if (view === 'view-tipos') { loadTipos(); }
@@ -183,6 +185,7 @@ function showApp() {
   else if (view === 'view-auditoria') { initAuditoriaView(); }
   // view-anamnese-editor e view-pesquisa-editor: ja sao carregadas
   // pelo showView(view) acima — evita fetch duplicado no boot.
+  else if (view === 'view-escala') { loadEscala(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -1241,6 +1244,10 @@ document.getElementById('btn-back-escala').addEventListener('click', () => {
   _escalaFiltroId = null;
   _escalaFiltroNome = null;
   _escalaRetornoView = 'view-massagistas';
+  const _sp = new URLSearchParams(location.search);
+  _sp.delete('escala');
+  const _q = _sp.toString();
+  history.replaceState(null, '', location.pathname + (_q ? '?' + _q : ''));
   showView(retorno);
   if (retorno === 'view-massagistas') loadMassagistas();
 });
@@ -1664,6 +1671,9 @@ function showEscalaMassagista(id, nome) {
   _escalaFiltroId   = id;
   _escalaFiltroNome = nome;
   _escalaRetornoView = 'view-massagistas';
+  const _sp = new URLSearchParams(location.search);
+  _sp.set('escala', String(id));
+  history.replaceState(null, '', location.pathname + '?' + _sp.toString());
   showView('view-escala'); // aciona loadEscala() via showView
 }
 
@@ -1679,6 +1689,18 @@ async function loadEscala() {
   }
   _massagistas = d.items || [];
   _massagistasLoaded = true;
+  if (_escalaFiltroId && !_escalaFiltroNome) {
+    const _mf = _massagistas.find(m => m.ativo && m.id === _escalaFiltroId);
+    if (_mf) {
+      _escalaFiltroNome = _mf.nome;
+    } else {
+      _escalaFiltroId = null;
+      const _sp = new URLSearchParams(location.search);
+      _sp.delete('escala');
+      const _q = _sp.toString();
+      history.replaceState(null, '', location.pathname + (_q ? '?' + _q : ''));
+    }
+  }
   renderEscala(_massagistas);
   renderExcecoesGlobal();
 }
