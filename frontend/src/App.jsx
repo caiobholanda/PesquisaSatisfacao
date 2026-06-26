@@ -176,7 +176,7 @@ export default function App() {
   return (
     <div className="app-root">
       {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
-      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} onBack={() => go('welcome')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} secoesOrdenadas={secoesOrdenadas} pesquisaVersao={pesquisaVersao} />}
+      {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} secoesOrdenadas={secoesOrdenadas} pesquisaVersao={pesquisaVersao} />}
       {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
     </div>
   );

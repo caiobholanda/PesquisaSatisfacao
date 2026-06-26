@@ -173,7 +173,7 @@ function ExtrasSecao({ perguntas, valores, setValor, errors = {}, sectionPrefix 
   );
 }
 
-export default function FormScreen({ visible, onSubmit, onBack, prefill = null, formStart = null, onTimeout, i18n = null, extrasPorSecao = [], secoesOrdenadas = [], pesquisaVersao = null }) {
+export default function FormScreen({ visible, onSubmit, prefill = null, formStart = null, onTimeout, i18n = null, extrasPorSecao = [], secoesOrdenadas = [], pesquisaVersao = null }) {
   // Quando a reserva está num idioma diferente de pt-BR, sobrescrevemos os
   // rótulos das perguntas e os nomes das classificações com o que veio do
   // backend (traduzido). O 2º idioma (EN) some — fica só o idioma do hóspede.
@@ -298,8 +298,15 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
     for (const grupo of (extrasPorSecao || [])) {
       for (const p of grupo.perguntas) {
         if (!p.obrigatoria) continue;
+        // Multipla obrigatoria sem opcoes configuradas: impossivel responder
+        // (UI nao renderiza inputs). Ignora a validacao em vez de travar o
+        // usuario — falha do admin no editor, nao do hospede.
+        if (p.tipo === 'multipla' && !(Array.isArray(p.opcoes) && p.opcoes.length)) continue;
         const v = extras[p.chave]?.valor;
-        const vazio = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+        const vazio = v === undefined
+          || v === null
+          || (typeof v === 'string' && !v.trim())
+          || (Array.isArray(v) && v.length === 0);
         if (vazio) extErrs[p.chave] = 'Responda esta pergunta.';
       }
     }
@@ -478,19 +485,11 @@ export default function FormScreen({ visible, onSubmit, onBack, prefill = null, 
 
   return (
     <div className="screen" style={{ opacity: visible ? 1 : 0 }}>
+      {/* Timer continua rodando em background (useEffect mais acima); o
+          onTimeout do App.jsx ainda dispara quando expira. Tiramos a UI
+          visual (botao Voltar + display MM:SS) para o cliente nao se sentir
+          pressionado. timeLeft permanece no estado por consistencia futura. */}
       <div className="progress-bar">
-        <div className="progress-top">
-          <button className="btn-voltar" onClick={onBack} aria-label="Voltar à tela inicial">
-            <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden="true">
-              <path d="M5 1L1 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <line x1="1" y1="5" x2="13" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            Voltar
-          </button>
-          <div className={`timer-display${timeLeft < 2 * 60 * 1000 ? ' urgent' : ''}`} aria-live="polite" aria-label="Tempo restante">
-            {String(Math.floor(timeLeft / 60000)).padStart(2, '0')}:{String(Math.floor((timeLeft % 60000) / 1000)).padStart(2, '0')}
-          </div>
-        </div>
         <div className="progress-inner" aria-hidden="true">
           {fills.map((f, i) => (
             <div key={i} className="trace"><div className="tf" style={{ width: f * 100 + '%' }}></div></div>
