@@ -678,6 +678,14 @@ function showView(id) {
     const s = document.getElementById('search-tipos');
     if (s) s.value = '';
   }
+  if (id !== 'view-escala') {
+    const _sp = new URLSearchParams(location.search);
+    if (_sp.has('escala')) {
+      _sp.delete('escala');
+      const _q = _sp.toString();
+      history.replaceState(null, '', location.pathname + (_q ? '?' + _q : ''));
+    }
+  }
   window.scrollTo(0, 0);
   const cur = JSON.parse(sessionStorage.getItem('_vst') || '{}');
   sessionStorage.setItem('_vst', JSON.stringify({ ...cur, view: id }));
