@@ -3973,32 +3973,50 @@
     </div>
 
     <!-- ── VIEW: Editor da Pesquisa de Satisfação (espelho da anamnese) ── -->
-    <div id="view-pesquisa-editor" class="view-page" style="display:none">
-      <div class="page-hero">
-        <div>
-          <div class="page-hero-eyebrow">
-            <span class="page-num">Admin</span>
-            <h1 class="page-title">Perguntas da Pesquisa de Satisfação</h1>
+    <div id="view-pesquisa-editor" class="view-page anamx-page" style="display:none">
+      <!-- Hero -->
+      <header class="anamx-hero">
+        <div class="anamx-hero-nav">
+          <div class="anamx-hero-actions">
+            <button class="anamx-pill-btn" id="btn-pesq-reload" title="Atualizar">
+              <span aria-hidden="true">↻</span> Atualizar
+            </button>
+            <div id="pesq-historico-btn-host" style="display:inline-flex;align-items:center"></div>
+            <div id="pesq-perguntas-btn-host" style="display:inline-flex;align-items:center"></div>
           </div>
-          <p class="page-sub">Edite as perguntas que o hóspede responde após o tratamento. Tudo é traduzido automaticamente em 7 idiomas.</p>
         </div>
-        <button class="btn btn-outline btn-sm" id="btn-pesq-reload" style="margin-left:auto">↻ Atualizar</button>
-      </div>
-
-      <div id="pesq-empty" class="empty" style="display:none;margin:2rem 0">
-        Carregando…
-      </div>
-
-      <div id="pesq-secoes"></div>
-
-      <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
-        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
-        <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Serviços", "Instalações").</p>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-          <input id="pesq-nova-secao-titulo" placeholder="Nome da seção (ex: Recomendação)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
-          <button class="btn btn-primary btn-sm" id="btn-pesq-add-secao">+ Criar seção</button>
+        <div class="anamx-hero-meta">
+          <span class="anamx-eyebrow">Editor • Hotel Gran Marquise</span>
+          <h1 class="anamx-title">Perguntas da Pesquisa de Satisfação</h1>
+          <p class="anamx-sub">Edite as perguntas que o hóspede responde após o tratamento. Tudo é traduzido automaticamente em 7 idiomas.</p>
         </div>
+      </header>
+
+      <!-- Loading -->
+      <div id="pesq-empty" class="anamx-loading" style="display:none">
+        <div class="anamx-spinner" aria-hidden="true"></div>
+        <span>Carregando estrutura da pesquisa…</span>
       </div>
+
+      <!-- Shell (2 col) -->
+      <div class="anamx-shell" id="pesqx-shell" style="display:none">
+        <aside class="anamx-sidebar" aria-label="Navegação por seções">
+          <div class="anamx-side-eyebrow">Seções</div>
+          <nav id="pesqx-nav" class="anamx-nav"></nav>
+          <button class="anamx-add-secao" id="pesqx-btn-add-secao" type="button">
+            <span class="anamx-add-plus" aria-hidden="true">+</span>
+            <span>Adicionar seção</span>
+          </button>
+        </aside>
+        <main class="anamx-main">
+          <div id="pesqx-content"></div>
+        </main>
+      </div>
+
+      <!-- Elementos legacy -->
+      <div id="pesq-secoes" style="display:none"></div>
+      <input id="pesq-nova-secao-titulo" type="hidden" />
+      <button id="btn-pesq-add-secao" hidden></button>
     </div>
 
     <!-- ── VIEW: Histórico do Sistema (Auditoria) ── -->
