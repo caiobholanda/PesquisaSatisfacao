@@ -1888,20 +1888,6 @@ function renderEscala(massagistas) {
     renderEscala(_massagistas);
   });
 
-  // Gradientes de scroll: adiciona/remove classes conforme posição
-  const outer = document.getElementById('escala-scroll-outer');
-  if (outer) {
-    const updateShadow = () => {
-      const atStart = wrap.scrollLeft <= 0;
-      const atEnd   = wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 1;
-      outer.classList.toggle('scroll-at-start', atStart);
-      outer.classList.toggle('scroll-at-end',   atEnd);
-    };
-    wrap.removeEventListener('scroll', wrap._shadowFn);
-    wrap._shadowFn = updateShadow;
-    wrap.addEventListener('scroll', updateShadow, { passive: true });
-    updateShadow();
-  }
 }
 
 // ── Tipos de Tratamento ──
