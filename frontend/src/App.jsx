@@ -120,7 +120,10 @@ export default function App() {
   const startPolling = useCallback(() => {
     clearInterval(pollRef.current);
     pollRef.current = setInterval(() => {
-      fetch('/api/survey/live')
+      // cache:'no-store' garante que o browser nao sirva resposta antiga;
+      // sem isso, o tablet podia ficar preso em {ok:false} ate o usuario
+      // dar F5 mesmo apos o admin liberar a pesquisa.
+      fetch('/api/survey/live', { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (d?.ok) {
@@ -137,7 +140,7 @@ export default function App() {
     const token = new URLSearchParams(window.location.search).get('token');
 
     if (token) {
-      fetch(`/api/survey/${encodeURIComponent(token)}`)
+      fetch(`/api/survey/${encodeURIComponent(token)}`, { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.ok) { setTokenData(d.dados); carregarI18n(d.dados?.idioma); } })
         .catch(() => {})

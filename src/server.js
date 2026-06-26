@@ -174,6 +174,9 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/api/survey/live', (_req, res) => {
+  // no-store: tablet polla a cada 1s; sem isso, browser/proxy pode cachear
+  // {ok:false} e o cliente fica preso esperando F5 mesmo apos admin liberar.
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const row = buscarSurveyTokenAtivo();
   if (!row) return res.json({ ok: false });
   const quartoNum = row.quarto || row.apto || '';
@@ -196,6 +199,7 @@ app.get('/api/survey/:token', (req, res, next) => {
   // tratados pelo qualidadeRouter montado em /api/survey logo abaixo).
   const PATHS_RESERVADOS = new Set(['config', 'published', 'admin']);
   if (PATHS_RESERVADOS.has(req.params.token)) return next();
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const row = buscarSurveyToken(req.params.token);
   if (!row) return res.status(404).json({ ok: false, error: 'Token inválido' });
   const quartoNum = row.quarto || row.apto || '';
