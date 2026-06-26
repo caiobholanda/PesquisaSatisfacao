@@ -6153,31 +6153,27 @@ document.getElementById('btn-anam-reload')?.addEventListener('click', () => init
 
 async function initAnamneseEditor() {
   const empty = document.getElementById('anam-empty');
-  const shell = document.getElementById('anamx-shell');
-  if (empty) { empty.style.display = 'flex'; }
-  if (shell) shell.style.display = 'none';
+  const wrap  = document.getElementById('anam-secoes');
+  if (empty) { empty.style.display = 'block'; empty.textContent = 'Carregando…'; }
+  if (wrap)  wrap.innerHTML = '';
 
   try {
     const rE = await api(`/api/qualidade/admin/pesquisas/slug/${ANAMNESE_SLUG}/estrutura?_=${Date.now()}`);
     if (!rE) return;
     const dE = await rE.json();
     if (!dE.ok || !dE.estrutura) {
-      if (empty) empty.innerHTML = `<span>Pesquisa "<b>${ANAMNESE_SLUG}</b>" não encontrada. Reinicie o servidor para rodar o seed.</span>`;
+      if (empty) { empty.style.display = 'block'; empty.textContent = `Anamnese "${ANAMNESE_SLUG}" não encontrada.`; }
       return;
     }
     _anamPesquisaId = dE.estrutura.id;
     _anamEstrutura  = dE.estrutura;
   } catch (e) {
-    if (empty) empty.innerHTML = '<span>Erro ao carregar estrutura: ' + e.message + '</span>';
+    if (empty) { empty.style.display = 'block'; empty.textContent = 'Erro: ' + e.message; }
     return;
   }
 
   if (empty) empty.style.display = 'none';
-  if (shell) shell.style.display = 'grid';
-  _anamxRender();
-  // _renderAnamInativas / _renderAnamHistorico nao sao mais chamados aqui —
-  // os botoes "Histórico" e "Inativas" no header (.anamx-hero-actions) ja
-  // disparam diretamente via _abrirModalHistorico / _abrirModalPerguntas.
+  _renderAnamEstrutura();
 }
 
 // ═════════════════════════════════════════════════════════════════════
@@ -7129,11 +7125,10 @@ function _renderMoveBtns(prefix /*, chaveOrId, idx, total */) {
 
 let _anamAcoesWired = false;
 function _wireAnamAcoes() {
-  // Listener do botão + Criar seção: anexa UMA vez (sem { once }) e funciona
-  // para múltiplas execuções. O elemento existe sempre (fora do template
-  // dinâmico), então não precisa re-registrar a cada render.
   if (!_anamAcoesWired) {
     document.getElementById('btn-anam-add-secao')?.addEventListener('click', _anamAddSecao);
+    document.getElementById('anamx-btn-historico')?.addEventListener('click', () => _abrirModalHistorico({ slug: ANAMNESE_SLUG, titulo: 'Histórico — Anamnese' }));
+    document.getElementById('anamx-btn-inativas')?.addEventListener('click', _anamxAbrirInativas);
     _anamAcoesWired = true;
   }
   // Os botões dentro de cada seção são re-criados a cada render. Substituir

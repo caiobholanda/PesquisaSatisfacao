@@ -3924,52 +3924,43 @@
 
     <!-- ── VIEW: Usuários ── -->
     <!-- ── VIEW: Editor da Anamnese (Formulário Pré-Massagem) ── -->
-    <div id="view-anamnese-editor" class="view-page anamx-page" style="display:none">
-      <!-- Hero -->
-      <header class="anamx-hero">
-        <div class="anamx-hero-nav">
-          <div class="anamx-hero-actions">
-            <button class="anamx-pill-btn" id="anamx-btn-historico" title="Histórico de alterações">
-              <span aria-hidden="true">⟲</span> Histórico
-            </button>
-            <button class="anamx-pill-btn" id="anamx-btn-inativas" title="Perguntas inativas (biblioteca)">
-              <span aria-hidden="true">⊠</span> Inativas
-            </button>
+    <div id="view-anamnese-editor" class="view-page" style="display:none">
+      <div class="page-hero">
+        <div>
+          <div class="page-hero-eyebrow">
+            <span class="page-num">Editor • Hotel Gran Marquise</span>
+            <h1 class="page-title">Anamnese do SPA</h1>
           </div>
+          <p class="page-sub">A ficha que o hóspede preenche antes do tratamento. As edições são traduzidas em 7 idiomas automaticamente.</p>
         </div>
-        <div class="anamx-hero-meta">
-          <span class="anamx-eyebrow">Editor • Hotel Gran Marquise</span>
-          <h1 class="anamx-title">Anamnese do SPA</h1>
-          <p class="anamx-sub">A ficha que o hóspede preenche antes do tratamento. As edições são traduzidas em 7 idiomas automaticamente.</p>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-left:auto;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" id="anamx-btn-historico" title="Histórico de alterações">⟲ Histórico</button>
+          <button class="btn btn-outline btn-sm" id="anamx-btn-inativas" title="Perguntas inativas (biblioteca)">⊠ Inativas</button>
+          <button class="btn btn-outline btn-sm" id="btn-anam-reload">↻ Atualizar</button>
         </div>
-      </header>
-
-      <!-- Loading -->
-      <div id="anam-empty" class="anamx-loading" style="display:none">
-        <div class="anamx-spinner" aria-hidden="true"></div>
-        <span>Carregando estrutura da anamnese…</span>
       </div>
 
-      <!-- Shell (2 col) -->
+      <div id="anam-empty" class="empty" style="display:none;margin:2rem 0">Carregando…</div>
+
+      <div id="anam-secoes"></div>
+
+      <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
+        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
+        <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Dados Pessoais", "Saúde").</p>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <input id="anam-nova-secao-titulo" placeholder="Nome da seção (ex: Consentimentos)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <button class="btn btn-primary btn-sm" id="btn-anam-add-secao">+ Criar seção</button>
+        </div>
+      </div>
+
+      <!-- Elementos legados (mantidos para compatibilidade com o código JS v2) -->
       <div class="anamx-shell" id="anamx-shell" style="display:none">
-        <aside class="anamx-sidebar" aria-label="Navegação por seções">
-          <div class="anamx-side-eyebrow">Seções</div>
+        <aside class="anamx-sidebar">
           <nav id="anamx-nav" class="anamx-nav"></nav>
-          <button class="anamx-add-secao" id="anamx-btn-add-secao" type="button">
-            <span class="anamx-add-plus" aria-hidden="true">+</span>
-            <span>Adicionar seção</span>
-          </button>
+          <button id="anamx-btn-add-secao" hidden></button>
         </aside>
-        <main class="anamx-main">
-          <div id="anamx-content"></div>
-        </main>
+        <main class="anamx-main"><div id="anamx-content"></div></main>
       </div>
-
-      <!-- Hidden host expected pelo codigo legado (fallback) -->
-      <div id="anam-secoes" style="display:none"></div>
-      <button id="btn-anam-reload" hidden></button>
-      <input id="anam-nova-secao-titulo" type="hidden" />
-      <button id="btn-anam-add-secao" hidden></button>
     </div>
 
     <!-- ── VIEW: Editor da Pesquisa de Satisfação (espelho da anamnese) ── -->
