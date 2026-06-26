@@ -1484,13 +1484,13 @@ function renderExcecoesGlobal() {
     return;
   }
   list.innerHTML = '<div style="display:flex;flex-direction:column;gap:.375rem">' + linhas.map(l => {
-    const tipoTxt = l.tipo === 'disponivel' ? 'Disponibilizar' : 'Liberar (folga)';
-    const tipoCor = l.tipo === 'disponivel' ? 'var(--gold,#b88a3d)' : 'var(--muted)';
-    return `<div class="exc-row-global" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.5rem .75rem;border:1px solid var(--border-soft);border-radius:6px;background:var(--surface)">
-      <span style="font-weight:500;flex:1;min-width:140px">${escHtml(l.mnome)}</span>
-      <span style="font-size:.85rem;color:var(--text)">${_fmtDataBR(l.data)}</span>
-      <span style="font-size:.8rem;color:${tipoCor};font-weight:500">${tipoTxt}</span>
-      <span style="font-size:.85rem;color:var(--text)">${l.inicio} – ${l.fim}</span>
+    const tipoTxt   = l.tipo === 'disponivel' ? 'Disponibilizar' : 'Liberar (folga)';
+    const tipoClass = l.tipo === 'disponivel' ? 'exc-tipo-disp' : 'exc-tipo-indisp';
+    return `<div class="exc-row-global">
+      <span class="exc-row-nome">${escHtml(l.mnome)}</span>
+      <span class="exc-row-data">${_fmtDataBR(l.data)}</span>
+      <span class="exc-row-tipo ${tipoClass}">${tipoTxt}</span>
+      <span class="exc-row-hora">${l.inicio} – ${l.fim}</span>
       <button type="button" class="btn btn-outline btn-sm" data-act="del-exc-global" data-mid="${l.mid}" data-data="${l.data}" data-ini="${l.inicio}" data-fim="${l.fim}" title="Remover">×</button>
     </div>`;
   }).join('') + '</div>';
@@ -1729,7 +1729,8 @@ function _escalaGetCellInfo(m, dia) {
   // Exceção disponivel em dia fora da escala semanal
   if (!faixaSemanal && dispExcs.length) {
     const e = dispExcs[0];
-    return { tipo: 'extra', texto: `${e.inicio.slice(0,5)}–${e.fim.slice(0,5)}`, title: `Exceção: disponível ${e.inicio}–${e.fim}` };
+    const _fmtH2 = s => (s && s.endsWith(':00')) ? s.slice(0, -3) : (s || '');
+    return { tipo: 'extra', texto: `${_fmtH2(e.inicio)}–${_fmtH2(e.fim)}`, title: `Exceção: disponível ${e.inicio}–${e.fim}` };
   }
 
   // Não trabalha neste dia da semana
@@ -1737,7 +1738,8 @@ function _escalaGetCellInfo(m, dia) {
 
   const [escIniStr, escFimStr] = faixaSemanal.split('-');
   const escIniMin = _hmToMin(escIniStr), escFimMin = _hmToMin(escFimStr);
-  const textoNormal = `${escIniStr}–${escFimStr}`;
+  const _fmtH = s => (s && s.endsWith(':00')) ? s.slice(0, -3) : (s || '');
+  const textoNormal = `${_fmtH(escIniStr)}–${_fmtH(escFimStr)}`;
   const titleNormal = `${escIniStr}–${escFimStr}`;
 
   // Exceção que cobre totalmente a escala = folga
@@ -1747,8 +1749,8 @@ function _escalaGetCellInfo(m, dia) {
   });
   if (fullBlock) return { tipo: 'folga', texto: 'folga', title: 'Folga (exceção)' };
 
-  // Tem exceção parcial no dia
-  if (excsDoDia.length) return { tipo: 'exc', texto: `${textoNormal}*`, title: `${titleNormal} — há exceção neste dia` };
+  // Tem exceção parcial no dia (✦ adicionado via CSS ::after)
+  if (excsDoDia.length) return { tipo: 'exc', texto: textoNormal, title: `${titleNormal} — há exceção neste dia` };
 
   return { tipo: 'on', texto: textoNormal, title: titleNormal };
 }
@@ -1756,8 +1758,17 @@ function _escalaGetCellInfo(m, dia) {
 function renderEscala(massagistas) {
   const wrap = document.getElementById('escala-table-wrap');
   if (!wrap) return;
-  const sub = document.getElementById('escala-page-sub');
-  if (sub) sub.textContent = _escalaFiltroNome || 'Horários por massoterapeuta';
+  const sub      = document.getElementById('escala-page-sub');
+  const chip     = document.getElementById('escala-prof-chip');
+  const chipNome = document.getElementById('escala-prof-chip-nome');
+  if (_escalaFiltroNome) {
+    if (sub) sub.textContent = 'Escala de trabalho mensal';
+    if (chip) chip.classList.add('visible');
+    if (chipNome) chipNome.textContent = _escalaFiltroNome;
+  } else {
+    if (sub) sub.textContent = 'Horários por massoterapeuta';
+    if (chip) chip.classList.remove('visible');
+  }
   const ativas = _escalaFiltroId
     ? massagistas.filter(m => m.ativo && m.id === _escalaFiltroId)
     : massagistas.filter(m => m.ativo);
@@ -1791,16 +1802,19 @@ function renderEscala(massagistas) {
         ${ativas.map(m => `
           <tr>
             <td title="${escHtml(m.nome)}">${escHtml(m.nome)}</td>
-            ${dias.map(dia => `<td>${_cellHtml(m, dia)}</td>`).join('')}
+            ${dias.map(dia => {
+              const cls = [(dia.isHoje ? 'escala-td-hoje' : ''), (dia.isFds ? 'escala-td-fds' : '')].filter(Boolean).join(' ');
+              return `<td${cls ? ` class="${cls}"` : ''}>${_cellHtml(m, dia)}</td>`;
+            }).join('')}
             <td><button class="btn btn-outline btn-sm" style="white-space:nowrap" data-action="edit-mass-escala" data-id="${m.id}">Editar</button></td>
           </tr>`).join('')}
       </tbody>
     </table>
     <div class="escala-legenda">
-      <span class="escala-td-on">08–17</span> escala normal &nbsp;
-      <span class="escala-td-exc">08–17*</span> tem exceção &nbsp;
-      <span class="escala-td-extra">09–13</span> disponível extra &nbsp;
-      <span class="escala-td-folga">folga</span> folga/bloqueio
+      <span class="escala-legenda-item"><span class="escala-td-on">08–17</span> escala normal</span>
+      <span class="escala-legenda-item"><span class="escala-td-exc">08–17</span> tem exceção</span>
+      <span class="escala-legenda-item"><span class="escala-td-extra">09–13</span> disponível extra</span>
+      <span class="escala-legenda-item"><span class="escala-td-folga">folga</span> bloqueio</span>
     </div>`;
 
   wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {

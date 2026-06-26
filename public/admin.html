@@ -2579,32 +2579,56 @@
       font-style: italic;
     }
 
-    /* Escala table */
+    /* ── Escala Mensal ── */
     .escala-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.75rem; min-width:600px; }
-    .escala-table th { padding:.4rem .3rem; text-align:center; font-size:.65rem; font-weight:600; letter-spacing:.04em; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); line-height:1.3; }
-    .escala-table th small { font-size:.58rem; font-weight:400; display:block; opacity:.8; }
-    .escala-table th:first-child { text-align:left; padding:.4rem .75rem; }
-    .escala-table td { padding:.375rem .3rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; background:var(--surface); }
-    .escala-table td:first-child { font-weight:500; font-size:.8rem; min-width:160px; max-width:260px; padding:.375rem .75rem; white-space:normal; word-break:break-word; line-height:1.25; }
-    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; }
-    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.375rem .5rem; }
+    .escala-table th { padding:.45rem .28rem .4rem; text-align:center; font-size:.6rem; font-weight:600; letter-spacing:.04em; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; background:var(--surface); line-height:1.25; transition:background .15s, color .15s; }
+    .escala-table th small { font-size:.53rem; font-weight:400; display:block; opacity:.65; text-transform:uppercase; letter-spacing:.05em; margin-top:.1rem; }
+    .escala-table th:first-child { text-align:left; padding:.45rem 1rem; font-size:.63rem; text-transform:uppercase; letter-spacing:.08em; }
+    .escala-table td { padding:.38rem .28rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; background:var(--surface); transition:background .1s; }
+    .escala-table td:first-child { font-size:.8rem; font-weight:500; min-width:155px; max-width:230px; padding:.38rem 1rem; white-space:normal; word-break:break-word; line-height:1.3; border-right:1px solid var(--border-soft); }
+    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; box-shadow:3px 0 8px rgba(0,0,0,.07); }
+    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.38rem .625rem; box-shadow:-3px 0 8px rgba(0,0,0,.07); }
     .escala-table thead th:first-child, .escala-table thead th:last-child { z-index:3; }
     .escala-table td:not(:first-child):not(:last-child) { text-align:center; }
-    .escala-td-on  { color:var(--success); font-size:.68rem; font-family:var(--mono); white-space:nowrap; }
-    .escala-td-off { color:var(--muted); font-size:.75rem; }
-    .escala-td-folga { color:#e07b3a; font-size:.65rem; font-weight:600; font-family:var(--mono); white-space:nowrap; }
-    .escala-td-extra { color:var(--gold,#b88a3d); font-size:.68rem; font-family:var(--mono); white-space:nowrap; }
-    .escala-td-exc  { color:var(--success); font-size:.68rem; font-family:var(--mono); white-space:nowrap; opacity:.85; }
-    .escala-th-hoje { background:color-mix(in srgb, var(--gold,#b88a3d) 12%, var(--surface)); color:var(--gold,#b88a3d) !important; }
-    .escala-th-fds  { opacity:.65; }
-    .escala-table tr:last-child td { border-bottom:none; }
+    /* Today column */
+    .escala-th-hoje { background:var(--gold) !important; color:var(--bg) !important; font-weight:700 !important; }
+    .escala-td-hoje { background:color-mix(in srgb, var(--gold) 8%, var(--surface)) !important; }
+    /* Weekend columns */
+    .escala-th-fds { background:var(--surface2) !important; }
+    .escala-td-fds:not(.escala-td-hoje) { background:color-mix(in srgb, var(--border-soft) 80%, var(--surface)); }
     .escala-table tr:hover td { background:var(--surface2); }
-    .escala-nav { display:flex; align-items:center; gap:.75rem; padding:.75rem 1.5rem .5rem; }
-    .escala-nav-label { font-weight:600; font-size:.9375rem; min-width:160px; text-align:center; }
-    .escala-legenda { padding:.625rem 1.5rem; font-size:.72rem; color:var(--muted); display:flex; flex-wrap:wrap; gap:.5rem 1.25rem; align-items:center; }
+    .escala-table tr:hover .escala-td-hoje { background:color-mix(in srgb, var(--gold) 14%, var(--surface2)) !important; }
+    .escala-table tr:last-child td { border-bottom:none; }
+    /* Cell content types */
+    .escala-td-on  { font-family:var(--mono); font-size:.65rem; color:var(--success); white-space:nowrap; letter-spacing:-.01em; }
+    .escala-td-off { color:var(--border); font-size:.9rem; line-height:1; }
+    .escala-td-folga { font-size:.58rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--danger); background:var(--danger-dim); padding:.12rem .3rem; border-radius:3px; white-space:nowrap; }
+    .escala-td-extra { font-family:var(--mono); font-size:.65rem; color:var(--gold); white-space:nowrap; letter-spacing:-.01em; font-weight:500; }
+    .escala-td-exc  { font-family:var(--mono); font-size:.65rem; color:var(--success); white-space:nowrap; letter-spacing:-.01em; }
+    .escala-td-exc::after { content:'✦'; font-size:.42rem; vertical-align:super; color:var(--gold); margin-left:1px; line-height:0; }
+    /* Navigation */
+    .escala-nav { display:flex; align-items:center; gap:.875rem; padding:1.125rem 1.5rem .625rem; }
+    .escala-nav-label { font-family:var(--serif); font-size:1.0625rem; font-weight:300; letter-spacing:.06em; color:var(--text); min-width:170px; text-align:center; }
+    /* Legend */
+    .escala-legenda { display:flex; flex-wrap:wrap; gap:.5rem 1.75rem; align-items:center; padding:.875rem 1.5rem; border-top:1px solid var(--border-soft); font-size:.7rem; color:var(--muted); }
+    .escala-legenda-item { display:inline-flex; align-items:center; gap:.4rem; }
+    /* Prof chip in hero */
+    .escala-prof-chip { display:none; align-items:center; gap:.5rem; margin-top:.5rem; padding:.3rem .8rem .3rem .55rem; background:var(--gold-dim); border:1px solid rgba(138,107,31,.28); border-radius:3px; width:fit-content; }
+    .escala-prof-chip.visible { display:inline-flex; }
+    .escala-prof-chip::before { content:''; display:block; width:3px; height:1em; background:var(--gold); border-radius:2px; flex-shrink:0; }
+    .escala-prof-chip-nome { font-family:var(--serif); font-size:.875rem; font-weight:400; letter-spacing:.04em; color:var(--gold); }
+    /* Exception rows */
+    .exc-row-global { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.5rem .875rem; border:1px solid var(--border-soft); border-left:3px solid var(--muted); border-radius:4px; background:var(--surface); transition:background .12s; }
+    .exc-row-global:hover { background:var(--surface2); }
+    .exc-row-nome { font-weight:500; flex:1; min-width:140px; font-size:.875rem; color:var(--text); }
+    .exc-row-data { font-size:.8rem; color:var(--text); font-family:var(--mono); }
+    .exc-row-tipo { font-size:.72rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+    .exc-tipo-disp { color:var(--gold); border-left:2px solid var(--gold); padding-left:.4rem; }
+    .exc-tipo-indisp { color:var(--muted); }
+    .exc-row-hora { font-size:.8rem; color:var(--text); font-family:var(--mono); }
 
     /* Disponibilidade row no modal */
-    .disp-row { display:flex; align-items:center; gap:.625rem; padding:.3rem .5rem; border-radius:6px; transition:background .12s; }
+    .disp-row { display:flex; align-items:center; gap:.625rem; padding:.38rem .5rem; border-radius:5px; transition:background .12s; }
     .disp-row:hover { background:var(--surface2); }
     .disp-row-label { width:68px; font-size:.8rem; font-weight:500; color:var(--text); flex-shrink:0; }
     .disp-row-times { display:flex; align-items:center; gap:.375rem; flex:1; }
@@ -3523,6 +3547,9 @@
             <h1 class="page-title">Escala de Trabalho</h1>
           </div>
           <p class="page-sub" id="escala-page-sub">Horários por massoterapeuta</p>
+          <div id="escala-prof-chip" class="escala-prof-chip">
+            <span id="escala-prof-chip-nome" class="escala-prof-chip-nome"></span>
+          </div>
         </div>
       </div>
       <div class="mgmt-list-card" style="margin-bottom:1rem">
