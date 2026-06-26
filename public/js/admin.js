@@ -889,9 +889,15 @@ async function liberarPesquisaReserva(id) {
 function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  // Estado mantido em closure pra re-render dinamico via polling.
+  // jaLiberado[1/2] = admin clicou pelo menos 1x (texto "Liberar novamente").
+  const estado = { 1: h1, 2: h2 };
+  const jaLiberado = { 1: false, 2: false };
   // 2 estados visuais distintos, ambos usando tokens do design system:
   // - RESPONDIDA: card com border-left dourado, badge ✓, botao "Ver respostas →"
-  // - PENDENTE: card neutro, CTA gold "Liberar pesquisa"
+  //   (admin nao pode mais liberar — pesquisa ja consumida pelo hospede)
+  // - PENDENTE: card neutro, CTA gold "Liberar pesquisa" (re-clicavel
+  //   quantas vezes quiser — toast confirma cada acionamento)
   const card = ({ idx, h }) => {
     const ja = h.respondida && h.feedback_id;
     const wrapStyle = ja
@@ -899,12 +905,17 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
       : 'border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem';
     const headerLabel = ja
       ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding:.18rem .5rem;border:1px solid var(--gold);border-radius:99px;display:inline-flex;align-items:center;gap:.3rem">✓ Respondida</span>`
-      : `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Pendente</span>`;
-    const botao = ja
-      ? `<button class="btn btn-outline" data-ver-fb="${h.feedback_id}" style="width:100%">Ver respostas <span style="margin-left:.35rem;display:inline-block;transition:transform .2s">→</span></button>`
-      : `<button class="btn btn-gold" data-ativar="${idx}" style="width:100%">Liberar pesquisa</button>`;
+      : `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">${jaLiberado[idx] ? 'Aguardando no tablet' : 'Pendente'}</span>`;
+    let botao;
+    if (ja) {
+      botao = `<button class="btn btn-outline" data-ver-fb="${h.feedback_id}" style="width:100%">Ver respostas <span style="margin-left:.35rem;display:inline-block;transition:transform .2s">→</span></button>`;
+    } else if (jaLiberado[idx]) {
+      botao = `<button class="btn btn-gold" data-ativar="${idx}" style="width:100%">↻ Liberar novamente</button>`;
+    } else {
+      botao = `<button class="btn btn-gold" data-ativar="${idx}" style="width:100%">Liberar pesquisa</button>`;
+    }
     return `
-      <div style="${wrapStyle}">
+      <div data-card-pessoa="${idx}" style="${wrapStyle}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:.8rem">
           <div style="display:flex;flex-direction:column;gap:.2rem;min-width:0">
             <span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Hóspede ${idx}</span>
@@ -916,21 +927,53 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
       </div>
     `;
   };
+  const renderCards = () => {
+    const cardsHtml = card({ idx: 1, h: estado[1] }) + card({ idx: 2, h: estado[2] });
+    ov.querySelector('[data-cards-host]').innerHTML = cardsHtml;
+  };
   ov.innerHTML = `
     <div role="dialog" aria-modal="true" aria-labelledby="modal-casal-title" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
       <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
       <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">A pesquisa será respondida ao vivo no tablet do SPA. Clique em <strong>Liberar pesquisa</strong> do hóspede que vai responder agora. Quando ele terminar, clique no outro hóspede.</p>
-      ${card({ idx: 1, h: h1 })}
-      ${card({ idx: 2, h: h2 })}
+      <div data-cards-host>
+        ${card({ idx: 1, h: estado[1] })}
+        ${card({ idx: 2, h: estado[2] })}
+      </div>
       <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
         <button class="btn btn-outline" data-act="close">Fechar</button>
       </div>
     </div>
   `;
-  // Guarda quem ja foi liberado (para confirm ao trocar enquanto o outro
-  // ainda nao respondeu — evita "roubar" o tablet por acidente, EC1).
-  let liberados = 0;
+  // Polling 3s: detecta quando hospede responde no tablet e atualiza o card
+  // automaticamente (sem precisar fechar/reabrir o modal). Para o polling
+  // quando ambos respondidos ou modal fechado.
+  let pollTimer = null;
+  const poll = async () => {
+    try {
+      const r = await api(`/api/reservas/${reservaId}/status-pesquisa-casal`);
+      if (!r) return;
+      const d = await r.json();
+      if (!d?.ok) return;
+      let mudou = false;
+      for (const idx of [1, 2]) {
+        const k = 'h' + idx;
+        const nova = d[k];
+        const atual = estado[idx];
+        if (nova && (nova.respondida !== !!atual.respondida || nova.feedback_id !== atual.feedback_id)) {
+          estado[idx] = { ...atual, respondida: nova.respondida, feedback_id: nova.feedback_id };
+          mudou = true;
+        }
+      }
+      if (mudou) renderCards();
+      if (estado[1].respondida && estado[2].respondida) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    } catch {}
+  };
+  pollTimer = setInterval(poll, 3000);
   const fechar = () => {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     document.removeEventListener('keydown', onKey);
     ov.remove();
   };
@@ -938,8 +981,7 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   document.addEventListener('keydown', onKey);
   ov.addEventListener('click', async e => {
     if (e.target.dataset.act === 'close') { fechar(); return; }
-    // Click no botao "Pesquisa preenchida" → fecha modal e abre o drawer
-    // com o feedback respondido (reusa openDrawer existente).
+    // Click no card "Pesquisa preenchida" → fecha modal e abre o drawer.
     const verFb = e.target.dataset.verFb;
     if (verFb) {
       fechar();
@@ -948,7 +990,13 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
     }
     const pessoa = e.target.dataset.ativar;
     if (!pessoa) return;
-    if (liberados > 0 && !confirm(
+    const p = +pessoa;
+    // Se outro hospede ja foi liberado e ainda nao respondeu, avisa que
+    // substituir vai roubar o tablet do que esta aberto. So bloqueia entre
+    // pessoas diferentes — re-liberar a MESMA pessoa e' livre.
+    const outro = p === 1 ? 2 : 1;
+    const outroLiberadoEnaoRespondido = jaLiberado[outro] && !estado[outro].respondida;
+    if (outroLiberadoEnaoRespondido && !confirm(
       'O outro hóspede já foi liberado e pode estar respondendo agora.\n\n' +
       'Continuar vai SUBSTITUIR a pesquisa que está aberta no tablet — o outro hóspede perde o progresso.\n\n' +
       'Deseja continuar?'
@@ -961,10 +1009,8 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
       const res = await api(`/api/reservas/${reservaId}/pessoa/${pessoa}/ativar-pesquisa`, { method: 'POST', body: '{}' });
       const d = res ? await res.json() : null;
       if (d?.ok) {
-        btn.textContent = '✓ Liberado — aguardando resposta no tablet';
-        btn.classList.remove('btn-gold');
-        btn.classList.add('btn-outline');
-        liberados++;
+        jaLiberado[p] = true;
+        renderCards();
         showToast(`✓ Pesquisa do Hóspede ${pessoa} liberada no tablet`);
       } else {
         btn.disabled = false;
@@ -978,7 +1024,6 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
     }
   });
   document.body.appendChild(ov);
-  // Foco inicial: primeiro botao "Liberar pesquisa" (Hospede 1).
   setTimeout(() => ov.querySelector('[data-ativar="1"]')?.focus(), 0);
 }
 

@@ -345,6 +345,19 @@ router.post('/:id/pessoa/:pessoa/ativar-pesquisa', ...podeEscreverSpa, (req, res
   res.json({ ok: true, token });
 });
 
+// Status atual da pesquisa de casal (p1 e p2). Consumido pelo polling
+// do modal admin para detectar quando um hospede respondeu — sem precisar
+// fechar/reabrir o modal. Read-only, GET. Sem side effects.
+router.get('/:id/status-pesquisa-casal', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: 'id invalido' });
+  const reserva = buscarReservaById(id);
+  if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
+  const s1 = statusPesquisaPessoa(id, 1);
+  const s2 = statusPesquisaPessoa(id, 2);
+  res.json({ ok: true, h1: s1, h2: s2 });
+});
+
 router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
