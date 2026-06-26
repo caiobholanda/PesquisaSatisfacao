@@ -892,12 +892,12 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   const card = ({ idx, h }) => `
     <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
       <div style="font-weight:600;margin-bottom:.7rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
-      <button class="btn btn-gold" data-ativar="${idx}" style="width:100%">✓ Liberar pesquisa para responder agora</button>
+      <button class="btn btn-gold" data-ativar="${idx}" style="width:100%">Liberar pesquisa</button>
     </div>
   `;
   ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-      <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
+    <div role="dialog" aria-modal="true" aria-labelledby="modal-casal-title" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+      <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
       <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">A pesquisa será respondida ao vivo no tablet do SPA. Clique em <strong>Liberar pesquisa</strong> do hóspede que vai responder agora. Quando ele terminar, clique no outro hóspede.</p>
       ${card({ idx: 1, h: h1 })}
       ${card({ idx: 2, h: h2 })}
@@ -906,10 +906,24 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
       </div>
     </div>
   `;
+  // Guarda quem ja foi liberado (para confirm ao trocar enquanto o outro
+  // ainda nao respondeu — evita "roubar" o tablet por acidente, EC1).
+  let liberados = 0;
+  const fechar = () => {
+    document.removeEventListener('keydown', onKey);
+    ov.remove();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') fechar(); };
+  document.addEventListener('keydown', onKey);
   ov.addEventListener('click', async e => {
-    if (e.target.dataset.act === 'close') { ov.remove(); return; }
+    if (e.target.dataset.act === 'close') { fechar(); return; }
     const pessoa = e.target.dataset.ativar;
     if (!pessoa) return;
+    if (liberados > 0 && !confirm(
+      'O outro hóspede já foi liberado e pode estar respondendo agora.\n\n' +
+      'Continuar vai SUBSTITUIR a pesquisa que está aberta no tablet — o outro hóspede perde o progresso.\n\n' +
+      'Deseja continuar?'
+    )) return;
     const btn = e.target;
     const original = btn.textContent;
     btn.disabled = true;
@@ -921,6 +935,7 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
         btn.textContent = '✓ Liberado — aguardando resposta no tablet';
         btn.classList.remove('btn-gold');
         btn.classList.add('btn-outline');
+        liberados++;
         showToast(`✓ Pesquisa do Hóspede ${pessoa} liberada no tablet`);
       } else {
         btn.disabled = false;
@@ -934,6 +949,8 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
     }
   });
   document.body.appendChild(ov);
+  // Foco inicial: primeiro botao "Liberar pesquisa" (Hospede 1).
+  setTimeout(() => ov.querySelector('[data-ativar="1"]')?.focus(), 0);
 }
 
 // Pessoa-alvo do fluxo de envio de anamnese. 0 = comportamento legado
