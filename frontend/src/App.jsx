@@ -130,7 +130,7 @@ export default function App() {
           }
         })
         .catch(() => {});
-    }, 4000);
+    }, 1000);
   }, [carregarI18n]);
 
   useEffect(() => {
