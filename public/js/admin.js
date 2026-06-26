@@ -1493,12 +1493,13 @@ function renderExcecoesGlobal() {
   list.innerHTML = '<div style="display:flex;flex-direction:column;gap:.375rem">' + linhas.map(l => {
     const tipoTxt   = l.tipo === 'disponivel' ? 'Disponibilizar' : 'Liberar (folga)';
     const tipoClass = l.tipo === 'disponivel' ? 'exc-tipo-disp' : 'exc-tipo-indisp';
+    const horaTxt   = l.tipo === 'disponivel' ? `${l.inicio ?? ''} – ${l.fim ?? ''}` : 'dia todo';
     return `<div class="exc-row-global">
       <span class="exc-row-nome">${escHtml(l.mnome)}</span>
       <span class="exc-row-data">${_fmtDataBR(l.data)}</span>
       <span class="exc-row-tipo ${tipoClass}">${tipoTxt}</span>
-      <span class="exc-row-hora">${l.inicio} – ${l.fim}</span>
-      <button type="button" class="btn btn-outline btn-sm" data-act="del-exc-global" data-mid="${l.mid}" data-data="${l.data}" data-ini="${l.inicio}" data-fim="${l.fim}" title="Remover">×</button>
+      <span class="exc-row-hora">${horaTxt}</span>
+      <button type="button" class="btn btn-outline btn-sm" data-act="del-exc-global" data-mid="${l.mid}" data-data="${l.data}" data-ini="${l.inicio ?? ''}" data-fim="${l.fim ?? ''}" title="Remover">×</button>
     </div>`;
   }).join('') + '</div>';
   list.querySelectorAll('[data-act="del-exc-global"]').forEach(btn => {
@@ -1508,9 +1509,10 @@ function renderExcecoesGlobal() {
 async function _excecaoGlobalDel(mid, data, ini, fim) {
   const m = (_massagistas || []).find(x => x.id === mid);
   if (!m) { showToast('Massoterapeuta não encontrada.'); return; }
-  if (!confirm(`Remover exceção de ${m.nome} em ${_fmtDataBR(data)} (${ini}–${fim})?`)) return;
+  const descHora = ini ? ` (${ini}–${fim})` : ' (dia todo)';
+  if (!confirm(`Remover exceção de ${m.nome} em ${_fmtDataBR(data)}${descHora}?`)) return;
   const atuais = _parseExcecoes(m.excecoes);
-  const novas = atuais.filter(e => !(e?.data === data && e?.inicio === ini && e?.fim === fim));
+  const novas = atuais.filter(e => !(e?.data === data && (e?.inicio ?? '') === ini && (e?.fim ?? '') === fim));
   const res = await api(`/api/massagistas/${mid}`, { method: 'PUT', body: JSON.stringify({ nome: m.nome, ativo: m.ativo ? 1 : 0, excecoes: novas }) });
   if (!res) return;
   const d = await res.json();
@@ -1531,6 +1533,7 @@ document.getElementById('btn-add-excecao-global')?.addEventListener('click', () 
   document.getElementById('mgmt-exc-tipo').value = 'indisponivel';
   document.getElementById('mgmt-exc-ini').value = '08:00';
   document.getElementById('mgmt-exc-fim').value = '22:00';
+  _syncExcTipo();
   _modalOpen = true;
   document.getElementById('mgmt-exc-overlay').style.display = 'flex';
   setTimeout(() => sel.focus(), 50);
@@ -1539,28 +1542,36 @@ function _closeMgmtExc() {
   _modalOpen = false;
   document.getElementById('mgmt-exc-overlay').style.display = 'none';
 }
+function _syncExcTipo() {
+  const tipo = document.getElementById('mgmt-exc-tipo')?.value;
+  const row  = document.getElementById('mgmt-exc-horario-row');
+  if (row) row.style.display = tipo === 'disponivel' ? 'grid' : 'none';
+}
 document.getElementById('mgmt-exc-x')?.addEventListener('click', _closeMgmtExc);
 document.getElementById('mgmt-exc-cancelar')?.addEventListener('click', _closeMgmtExc);
+document.getElementById('mgmt-exc-tipo')?.addEventListener('change', _syncExcTipo);
 document.getElementById('mgmt-exc-salvar')?.addEventListener('click', async () => {
   const err = document.getElementById('mgmt-exc-err');
   err.textContent = '';
   const mid = +document.getElementById('mgmt-exc-mass').value;
   const data = document.getElementById('mgmt-exc-data').value;
   const tipo = document.getElementById('mgmt-exc-tipo').value;
-  const inicio = document.getElementById('mgmt-exc-ini').value;
-  const fim = document.getElementById('mgmt-exc-fim').value;
+  const inicio = tipo === 'disponivel' ? document.getElementById('mgmt-exc-ini').value : null;
+  const fim    = tipo === 'disponivel' ? document.getElementById('mgmt-exc-fim').value  : null;
   if (!mid) { err.textContent = 'Selecione a massoterapeuta.'; return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { err.textContent = 'Data inválida.'; return; }
   if (data < _hojeISO()) { err.textContent = 'Data não pode ser no passado.'; return; }
-  if (!inicio || !fim) { err.textContent = 'Preencha início e fim.'; return; }
-  const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
-  if (iniMin < 8 * 60) { err.textContent = 'Início não pode ser antes das 08:00.'; return; }
-  if (fimMin > 22 * 60) { err.textContent = 'Fim não pode ser depois das 22:00.'; return; }
-  if (fimMin <= iniMin) { err.textContent = 'Fim deve ser após o início.'; return; }
+  if (tipo === 'disponivel') {
+    if (!inicio || !fim) { err.textContent = 'Preencha início e fim.'; return; }
+    const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
+    if (iniMin < 8 * 60) { err.textContent = 'Início não pode ser antes das 08:00.'; return; }
+    if (fimMin > 22 * 60) { err.textContent = 'Fim não pode ser depois das 22:00.'; return; }
+    if (fimMin <= iniMin) { err.textContent = 'Fim deve ser após o início.'; return; }
+  }
   const m = (_massagistas || []).find(x => x.id === mid);
   if (!m) { err.textContent = 'Massoterapeuta não encontrada.'; return; }
   const atuais = _parseExcecoes(m.excecoes);
-  if (atuais.some(e => e?.data === data && e?.inicio === inicio && e?.fim === fim)) {
+  if (atuais.some(e => e?.data === data && (e?.inicio ?? '') === (inicio ?? '') && (e?.fim ?? '') === (fim ?? ''))) {
     err.textContent = 'Já existe exceção igual para essa massoterapeuta.'; return;
   }
   if (atuais.length >= 365) { err.textContent = 'Máximo de 365 exceções por massoterapeuta.'; return; }
@@ -1766,6 +1777,7 @@ function _escalaGetCellInfo(m, dia) {
 
   // Exceção que cobre totalmente a escala = folga
   const fullBlock = indispExcs.some(e => {
+    if (!e.inicio || !e.fim) return true;
     const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
     return !Number.isNaN(eIni) && !Number.isNaN(eFim) && eIni <= escIniMin && eFim >= escFimMin;
   });
@@ -2670,6 +2682,7 @@ function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
   if (excsDoDia.length) {
     for (const e of excsDoDia) {
       if (e.tipo !== 'indisponivel') continue;
+      if (!e.inicio || !e.fim) return false;
       const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
       if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
       if (resIni === null) return false;

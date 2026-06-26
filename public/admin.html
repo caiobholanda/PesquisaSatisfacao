@@ -2666,9 +2666,12 @@
     /* Exceção parcial */
     .escala-td-exc {
       display:inline-flex; flex-direction:column; align-items:center; position:relative;
-      background:color-mix(in srgb, var(--success) 11%, transparent);
+      background:color-mix(in srgb, var(--gold) 16%, transparent);
+      border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);
       border-radius:5px; padding:.18rem .38rem; min-width:36px; gap:0; cursor:default;
     }
+    .escala-td-exc .et-ini { color:var(--gold); }
+    .escala-td-exc .et-fim { color:color-mix(in srgb, var(--gold) 70%, transparent); }
     .escala-td-exc::after { content:'✦'; position:absolute; top:-.12rem; right:-.12rem; font-size:.42rem; color:var(--gold); line-height:1; }
 
     /* Navegação do mês */
@@ -4621,7 +4624,7 @@
           <option value="disponivel">Disponibilizar</option>
         </select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div id="mgmt-exc-horario-row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
         <div class="res-fg" style="margin:0">
           <label>Início <span style="color:var(--danger)">*</span></label>
           <input type="time" id="mgmt-exc-ini" min="08:00" max="22:00" value="08:00">
