@@ -7836,38 +7836,29 @@ window.pedirPergunta = pedirPergunta;
 // ────────────────────────────────────────────────────────────────────────────
 
 // PESQUISA_SLUG hoisted pro topo do arquivo (TDZ fix).
-let _pesqPesquisaId    = null;
-let _pesqEstrutura     = null;
-let _pesqSecaoAtivaId  = null;
-let _pesqCriandoSecao  = false;
-let _pesqCriandoPergunta = false;
+let _pesqPesquisaId = null;
+let _pesqEstrutura  = null;
 
 document.getElementById('btn-open-pesquisa-editor')?.addEventListener('click', () => showView('view-pesquisa-editor'));
 document.getElementById('btn-pesq-reload')?.addEventListener('click', () => initPesquisaEditor());
 
 async function initPesquisaEditor() {
+  const wrap = document.getElementById('pesq-secoes');
   const empty = document.getElementById('pesq-empty');
-  const shell = document.getElementById('pesqx-shell');
-  if (empty) { empty.style.display = 'flex'; }
-  if (shell) shell.style.display = 'none';
+  empty.style.display = 'block';
+  empty.textContent = 'Carregando…';
+  wrap.innerHTML = '';
 
   try {
     const rE = await api(`/api/qualidade/admin/pesquisas/slug/${PESQUISA_SLUG}/estrutura?_=${Date.now()}`);
     if (!rE) return;
     const dE = await rE.json();
-    if (!dE.ok || !dE.estrutura) {
-      if (empty) empty.innerHTML = `<span>Pesquisa "<b>${PESQUISA_SLUG}</b>" não encontrada.</span>`;
-      return;
-    }
+    if (!dE.ok || !dE.estrutura) { empty.textContent = `Pesquisa "${PESQUISA_SLUG}" não encontrada.`; return; }
     _pesqPesquisaId = dE.estrutura.id;
     _pesqEstrutura  = dE.estrutura;
-  } catch (e) {
-    if (empty) empty.innerHTML = '<span>Erro: ' + e.message + '</span>';
-    return;
-  }
+  } catch (e) { empty.textContent = 'Erro: ' + e.message; return; }
 
-  if (empty) empty.style.display = 'none';
-  if (shell) shell.style.display = 'grid';
+  empty.style.display = 'none';
   _renderPesqEstrutura();
   _renderPesqInativas();
   _renderPesqHistorico();
@@ -7877,124 +7868,79 @@ async function initPesquisaEditor() {
 // _renderBotaoHistorico — botao no header + modal grande compartilhado.
 
 function _renderPesqEstrutura() {
+  const wrap = document.getElementById('pesq-secoes');
   const e = _pesqEstrutura;
+  // Filtra secoes/perguntas inativas (consistencia com fluxo de delete).
   const secoesAtivas = (e.secoes || []).filter(s => s.ativo !== 0 && s.ativo !== false);
   for (const s of secoesAtivas) {
     s.perguntas = (s.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
   }
-  if (!secoesAtivas.length) {
-    _pesqRenderSemSecoes();
-    return;
-  }
-  if (!_pesqSecaoAtivaId || !secoesAtivas.find(s => s.id === _pesqSecaoAtivaId)) {
-    _pesqSecaoAtivaId = secoesAtivas[0].id;
-  }
-  _pesqRenderSidebar(secoesAtivas);
-  const ativa = secoesAtivas.find(s => s.id === _pesqSecaoAtivaId);
-  if (ativa) _pesqRenderSecaoContent(ativa);
-  _wirePesqAcoes();
-  _wireDragReorder('pesq');
-}
-
-function _pesqRenderSemSecoes() {
-  const nav = document.getElementById('pesqx-nav');
-  const content = document.getElementById('pesqx-content');
-  if (nav) nav.innerHTML = '<div style="font-size:.85rem;color:var(--muted);padding:.5rem .85rem">Nenhuma seção</div>';
-  if (content) {
-    content.innerHTML = `
-      <div class="anamx-secao-card">
-        <div class="anamx-empty-state">
-          <h3>Comece a pesquisa</h3>
-          <p>Crie a primeira seção para agrupar perguntas. Ex: "Serviços", "Instalações".</p>
-        </div>
-      </div>
-    `;
-  }
-  _wirePesqAcoes();
-}
-
-function _pesqRenderSidebar(secoes) {
-  const nav = document.getElementById('pesqx-nav');
-  if (!nav) return;
-  nav.innerHTML = secoes.map(s => {
-    const perg = (s.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
-    const active = s.id === _pesqSecaoAtivaId;
-    return `
-      <button type="button" class="anamx-nav-item${active ? ' active' : ''}" data-pesqx-nav="${s.id}">
-        <span class="anamx-nav-name">${escHtml(s.titulo || s.chave)}</span>
-        <span class="anamx-nav-count">${perg.length}</span>
-      </button>
-    `;
-  }).join('');
-}
-
-function _pesqRenderSecaoContent(secao) {
-  const content = document.getElementById('pesqx-content');
-  if (!content) return;
-  const perguntas = (secao.perguntas || []).filter(q => q.ativo !== 0 && q.ativo !== false);
-  const totalPerg = perguntas.length;
-  const perguntasHTML = perguntas.map((q, i) => _renderPesqPergunta(q, i, totalPerg)).join('');
-
-  const corpoPerguntas = totalPerg
-    ? `<div class="pesq-perguntas anamx-perguntas" data-secao-id="${secao.id}">${perguntasHTML}</div>`
-    : `
-      <div class="anamx-empty-state">
-        <h3>Esta seção ainda não tem perguntas</h3>
-        <p>Adicione a primeira pergunta abaixo.</p>
-      </div>
-      <div class="pesq-perguntas anamx-perguntas" data-secao-id="${secao.id}" style="display:none"></div>
-    `;
-
-  content.innerHTML = `
-    <article class="anamx-secao-card" data-secao-id="${secao.id}">
-      <header class="anamx-secao-head">
-        <h2 class="anamx-secao-titulo" style="cursor:default;user-select:text">${escHtml(secao.titulo || secao.chave)}</h2>
-        <span class="anamx-secao-meta">${totalPerg} ${totalPerg === 1 ? 'pergunta' : 'perguntas'}</span>
-        <div class="anamx-secao-actions">
-          <button class="btn btn-outline btn-sm" data-pesq-act="edit-secao" data-secao-id="${secao.id}">Renomear seção</button>
-          <button class="anamx-icon-btn danger" type="button" data-pesq-act="del-secao" data-secao-id="${secao.id}" title="Remover seção">🗑</button>
+  wrap.innerHTML = secoesAtivas.map(s => `
+    <section class="pesq-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
+      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
+        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <div style="display:flex;gap:.4rem">
+          <button class="btn btn-outline btn-sm" data-pesq-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
+          <button class="btn btn-outline btn-sm" data-pesq-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
         </div>
       </header>
-      ${corpoPerguntas}
-      <div class="anamx-add-perg-wrap">
-        <button class="anamx-add-perg-btn" type="button" data-pesq-act="add-pergunta" data-secao-id="${secao.id}">
-          <span aria-hidden="true">+</span> Adicionar pergunta
-        </button>
+      <div class="pesq-perguntas">
+        ${s.perguntas.map((q, i) => _renderPesqPergunta(q, i, s.perguntas.length)).join('')}
       </div>
-    </article>
-  `;
+      <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px dashed var(--border)">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Adicionar pergunta nesta seção:</div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input data-pesq-newperg-rotulo data-secao-id="${s.id}" placeholder="Escreva a pergunta em português…" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
+          <select data-pesq-newperg-tipo data-secao-id="${s.id}" style="padding:.55rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;border-radius:4px">
+            ${Object.entries(_TIPO_LABEL_PESQUISA).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
+          </select>
+          <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
+            <input type="checkbox" data-pesq-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
+            Obrigatória
+          </label>
+          <button class="btn btn-primary btn-sm" data-pesq-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
+        </div>
+      </div>
+    </section>
+  `).join('');
+  _wirePesqAcoes();
 }
 
 function _renderPesqPergunta(q, idx = 0, total = 1) {
+  // Detecta tipo 'rostos' por heuristica: tipo='escala' com escala_id setada
+  // (4 opcoes otimo/bom/regular/ruim vindas da escala). Sim/Nao tem opcoes
+  // sim/nao sem escala_id.
   let tipoEffective = q.tipo;
   if (q.tipo === 'escala' && q.opcoes?.length === 4 && q.opcoes.every(o => ['otimo','bom','regular','ruim'].includes(o.chave))) {
     tipoEffective = 'rostos';
   }
   const tipoLabel = _TIPO_LABEL_PESQUISA[tipoEffective] || _TIPO_LABEL_AMIGAVEL[q.tipo] || q.tipo;
-  const tipoIco = { rostos: '▮▮', escala: '▮▮', unica: '◉', multipla: '☑', texto_livre: '✎', texto_longo: '✎' }[tipoEffective] || '◆';
-  const obrigOn = !!q.obrigatoria;
   const opcoes = q.opcoes && q.opcoes.length
-    ? `<div class="anamx-perg-opcoes"><b>Opções:</b> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
+    ? `<div style="margin-top:.35rem;color:var(--muted);font-size:.82rem"><strong style="color:var(--text);font-weight:500">Opções:</strong> ${q.opcoes.map(o => escHtml(o.rotulo)).join(' · ')}</div>`
     : '';
+  const obrigBadge = q.obrigatoria
+    ? '<span style="background:var(--danger);color:white;font-size:.66rem;padding:.1rem .4rem;border-radius:9999px;font-weight:600;letter-spacing:.04em">OBRIGATÓRIA</span>'
+    : '';
+  const tipoBadge = `<span style="background:var(--surface2,#eee);color:var(--muted);font-size:.7rem;padding:.15rem .5rem;border-radius:9999px">${escHtml(tipoLabel)}</span>`;
   const editOpcoesBtn = (q.tipo === 'unica' || q.tipo === 'multipla')
-    ? `<button class="anamx-icon-btn" type="button" data-pesq-act="edit-opcoes" data-pid="${q.pergunta_id}" title="Editar opções">⋯</button>`
+    ? `<button class="btn btn-outline btn-sm" data-pesq-act="edit-opcoes" data-pid="${q.pergunta_id}">Opções</button>`
     : '';
+  const moveBtns = _renderMoveBtns('pesq', q.pergunta_id, idx, total);
   return `
-    <div class="pesq-pergunta anamx-pergunta" data-perg-id="${q.pergunta_id}" data-assoc-id="${q.associacao_id}">
-      ${_renderMoveBtns('pesq')}
-      <div class="anamx-perg-body">
-        <div class="anamx-perg-num">#${idx + 1}</div>
-        <div class="anamx-perg-rotulo" style="pointer-events:none;cursor:default">${escHtml(q.rotulo)}</div>
-        ${opcoes}
-        <div class="anamx-perg-tags">
-          <span class="anamx-perg-tag tipo"><span class="anamx-tipo-ico" aria-hidden="true">${tipoIco}</span> ${escHtml(tipoLabel)}</span>
-          <span class="anamx-perg-tag obrig${obrigOn ? ' on' : ''}">${obrigOn ? '✓ Obrigatória' : 'Opcional'}</span>
+    <div class="pesq-pergunta" data-perg-id="${q.pergunta_id}" data-assoc-id="${q.associacao_id}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+      ${moveBtns}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.15rem">
+          <span style="font-size:.98rem;color:var(--text)">${escHtml(q.rotulo)}</span>
+          ${obrigBadge}
+          ${tipoBadge}
         </div>
+        ${opcoes}
       </div>
-      <div class="anamx-perg-actions">
+      <div style="display:flex;gap:.3rem;flex-shrink:0">
+        <button class="btn btn-outline btn-sm" data-pesq-act="edit-perg" data-pid="${q.pergunta_id}">Editar</button>
         ${editOpcoesBtn}
-        <button class="anamx-icon-btn" type="button" data-pesq-act="edit-perg" data-pid="${q.pergunta_id}" title="Editar pergunta">✎</button>
-        <button class="anamx-icon-btn danger" type="button" data-pesq-act="del-perg" data-assoc-id="${q.associacao_id}" data-rotulo="${escHtml(q.rotulo)}" title="Remover pergunta">🗑</button>
+        <button class="btn btn-outline btn-sm" data-pesq-act="del-perg" data-assoc-id="${q.associacao_id}" data-rotulo="${escHtml(q.rotulo)}" style="color:var(--danger);border-color:var(--danger)" title="Remover pergunta">×</button>
       </div>
     </div>
   `;
@@ -8003,22 +7949,9 @@ function _renderPesqPergunta(q, idx = 0, total = 1) {
 let _pesqAcoesWired = false;
 function _wirePesqAcoes() {
   if (!_pesqAcoesWired) {
-    document.getElementById('pesqx-btn-add-secao')?.addEventListener('click', _pesqAddSecaoFlow);
+    document.getElementById('btn-pesq-add-secao')?.addEventListener('click', _pesqAddSecao);
     _pesqAcoesWired = true;
   }
-  // Sidebar nav
-  document.querySelectorAll('[data-pesqx-nav]').forEach(btn => {
-    const clone = btn.cloneNode(true);
-    btn.parentNode.replaceChild(clone, btn);
-    clone.addEventListener('click', () => {
-      const id = parseInt(clone.dataset.pesqxNav);
-      if (!Number.isNaN(id) && id !== _pesqSecaoAtivaId) {
-        _pesqSecaoAtivaId = id;
-        _renderPesqEstrutura();
-      }
-    });
-  });
-  // Action buttons
   document.querySelectorAll('[data-pesq-act]').forEach(btn => {
     const clone = btn.cloneNode(true);
     btn.parentNode.replaceChild(clone, btn);
@@ -8028,7 +7961,7 @@ function _wirePesqAcoes() {
       const pid = clone.dataset.pid ? parseInt(clone.dataset.pid) : null;
       const assocId = clone.dataset.assocId ? parseInt(clone.dataset.assocId) : null;
       const rotulo = clone.dataset.rotulo;
-      if (act === 'add-pergunta') _pesqAddPerguntaFlow(secaoId);
+      if (act === 'add-pergunta') _pesqAddPergunta(secaoId);
       else if (act === 'edit-perg')   _pesqEditPergunta(pid);
       else if (act === 'del-perg')    _pesqDelPergunta(assocId, rotulo);
       else if (act === 'edit-opcoes') _pesqEditOpcoes(pid);
@@ -8036,6 +7969,7 @@ function _wirePesqAcoes() {
       else if (act === 'del-secao')   _pesqDelSecao(secaoId);
     });
   });
+  _wireDragReorder('pesq');
 }
 
 async function _pesqAddSecao() {
@@ -8053,76 +7987,6 @@ async function _pesqAddSecao() {
     initPesquisaEditor();
     if (resp?.id) _traduzirEAtualizarBg('secao', resp.id, titulo);
   } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
-}
-
-async function _pesqAddSecaoFlow() {
-  if (_pesqCriandoSecao) return;
-  _pesqCriandoSecao = true;
-  try {
-    const raw = await pedirTexto({
-      titulo: 'Nova seção',
-      mensagem: 'Uma seção agrupa perguntas relacionadas (ex: "Serviços", "Instalações").',
-      placeholder: 'Nome da seção',
-    });
-    const titulo = (raw || '').trim();
-    if (!titulo) return;
-    const chave = _slugChave(titulo, 'sec_');
-    try {
-      const resp = await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/secoes`, {
-        chave, ordem: 99, traducoes: { 'pt-BR': titulo },
-      });
-      showToast('✓ Seção criada (traduzindo nos 7 idiomas em segundo plano…)');
-      if (resp?.id) {
-        _pesqSecaoAtivaId = resp.id;
-        _traduzirEAtualizarBg('secao', resp.id, titulo);
-      }
-      initPesquisaEditor();
-    } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
-  } finally {
-    _pesqCriandoSecao = false;
-  }
-}
-
-async function _pesqAddPerguntaFlow(secaoId) {
-  if (_pesqCriandoPergunta) return;
-  _pesqCriandoPergunta = true;
-  try {
-    const resp = await pedirPergunta({
-      titulo: 'Nova pergunta',
-      mensagem: 'Defina o rótulo e o tipo. Tradução para 6 idiomas é automática.',
-      valorTipo: 'texto_livre',
-      valorObrigatoria: false,
-      tipos: Object.entries(_TIPO_LABEL_PESQUISA).map(([v, l]) => ({ value: v, label: l })),
-    });
-    if (!resp) return;
-    const rotulo = (resp.rotulo || '').trim();
-    const { tipo: tipoRaw, obrigatoria } = resp;
-    if (!rotulo) return;
-    const chave = _slugChave(rotulo, 'pesq_');
-    let tipo = tipoRaw;
-    let escala_id = null;
-    if (tipo === 'rostos') {
-      escala_id = await _getEscalaIdRostos();
-      if (!escala_id) { showToast('Erro: escala "Ótimo→Ruim" não encontrada no backend.', 5000); return; }
-      tipo = 'escala';
-    }
-    try {
-      const r1 = await apiSend('POST', '/api/qualidade/admin/perguntas', {
-        chave, tipo, escala_id, traducoes: { 'pt-BR': rotulo }, pesquisa_slug: PESQUISA_SLUG,
-      });
-      await apiSend('POST', `/api/qualidade/admin/pesquisas/${_pesqPesquisaId}/perguntas`, {
-        pergunta_id: r1.id, secao_id: secaoId, ordem: 99, obrigatoria, ativo: 1,
-      });
-      if (tipo === 'escala' && !escala_id) {
-        try { await _criarOpcoesSimNao(r1.id); } catch (e) { console.warn('Falha opcoes Sim/Nao:', e.message); }
-      }
-      showToast('✓ Pergunta criada (traduzindo nos 7 idiomas em segundo plano…)');
-      initPesquisaEditor();
-      if (r1?.id) _traduzirEAtualizarBg('pergunta', r1.id, rotulo);
-    } catch (e) { showToast('Não foi possível criar: ' + e.message, 5000); }
-  } finally {
-    _pesqCriandoPergunta = false;
-  }
 }
 
 async function _pesqAddPergunta(secaoId) {
