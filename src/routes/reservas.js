@@ -349,6 +349,9 @@ router.post('/:id/pessoa/:pessoa/ativar-pesquisa', ...podeEscreverSpa, (req, res
 // do modal admin para detectar quando um hospede respondeu — sem precisar
 // fechar/reabrir o modal. Read-only, GET. Sem side effects.
 router.get('/:id/status-pesquisa-casal', (req, res) => {
+  // no-store: polling 3s precisa de resposta fresca a cada tick.
+  // Mesmo Cache-Control aplicado em /api/survey/live por consistencia.
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: 'id invalido' });
   const reserva = buscarReservaById(id);
