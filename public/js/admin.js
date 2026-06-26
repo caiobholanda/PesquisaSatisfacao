@@ -1833,12 +1833,15 @@ function renderEscala(massagistas) {
     return `<span class="${cls}"${ta}><span class="et-ini">${ini}</span>${fim ? `<span class="et-fim">${fim}</span>` : ''}</span>`;
   };
 
-  wrap.innerHTML = `
+  const navWrap = document.getElementById('escala-nav-wrap');
+  if (navWrap) navWrap.innerHTML = `
     <div class="escala-nav">
       <button class="btn btn-outline btn-sm" id="escala-prev">◀</button>
       <span class="escala-nav-label">${MESES[_escalaMes]} ${_escalaAno}</span>
       <button class="btn btn-outline btn-sm" id="escala-next">▶</button>
-    </div>
+    </div>`;
+
+  wrap.innerHTML = `
     <table class="escala-table">
       <thead>
         <tr>
@@ -1884,6 +1887,21 @@ function renderEscala(massagistas) {
     if (_escalaMes > 11) { _escalaMes = 0; _escalaAno++; }
     renderEscala(_massagistas);
   });
+
+  // Gradientes de scroll: adiciona/remove classes conforme posição
+  const outer = document.getElementById('escala-scroll-outer');
+  if (outer) {
+    const updateShadow = () => {
+      const atStart = wrap.scrollLeft <= 0;
+      const atEnd   = wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 1;
+      outer.classList.toggle('scroll-at-start', atStart);
+      outer.classList.toggle('scroll-at-end',   atEnd);
+    };
+    wrap.removeEventListener('scroll', wrap._shadowFn);
+    wrap._shadowFn = updateShadow;
+    wrap.addEventListener('scroll', updateShadow, { passive: true });
+    updateShadow();
+  }
 }
 
 // ── Tipos de Tratamento ──
