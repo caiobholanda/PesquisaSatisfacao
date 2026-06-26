@@ -52,7 +52,10 @@ function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
           id={fieldId}
           value={valores[p.chave]?.valor || ''}
           onChange={(v) => setValor(p.chave, { tipo: 'texto_livre', valor: v })}
-          placeholder="Opcional..."
+          placeholder={p.obrigatoria ? '' : 'Opcional...'}
+          ariaRequired={p.obrigatoria || undefined}
+          ariaInvalid={!!err || undefined}
+          ariaDescribedby={errId}
         />
         <span className="fill"></span>
         {err && <p id={errId} className="field-err" role="alert">{err}</p>}

@@ -150,6 +150,8 @@ body {
 .extras-block { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; }
 .extras-question { margin-top: 22px; }
 .extras-question .field-err { color: #B85450; font-size: 12.5px; margin-top: 8px; }
+/* Erro em pergunta escala+rostos (extra com 4 opcoes otimo/bom/regular/ruim) */
+.extras-rostos-err { border-left: 2px solid #B85450; padding-left: 10px; }
 
 /* Versao quadrada do radio-dot para checkbox em perguntas extras multipla. */
 .checkbox-dot {

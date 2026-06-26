@@ -166,7 +166,7 @@ export function RadioOption({ checked, onClick, pt, en, children }) {
   );
 }
 
-export function AutoTextarea({ id, value, onChange, placeholder }) {
+export function AutoTextarea({ id, value, onChange, placeholder, ariaRequired, ariaInvalid, ariaDescribedby }) {
   const ref = useRef(null);
   const resize = () => {
     const el = ref.current;
@@ -181,6 +181,9 @@ export function AutoTextarea({ id, value, onChange, placeholder }) {
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      aria-required={ariaRequired || undefined}
+      aria-invalid={ariaInvalid || undefined}
+      aria-describedby={ariaDescribedby}
       style={{ overflow: 'hidden', resize: 'none' }}
     />
   );
