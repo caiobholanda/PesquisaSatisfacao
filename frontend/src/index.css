@@ -143,44 +143,25 @@ body {
 @keyframes dotIn { from { transform: scale(0); } to { transform: scale(1); } }
 .client-type { display: flex; gap: 44px; }
 
-/* Perguntas extras (adicionadas pelo admin no editor) — visual de pills
-   horizontais alinhado ao restante do formulário, sem destoar do design. */
-.extras-block { display: flex; flex-direction: column; gap: 26px; margin-top: 26px; }
-.extras-block .field-label { font-size: 14px; font-weight: 500; color: #1A1A1A; margin-bottom: 10px; display: block; letter-spacing: .02em; line-height: 1.45; }
-.extras-block .req-star { color: #B85042; font-weight: 600; }
-.extras-block textarea { width: 100%; min-height: 80px; padding: 12px 14px; border: 1px solid #E4DAC6; border-radius: 6px; font: inherit; font-family: 'Inter', sans-serif; font-size: 15px; resize: vertical; background: #fff; color: #1A1A1A; }
-.extras-block textarea:focus { outline: none; border-color: var(--ui); box-shadow: 0 0 0 3px rgba(184,147,90,.12); }
-.extras-block input[type="text"], .extras-block input:not([type]) { width: 100%; padding: 12px 14px; border: 1px solid #E4DAC6; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 15px; background: #fff; color: #1A1A1A; }
-.extras-block .extras-opts {
-  display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px;
+/* Perguntas extras (adicionadas pelo admin no editor) — usam o mesmo visual
+   das perguntas hardcoded: AutoTextarea com underline (.comment-field),
+   RadioOption com radio-dot circular, CheckboxOption com checkbox-dot quadrado.
+   .extras-block / .extras-question servem apenas para espacamento vertical. */
+.extras-block { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; }
+.extras-question { margin-top: 22px; }
+.extras-question .field-err { color: #B85450; font-size: 12.5px; margin-top: 8px; }
+
+/* Versao quadrada do radio-dot para checkbox em perguntas extras multipla. */
+.checkbox-dot {
+  width: 18px; height: 18px; border-radius: 3px; border: 1.5px solid #B8B8B8;
+  position: relative; flex: none; margin-top: 2px;
+  transition: border-color 0.35s cubic-bezier(0.16,1,0.3,1);
 }
-.extras-block .extras-opts .radio-opt {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 18px; border: 1px solid #E4DAC6; border-radius: 999px;
-  background: #fff; color: #5A4A38; font-size: 14px; font-weight: 500;
-  cursor: pointer; transition: all .18s; line-height: 1.25;
-  user-select: none; -webkit-user-select: none;
-  max-width: 100%; overflow-wrap: anywhere;
-  min-height: 44px; box-sizing: border-box;
+.app-root .checkbox-dot.on { border-color: var(--ui); }
+.checkbox-dot.on::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 2px;
+  background: var(--ui); animation: dotIn 0.25s cubic-bezier(0.16,1,0.3,1);
 }
-.extras-block .extras-opts .radio-opt input {
-  position: absolute; opacity: 0; pointer-events: none; margin: 0;
-}
-.extras-block .extras-opts .radio-opt:hover { border-color: #B8924A; color: #B8924A; }
-.extras-block .extras-opts .radio-opt.selected {
-  border-color: #B8924A; background: #FBEDD2; color: #5A4A38; font-weight: 600;
-}
-.extras-block .extras-opts .radio-opt::before {
-  content: ''; display: inline-block;
-  width: 10px; height: 10px; border-radius: 50%;
-  border: 1.5px solid #B8B8B8; transition: all .18s;
-  flex-shrink: 0;
-}
-.extras-block .extras-opts .radio-opt.selected::before {
-  border-color: #B8924A; background: #B8924A;
-}
-.extras-block .field-err { color: #B85042; font-size: 13px; margin-top: 8px; }
-.extras-block .field.error textarea, .extras-block .field.error input { border-color: #B85042; }
 @media (max-width: 600px) { .client-type { flex-direction: column; gap: 12px; } }
 .err-msg { color: #B85450; font-size: 13px; margin-top: 14px; }
 

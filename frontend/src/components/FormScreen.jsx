@@ -5,6 +5,17 @@ import {
   AutoTextarea, MassagistaAutocomplete, Smiley,
 } from './shared.jsx';
 
+// Igual ao RadioOption mas com dot quadrado (visual checkbox) e sem reveal.
+// Inline aqui porque so e usado nas perguntas extras do tipo 'multipla'.
+function CheckboxOption({ checked, onClick, pt }) {
+  return (
+    <button type="button" className="radio-opt" onClick={onClick} aria-pressed={checked}>
+      <span className={'checkbox-dot ease-spa' + (checked ? ' on' : '')}></span>
+      <span style={{ color: '#1A1A1A' }}>{pt}</span>
+    </button>
+  );
+}
+
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 const isTel   = (s) => /^[\d\s\-\+\(\)]{6,20}$/.test(s.trim());
 
@@ -29,27 +40,26 @@ const _OPCOES_FALLBACK = {
 // Extraido para que possa ser reutilizado pelo renderer ordenado das
 // secoes Servicos/Instalacoes que interleva legacy + extras pela ordem.
 function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
-  const reqMark = p.obrigatoria ? <span className="req-star"> *</span> : null;
+  const reqMark = p.obrigatoria ? <span style={{ color: '#B85042' }}> *</span> : null;
   const errId = err ? `${fieldId}-err` : undefined;
+  const labelNode = <>{p.rotulo}{reqMark}</>;
+
   if (p.tipo === 'texto_livre') {
     return (
       <div className={'field comment-field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-        <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
-        <textarea
+        <FieldLabel htmlFor={fieldId} pt={labelNode} en="" />
+        <AutoTextarea
           id={fieldId}
           value={valores[p.chave]?.valor || ''}
-          onChange={e => setValor(p.chave, { tipo: 'texto_livre', valor: e.target.value })}
-          rows={3}
-          placeholder="..."
-          aria-required={p.obrigatoria || undefined}
-          aria-invalid={!!err || undefined}
-          aria-describedby={errId}
+          onChange={(v) => setValor(p.chave, { tipo: 'texto_livre', valor: v })}
+          placeholder="Opcional..."
         />
         <span className="fill"></span>
         {err && <p id={errId} className="field-err" role="alert">{err}</p>}
       </div>
     );
   }
+
   if (p.tipo === 'unica' || p.tipo === 'sim_nao' || p.tipo === 'escala') {
     const opcoes = (p.opcoes && p.opcoes.length) ? p.opcoes
       : (_OPCOES_FALLBACK[p.tipo] || _OPCOES_FALLBACK.sim_nao);
@@ -67,32 +77,31 @@ function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
       );
     }
     return (
-      <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-        <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
-        <div className="radio-list extras-opts" role="radiogroup" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+      <div className={'extras-question' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+        <FieldLabel pt={labelNode} en="" />
+        <div className="radio-list" role="radiogroup" aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
           {opcoes.map(o => (
-            <label key={o.chave} className={'radio-opt' + (cur === o.chave ? ' selected' : '')}>
-              <input
-                type="radio"
-                name={'x_' + p.chave}
-                checked={cur === o.chave}
-                onChange={() => setValor(p.chave, { tipo: p.tipo, valor: o.chave })}
-              />
-              <span>{o.rotulo}</span>
-            </label>
+            <RadioOption
+              key={o.chave}
+              checked={cur === o.chave}
+              onClick={() => setValor(p.chave, { tipo: p.tipo, valor: o.chave })}
+              pt={o.rotulo}
+              en=""
+            />
           ))}
         </div>
         {err && <p id={errId} className="field-err" role="alert">{err}</p>}
       </div>
     );
   }
+
   if (p.tipo === 'multipla') {
     const opcoes = p.opcoes || [];
     const cur = Array.isArray(valores[p.chave]?.valor) ? valores[p.chave].valor : [];
     if (!opcoes.length) {
       return (
-        <div className="field" data-extra-chave={p.chave}>
-          <span className="field-label">{p.rotulo}{reqMark}</span>
+        <div className="extras-question" data-extra-chave={p.chave}>
+          <FieldLabel pt={labelNode} en="" />
           <p style={{ fontSize: 13, color: '#9B9B9B', fontStyle: 'italic' }}>
             (sem opções configuradas)
           </p>
@@ -107,23 +116,26 @@ function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
       });
     };
     return (
-      <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-        <span className="field-label" id={fieldId + '-lbl'}>{p.rotulo}{reqMark}</span>
-        <div className="radio-list extras-opts" role="group" aria-labelledby={fieldId + '-lbl'} aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
+      <div className={'extras-question' + (err ? ' error' : '')} data-extra-chave={p.chave}>
+        <FieldLabel pt={labelNode} en="" />
+        <div className="radio-list" role="group" aria-required={p.obrigatoria || undefined} aria-describedby={errId}>
           {opcoes.map(o => (
-            <label key={o.chave} className={'radio-opt' + (cur.includes(o.chave) ? ' selected' : '')}>
-              <input type="checkbox" checked={cur.includes(o.chave)} onChange={() => toggle(o.chave)} />
-              <span>{o.rotulo}</span>
-            </label>
+            <CheckboxOption
+              key={o.chave}
+              checked={cur.includes(o.chave)}
+              onClick={() => toggle(o.chave)}
+              pt={o.rotulo}
+            />
           ))}
         </div>
         {err && <p id={errId} className="field-err" role="alert">{err}</p>}
       </div>
     );
   }
+
   return (
     <div className={'field' + (err ? ' error' : '')} data-extra-chave={p.chave}>
-      <label className="field-label" htmlFor={fieldId}>{p.rotulo}{reqMark}</label>
+      <FieldLabel htmlFor={fieldId} pt={labelNode} en="" />
       <input
         id={fieldId}
         value={valores[p.chave]?.valor || ''}
