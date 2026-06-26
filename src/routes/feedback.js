@@ -82,7 +82,9 @@ router.post('/', rateLimit, (req, res) => {
   // marcarSurveyTokenRespondido agora retorna reserva_id — usado como fallback
   // quando b.survey_token está ausente (guest acessou URL direta sem token).
   let _markedReservaId = null;
-  try { _markedReservaId = marcarSurveyTokenRespondido(b.survey_token || null); } catch {}
+  // Passa o id do feedback recem-criado: o token aponta para esse feedback
+  // — permite o modal casal abrir a pesquisa respondida via openDrawer.
+  try { _markedReservaId = marcarSurveyTokenRespondido(b.survey_token || null, id); } catch {}
 
   // Resolve cliente_id/reserva_id: token explícito tem prioridade; se ausente,
   // usa reserva_id retornado pelo fallback de marcarSurveyTokenRespondido.

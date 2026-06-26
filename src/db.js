@@ -175,6 +175,9 @@ export function initDb() {
   // Migration: pessoa do token (1=cliente principal, 2=cliente2 do casal).
   // Default NULL = compat com tokens antigos (tratados como pessoa=1).
   try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN pessoa INTEGER`); } catch {}
+  // Migration: feedback_id do token (gravado quando hospede responde, permite
+  // mostrar "Pesquisa preenchida" no modal casal e abrir o detalhe respondido).
+  try { db.exec(`ALTER TABLE survey_tokens ADD COLUMN feedback_id INTEGER`); } catch {}
   // Migration: idioma detectado por IA no feedback
   try { db.exec(`ALTER TABLE feedback ADD COLUMN idioma_detectado TEXT`); } catch {}
 
@@ -1536,6 +1539,24 @@ export function criarSurveyToken(reservaId, pessoa = 1, ativar = true) {
   return token;
 }
 
+// Status da pesquisa do hospede (pessoa 1 ou 2) numa reserva. Usado pelo
+// modal casal para decidir se mostra "Liberar pesquisa" ou "Pesquisa
+// preenchida". Retorna { respondida: bool, feedback_id: number|null }.
+export function statusPesquisaPessoa(reservaId, pessoa = 1) {
+  const db = getDb();
+  const p = pessoa === 2 ? 2 : 1;
+  const row = db.prepare(
+    `SELECT respondida_em, feedback_id FROM survey_tokens
+     WHERE reserva_id = ? AND COALESCE(pessoa,1) = ?
+     ORDER BY criado_em DESC LIMIT 1`
+  ).get(reservaId, p);
+  if (!row) return { respondida: false, feedback_id: null };
+  return {
+    respondida: !!row.respondida_em,
+    feedback_id: row.feedback_id || null,
+  };
+}
+
 export function buscarSurveyTokenAtivo() {
   // ⚠️ MODO TEMPORARIO: janela de 15min desativada a pedido do usuario.
   // Para restaurar a rigorosidade de tempo, troque pelo bloco comentado abaixo.
@@ -1567,10 +1588,18 @@ export function buscarSurveyTokenAtivo() {
 // Marca o token de pesquisa como respondido. Se 'token' for passado,
 // marca DESSE token especifico — preserva a pesquisa do casal (cada
 // pessoa tem token proprio). Sem token, marca o ultimo liberado (compat).
-export function marcarSurveyTokenRespondido(token) {
+// feedbackId opcional: se passado, grava o vinculo token→feedback (usado
+// pelo modal casal pra abrir a pesquisa respondida no "Pesquisa preenchida").
+export function marcarSurveyTokenRespondido(token, feedbackId = null) {
   const db = getDb();
+  const setFeedback = (tok) => {
+    if (feedbackId != null) {
+      db.prepare(`UPDATE survey_tokens SET feedback_id = ? WHERE token = ?`).run(feedbackId, tok);
+    }
+  };
   if (token) {
     db.prepare(`UPDATE survey_tokens SET respondida_em = datetime('now') WHERE token = ?`).run(token);
+    setFeedback(token);
     const row = db.prepare(`SELECT reserva_id FROM survey_tokens WHERE token = ?`).get(token);
     return row?.reserva_id || null;
   }
@@ -1583,6 +1612,7 @@ export function marcarSurveyTokenRespondido(token) {
   `).get();
   if (target) {
     db.prepare(`UPDATE survey_tokens SET respondida_em = datetime('now') WHERE token = ?`).run(target.token);
+    setFeedback(target.token);
     return target.reserva_id || null;
   }
   return null;

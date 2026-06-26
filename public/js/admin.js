@@ -889,12 +889,33 @@ async function liberarPesquisaReserva(id) {
 function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
-  const card = ({ idx, h }) => `
-    <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
-      <div style="font-weight:600;margin-bottom:.7rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
-      <button class="btn btn-gold" data-ativar="${idx}" style="width:100%">Liberar pesquisa</button>
-    </div>
-  `;
+  // 2 estados visuais distintos, ambos usando tokens do design system:
+  // - RESPONDIDA: card com border-left dourado, badge ✓, botao "Ver respostas →"
+  // - PENDENTE: card neutro, CTA gold "Liberar pesquisa"
+  const card = ({ idx, h }) => {
+    const ja = h.respondida && h.feedback_id;
+    const wrapStyle = ja
+      ? 'border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem;background:linear-gradient(90deg,rgba(212,149,61,.04),transparent 60%)'
+      : 'border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem';
+    const headerLabel = ja
+      ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding:.18rem .5rem;border:1px solid var(--gold);border-radius:99px;display:inline-flex;align-items:center;gap:.3rem">✓ Respondida</span>`
+      : `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Pendente</span>`;
+    const botao = ja
+      ? `<button class="btn btn-outline" data-ver-fb="${h.feedback_id}" style="width:100%">Ver respostas <span style="margin-left:.35rem;display:inline-block;transition:transform .2s">→</span></button>`
+      : `<button class="btn btn-gold" data-ativar="${idx}" style="width:100%">Liberar pesquisa</button>`;
+    return `
+      <div style="${wrapStyle}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:.8rem">
+          <div style="display:flex;flex-direction:column;gap:.2rem;min-width:0">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Hóspede ${idx}</span>
+            <span style="font-weight:600;font-size:.98rem;color:var(--text,inherit);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(h.nome || '(sem nome)')}</span>
+          </div>
+          ${headerLabel}
+        </div>
+        ${botao}
+      </div>
+    `;
+  };
   ov.innerHTML = `
     <div role="dialog" aria-modal="true" aria-labelledby="modal-casal-title" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
       <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
@@ -917,6 +938,14 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   document.addEventListener('keydown', onKey);
   ov.addEventListener('click', async e => {
     if (e.target.dataset.act === 'close') { fechar(); return; }
+    // Click no botao "Pesquisa preenchida" → fecha modal e abre o drawer
+    // com o feedback respondido (reusa openDrawer existente).
+    const verFb = e.target.dataset.verFb;
+    if (verFb) {
+      fechar();
+      openDrawer(+verFb);
+      return;
+    }
     const pessoa = e.target.dataset.ativar;
     if (!pessoa) return;
     if (liberados > 0 && !confirm(

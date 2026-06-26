@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -314,10 +314,12 @@ router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
   if (reserva.cliente2 && reserva.cliente2.trim()) {
     const token1 = criarSurveyToken(reserva.id, 1, false);
     const token2 = criarSurveyToken(reserva.id, 2, false);
+    const s1 = statusPesquisaPessoa(reserva.id, 1);
+    const s2 = statusPesquisaPessoa(reserva.id, 2);
     return res.json({
       ok: true, casal: true,
-      hospede1: { nome: reserva.cliente,  telefone: reserva.telefone,  token: token1, url: `${origin}/?token=${token1}` },
-      hospede2: { nome: reserva.cliente2, telefone: reserva.telefone2, token: token2, url: `${origin}/?token=${token2}` },
+      hospede1: { nome: reserva.cliente,  telefone: reserva.telefone,  token: token1, url: `${origin}/?token=${token1}`, respondida: s1.respondida, feedback_id: s1.feedback_id },
+      hospede2: { nome: reserva.cliente2, telefone: reserva.telefone2, token: token2, url: `${origin}/?token=${token2}`, respondida: s2.respondida, feedback_id: s2.feedback_id },
     });
   }
 
