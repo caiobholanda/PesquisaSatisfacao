@@ -867,14 +867,13 @@ async function liberarPesquisaReserva(id) {
     // _pesquisasLiberadas.add(id);
     _aplicarEstadoLiberada(btn, 'ok');
 
-    // Reserva CASAL: mostra modal com os 2 links de pesquisa, um por hospede.
+    // Reserva CASAL: mostra modal com botao "Liberar Pesquisa" por hospede.
+    // Pesquisa e respondida AO VIVO no tablet aberto em /, nao por WhatsApp —
+    // por isso URL/copy/WhatsApp foram removidos. Cada botao re-bumpa
+    // liberada_em do token daquela pessoa para que o tablet (polling 1s)
+    // pegue ESPECIFICAMENTE aquele hospede no proximo tick.
     if (d.casal) {
-      _modalLinksCasal({
-        titulo: 'Pesquisa liberada — 2 links (casal)',
-        descricao: 'Cada hóspede recebe seu próprio link de pesquisa. Envie um para cada pessoa.',
-        h1: d.hospede1, h2: d.hospede2,
-        msgFn: (nome, url) => `Olá, *${nome || 'hóspede'}*! 🌿\n\nObrigado pelo seu tratamento no *Gran SPA by L'Occitane*. Sua opinião é muito importante — leva menos de 1 minuto:\n\n👉 ${url}\n\n*Hotel Gran Marquise*`,
-      });
+      _modalLiberarPesquisaCasal({ reservaId: id, h1: d.hospede1, h2: d.hospede2 });
     } else {
       showToast('✓ Pesquisa liberada — o botão já apareceu na tela do hóspede');
     }
@@ -883,30 +882,23 @@ async function liberarPesquisaReserva(id) {
   }
 }
 
-// Modal generico de 2 links para reservas casal. Compartilhado por
-// liberarPesquisaReserva e o fluxo de Gerar Ficha (anamnese).
-function _modalLinksCasal({ titulo, descricao, h1, h2, msgFn }) {
+// Modal de casal — pesquisa respondida ao vivo no tablet. Cada hospede tem
+// seu proprio botao "Liberar Pesquisa" que ativa apenas o token dele em
+// survey_tokens.liberada_em via POST /api/reservas/:id/pessoa/:n/ativar-pesquisa.
+// O tablet (polling 1s em /api/survey/live) pega esse hospede automaticamente.
+function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
-  const card = ({ idx, h }) => {
-    const tRaw = (h.telefone || '').replace(/\D/g, '');
-    const tPhone = tRaw.startsWith('55') ? tRaw : '55' + tRaw;
-    const msg = msgFn(h.nome, h.url);
-    return `
-      <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
-        <div style="font-weight:600;margin-bottom:.4rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
-        <div style="font-size:.78rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.4rem .6rem;border-radius:4px;margin-bottom:.55rem">${escHtml(h.url)}</div>
-        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-          ${tRaw ? `<button class="btn btn-gold btn-sm" data-zap="${tPhone}" data-msg="${escHtml(msg)}">📱 WhatsApp</button>` : ''}
-          <button class="btn btn-outline btn-sm" data-copy="${escHtml(h.url)}">📋 Copiar link</button>
-        </div>
-      </div>
-    `;
-  };
+  const card = ({ idx, h }) => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
+      <div style="font-weight:600;margin-bottom:.7rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
+      <button class="btn btn-gold" data-ativar="${idx}" style="width:100%">✓ Liberar pesquisa para responder agora</button>
+    </div>
+  `;
   ov.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-      <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">${escHtml(titulo)}</h3>
-      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">${escHtml(descricao)}</p>
+      <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">A pesquisa será respondida ao vivo no tablet do SPA. Clique em <strong>Liberar pesquisa</strong> do hóspede que vai responder agora. Quando ele terminar, clique no outro hóspede.</p>
       ${card({ idx: 1, h: h1 })}
       ${card({ idx: 2, h: h2 })}
       <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
@@ -914,12 +906,31 @@ function _modalLinksCasal({ titulo, descricao, h1, h2, msgFn }) {
       </div>
     </div>
   `;
-  ov.addEventListener('click', e => {
-    if (e.target.dataset.act === 'close') ov.remove();
-    else if (e.target.dataset.zap) {
-      window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
-    } else if (e.target.dataset.copy) {
-      try { navigator.clipboard.writeText(e.target.dataset.copy); showToast('Link copiado!'); } catch {}
+  ov.addEventListener('click', async e => {
+    if (e.target.dataset.act === 'close') { ov.remove(); return; }
+    const pessoa = e.target.dataset.ativar;
+    if (!pessoa) return;
+    const btn = e.target;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Liberando…';
+    try {
+      const res = await api(`/api/reservas/${reservaId}/pessoa/${pessoa}/ativar-pesquisa`, { method: 'POST', body: '{}' });
+      const d = res ? await res.json() : null;
+      if (d?.ok) {
+        btn.textContent = '✓ Liberado — aguardando resposta no tablet';
+        btn.classList.remove('btn-gold');
+        btn.classList.add('btn-outline');
+        showToast(`✓ Pesquisa do Hóspede ${pessoa} liberada no tablet`);
+      } else {
+        btn.disabled = false;
+        btn.textContent = original;
+        showToast('Erro ao liberar: ' + (d?.error || 'tente novamente'));
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = original;
+      showToast('Erro de rede — tente novamente');
     }
   });
   document.body.appendChild(ov);

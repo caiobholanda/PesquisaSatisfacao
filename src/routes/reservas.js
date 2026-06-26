@@ -321,6 +321,24 @@ router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
   res.json({ ok: true, casal: false, token, url: `${origin}/?token=${token}`, nome: reserva.cliente, telefone: reserva.telefone });
 });
 
+// Ativa a pesquisa de UM hospede especifico (pessoa 1 ou 2) numa reserva
+// de casal. Faz UPDATE em survey_tokens.liberada_em = now() — assim o
+// tablet em / pega esse hospede no proximo polling (~1s).
+// Reusa criarSurveyToken que ja' e' idempotente (cria se nao existir).
+router.post('/:id/pessoa/:pessoa/ativar-pesquisa', ...podeEscreverSpa, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const pessoa = parseInt(req.params.pessoa, 10);
+  if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: 'id invalido' });
+  if (![1, 2].includes(pessoa))        return res.status(400).json({ ok: false, error: 'pessoa deve ser 1 ou 2' });
+  const reserva = buscarReservaById(id);
+  if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
+  if (pessoa === 2 && !(reserva.cliente2 && reserva.cliente2.trim())) {
+    return res.status(400).json({ ok: false, error: 'Reserva não é casal' });
+  }
+  const token = criarSurveyToken(id, pessoa);
+  res.json({ ok: true, token });
+});
+
 router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   const reserva = buscarReservaById(+req.params.id);
   if (!reserva) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
