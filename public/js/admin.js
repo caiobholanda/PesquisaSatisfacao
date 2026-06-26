@@ -140,7 +140,7 @@ function rolePermissions(role) {
 function aplicarRoleNaUI(role) {
   const p = rolePermissions(role);
   // Itens do dropdown SPA
-  ['btn-open-massagistas', 'btn-open-escala', 'btn-open-tipos'].forEach(id => {
+  ['btn-open-massagistas', 'btn-open-tipos'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = p.podeSpa ? '' : 'none';
   });
@@ -1181,6 +1181,7 @@ function setupDelegation() {
       navigator.clipboard.writeText(url).then(() => showToast(`Link copiado: ${el.dataset.nome}`)).catch(() => prompt('Copie o link:', url));
     }
     else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome, +el.dataset.ativo); }
+    else if (action === 'ver-escala'){ showEscalaMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'edit-tipo') {
       const { id, nome, dur, preco, ativo, desc } = el.dataset;
       openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc);
@@ -1235,8 +1236,14 @@ let _editTId = null;
 document.getElementById('btn-open-massagistas').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 document.getElementById('btn-back-historico').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 
-document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); });
-document.getElementById('btn-back-escala').addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-back-escala').addEventListener('click', () => {
+  const retorno = _escalaRetornoView;
+  _escalaFiltroId = null;
+  _escalaFiltroNome = null;
+  _escalaRetornoView = 'view-massagistas';
+  showView(retorno);
+  if (retorno === 'view-massagistas') loadMassagistas();
+});
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
 document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
@@ -1333,6 +1340,7 @@ function renderMassagistas() {
         <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Ver histórico</button>
         <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
         <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
+        <button class="btn btn-outline btn-sm" data-action="ver-escala" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Ver escala mensal">Escala</button>
         <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}" data-ativo="${m.ativo?1:0}">Editar</button>
       </div>`;
   }).join('') + '</div>';
@@ -1464,6 +1472,7 @@ function renderExcecoesGlobal() {
   const linhas = [];
   for (const m of (_massagistas || [])) {
     if (!m.ativo) continue;
+    if (_escalaFiltroId && m.id !== _escalaFiltroId) continue;
     for (const e of _parseExcecoes(m.excecoes)) {
       if (!e?.data || e.data < hoje) continue;
       linhas.push({ mid: m.id, mnome: m.nome, ...e });
@@ -1510,6 +1519,7 @@ document.getElementById('btn-add-excecao-global')?.addEventListener('click', () 
   const ativas = (_massagistas || []).filter(m => m.ativo);
   if (!ativas.length) { showToast('Nenhuma massoterapeuta ativa.'); return; }
   sel.innerHTML = ativas.map(m => `<option value="${m.id}">${escHtml(m.nome)}</option>`).join('');
+  if (_escalaFiltroId) sel.value = String(_escalaFiltroId);
   document.getElementById('mgmt-exc-data').value = _hojeISO();
   document.getElementById('mgmt-exc-tipo').value = 'indisponivel';
   document.getElementById('mgmt-exc-ini').value = '08:00';
@@ -1646,6 +1656,16 @@ document.getElementById('mgmt-pin-salvar').addEventListener('click', async () =>
 // ── Escala de Trabalho (mensal) ──
 let _escalaAno = new Date().getFullYear();
 let _escalaMes = new Date().getMonth(); // 0-indexed
+let _escalaFiltroId   = null;
+let _escalaFiltroNome = null;
+let _escalaRetornoView = 'view-massagistas';
+
+function showEscalaMassagista(id, nome) {
+  _escalaFiltroId   = id;
+  _escalaFiltroNome = nome;
+  _escalaRetornoView = 'view-massagistas';
+  showView('view-escala'); // aciona loadEscala() via showView
+}
 
 async function loadEscala() {
   let res, d;
@@ -1736,7 +1756,11 @@ function _escalaGetCellInfo(m, dia) {
 function renderEscala(massagistas) {
   const wrap = document.getElementById('escala-table-wrap');
   if (!wrap) return;
-  const ativas = massagistas.filter(m => m.ativo);
+  const sub = document.getElementById('escala-page-sub');
+  if (sub) sub.textContent = _escalaFiltroNome || 'Horários por massoterapeuta';
+  const ativas = _escalaFiltroId
+    ? massagistas.filter(m => m.ativo && m.id === _escalaFiltroId)
+    : massagistas.filter(m => m.ativo);
   if (!ativas.length) { wrap.innerHTML = '<div class="mgmt-empty">Nenhuma massoterapeuta ativa.</div>'; return; }
 
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
