@@ -1643,7 +1643,10 @@ document.getElementById('mgmt-pin-salvar').addEventListener('click', async () =>
   } finally { btn.disabled = false; }
 });
 
-// ── Escala de Trabalho ──
+// ── Escala de Trabalho (mensal) ──
+let _escalaAno = new Date().getFullYear();
+let _escalaMes = new Date().getMonth(); // 0-indexed
+
 async function loadEscala() {
   let res, d;
   try {
@@ -1660,25 +1663,103 @@ async function loadEscala() {
   renderExcecoesGlobal();
 }
 
+function _escalaGetDias(ano, mes) {
+  const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+  const DOW_KEYS   = ['dom','seg','ter','qua','qui','sex','sab'];
+  const DOW_ABREV  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const hoje = new Date();
+  const dias = [];
+  for (let d = 1; d <= ultimoDia; d++) {
+    const date = new Date(ano, mes, d);
+    const dowIdx = date.getDay();
+    const iso = `${ano}-${String(mes + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    dias.push({
+      num: d, iso,
+      dowKey: DOW_KEYS[dowIdx],
+      dowAbrev: DOW_ABREV[dowIdx],
+      isHoje: d === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear(),
+      isFds: dowIdx === 0 || dowIdx === 6,
+    });
+  }
+  return dias;
+}
+
+function _escalaGetCellInfo(m, dia) {
+  let disp = null;
+  if (m.disponibilidade) {
+    try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
+    catch { disp = null; }
+  }
+  let excArr = [];
+  if (m.excecoes) {
+    try {
+      const v = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes;
+      excArr = Array.isArray(v) ? v : [];
+    } catch { excArr = []; }
+  }
+
+  const excsDoDia   = excArr.filter(e => e?.data === dia.iso);
+  const indispExcs  = excsDoDia.filter(e => e.tipo === 'indisponivel');
+  const dispExcs    = excsDoDia.filter(e => e.tipo === 'disponivel');
+  const faixaSemanal = disp?.[dia.dowKey] || null;
+
+  // Sem cadastro algum: compat (sempre disponível)
+  if (!disp && !excArr.length) return { tipo: 'compat', texto: '✓', title: 'Sem escala configurada' };
+
+  // Exceção disponivel em dia fora da escala semanal
+  if (!faixaSemanal && dispExcs.length) {
+    const e = dispExcs[0];
+    return { tipo: 'extra', texto: `${e.inicio.slice(0,5)}–${e.fim.slice(0,5)}`, title: `Exceção: disponível ${e.inicio}–${e.fim}` };
+  }
+
+  // Não trabalha neste dia da semana
+  if (!faixaSemanal) return { tipo: 'off', texto: null, title: null };
+
+  const [escIniStr, escFimStr] = faixaSemanal.split('-');
+  const escIniMin = _hmToMin(escIniStr), escFimMin = _hmToMin(escFimStr);
+  const textoNormal = `${escIniStr}–${escFimStr}`;
+  const titleNormal = `${escIniStr}–${escFimStr}`;
+
+  // Exceção que cobre totalmente a escala = folga
+  const fullBlock = indispExcs.some(e => {
+    const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
+    return !Number.isNaN(eIni) && !Number.isNaN(eFim) && eIni <= escIniMin && eFim >= escFimMin;
+  });
+  if (fullBlock) return { tipo: 'folga', texto: 'folga', title: 'Folga (exceção)' };
+
+  // Tem exceção parcial no dia
+  if (excsDoDia.length) return { tipo: 'exc', texto: `${textoNormal}*`, title: `${titleNormal} — há exceção neste dia` };
+
+  return { tipo: 'on', texto: textoNormal, title: titleNormal };
+}
+
 function renderEscala(massagistas) {
   const wrap = document.getElementById('escala-table-wrap');
   if (!wrap) return;
   const ativas = massagistas.filter(m => m.ativo);
   if (!ativas.length) { wrap.innerHTML = '<div class="mgmt-empty">Nenhuma massoterapeuta ativa.</div>'; return; }
-  const _faixa = (m, day) => {
-    if (!m.disponibilidade) return null;
-    const disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade;
-    return disp[day] || null;
+
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dias = _escalaGetDias(_escalaAno, _escalaMes);
+
+  const _cellHtml = (m, dia) => {
+    const info = _escalaGetCellInfo(m, dia);
+    const cls = { on:'escala-td-on', compat:'escala-td-on', off:'escala-td-off', folga:'escala-td-folga', extra:'escala-td-extra', exc:'escala-td-exc' }[info.tipo] || 'escala-td-off';
+    const titleAttr = info.title ? ` title="${escHtml(info.title)}"` : '';
+    return `<span class="${cls}"${titleAttr}>${info.texto || '—'}</span>`;
   };
-  const _cellHtml = (faixa) => faixa
-    ? `<span class="escala-td-on">${faixa.replace('-', ' – ')}</span>`
-    : `<span class="escala-td-off">—</span>`;
+
   wrap.innerHTML = `
+    <div class="escala-nav">
+      <button class="btn btn-outline btn-sm" id="escala-prev">◀</button>
+      <span class="escala-nav-label">${MESES[_escalaMes]} ${_escalaAno}</span>
+      <button class="btn btn-outline btn-sm" id="escala-next">▶</button>
+    </div>
     <table class="escala-table">
       <thead>
         <tr>
           <th>Profissional</th>
-          <th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sab</th><th>Dom</th>
+          ${dias.map(d => `<th class="${d.isHoje ? 'escala-th-hoje' : ''}${d.isFds ? ' escala-th-fds' : ''}" title="${d.dowAbrev}">${String(d.num).padStart(2,'0')}<br><small>${d.dowAbrev}</small></th>`).join('')}
           <th></th>
         </tr>
       </thead>
@@ -1686,16 +1767,34 @@ function renderEscala(massagistas) {
         ${ativas.map(m => `
           <tr>
             <td title="${escHtml(m.nome)}">${escHtml(m.nome)}</td>
-            ${['seg','ter','qua','qui','sex','sab','dom'].map(d => `<td>${_cellHtml(_faixa(m, d))}</td>`).join('')}
+            ${dias.map(dia => `<td>${_cellHtml(m, dia)}</td>`).join('')}
             <td><button class="btn btn-outline btn-sm" style="white-space:nowrap" data-action="edit-mass-escala" data-id="${m.id}">Editar</button></td>
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <div class="escala-legenda">
+      <span class="escala-td-on">08–17</span> escala normal &nbsp;
+      <span class="escala-td-exc">08–17*</span> tem exceção &nbsp;
+      <span class="escala-td-extra">09–13</span> disponível extra &nbsp;
+      <span class="escala-td-folga">folga</span> folga/bloqueio
+    </div>`;
+
   wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const m = _massagistas.find(x => x.id === +btn.dataset.id);
       if (m) openEditMassagista(m.id, m.nome, m.ativo);
     });
+  });
+
+  document.getElementById('escala-prev')?.addEventListener('click', () => {
+    _escalaMes--;
+    if (_escalaMes < 0) { _escalaMes = 11; _escalaAno--; }
+    renderEscala(_massagistas);
+  });
+  document.getElementById('escala-next')?.addEventListener('click', () => {
+    _escalaMes++;
+    if (_escalaMes > 11) { _escalaMes = 0; _escalaAno++; }
+    renderEscala(_massagistas);
   });
 }
 

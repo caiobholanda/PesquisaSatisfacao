@@ -2580,19 +2580,28 @@
     }
 
     /* Escala table */
-    .escala-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.8125rem; min-width:600px; }
-    .escala-table th { padding:.5rem .75rem; text-align:center; font-size:.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
-    .escala-table th:first-child { text-align:left; }
-    .escala-table td { padding:.5rem .75rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; background:var(--surface); }
-    .escala-table td:first-child { font-weight:500; font-size:.8rem; min-width:220px; max-width:300px; white-space:normal; word-break:break-word; line-height:1.25; }
+    .escala-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.75rem; min-width:600px; }
+    .escala-table th { padding:.4rem .3rem; text-align:center; font-size:.65rem; font-weight:600; letter-spacing:.04em; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); line-height:1.3; }
+    .escala-table th small { font-size:.58rem; font-weight:400; display:block; opacity:.8; }
+    .escala-table th:first-child { text-align:left; padding:.4rem .75rem; }
+    .escala-table td { padding:.375rem .3rem; border-bottom:1px solid var(--border-soft); vertical-align:middle; background:var(--surface); }
+    .escala-table td:first-child { font-weight:500; font-size:.8rem; min-width:160px; max-width:260px; padding:.375rem .75rem; white-space:normal; word-break:break-word; line-height:1.25; }
     .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; }
-    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; }
+    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.375rem .5rem; }
     .escala-table thead th:first-child, .escala-table thead th:last-child { z-index:3; }
     .escala-table td:not(:first-child):not(:last-child) { text-align:center; }
-    .escala-td-on { color:var(--success); font-size:.75rem; font-family:var(--mono); white-space:nowrap; }
+    .escala-td-on  { color:var(--success); font-size:.68rem; font-family:var(--mono); white-space:nowrap; }
     .escala-td-off { color:var(--muted); font-size:.75rem; }
+    .escala-td-folga { color:#e07b3a; font-size:.65rem; font-weight:600; font-family:var(--mono); white-space:nowrap; }
+    .escala-td-extra { color:var(--gold,#b88a3d); font-size:.68rem; font-family:var(--mono); white-space:nowrap; }
+    .escala-td-exc  { color:var(--success); font-size:.68rem; font-family:var(--mono); white-space:nowrap; opacity:.85; }
+    .escala-th-hoje { background:color-mix(in srgb, var(--gold,#b88a3d) 12%, var(--surface)); color:var(--gold,#b88a3d) !important; }
+    .escala-th-fds  { opacity:.65; }
     .escala-table tr:last-child td { border-bottom:none; }
     .escala-table tr:hover td { background:var(--surface2); }
+    .escala-nav { display:flex; align-items:center; gap:.75rem; padding:.75rem 1.5rem .5rem; }
+    .escala-nav-label { font-weight:600; font-size:.9375rem; min-width:160px; text-align:center; }
+    .escala-legenda { padding:.625rem 1.5rem; font-size:.72rem; color:var(--muted); display:flex; flex-wrap:wrap; gap:.5rem 1.25rem; align-items:center; }
 
     /* Disponibilidade row no modal */
     .disp-row { display:flex; align-items:center; gap:.625rem; padding:.3rem .5rem; border-radius:6px; transition:background .12s; }
@@ -3531,7 +3540,7 @@
       </div>
       <div class="mgmt-list-card">
         <div class="mgmt-list-card-header" style="padding-bottom:0.75rem">
-          <span class="mgmt-list-card-title">Escala semanal</span>
+          <span class="mgmt-list-card-title">Escala mensal</span>
           <span style="font-size:0.8125rem;color:var(--muted)">Clique em Editar para ajustar o horário de cada profissional</span>
         </div>
         <div id="escala-table-wrap" style="overflow-x:auto;padding:0 1.5rem 1.5rem">
