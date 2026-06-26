@@ -306,10 +306,14 @@ router.post('/:id/liberar-pesquisa', ...podeEscreverSpa, (req, res) => {
     : `${req.protocol}://${req.get('host')}`;
 
   // Reserva CASAL: 2 tokens distintos pra que cada hospede responda
-  // sua propria pesquisa sem sobrescrever a do outro.
+  // sua propria pesquisa sem sobrescrever a do outro. Tokens nascem
+  // INATIVOS (liberada_em=NULL) — admin precisa clicar o botao
+  // "Liberar pesquisa" do hospede que vai responder agora no modal
+  // que sera aberto pelo frontend. Isso evita o bug onde ambos os tokens
+  // nascem ativados no mesmo segundo e o tablet pega o errado.
   if (reserva.cliente2 && reserva.cliente2.trim()) {
-    const token1 = criarSurveyToken(reserva.id, 1);
-    const token2 = criarSurveyToken(reserva.id, 2);
+    const token1 = criarSurveyToken(reserva.id, 1, false);
+    const token2 = criarSurveyToken(reserva.id, 2, false);
     return res.json({
       ok: true, casal: true,
       hospede1: { nome: reserva.cliente,  telefone: reserva.telefone,  token: token1, url: `${origin}/?token=${token1}` },

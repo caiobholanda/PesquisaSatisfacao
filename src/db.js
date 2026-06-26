@@ -1509,7 +1509,13 @@ export function buscarReservaDetalhe(id) {
   };
 }
 
-export function criarSurveyToken(reservaId, pessoa = 1) {
+// ativar=true (default) seta liberada_em=now() — tablet em / pega esse
+// token no proximo polling. ativar=false cria/reusa o token mas mantem
+// liberada_em=NULL — usado para reserva casal, onde os 2 tokens nascem
+// inativos e cada um e' ativado individualmente pelo botao no modal.
+// Sem isso, ambos os tokens nasciam com mesmo liberada_em (segundo) e o
+// ORDER BY DESC LIMIT 1 podia retornar o errado (P1 quando admin clicou P2).
+export function criarSurveyToken(reservaId, pessoa = 1, ativar = true) {
   const db = getDb();
   const p = pessoa === 2 ? 2 : 1;
   // Reusa token existente DESTA pessoa nesta reserva (idempotente).
@@ -1517,13 +1523,16 @@ export function criarSurveyToken(reservaId, pessoa = 1) {
     `SELECT token FROM survey_tokens WHERE reserva_id = ? AND COALESCE(pessoa,1) = ? AND respondida_em IS NULL ORDER BY criado_em DESC LIMIT 1`
   ).get(reservaId, p);
   if (existente) {
-    db.prepare(`UPDATE survey_tokens SET liberada_em = datetime('now') WHERE token = ?`).run(existente.token);
+    if (ativar) {
+      db.prepare(`UPDATE survey_tokens SET liberada_em = datetime('now') WHERE token = ?`).run(existente.token);
+    }
     return existente.token;
   }
   const token = randomBytes(24).toString('hex');
-  db.prepare(
-    `INSERT INTO survey_tokens (token, reserva_id, pessoa, liberada_em) VALUES (?, ?, ?, datetime('now'))`
-  ).run(token, reservaId, p);
+  const sql = ativar
+    ? `INSERT INTO survey_tokens (token, reserva_id, pessoa, liberada_em) VALUES (?, ?, ?, datetime('now'))`
+    : `INSERT INTO survey_tokens (token, reserva_id, pessoa, liberada_em) VALUES (?, ?, ?, NULL)`;
+  db.prepare(sql).run(token, reservaId, p);
   return token;
 }
 
