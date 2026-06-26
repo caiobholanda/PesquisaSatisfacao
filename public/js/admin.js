@@ -163,6 +163,13 @@ function aplicarRoleNaUI(role) {
   // sem proteção — risco alto). Endpoint /api/dev/seed-demo também removido.
 }
 
+// ── Escala de Trabalho (mensal) — declaradas aqui para evitar TDZ em showApp ──
+let _escalaAno = new Date().getFullYear();
+let _escalaMes = new Date().getMonth(); // 0-indexed
+let _escalaFiltroId   = null;
+let _escalaFiltroNome = null;
+let _escalaRetornoView = 'view-massagistas';
+
 function showApp() {
   document.getElementById('app-screen').style.display = 'block';
   // Aplica visibilidade conforme o role gravado no JWT atual.
@@ -1679,13 +1686,6 @@ document.getElementById('mgmt-pin-salvar').addEventListener('click', async () =>
     showToast('PIN definido com sucesso.');
   } finally { btn.disabled = false; }
 });
-
-// ── Escala de Trabalho (mensal) ──
-let _escalaAno = new Date().getFullYear();
-let _escalaMes = new Date().getMonth(); // 0-indexed
-let _escalaFiltroId   = null;
-let _escalaFiltroNome = null;
-let _escalaRetornoView = 'view-massagistas';
 
 function showEscalaMassagista(id, nome) {
   _escalaFiltroId   = id;
