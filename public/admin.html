@@ -2589,46 +2589,50 @@
 
     /* Cabeçalho dos dias */
     .escala-table th {
-      padding:.5rem .22rem .45rem;
-      text-align:center; font-size:.58rem; font-weight:700; letter-spacing:.03em;
+      padding:.65rem .28rem .55rem;
+      text-align:center; font-size:.6rem; font-weight:700; letter-spacing:.04em;
       color:var(--muted); border-bottom:2px solid var(--border);
-      white-space:nowrap; background:var(--surface); line-height:1.2;
+      white-space:nowrap; background:var(--surface2); line-height:1.3;
       transition:background .15s, color .15s;
     }
-    .escala-table th .et-dia-num { display:block; font-size:.72rem; font-weight:700; line-height:1; margin-bottom:.12rem; }
-    .escala-table th .et-dia-dow { display:block; font-size:.52rem; font-weight:400; text-transform:uppercase; letter-spacing:.06em; opacity:.6; }
-    .escala-table th:first-child { text-align:left; padding:.5rem 1.125rem; font-size:.62rem; text-transform:uppercase; letter-spacing:.09em; }
+    .escala-table th .et-dia-num { display:block; font-size:.8rem; font-weight:800; line-height:1; margin-bottom:.14rem; color:var(--text); }
+    .escala-table th .et-dia-dow { display:block; font-size:.5rem; font-weight:500; text-transform:uppercase; letter-spacing:.09em; opacity:.55; }
+    .escala-table th:first-child { text-align:left; padding:.65rem 1.25rem; font-size:.6rem; text-transform:uppercase; letter-spacing:.11em; color:var(--muted); }
 
     /* Células */
     .escala-table td {
-      padding:.35rem .2rem; border-bottom:1px solid var(--border-soft);
+      padding:.48rem .22rem; border-bottom:1px solid var(--border-soft);
       vertical-align:middle; background:var(--surface); transition:background .1s;
     }
     .escala-table td:first-child {
-      font-size:.8rem; font-weight:600;
-      min-width:150px; max-width:190px; width:190px;
-      padding:.35rem 1.125rem;
+      font-size:.82rem; font-weight:600; letter-spacing:.01em;
+      min-width:160px; max-width:200px; width:200px;
+      padding:.48rem 1.25rem;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       border-right:2px solid var(--border);
+      color:var(--text);
     }
 
     /* Sticky + sombras */
-    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; box-shadow:4px 0 10px rgba(0,0,0,.09); }
-    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.35rem .625rem; box-shadow:-4px 0 10px rgba(0,0,0,.09); }
+    .escala-table th:first-child, .escala-table td:first-child { position:sticky; left:0; z-index:2; box-shadow:6px 0 14px rgba(0,0,0,.12); }
+    .escala-table th:last-child, .escala-table td:last-child { position:sticky; right:0; z-index:2; text-align:right; padding:.48rem .75rem; box-shadow:-6px 0 14px rgba(0,0,0,.12); }
     .escala-table thead th:first-child, .escala-table thead th:last-child { z-index:3; }
     .escala-table td:not(:first-child):not(:last-child) { text-align:center; }
 
     /* Hoje */
-    .escala-th-hoje { background:var(--gold) !important; color:var(--bg) !important; }
-    .escala-th-hoje .et-dia-num { font-size:.78rem; }
-    .escala-td-hoje { background:color-mix(in srgb, var(--gold) 9%, var(--surface)) !important; }
+    .escala-th-hoje { background:var(--gold) !important; color:var(--bg) !important; box-shadow:inset 0 -3px 0 color-mix(in srgb, var(--gold) 60%, #000) !important; }
+    .escala-th-hoje .et-dia-num { color:var(--bg) !important; font-size:.82rem; }
+    .escala-th-hoje .et-dia-dow { opacity:.75; }
+    .escala-td-hoje { background:color-mix(in srgb, var(--gold) 10%, var(--surface)) !important; }
 
     /* Fins de semana */
-    .escala-th-fds { background:var(--surface2) !important; opacity:1; }
-    .escala-th-fds .et-dia-dow { opacity:.45; }
-    .escala-td-fds:not(.escala-td-hoje) { background:color-mix(in srgb, var(--border) 14%, var(--surface)); }
+    .escala-th-fds { background:color-mix(in srgb, var(--border) 35%, var(--surface2)) !important; }
+    .escala-th-fds .et-dia-num { opacity:.6; }
+    .escala-th-fds .et-dia-dow { opacity:.35; }
+    .escala-td-fds:not(.escala-td-hoje) { background:color-mix(in srgb, var(--border) 18%, var(--surface)); }
 
     /* Hover */
+    .escala-table tbody tr { transition:background .08s; }
     .escala-table tr:hover td:not(.escala-td-hoje) { background:var(--surface2); }
     .escala-table tr:hover .escala-td-hoje { background:color-mix(in srgb, var(--gold) 15%, var(--surface2)) !important; }
     .escala-table tr:last-child td { border-bottom:none; }
@@ -2637,64 +2641,95 @@
     /* Pill de horário (trabalhando) */
     .escala-td-on {
       display:inline-flex; flex-direction:column; align-items:center;
-      background:color-mix(in srgb, var(--success) 11%, transparent);
-      border-radius:5px; padding:.18rem .38rem; min-width:36px; gap:0; cursor:default;
+      background:color-mix(in srgb, var(--success) 13%, transparent);
+      border-radius:6px; padding:.22rem .45rem; min-width:38px; gap:0; cursor:default;
+      transition:background .12s;
     }
-    .et-ini { font-family:var(--mono); font-size:.82rem; font-weight:700; color:var(--success); line-height:1.3; }
-    .et-fim { font-family:var(--mono); font-size:.7rem; color:var(--success); opacity:.7; line-height:1.3; }
+    .escala-td-on:hover { background:color-mix(in srgb, var(--success) 22%, transparent); }
+    .et-ini { font-family:var(--mono); font-size:.84rem; font-weight:800; color:var(--success); line-height:1.3; }
+    .et-fim { font-family:var(--mono); font-size:.68rem; color:var(--success); opacity:.65; line-height:1.3; }
 
     /* Sem horário */
-    .escala-td-off { color:var(--border); font-size:1rem; line-height:1; display:inline-block; }
+    .escala-td-off { color:var(--border); font-size:1.1rem; line-height:1; display:inline-block; letter-spacing:0; }
 
     /* Folga / bloqueio */
     .escala-td-folga {
-      display:inline-block; font-size:.68rem; font-weight:800;
-      letter-spacing:.07em; text-transform:uppercase;
+      display:inline-block; font-size:.6rem; font-weight:800;
+      letter-spacing:.1em; text-transform:uppercase;
       color:var(--danger); background:var(--danger-dim);
-      padding:.16rem .34rem; border-radius:4px; cursor:default;
+      border:1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+      padding:.18rem .38rem; border-radius:5px; cursor:default;
     }
 
     /* Disponível extra (exceção) */
     .escala-td-extra {
       display:inline-flex; flex-direction:column; align-items:center;
-      background:color-mix(in srgb, var(--gold) 14%, transparent);
-      border-radius:5px; padding:.18rem .38rem; min-width:36px; gap:0; cursor:default;
+      background:color-mix(in srgb, var(--gold) 16%, transparent);
+      border:1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
+      border-radius:6px; padding:.22rem .45rem; min-width:38px; gap:0; cursor:default;
     }
     .escala-td-extra .et-ini { color:var(--gold); }
-    .escala-td-extra .et-fim { color:var(--gold); }
+    .escala-td-extra .et-fim { color:var(--gold); opacity:.65; }
 
     /* Exceção parcial */
     .escala-td-exc {
       display:inline-flex; flex-direction:column; align-items:center; position:relative;
-      background:color-mix(in srgb, var(--gold) 16%, transparent);
-      border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);
-      border-radius:5px; padding:.18rem .38rem; min-width:36px; gap:0; cursor:default;
+      background:color-mix(in srgb, var(--gold) 13%, transparent);
+      border:1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+      border-radius:6px; padding:.22rem .45rem; min-width:38px; gap:0; cursor:default;
     }
     .escala-td-exc .et-ini { color:var(--gold); }
     .escala-td-exc .et-fim { color:color-mix(in srgb, var(--gold) 70%, transparent); }
-    .escala-td-exc::after { content:'✦'; position:absolute; top:-.12rem; right:-.12rem; font-size:.42rem; color:var(--gold); line-height:1; }
+    .escala-td-exc::after { content:'✦'; position:absolute; top:-.15rem; right:-.15rem; font-size:.44rem; color:var(--gold); line-height:1; }
 
     /* Navegação do mês */
-    .escala-nav { display:flex; align-items:center; gap:1rem; padding:1.125rem 1.5rem .75rem; border-bottom:1px solid var(--border-soft); margin-bottom:.5rem; }
-    .escala-nav-label { font-family:var(--serif); font-size:1.125rem; font-weight:300; letter-spacing:.08em; color:var(--text); min-width:175px; text-align:center; }
+    .escala-nav {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 1.5rem 1.1rem;
+      border-bottom:1px solid var(--border);
+      background:var(--surface2);
+    }
+    .escala-nav-label {
+      font-family:var(--serif); font-size:1.5rem; font-weight:300;
+      letter-spacing:.14em; color:var(--text); text-transform:uppercase;
+      min-width:210px; text-align:center; user-select:none;
+    }
+    .escala-nav .btn-outline {
+      width:34px; height:34px; padding:0; display:inline-flex;
+      align-items:center; justify-content:center; font-size:.9rem;
+      border-radius:50%; flex-shrink:0;
+    }
 
     /* Legenda */
-    .escala-legenda { display:flex; flex-wrap:wrap; gap:.5rem 2rem; align-items:center; padding:.875rem 1.5rem; border-top:1px solid var(--border-soft); font-size:.7rem; color:var(--muted); }
-    .escala-legenda-item { display:inline-flex; align-items:center; gap:.5rem; }
+    .escala-legenda {
+      display:flex; flex-wrap:wrap; gap:.4rem 1.75rem; align-items:center;
+      padding:.85rem 1.5rem;
+      border-top:1px solid var(--border-soft);
+      background:var(--surface2);
+      font-size:.68rem; color:var(--muted);
+    }
+    .escala-legenda::before {
+      content:'Legenda'; display:block; width:100%;
+      font-size:.52rem; font-weight:700; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--muted); opacity:.45;
+      margin-bottom:.1rem;
+    }
+    .escala-legenda-item { display:inline-flex; align-items:center; gap:.45rem; font-size:.7rem; }
 
     /* Chip da massoterapeuta no hero */
     .escala-prof-chip {
-      display:inline-flex; align-items:center; gap:.55rem; margin-top:.625rem;
-      padding:.35rem .9rem .35rem .6rem;
-      background:var(--gold-dim); border:1px solid color-mix(in srgb, var(--gold) 35%, transparent);
-      border-radius:4px;
+      display:inline-flex; align-items:center; gap:.65rem; margin-top:.875rem;
+      padding:.45rem 1.1rem .45rem .75rem;
+      background:var(--gold-dim);
+      border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+      border-left:3px solid var(--gold);
+      border-radius:0 5px 5px 0;
     }
-    .escala-prof-chip::before { content:''; display:block; width:3px; height:1.1em; background:var(--gold); border-radius:2px; flex-shrink:0; }
-    .escala-prof-chip-nome { font-family:var(--serif); font-size:.9375rem; font-weight:400; letter-spacing:.05em; color:var(--gold); }
+    .escala-prof-chip-nome { font-family:var(--serif); font-size:1rem; font-weight:400; letter-spacing:.07em; color:var(--gold); }
 
     /* Exceções */
-    .exc-row-global { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.5rem .875rem; border:1px solid var(--border-soft); border-left:3px solid var(--muted); border-radius:4px; background:var(--surface); transition:background .12s; }
-    .exc-row-global:hover { background:var(--surface2); }
+    .exc-row-global { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.6rem 1rem; border:1px solid var(--border-soft); border-left:3px solid var(--border); border-radius:0 5px 5px 0; background:var(--surface); transition:background .12s, border-left-color .12s; }
+    .exc-row-global:hover { background:var(--surface2); border-left-color:var(--gold); }
     .exc-row-nome { font-weight:600; flex:1; min-width:140px; font-size:.85rem; color:var(--text); }
     .exc-row-data { font-size:.8rem; color:var(--muted); font-family:var(--mono); }
     .exc-row-tipo { font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
@@ -3627,24 +3662,32 @@
           </div>
         </div>
       </div>
-      <div class="mgmt-list-card" style="margin-bottom:1rem">
-        <div class="mgmt-list-card-header" style="padding-bottom:0.75rem;align-items:flex-start;gap:.75rem;flex-wrap:wrap">
+      <div class="mgmt-list-card" style="margin-bottom:1rem;border-top:2px solid color-mix(in srgb,var(--gold) 40%,transparent)">
+        <div class="mgmt-list-card-header" style="padding:.875rem 1.5rem;align-items:center;gap:.75rem;flex-wrap:wrap;border-bottom:1px solid var(--border-soft)">
           <div style="flex:1;min-width:0">
-            <span class="mgmt-list-card-title">Exceções pontuais</span>
-            <div style="font-size:0.8125rem;color:var(--muted);margin-top:.15rem">Liberações ou disponibilizações fora da escala em datas específicas. Somem automaticamente após a data.</div>
+            <div style="display:flex;align-items:center;gap:.6rem">
+              <span style="font-size:.55rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);opacity:.55;margin-top:.1rem">Pontuais</span>
+              <span class="mgmt-list-card-title" style="font-size:1.05rem">Exceções</span>
+            </div>
+            <div style="font-size:.775rem;color:var(--muted);margin-top:.1rem;line-height:1.45">Liberações ou disponibilizações fora da escala. Somem automaticamente após a data.</div>
           </div>
-          <button class="btn btn-outline btn-sm" id="btn-add-excecao-global" type="button">+ Adicionar exceção</button>
+          <button class="btn btn-outline btn-sm" id="btn-add-excecao-global" type="button" style="white-space:nowrap;flex-shrink:0">+ Adicionar exceção</button>
         </div>
-        <div id="excecoes-global-list" style="padding:0 1.5rem 1.5rem">
+        <div id="excecoes-global-list" style="padding:.875rem 1.5rem 1.25rem">
           <div class="mgmt-empty">Carregando…</div>
         </div>
       </div>
-      <div class="mgmt-list-card">
-        <div class="mgmt-list-card-header" style="padding-bottom:0.75rem">
-          <span class="mgmt-list-card-title">Escala mensal</span>
-          <span style="font-size:0.8125rem;color:var(--muted)">Clique em Editar para ajustar o horário de cada profissional</span>
+      <div class="mgmt-list-card" style="border-top:2px solid var(--gold)">
+        <div class="mgmt-list-card-header" style="padding:.875rem 1.5rem;border-bottom:1px solid var(--border-soft);align-items:center">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:.6rem">
+              <span style="font-size:.55rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);opacity:.55;margin-top:.1rem">Mensal</span>
+              <span class="mgmt-list-card-title" style="font-size:1.05rem">Escala</span>
+            </div>
+            <div style="font-size:.775rem;color:var(--muted);margin-top:.1rem">Clique em <strong style="font-weight:600;color:var(--text)">Editar</strong> para ajustar o horário de cada profissional</div>
+          </div>
         </div>
-        <div id="escala-table-wrap" style="overflow-x:auto;padding:0 1.5rem 1.5rem">
+        <div id="escala-table-wrap" style="overflow-x:auto">
           <div class="mgmt-empty">Carregando…</div>
         </div>
       </div>
