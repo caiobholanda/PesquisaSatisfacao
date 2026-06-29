@@ -1,6 +1,9 @@
 app = "pesquisa-satisfacao"
 primary_region = "gru"
 
+[deploy]
+  release_timeout = "180s"
+
 [build]
 
 [env]
