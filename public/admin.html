@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -6,7 +6,7 @@
   <title>Pesquisa de Satisfação · Painel Interno</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
     // Tema (claro/escuro): aplicado ANTES do CSS para evitar flash (FOUC).
     // Ordem de prioridade do tema inicial:
@@ -41,56 +41,56 @@
        Aplicada pelo script inline no <head> antes do paint (zero FOUC). */
     :root,
     :root[data-theme="light"] {
-      --bg:          #F4EEE1;
-      --surface:     #FAF9F5;
-      --surface2:    #F4EEE1;
+      --bg:          #ECE4D2;
+      --surface:     #F5EFE2;
+      --surface2:    #ECE4D2;
       --border:      rgba(96, 87, 56, 0.13);
       --border-soft: rgba(96, 87, 56, 0.08);
-      --text:        #1C2030;
+      --text:        #202C28;
       --muted:       #605738;
       --muted2:      #44402F;
-      --gold:        #8A6B1F;
-      --gold-dark:   #6F551A;
-      --gold-dim:    rgba(138,107,31,.12);
+      --gold:        #9C5843;
+      --gold-dark:   #7A4334;
+      --gold-dim:    rgba(156,88,67,.12);
       --indigo:      #15705A;
       --indigo-dim:  rgba(21,112,90,.12);
       --success:     #15705A;
       --success-dim: rgba(21,112,90,.10);
-      --warn:        #8A6B1F;
-      --warn-dim:    rgba(138,107,31,.12);
+      --warn:        #9C5843;
+      --warn-dim:    rgba(156,88,67,.12);
       --danger:      #B85450;
       --danger-dim:  rgba(184,84,80,.10);
       --header-bg:   rgba(244, 238, 225, 0.82);
       --font:        'Inter', 'DM Sans', system-ui, sans-serif;
-      --serif:       'Fraunces', Georgia, serif;
+      --serif:       'Helvetica Neue', Helvetica, Arial, sans-serif, Georgia, serif;
       --mono:        'JetBrains Mono', monospace;
-      --bg-grad-1:   rgba(138,107,31,.06);
-      --bg-grad-2:   rgba(138,107,31,.03);
+      --bg-grad-1:   rgba(156,88,67,.06);
+      --bg-grad-2:   rgba(156,88,67,.03);
     }
 
     :root[data-theme="dark"] {
-      --bg:          #0A0E1A;
-      --surface:     #11162A;
-      --surface2:    #161B2E;
+      --bg:          #202C28;
+      --surface:     #293630;
+      --surface2:    #2F3D38;
       --border:      rgba(138, 126, 100, 0.13);
       --border-soft: rgba(138, 126, 100, 0.08);
-      --text:        #F5F0E6;
+      --text:        #ECE4D2;
       --muted:       #8A7E64;
-      --muted2:      #D4C4A0;
-      --gold:        #C9A961;
-      --gold-dark:   #B3924E;
-      --gold-dim:    rgba(201,169,97,.16);
+      --muted2:      #C8B89A;
+      --gold:        #996442;
+      --gold-dark:   #7A4334;
+      --gold-dim:    rgba(156,88,67,.16);
       --indigo:      #3E8497;
       --indigo-dim:  rgba(62,132,151,.18);
       --success:     #3E8497;
       --success-dim: rgba(62,132,151,.16);
-      --warn:        #C9A961;
-      --warn-dim:    rgba(201,169,97,.16);
+      --warn:        #996442;
+      --warn-dim:    rgba(156,88,67,.16);
       --danger:      #D86862;
       --danger-dim:  rgba(216,104,98,.18);
       --header-bg:   rgba(10, 14, 26, 0.72);
-      --bg-grad-1:   rgba(201,169,97,.08);
-      --bg-grad-2:   rgba(201,169,97,.04);
+      --bg-grad-1:   rgba(156,88,67,.08);
+      --bg-grad-2:   rgba(156,88,67,.04);
       --sala-s1-text: #F2D7A6;
       --sala-s2-text: #BFC8EE;
       --sala-s3-text: #A8DDBB;
@@ -747,10 +747,10 @@
       color: rgba(184,84,80,.65) !important;
     }
     .resdet-btn-gold:disabled {
-      border-color: rgba(212,149,61,.4) !important;
-      color: rgba(212,149,61,.6) !important;
+      border-color: rgba(156,88,67,.4) !important;
+      color: rgba(156,88,67,.6) !important;
     }
-    .btn-gold:disabled { background: rgba(212,149,61,.35) !important; color: rgba(255,255,255,.7) !important; }
+    .btn-gold:disabled { background: rgba(156,88,67,.35) !important; color: rgba(255,255,255,.7) !important; }
 
     /* ── Dropdown Administrativo ── */
     .admin-dropdown { position: relative; }
@@ -898,7 +898,7 @@
        FORM-VIEW (visualizar pesquisa preenchida)
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     .fb-view { font-family: 'Inter', sans-serif; }
-    .fb-view-hd { border-top: 3px solid #D4953D; padding-top: 1.1rem; margin-bottom: 1.5rem; }
+    .fb-view-hd { border-top: 3px solid #9C5843; padding-top: 1.1rem; margin-bottom: 1.5rem; }
     .fb-view-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 400; color: var(--text); margin-bottom: 0.4rem; letter-spacing: .02em; }
     .fb-view-intro { font-size: 0.78rem; color: var(--muted); line-height: 1.7; }
     .fb-view-intro .en { display: block; margin-top: 2px; font-style: italic; }
@@ -912,7 +912,7 @@
 
     .fb-section { margin-bottom: 1.75rem; }
     .fb-sec-head { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.85rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
-    .fb-sec-num { font-family: var(--serif); font-size: 1.45rem; font-weight: 300; color: #D4953D; line-height: 1; }
+    .fb-sec-num { font-family: var(--serif); font-size: 1.45rem; font-weight: 300; color: #9C5843; line-height: 1; }
     .fb-sec-title { font-weight: 600; font-size: 0.82rem; letter-spacing: .07em; text-transform: uppercase; color: var(--text); }
     .fb-sec-en { font-size: 0.72rem; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 2px; }
 
@@ -930,12 +930,12 @@
       border: 1.5px solid var(--border);
       background: transparent;
     }
-    .fb-dot.sel-otimo   .fb-dot-circle { background: #D4953D; border-color: #D4953D; }
+    .fb-dot.sel-otimo   .fb-dot-circle { background: #9C5843; border-color: #9C5843; }
     .fb-dot.sel-bom     .fb-dot-circle { background: #5A9E60; border-color: #5A9E60; }
     .fb-dot.sel-regular .fb-dot-circle { background: #C49A2D; border-color: #C49A2D; }
     .fb-dot.sel-ruim    .fb-dot-circle { background: #C0392B; border-color: #C0392B; }
 
-    .fb-comment { margin-top: 0.65rem; background: var(--surface-alt, var(--border-soft)); border-left: 3px solid #D4953D; padding: 0.6rem 0.75rem; border-radius: 0 6px 6px 0; }
+    .fb-comment { margin-top: 0.65rem; background: var(--surface-alt, var(--border-soft)); border-left: 3px solid #9C5843; padding: 0.6rem 0.75rem; border-radius: 0 6px 6px 0; }
     .fb-comment-lbl { font-size: 0.68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
     .fb-comment-text { font-size: 0.84rem; color: var(--text); line-height: 1.55; font-style: italic; }
 
@@ -943,14 +943,14 @@
     .fb-radio-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
     .fb-radio-row:last-child { border-bottom: none; }
     .fb-radio-circle { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 1px; }
-    .fb-radio-circle.sel { background: #D4953D; border-color: #D4953D; }
+    .fb-radio-circle.sel { background: #9C5843; border-color: #9C5843; }
     .fb-radio-text { font-size: 0.83rem; color: var(--text); line-height: 1.4; }
     .fb-radio-text .en { font-size: 0.71rem; color: var(--muted); display: block; }
     .fb-radio-sub { margin-top: 4px; font-size: 0.8rem; color: var(--muted); font-style: italic; }
 
     .fb-view-footer { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); text-align: right; }
     .fb-view-footer-sig { font-family: var(--serif); font-size: 1rem; font-style: italic; color: var(--muted); }
-    .fb-view-footer-brand { font-size: 0.82rem; color: #B8924A; font-weight: 500; margin-top: 2px; }
+    .fb-view-footer-brand { font-size: 0.82rem; color: #996442; font-weight: 500; margin-top: 2px; }
     .fb-submitted { font-size: 0.72rem; color: var(--muted); margin-top: 0.5rem; }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1385,7 +1385,7 @@
     }
 
     .btn-back {
-      background: var(--gold-dim, rgba(201,169,97,.16));
+      background: var(--gold-dim, rgba(156,88,67,.16));
       border: 1px solid var(--gold);
       border-radius: 6px;
       font-family: var(--font);
@@ -1435,7 +1435,7 @@
     .btn-home:hover {
       background: var(--gold-dark);
       border-color: var(--gold-dark);
-      box-shadow: 0 2px 8px rgba(212,149,61,.3);
+      box-shadow: 0 2px 8px rgba(156,88,67,.3);
     }
     .btn-home svg { flex-shrink: 0; }
 
@@ -1957,7 +1957,7 @@
       transition: all .13s; font-family: var(--font); position: relative;
     }
     .cal-day-pill:hover { background: var(--surface2); border-color: var(--border-soft); }
-    .cal-day-pill.today { border-color: rgba(212,149,61,.4); }
+    .cal-day-pill.today { border-color: rgba(156,88,67,.4); }
     .cal-day-pill.selected { background: var(--gold-dim); border-color: var(--gold); }
 
     .cdp-abbr {
@@ -2037,7 +2037,7 @@
     }
     .dp-day:hover:not(.dp-dim) { background: var(--surface2); border-color: var(--border-soft); }
     .dp-day.dp-dim { color: var(--muted); opacity: .35; cursor: default; pointer-events: none; }
-    .dp-day.dp-today { border-color: rgba(201,169,97,.45); color: var(--gold-dark); font-weight: 600; }
+    .dp-day.dp-today { border-color: rgba(156,88,67,.45); color: var(--gold-dark); font-weight: 600; }
     .dp-day.dp-sel { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-dark); font-weight: 600; }
 
     /* ── Container ── */
@@ -2138,7 +2138,7 @@
     .cal-now-line::after {
       content: ''; position: absolute; right: 0; top: -4px;
       width: 9px; height: 9px; border-radius: 50%;
-      background: var(--gold); box-shadow: 0 0 0 3px rgba(212,149,61,.22);
+      background: var(--gold); box-shadow: 0 0 0 3px rgba(156,88,67,.22);
     }
     .cal-now-lbl {
       position: absolute; left: 0; width: 68px; top: -8px;
@@ -2170,7 +2170,7 @@
       cursor: pointer; transition: background .1s;
       position: relative; overflow: visible;
     }
-    .cal-slot:hover { background: rgba(212,149,61,.06); }
+    .cal-slot:hover { background: rgba(156,88,67,.06); }
     .cal-slot.occupied { cursor: default; background: transparent; }
     .cal-slot.occupied:hover { background: transparent; }
     .cal-slot.occupied-cont { cursor: default; pointer-events: none; background: transparent; }
@@ -2291,7 +2291,7 @@
       grid-column: 1 / -1; display: flex; align-items: center;
       padding: .65rem 1.1rem .65rem 0;
       border-top: 1px solid var(--gold);
-      background: linear-gradient(180deg, rgba(212,149,61,.04) 0%, transparent 100%);
+      background: linear-gradient(180deg, rgba(156,88,67,.04) 0%, transparent 100%);
     }
     .cal-close-time {
       width: 72px; text-align: right; padding-right: .75rem; flex-shrink: 0;
@@ -2514,7 +2514,7 @@
       display: flex; align-items: center; gap: .75rem; margin: .25rem 0 .6rem;
     }
     .res-pessoa1-sep::before, .res-pessoa1-sep::after {
-      content: ''; flex: 1; height: 1px; background: rgba(212,149,61,.35);
+      content: ''; flex: 1; height: 1px; background: rgba(156,88,67,.35);
     }
     .res-pessoa1-sep span {
       font-size: .7rem; font-weight: 700; letter-spacing: .1em;
@@ -2532,8 +2532,8 @@
       display: flex; flex-direction: column; gap: .75rem;
     }
     .res-pessoa1-wrap.casal-ativo {
-      background: rgba(212,149,61,.04);
-      border: 1px solid rgba(212,149,61,.22);
+      background: rgba(156,88,67,.04);
+      border: 1px solid rgba(156,88,67,.22);
       border-radius: 10px;
       padding: 1rem 1.1rem;
     }
@@ -2558,7 +2558,7 @@
       gap: 0.5rem;
       padding: 0.5rem 0.875rem;
       background: var(--gold-dim);
-      border: 1px solid rgba(212,149,61,.25);
+      border: 1px solid rgba(156,88,67,.25);
       border-radius: 8px;
       font-size: 0.875rem;
       color: var(--gold-dark);
@@ -2916,7 +2916,7 @@
       color: var(--danger);
     }
     .conflito-title {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif, serif;
       font-size: 1.5rem;
       color: var(--text);
       margin-bottom: 0.3rem;
@@ -2996,7 +2996,7 @@
 
     /* Hero banner de horário */
     .resdet-hero {
-      background: linear-gradient(135deg, var(--surface2) 0%, rgba(212,149,61,.06) 100%);
+      background: linear-gradient(135deg, var(--surface2) 0%, rgba(156,88,67,.06) 100%);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.15rem 1.5rem;
@@ -3177,7 +3177,7 @@
       background: var(--surface);
     }
     .lang-card:hover { border-color: var(--gold); }
-    .lang-card.selected { border-color: var(--gold); background: var(--gold-dim, rgba(212,149,61,.09)); }
+    .lang-card.selected { border-color: var(--gold); background: var(--gold-dim, rgba(156,88,67,.09)); }
     .lang-card-flag { font-size: 1.35rem; line-height: 1; flex-shrink: 0; }
     .lang-card-name { font-size: .84rem; font-weight: 500; color: var(--text); flex: 1; }
     .lang-card-code { font-size: .7rem; color: var(--muted); letter-spacing: .05em; }
@@ -4182,7 +4182,7 @@
       <div id="anam-secoes"></div>
 
       <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
-        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
+        <h3 style="margin:0 0 .2rem 0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.15rem">Adicionar nova seção</h3>
         <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Dados Pessoais", "Saúde").</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
           <input id="anam-nova-secao-titulo" placeholder="Nome da seção (ex: Consentimentos)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">
@@ -4220,7 +4220,7 @@
       <div id="pesq-secoes"></div>
 
       <div style="margin-top:2rem;padding:1.2rem 1.4rem;border:1px dashed var(--border);border-radius:8px;background:var(--surface)">
-        <h3 style="margin:0 0 .2rem 0;font-family:Cormorant Garamond,serif;font-size:1.15rem">Adicionar nova seção</h3>
+        <h3 style="margin:0 0 .2rem 0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.15rem">Adicionar nova seção</h3>
         <p style="margin:0 0 .8rem 0;color:var(--muted);font-size:.82rem">Uma seção agrupa perguntas relacionadas (ex: "Serviços", "Instalações").</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
           <input id="pesq-nova-secao-titulo" placeholder="Nome da seção (ex: Recomendação)" style="padding:.55rem .7rem;border:1px solid var(--border);background:var(--bg);font-size:.92rem;flex:1;min-width:280px;border-radius:4px">

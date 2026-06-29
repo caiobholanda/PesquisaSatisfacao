@@ -44,9 +44,9 @@ export function SunLogo({ size = 48, color = '#6B6B6B', strokeWidth = 0.8 }) {
 
 export function GranSpaWordmark({ style = {} }) {
   return (
-    <span style={{ fontWeight: 300, letterSpacing: '0.16em', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif", ...style }}>
+    <span style={{ fontWeight: 300, letterSpacing: '0.16em', whiteSpace: 'nowrap', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", ...style }}>
       <span style={{ color: '#4A4A4A' }}>GRAN</span>
-      <span style={{ color: '#C97A3D', marginLeft: '0.34em' }}>SPA</span>
+      <span style={{ color: '#9C5843', marginLeft: '0.34em' }}>SPA</span>
     </span>
   );
 }
@@ -61,7 +61,7 @@ export function Smiley({ type = 'great', size = 36, color = '#6B6B6B', filled = 
   };
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" aria-hidden="true">
-      <circle cx="20" cy="20" r="17" fill={filled ? '#D4953D' : 'none'} stroke={stroke} strokeWidth={strokeWidth} />
+      <circle cx="20" cy="20" r="17" fill={filled ? '#9C5843' : 'none'} stroke={stroke} strokeWidth={strokeWidth} />
       <circle cx="14.6" cy="16.4" r="1.7" fill={stroke} />
       <circle cx="25.4" cy="16.4" r="1.7" fill={stroke} />
       <path d={mouths[type]} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
@@ -74,11 +74,11 @@ export function LinenBackground() {
     <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <pattern id="linen" width="6" height="6" patternUnits="userSpaceOnUse">
-          <rect width="6" height="6" fill="#EAE3D7" />
-          <path d="M0 0 H6" stroke="#E8DCC4" strokeWidth="1.4" />
-          <path d="M0 3 H6" stroke="#E2D6BE" strokeWidth="0.6" opacity="0.5" />
-          <path d="M0 0 V6" stroke="#E8DCC4" strokeWidth="1.4" />
-          <path d="M3 0 V6" stroke="#E2D6BE" strokeWidth="0.6" opacity="0.5" />
+          <rect width="6" height="6" fill="#E3DACC" />
+          <path d="M0 0 H6" stroke="#E3DACC" strokeWidth="1.4" />
+          <path d="M0 3 H6" stroke="#E3DACC" strokeWidth="0.6" opacity="0.5" />
+          <path d="M0 0 V6" stroke="#E3DACC" strokeWidth="1.4" />
+          <path d="M3 0 V6" stroke="#E3DACC" strokeWidth="0.6" opacity="0.5" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#linen)" />

@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 let _locale = null;
 let _sig = null;
@@ -633,7 +633,7 @@ function init() {
         const norm = _normQuarto(onlyDigits);
         const cat = _QUARTOS_CACHE ? _QUARTOS_CACHE[norm] : null;
         if (cat === 'gran_class' && gcBadge) {
-          gcBadge.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:\'Cormorant Garamond\',Georgia,serif;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">★ Gran Class</span>';
+          gcBadge.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">★ Gran Class</span>';
           gcBadge.style.display = '';
         }
       }
@@ -1211,11 +1211,11 @@ function _mostrarBannerHistorico(criadoEm) {
   const [titulo, msg] = MSG[_currentLang] || MSG['pt-BR'];
   const banner = document.createElement('div');
   banner.id = 'historico-banner';
-  banner.style.cssText = 'background:#f5ead8;border:1px solid #c9a86a;color:#4a3220;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:.85rem;font-size:.88rem;line-height:1.5';
+  banner.style.cssText = 'background:#ECE4D2;border:1px solid #9C5843;color:#202C28;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:.85rem;font-size:.88rem;line-height:1.5';
   banner.innerHTML = `
     <div style="font-size:1.4rem;line-height:1">✦</div>
     <div style="flex:1">
-      <div style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;margin-bottom:.15rem">${_escHtml(titulo)}</div>
+      <div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-weight:600;font-size:1.15rem;margin-bottom:.15rem">${_escHtml(titulo)}</div>
       <div>${_escHtml(msg)}</div>
     </div>
     <button type="button" aria-label="fechar" style="background:none;border:none;font-size:1.1rem;color:#8c6f5a;cursor:pointer;line-height:1">×</button>

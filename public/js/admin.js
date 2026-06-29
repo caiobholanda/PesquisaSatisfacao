@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'granspa_token';
+﻿const TOKEN_KEY = 'granspa_token';
 const LIMIT = 30;
 // Slugs hoisted para o topo — antes ficavam perto dos editores
 // (linhas 3874/4408) e a IIFE de init na linha 764 (showApp→showView→
@@ -66,7 +66,7 @@ function isGranClassCli(num) {
 }
 // HTML do badge — sutil, dourado, padronizado.
 function badgeGranClassHtml(label = 'GRAN CLASS') {
-  return `<button type="button" class="gc-badge" data-action="gc-info" title="Ver benefícios Gran Class" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">★ ${label}</button>`;
+  return `<button type="button" class="gc-badge" data-action="gc-info" title="Ver benefícios Gran Class" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">★ ${label}</button>`;
 }
 window.isGranClassCli = isGranClassCli;
 window.badgeGranClassHtml = badgeGranClassHtml;
@@ -734,7 +734,7 @@ function renderTabsRelatorios(viewAtual) {
       padding:.7rem 1.3rem;background:none;border:none;cursor:pointer;
       border-bottom:2px solid ${ativo ? 'var(--gold,#bf9a55)' : 'transparent'};
       color:${ativo ? 'var(--text)' : 'var(--muted)'};
-      font-family:'Cormorant Garamond',Georgia,serif;font-size:1.08rem;
+      font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.08rem;
       font-weight:${ativo ? '600' : '500'};letter-spacing:.015em;
       transition:color .15s, border-color .15s;
     ">${t.label}</button>`;
@@ -932,7 +932,7 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   const card = ({ idx, h }) => {
     const ja = h.respondida && h.feedback_id;
     const wrapStyle = ja
-      ? 'border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem;background:linear-gradient(90deg,rgba(212,149,61,.04),transparent 60%)'
+      ? 'border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem;background:linear-gradient(90deg,rgba(156,88,67,.04),transparent 60%)'
       : 'border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.7rem';
     const headerLabel = ja
       ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding:.18rem .5rem;border:1px solid var(--gold);border-radius:99px;display:inline-flex;align-items:center;gap:.3rem">✓ Respondida</span>`
@@ -964,7 +964,7 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   };
   ov.innerHTML = `
     <div role="dialog" aria-modal="true" aria-labelledby="modal-casal-title" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-      <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
+      <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
       <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">A pesquisa será respondida ao vivo no tablet do SPA. Clique em <strong>Liberar pesquisa</strong> do hóspede que vai responder agora. Quando ele terminar, clique no outro hóspede.</p>
       <div data-cards-host>
         ${card({ idx: 1, h: estado[1] })}
@@ -3033,7 +3033,7 @@ function renderCalDia() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>`;
           const gcBadge = ehGC
-            ? `<button type="button" data-action="gc-info" title="Ver benefícios Gran Class" style="background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;border:1px solid #c9a86a;border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.04em;line-height:1.3;cursor:pointer;flex-shrink:0">★ GC</button>`
+            ? `<button type="button" data-action="gc-info" title="Ver benefícios Gran Class" style="background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;border:1px solid #9C5843;border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.04em;line-height:1.3;cursor:pointer;flex-shrink:0">★ GC</button>`
             : '';
           const casalBadge = res.cliente2
             ? `<span style="background:rgba(139,74,107,.18);color:var(--sala-s4-text,#4a1f38);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0">🤝 S3+4</span>`
@@ -3120,7 +3120,7 @@ function confirmarAcao({ titulo = 'Confirmar?', mensagem = '', btnConfirmar = 'C
     const cor = perigoso ? 'var(--danger,#b85a4a)' : 'var(--gold,#bf9a55)';
     overlay.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:440px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .5rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .5rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
         <p style="margin:0 0 1.4rem 0;color:var(--text);font-size:.92rem;line-height:1.5">${escHtml(mensagem)}</p>
         <div style="display:flex;gap:.6rem;justify-content:flex-end">
           <button class="btn btn-outline" data-act="cancel">${escHtml(btnCancelar)}</button>
@@ -3588,7 +3588,7 @@ function _abrirModalGranClass() {
       <button data-act="close" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
       <div style="text-align:center;margin-bottom:1.2rem">
         <div style="font-size:2rem;color:#bf9a55;margin-bottom:.2rem">★</div>
-        <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
+        <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
         <p style="margin:.3rem 0 0 0;color:var(--muted);font-size:.8rem;letter-spacing:.04em;text-transform:uppercase">Cortesia exclusiva para hóspedes Gran Class</p>
       </div>
       <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem">
@@ -3909,7 +3909,7 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
       ov.innerHTML = `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-          <h3 style="margin:0 0 .8rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem">Reserva CASAL — 2 links</h3>
+          <h3 style="margin:0 0 .8rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem">Reserva CASAL — 2 links</h3>
           <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">Cada hóspede tem seu próprio link de anamnese. Envie um para cada pessoa.</p>
           ${[
             { idx: 1, h: h1, url: url1, msg: msg1, tel: h1.telefone },
@@ -3938,7 +3938,7 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
         cf.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:10000;display:grid;place-items:center;padding:1rem;margin:0;box-sizing:border-box';
         cf.innerHTML = `
           <div style="background:var(--surface);border:1px solid var(--gold);border-radius:10px;max-width:420px;width:calc(100% - 2rem);padding:1.5rem 1.7rem;box-shadow:0 14px 44px rgba(0,0,0,.5);margin:auto;box-sizing:border-box">
-            <h4 style="margin:0 0 .6rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.25rem;color:var(--text);text-align:center">Tem certeza que deseja fechar?</h4>
+            <h4 style="margin:0 0 .6rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.25rem;color:var(--text);text-align:center">Tem certeza que deseja fechar?</h4>
             <p style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 1.2rem 0;text-align:center">Os links de anamnese desta reserva não poderão ser reabertos depois. Recomendamos enviar os dois antes de sair.</p>
             <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
               <button class="btn btn-outline" data-cf="cancel">Continuar enviando</button>
@@ -5304,7 +5304,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
   det.innerHTML = `
     <div style="margin-bottom:1rem">
       <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.3rem">
-        <h2 style="margin:0;font-family:Cormorant Garamond,serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+        <h2 style="margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
         ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
@@ -5364,7 +5364,7 @@ function renderClienteReservas(rs) {
     <tr><th>Data</th><th>Horário</th><th>Sala</th><th>Quarto</th><th>Tratamento</th><th>Cliente</th></tr>
   </thead><tbody>${rs.map(r => {
     const ehGC = r.quarto_categoria === 'gran_class';
-    const gcBadge = ehGC ? ' <span style="display:inline-flex;align-items:center;gap:.18rem;padding:.1rem .4rem;border:1px solid #c9a86a;border-radius:9999px;background:linear-gradient(180deg,#fbe9c5,#e7c682);color:#5b3d10;font-size:.67rem;font-weight:700;letter-spacing:.06em;vertical-align:middle">★ GC</span>' : '';
+    const gcBadge = ehGC ? ' <span style="display:inline-flex;align-items:center;gap:.18rem;padding:.1rem .4rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-size:.67rem;font-weight:700;letter-spacing:.06em;vertical-align:middle">★ GC</span>' : '';
     return `<tr${ehGC ? ' style="background:rgba(212,166,74,.06)"' : ''}>
       <td>${fmtDataBR(r.data)}</td>
       <td>${escHtml((r.hora_inicio||'') + ' – ' + (r.hora_fim||''))}</td>
@@ -5443,11 +5443,11 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   const linhaCampo = (label, valor) => `
     <div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
-      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#7a7068">— vazio —</em>'}</div>
+      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#7A6B5A">— vazio —</em>'}</div>
     </div>`;
   const linhaLista = (label, arr) => {
     const items = (arr || []).filter(Boolean);
-    const v = items.length ? items.map(i => `<span style="background:rgba(201,168,106,.14);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#7a7068">— vazio —</em>';
+    const v = items.length ? items.map(i => `<span style="background:rgba(156,88,67,.14);color:#9C5843;border:1px solid rgba(156,88,67,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#7A6B5A">— vazio —</em>';
     return `<div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
       <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">${v}</div>
@@ -5458,7 +5458,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="${_LBL}">${escHtml(label)}</div>
       <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
-  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:500;color:#e0d6c8;border-bottom:1px solid rgba(201,168,106,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.15rem;font-weight:500;color:#C8B89A;border-bottom:1px solid rgba(156,88,67,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
   // Render de um item extra (pergunta dinamica). Mesma logica anterior da
   // antiga "Secao 8" — agora invocado dentro de cada secao alvo.
   const renderExtra = (it) => {
@@ -5511,7 +5511,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
+          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml([a.nome, a.sobrenome].filter(Boolean).join(' ') || '—')} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -5582,7 +5582,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
   // ── helpers compartilhados ────────────────────────────────────────────────
   const OPTS4 = ['ruim','regular','bom','otimo'];
   const OPTS4_L = { ruim:'Ruim', regular:'Regular', bom:'Bom', otimo:'Ótimo' };
-  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#c9a86a' };
+  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#9C5843' };
   const OPTS4_T = { ruim:'#fff', regular:'#fff', bom:'#fff', otimo:'#1a1008' };
   const r4 = sel => OPTS4.map(k => {
     if (k === sel) return `<div class="srm-opt srm-on" style="background:${OPTS4_C[k]};color:${OPTS4_T[k]};border-color:${OPTS4_C[k]}">${OPTS4_L[k]}</div>`;
@@ -5596,15 +5596,15 @@ async function _abrirModalPesquisaRespondida(respostaId) {
 
   // ── CSS unificado ─────────────────────────────────────────────────────────
   const CSS = `
-    .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
+    .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(156,88,67,.08);overflow:hidden;animation:srm-in .2s ease-out}
     @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
     .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
-    .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+    .srm-head h2{margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
     .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
     .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
     .srm-sec{display:flex;flex-direction:column;gap:1rem}
-    .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem}
-    .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
+    .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#9C5843;display:flex;align-items:center;gap:.55rem}
+    .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(156,88,67,.4),transparent)}
     .srm-item{display:flex;flex-direction:column;gap:.5rem}
     .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
     .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
@@ -5613,14 +5613,14 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
     .srm-comment{display:flex;flex-direction:column;gap:.38rem}
     .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-    .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
+    .srm-comment-txt{background:rgba(156,88,67,.05);border-left:2px solid rgba(156,88,67,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
     .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
     .an-grid{display:flex;flex-direction:column}
     .an-row{display:grid;grid-template-columns:165px 1fr;gap:.75rem;padding:.52rem 0;border-bottom:1px solid rgba(255,255,255,.04);align-items:baseline}
     .an-lbl{color:var(--muted);font-size:.71rem;text-transform:uppercase;letter-spacing:.07em;line-height:1.4}
     .an-val{color:var(--text);font-size:.88rem;line-height:1.5}
     .an-tags{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}
-    .an-tag{background:rgba(201,168,106,.1);color:#c9a86a;border:1px solid rgba(201,168,106,.25);font-size:.76rem;padding:.18rem .55rem;border-radius:9999px;font-weight:500}
+    .an-tag{background:rgba(156,88,67,.1);color:#9C5843;border:1px solid rgba(156,88,67,.25);font-size:.76rem;padding:.18rem .55rem;border-radius:9999px;font-weight:500}
     .an-yes{color:#3d8a5c;font-weight:700;font-size:.87rem}
     .an-no{color:#c0392b;font-weight:700;font-size:.87rem}
   `;
@@ -5766,14 +5766,14 @@ async function _abrirModalPesquisaRespondida(respostaId) {
       const lbl = it.rotulo || it.pergunta_chave;
       // multipla: usa rotulos resolvidos pelo backend
       if (Array.isArray(it.valor_texto_rotulos) && it.valor_texto_rotulos.length) {
-        const tags = it.valor_texto_rotulos.map(x => `<span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600;margin-right:.3rem">${escHtml(x)}</span>`).join('');
+        const tags = it.valor_texto_rotulos.map(x => `<span style="background:rgba(156,88,67,.12);color:#9C5843;border:1px solid rgba(156,88,67,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600;margin-right:.3rem">${escHtml(x)}</span>`).join('');
         return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div style="display:flex;flex-wrap:wrap;gap:.3rem">${tags}</div></div>`;
       }
       if (it.valor_texto) return `<div class="srm-comment"><div class="srm-comment-lbl">${escHtml(lbl)}</div><div class="srm-comment-txt">${escHtml(it.valor_texto)}</div></div>`;
       if (it.escala_opcao_chave) {
         if (OPTS4.includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div class="srm-opts">${r4(it.escala_opcao_chave)}</div></div>`;
         if (['sim','nao'].includes(it.escala_opcao_chave)) return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div class="srm-opts srm-opts--yn">${ryn(it.escala_opcao_chave)}</div></div>`;
-        return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div><span style="background:rgba(201,168,106,.12);color:#c9a86a;border:1px solid rgba(201,168,106,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
+        return `<div class="srm-item"><div class="srm-q">${escHtml(lbl)}</div><div><span style="background:rgba(156,88,67,.12);color:#9C5843;border:1px solid rgba(156,88,67,.3);font-size:.78rem;padding:.2rem .65rem;border-radius:9999px;font-weight:600">${escHtml(it.escala_opcao_rotulo||it.escala_opcao_chave)}</span></div></div>`;
       }
       return '';
     }).join('');
@@ -5821,7 +5821,7 @@ async function _abrirModalFeedbackRaw(feedbackId) {
 
   const OPTS4 = ['ruim','regular','bom','otimo'];
   const OPTS4_L = { ruim:'Ruim', regular:'Regular', bom:'Bom', otimo:'Ótimo' };
-  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#c9a86a' };
+  const OPTS4_C = { ruim:'#b83232', regular:'#c4721a', bom:'#2e7d56', otimo:'#9C5843' };
   const OPTS4_T = { ruim:'#fff', regular:'#fff', bom:'#fff', otimo:'#1a1008' };
 
   const r4 = sel => OPTS4.map(k => {
@@ -5842,15 +5842,15 @@ async function _abrirModalFeedbackRaw(feedbackId) {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.82);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
     <style>
-      .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(201,168,106,.08);overflow:hidden;animation:srm-in .2s ease-out}
+      .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(156,88,67,.08);overflow:hidden;animation:srm-in .2s ease-out}
       @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
       .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
-      .srm-head h2{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+      .srm-head h2{margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
       .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
       .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
       .srm-sec{display:flex;flex-direction:column;gap:1rem}
-      .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#c9a86a;display:flex;align-items:center;gap:.55rem;padding-bottom:.1rem}
-      .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(201,168,106,.4),transparent)}
+      .srm-sec-title{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#9C5843;display:flex;align-items:center;gap:.55rem;padding-bottom:.1rem}
+      .srm-sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(156,88,67,.4),transparent)}
       .srm-item{display:flex;flex-direction:column;gap:.5rem}
       .srm-q{font-size:.86rem;color:var(--text);line-height:1.45}
       .srm-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:.38rem}
@@ -5859,7 +5859,7 @@ async function _abrirModalFeedbackRaw(feedbackId) {
       .srm-on{box-shadow:0 2px 14px rgba(0,0,0,.35)!important}
       .srm-comment{display:flex;flex-direction:column;gap:.38rem}
       .srm-comment-lbl{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-      .srm-comment-txt{background:rgba(201,168,106,.05);border-left:2px solid rgba(201,168,106,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
+      .srm-comment-txt{background:rgba(156,88,67,.05);border-left:2px solid rgba(156,88,67,.4);padding:.65rem .9rem;border-radius:0 6px 6px 0;font-size:.85rem;color:var(--text);line-height:1.6;font-style:italic}
       .srm-foot{padding:.85rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
     </style>
     <div class="srm-wrap">
@@ -6585,7 +6585,7 @@ function _anamxRenderPerguntaCard(q, idx, total, secaoId, inativa = false) {
           </div>
         </div>
         <div class="anamx-perg-actions">
-          <button class="anamx-icon-btn" type="button" data-anamx-act="ativar-perg" data-pergunta-id="${q.pergunta_id}" data-chave="${_escAttr(q.chave)}" title="Ativar pergunta" style="color:var(--gold,#c9a86a);opacity:1">↺ Ativar</button>
+          <button class="anamx-icon-btn" type="button" data-anamx-act="ativar-perg" data-pergunta-id="${q.pergunta_id}" data-chave="${_escAttr(q.chave)}" title="Ativar pergunta" style="color:var(--gold,#9C5843);opacity:1">↺ Ativar</button>
         </div>
       </div>`;
   }
@@ -7029,7 +7029,7 @@ async function _abrirModalHistorico({ slug, titulo }) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${itens.length} alterações registradas — mais recente primeiro</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -7170,7 +7170,7 @@ async function _abrirModalPerguntas({ slug, titulo, onChange }) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${ativas.length} ativas · ${inativas.length} inativas</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -7326,7 +7326,7 @@ function _renderAnamEstrutura() {
   wrap.innerHTML = secoesAtivas.map(s => `
     <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
-        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <h3 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
         <div style="display:flex;gap:.4rem">
           <button class="btn btn-outline btn-sm" data-anam-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
           <button class="btn btn-outline btn-sm" data-anam-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
@@ -7343,7 +7343,7 @@ function _renderAnamEstrutura() {
             ${Object.entries(_TIPO_LABEL_AMIGAVEL).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
           </select>
           <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
-            <input type="checkbox" data-anam-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
+            <input type="checkbox" data-anam-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#9C5843)">
             Obrigatória
           </label>
           <button class="btn btn-primary btn-sm" data-anam-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>
@@ -7637,7 +7637,7 @@ function _onDragStart(ev, prefix, container, handle) {
 
   // Placeholder no lugar original (com glow dourado pulsando)
   const placeholder = document.createElement('div');
-  placeholder.style.cssText = `height:${height}px;background:linear-gradient(180deg, rgba(201,168,106,.14), rgba(201,168,106,.06));border:2px dashed var(--gold,#c9a86a);border-radius:8px;margin-bottom:.5rem;box-sizing:border-box;pointer-events:none;transition:height .18s ease,opacity .18s ease;animation:_dragPulse 1.2s ease-in-out infinite`;
+  placeholder.style.cssText = `height:${height}px;background:linear-gradient(180deg, rgba(156,88,67,.14), rgba(156,88,67,.06));border:2px dashed var(--gold,#9C5843);border-radius:8px;margin-bottom:.5rem;box-sizing:border-box;pointer-events:none;transition:height .18s ease,opacity .18s ease;animation:_dragPulse 1.2s ease-in-out infinite`;
   container.insertBefore(placeholder, row);
 
   // "Sai da tela" — flutua, escala leve, rotaciona, sombra dramática.
@@ -7652,8 +7652,8 @@ function _onDragStart(ev, prefix, container, handle) {
     st.id = '_drag-style';
     st.textContent = `
       @keyframes _dragPulse {
-        0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,168,106,.0); }
-        50%     { opacity: .88; box-shadow: 0 0 0 6px rgba(201,168,106,.18); }
+        0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(156,88,67,.0); }
+        50%     { opacity: .88; box-shadow: 0 0 0 6px rgba(156,88,67,.18); }
       }
       @keyframes _dragShake {
         0%,100% { transform: translateX(0); }
@@ -7983,7 +7983,7 @@ function pedirTexto({ titulo = 'Digite', mensagem = '', valorInicial = '', place
       : `<input id="_pedir-inp" value="${escHtml(valorInicial)}" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">`;
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         ${inputHtml}
         <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem">
@@ -8016,7 +8016,7 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:460px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         <select id="_pedir-sel" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">
           ${opcoes.map(o => `<option value="${escHtml(o.value)}"${o.value === valorInicial ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
@@ -8053,7 +8053,7 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Texto da pergunta (português)</label>
         <input id="_pq-rot" value="${escHtml(valorRotulo)}" placeholder="Escreva a pergunta..." style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px;margin-bottom:1rem">
@@ -8062,7 +8062,7 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
           ${tipos.map(o => `<option value="${escHtml(o.value)}"${o.value === valorTipo ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
         </select>
         <label style="display:flex;align-items:center;gap:.5rem;margin-top:.95rem;padding:.55rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;user-select:none">
-          <input type="checkbox" id="_pq-obrig"${valorObrigatoria ? ' checked' : ''} style="width:1.05rem;height:1.05rem;accent-color:var(--gold,#c9a86a)">
+          <input type="checkbox" id="_pq-obrig"${valorObrigatoria ? ' checked' : ''} style="width:1.05rem;height:1.05rem;accent-color:var(--gold,#9C5843)">
           <span style="font-size:.88rem;color:var(--text)"><strong>Obrigatória</strong> — bloqueia o envio se nao for respondida</span>
         </label>
         <p style="margin:.8rem 0 0 0;color:var(--muted);font-size:.78rem;line-height:1.5">A tradução para os outros 6 idiomas é automática ao salvar.</p>
@@ -8151,7 +8151,7 @@ function _renderPesqEstrutura() {
   wrap.innerHTML = secoesAtivas.map(s => `
     <section class="pesq-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
-        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <h3 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
         <div style="display:flex;gap:.4rem">
           <button class="btn btn-outline btn-sm" data-pesq-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
           <button class="btn btn-outline btn-sm" data-pesq-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
@@ -8168,7 +8168,7 @@ function _renderPesqEstrutura() {
             ${Object.entries(_TIPO_LABEL_PESQUISA).map(([v,l]) => `<option value="${v}">${escHtml(l)}</option>`).join('')}
           </select>
           <label style="display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--text);cursor:pointer">
-            <input type="checkbox" data-pesq-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#c9a86a)">
+            <input type="checkbox" data-pesq-newperg-obrig data-secao-id="${s.id}" style="width:1rem;height:1rem;accent-color:var(--gold,#9C5843)">
             Obrigatória
           </label>
           <button class="btn btn-primary btn-sm" data-pesq-act="add-pergunta" data-secao-id="${s.id}">+ Adicionar</button>

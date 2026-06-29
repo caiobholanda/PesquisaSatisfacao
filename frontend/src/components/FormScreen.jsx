@@ -558,9 +558,10 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
             </div>
             <div className="field">
               <FieldLabel pt="Data" en="Date" />
-              <div style={{ padding: '8px 2px', fontSize: 16, color: '#9B9B9B', borderBottom: '1px solid #E4DAC6', userSelect: 'none' }}>
+              <div style={{ padding: '8px 2px', fontSize: 16, color: '#9B9B9B', borderBottom: '1px solid #E3DACC', userSelect: 'none' }}>
                 {new Date((prefill?.data || new Date().toISOString().slice(0, 10)) + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </div>
+
             </div>
             <div className="field">
               <FieldLabel htmlFor="f-tratamento" pt="Tratamento realizado" en="Spa treatment provided" />
@@ -670,9 +671,9 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
             Obrigado por contribuir com o nosso sistema de melhoria.<br />
             <span className="en">Thank you for taking the time to evaluate us.</span>
           </p>
-          <p className="serif" style={{ fontStyle: 'italic', color: '#6B6B6B', fontSize: 18, marginBottom: 14 }}>Atenciosamente,</p>
+          <p style={{ fontStyle: 'italic', color: '#6B6B6B', fontSize: 18, marginBottom: 14, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>Atenciosamente,</p>
           <p>
-            <span style={{ fontWeight: 500, color: '#B8924A' }}>Equipe do Gran SPA by L&rsquo;Occitane</span><br />
+            <span style={{ fontWeight: 500, color: '#996442' }}>Equipe do Gran SPA by L&rsquo;Occitane</span><br />
             <span className="en">Gran SPA by L&rsquo;Occitane team</span>
           </p>
         </footer>
