@@ -1987,6 +1987,59 @@
     .cal-leg-dot.s4 { background: var(--sala-s4); }
     .cal-leg-dot.s5 { background: var(--sala-s5); }
 
+    /* ── Date Picker ── */
+    .cal-month-wrap { position: relative; display: flex; align-items: center; gap: .4rem; }
+    .cal-dp-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 7px;
+      border: 1.5px solid var(--border); background: none;
+      color: var(--muted); cursor: pointer; transition: all .15s; flex-shrink: 0;
+    }
+    .cal-dp-btn:hover,
+    .cal-dp-btn.open { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .cal-datepicker {
+      position: absolute; top: calc(100% + 10px); left: 0; z-index: 500;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: .9rem 1rem 1rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 3px 10px rgba(0,0,0,.1);
+      width: 272px;
+    }
+    .dp-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .7rem;
+    }
+    .dp-hd-label {
+      font-family: var(--serif); font-size: .975rem; font-weight: 400;
+      color: var(--text); text-align: center; flex: 1;
+    }
+    .dp-nav-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 7px;
+      border: 1.5px solid var(--border); background: none;
+      color: var(--muted); cursor: pointer; transition: all .15s; flex-shrink: 0;
+    }
+    .dp-nav-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .dp-wkds {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; margin-bottom: .35rem;
+    }
+    .dp-wkd {
+      text-align: center; font-size: .6rem; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+      padding: .2rem 0;
+    }
+    .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .dp-day {
+      display: flex; align-items: center; justify-content: center;
+      height: 32px; border-radius: 7px; font-size: .82rem; font-family: var(--font);
+      color: var(--text); cursor: pointer; border: 1.5px solid transparent;
+      transition: background .12s, border-color .12s; background: none;
+    }
+    .dp-day:hover:not(.dp-dim) { background: var(--surface2); border-color: var(--border-soft); }
+    .dp-day.dp-dim { color: var(--muted); opacity: .35; cursor: default; pointer-events: none; }
+    .dp-day.dp-today { border-color: rgba(201,169,97,.45); color: var(--gold-dark); font-weight: 600; }
+    .dp-day.dp-sel { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-dark); font-weight: 600; }
+
     /* ── Container ── */
     .cal-container {
       background: var(--surface); border: 1px solid var(--border);
@@ -3791,7 +3844,29 @@
       </div>
 
       <div class="cal-toolbar">
-        <div class="cal-month-label" id="cal-month-label">—</div>
+        <div class="cal-month-wrap">
+          <div class="cal-month-label" id="cal-month-label">—</div>
+          <button class="cal-dp-btn" id="btn-dp-open" aria-label="Selecionar data">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </button>
+          <div class="cal-datepicker" id="cal-datepicker" style="display:none" role="dialog" aria-label="Seletor de data">
+            <div class="dp-hd">
+              <button class="dp-nav-btn" data-action="dp-prev" aria-label="Mês anterior">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="dp-hd-label" id="dp-hd-label">—</div>
+              <button class="dp-nav-btn" data-action="dp-next" aria-label="Próximo mês">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+            <div class="dp-wkds">
+              <div class="dp-wkd">Dom</div><div class="dp-wkd">Seg</div><div class="dp-wkd">Ter</div>
+              <div class="dp-wkd">Qua</div><div class="dp-wkd">Qui</div><div class="dp-wkd">Sex</div>
+              <div class="dp-wkd">Sáb</div>
+            </div>
+            <div class="dp-grid" id="dp-grid"></div>
+          </div>
+        </div>
         <div class="cal-toolbar-sep"></div>
         <button class="cal-nav-btn" id="btn-week-prev" aria-label="Semana anterior">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>

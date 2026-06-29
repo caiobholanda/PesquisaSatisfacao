@@ -1208,6 +1208,9 @@ function setupDelegation() {
     else if (action === 'cal-day')     { calSelectDay(el.dataset.ds); }
     else if (action === 'cal-ver')     { calVerDetalhes(+el.dataset.id); }
     else if (action === 'cal-cancelar'){ e.stopPropagation(); calCancelar(+el.dataset.id); }
+    else if (action === 'dp-select')   { e.stopPropagation(); dpSelectDate(el.dataset.ds); }
+    else if (action === 'dp-prev')     { e.stopPropagation(); _dpMonth--; if (_dpMonth < 0) { _dpMonth=11; _dpYear--; } dpRender(); }
+    else if (action === 'dp-next')     { e.stopPropagation(); _dpMonth++; if (_dpMonth > 11) { _dpMonth=0; _dpYear++; } dpRender(); }
     else if (action === 'gc-info')     { e.stopPropagation(); _abrirModalGranClass(); }
     else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
     else if (action === 'page')        { goPage(+el.dataset.off); }
@@ -2868,6 +2871,87 @@ window.calSelectDay=(ds)=>{
   renderCalDia();
 };
 
+// ── Date Picker ──────────────────────────────────────────────
+let _dpYear = null, _dpMonth = null;
+const _MESES_DP = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function dpOpen() {
+  const ref = _calDiaSel || new Date();
+  _dpYear = ref.getFullYear();
+  _dpMonth = ref.getMonth();
+  dpRender();
+  document.getElementById('cal-datepicker').style.display = 'block';
+  document.getElementById('btn-dp-open').classList.add('open');
+  setTimeout(() => document.addEventListener('click', _dpOutside), 0);
+}
+
+function dpClose() {
+  document.getElementById('cal-datepicker').style.display = 'none';
+  document.getElementById('btn-dp-open').classList.remove('open');
+  document.removeEventListener('click', _dpOutside);
+}
+
+function _dpOutside(e) {
+  const picker = document.getElementById('cal-datepicker');
+  const btn    = document.getElementById('btn-dp-open');
+  if (!picker.contains(e.target) && !btn.contains(e.target)) dpClose();
+}
+
+function dpToggle(e) {
+  e.stopPropagation();
+  const isOpen = document.getElementById('cal-datepicker').style.display !== 'none';
+  if (isOpen) dpClose(); else dpOpen();
+}
+
+function dpRender() {
+  const todayStr = calDateStr(new Date());
+  const selStr   = _calDiaSel ? calDateStr(_calDiaSel) : null;
+  document.getElementById('dp-hd-label').textContent = `${_MESES_DP[_dpMonth]} ${_dpYear}`;
+
+  const first    = new Date(_dpYear, _dpMonth, 1);
+  const lastDate = new Date(_dpYear, _dpMonth + 1, 0).getDate();
+  const startDow = first.getDay(); // 0=Dom
+
+  const cells = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    cells.push({ date: new Date(_dpYear, _dpMonth, -i), dim: true });
+  }
+  for (let d = 1; d <= lastDate; d++) {
+    cells.push({ date: new Date(_dpYear, _dpMonth, d), dim: false });
+  }
+  const tail = 42 - cells.length;
+  for (let d = 1; d <= tail; d++) {
+    cells.push({ date: new Date(_dpYear, _dpMonth + 1, d), dim: true });
+  }
+
+  document.getElementById('dp-grid').innerHTML = cells.map(({ date, dim }) => {
+    const ds = calDateStr(date);
+    let cls = 'dp-day';
+    if (dim)             cls += ' dp-dim';
+    if (ds === todayStr) cls += ' dp-today';
+    if (ds === selStr)   cls += ' dp-sel';
+    const action = dim ? '' : `data-action="dp-select" data-ds="${ds}"`;
+    return `<button class="${cls}" ${action}>${date.getDate()}</button>`;
+  }).join('');
+}
+
+function dpSelectDate(ds) {
+  const [y, m, d] = ds.split('-').map(Number);
+  const target = new Date(y, m - 1, d);
+  target.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tdow = today.getDay();
+  const todayMon = new Date(today);
+  todayMon.setDate(today.getDate() + (tdow === 0 ? -6 : 1 - tdow));
+  const tgt2 = target.getDay();
+  const targetMon = new Date(target);
+  targetMon.setDate(target.getDate() + (tgt2 === 0 ? -6 : 1 - tgt2));
+  _calWeekOffset = Math.round((targetMon - todayMon) / (7 * 24 * 60 * 60 * 1000));
+  _calDiaSel = target;
+  dpClose();
+  loadReservas();
+}
+
 function renderCalDia() {
   if(!_calDiaSel)return;
   const ds=calDateStr(_calDiaSel);
@@ -4159,6 +4243,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-next').addEventListener('click',()=>{_calWeekOffset++;_calDiaSel=null;loadReservas();});
 document.getElementById('btn-week-hoje').addEventListener('click',()=>{_calWeekOffset=0;_calDiaSel=null;loadReservas();});
+document.getElementById('btn-dp-open').addEventListener('click', dpToggle);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('cal-datepicker').style.display !== 'none') dpClose(); });
 
 // Vigia a virada de meia-noite: se a aba fica aberta cruzando o dia, o
 // destaque "hoje" e a selecao ficavam presos no dia anterior. A cada 60s
