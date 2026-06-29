@@ -732,7 +732,7 @@ function renderTabsRelatorios(viewAtual) {
     const ativo = t.view === viewAtual;
     return `<button class="rel-tab${ativo ? ' is-active' : ''}" data-rel-view="${t.view}" style="
       padding:.7rem 1.3rem;background:none;border:none;cursor:pointer;
-      border-bottom:2px solid ${ativo ? 'var(--gold,#bf9a55)' : 'transparent'};
+      border-bottom:2px solid ${ativo ? 'var(--gold,#9C5843)' : 'transparent'};
       color:${ativo ? 'var(--text)' : 'var(--muted)'};
       font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.08rem;
       font-weight:${ativo ? '600' : '500'};letter-spacing:.015em;
@@ -3028,7 +3028,7 @@ function renderCalDia() {
             ehGC ? '★ Gran Class' : null,
             res.criado_por ? 'criado por ' + res.criado_por : null,
           ].filter(Boolean).join(' · ');
-          const gcStyle = ehGC ? ';box-shadow:inset 0 0 0 2px #d4a64a' : '';
+          const gcStyle = ehGC ? ';box-shadow:inset 0 0 0 2px #9C5843' : '';
           const cancelBtn = `<button class="cal-res-cancel" data-action="cal-cancelar" data-id="${res.id}" title="Cancelar reserva">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>`;
@@ -3117,7 +3117,7 @@ function confirmarAcao({ titulo = 'Confirmar?', mensagem = '', btnConfirmar = 'C
     const overlay = document.createElement('div');
     overlay.className = 'confirm-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
-    const cor = perigoso ? 'var(--danger,#b85a4a)' : 'var(--gold,#bf9a55)';
+    const cor = perigoso ? 'var(--danger,#b85a4a)' : 'var(--gold,#9C5843)';
     overlay.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:440px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
         <h3 style="margin:0 0 .5rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
@@ -3552,7 +3552,7 @@ function _precoBloco(tm, ehGC) {
   let h = `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
   h += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
   if (ehGC) {
-    h += `<div class="resdet-kv"><div class="resdet-kv-label" style="color:#bf9a55">★ Gran Class (−10%)</div><div class="resdet-kv-val mono" style="color:#bf9a55">−R$ ${fmt(desconto)}</div></div>`;
+    h += `<div class="resdet-kv"><div class="resdet-kv-label" style="color:#9C5843">★ Gran Class (−10%)</div><div class="resdet-kv-val mono" style="color:#9C5843">−R$ ${fmt(desconto)}</div></div>`;
   }
   h += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
   h += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
@@ -3584,30 +3584,30 @@ function _abrirModalGranClass() {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid #bf9a55;border-radius:12px;max-width:480px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative">
+    <div style="background:var(--surface);border:1px solid #9C5843;border-radius:12px;max-width:480px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative">
       <button data-act="close" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
       <div style="text-align:center;margin-bottom:1.2rem">
-        <div style="font-size:2rem;color:#bf9a55;margin-bottom:.2rem">★</div>
+        <div style="font-size:2rem;color:#9C5843;margin-bottom:.2rem">★</div>
         <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
         <p style="margin:.3rem 0 0 0;color:var(--muted);font-size:.8rem;letter-spacing:.04em;text-transform:uppercase">Cortesia exclusiva para hóspedes Gran Class</p>
       </div>
       <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem">
         <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">💆</div>
+          <div style="font-size:1.3rem;color:#9C5843;line-height:1">💆</div>
           <div style="flex:1">
             <div style="font-weight:600;color:var(--text);font-size:.95rem">10% de desconto em todas as massagens</div>
             <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Aplicado automaticamente sobre o subtotal antes da taxa de serviço.</div>
           </div>
         </li>
         <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">🔥</div>
+          <div style="font-size:1.3rem;color:#9C5843;line-height:1">🔥</div>
           <div style="flex:1">
             <div style="font-weight:600;color:var(--text);font-size:.95rem">Sauna liberada gratuitamente</div>
             <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
           </div>
         </li>
         <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#bf9a55;line-height:1">💧</div>
+          <div style="font-size:1.3rem;color:#9C5843;line-height:1">💧</div>
           <div style="flex:1">
             <div style="font-weight:600;color:var(--text);font-size:.95rem">Jacuzzi liberada gratuitamente</div>
             <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
