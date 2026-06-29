@@ -18,6 +18,14 @@
     </div>
   </noscript>
   <div id="root"></div>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('gm-theme');
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

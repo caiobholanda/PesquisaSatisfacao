@@ -11,7 +11,7 @@ function CheckboxOption({ checked, onClick, pt }) {
   return (
     <button type="button" className="radio-opt" onClick={onClick} aria-pressed={checked}>
       <span className={'checkbox-dot ease-spa' + (checked ? ' on' : '')}></span>
-      <span style={{ color: '#1A1A1A' }}>{pt}</span>
+      <span style={{ color: 'var(--fg)' }}>{pt}</span>
     </button>
   );
 }
@@ -40,7 +40,7 @@ const _OPCOES_FALLBACK = {
 // Extraido para que possa ser reutilizado pelo renderer ordenado das
 // secoes Servicos/Instalacoes que interleva legacy + extras pela ordem.
 function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
-  const reqMark = p.obrigatoria ? <span style={{ color: '#B85042' }}> *</span> : null;
+  const reqMark = p.obrigatoria ? <span style={{ color: 'var(--err)' }}> *</span> : null;
   const errId = err ? `${fieldId}-err` : undefined;
   const labelNode = <>{p.rotulo}{reqMark}</>;
 
@@ -105,7 +105,7 @@ function SingleExtraItem({ pergunta: p, valores, setValor, err, fieldId }) {
       return (
         <div className="extras-question" data-extra-chave={p.chave}>
           <FieldLabel pt={labelNode} en="" />
-          <p style={{ fontSize: 13, color: '#9B9B9B', fontStyle: 'italic' }}>
+          <p style={{ fontSize: 13, color: 'var(--fg-4)', fontStyle: 'italic' }}>
             (sem opções configuradas)
           </p>
         </div>
@@ -399,7 +399,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
   if (loadError) {
     return (
       <div className="load-screen">
-        <p style={{ color: '#6B6B6B', fontSize: 15, textAlign: 'center', maxWidth: 340, lineHeight: 1.7 }}>
+        <p style={{ color: 'var(--fg-3)', fontSize: 15, textAlign: 'center', maxWidth: 340, lineHeight: 1.7 }}>
           Não foi possível carregar o formulário.<br />Verifique sua conexão e tente novamente.
         </p>
         <button className="eb-btn" style={{ marginTop: 24 }} onClick={load}>Tentar novamente</button>
@@ -558,7 +558,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
             </div>
             <div className="field">
               <FieldLabel pt="Data" en="Date" />
-              <div style={{ padding: '8px 2px', fontSize: 16, color: '#9B9B9B', borderBottom: '1px solid #E3DACC', userSelect: 'none' }}>
+              <div style={{ padding: '8px 2px', fontSize: 16, color: 'var(--fg-4)', borderBottom: '1px solid var(--bg-alt)', userSelect: 'none' }}>
                 {new Date((prefill?.data || new Date().toISOString().slice(0, 10)) + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </div>
 
@@ -671,9 +671,9 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
             Obrigado por contribuir com o nosso sistema de melhoria.<br />
             <span className="en">Thank you for taking the time to evaluate us.</span>
           </p>
-          <p style={{ fontStyle: 'italic', color: '#6B6B6B', fontSize: 18, marginBottom: 14, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>Atenciosamente,</p>
+          <p style={{ fontStyle: 'italic', color: 'var(--fg-3)', fontSize: 18, marginBottom: 14, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>Atenciosamente,</p>
           <p>
-            <span style={{ fontWeight: 500, color: '#996442' }}>Equipe do Gran SPA by L&rsquo;Occitane</span><br />
+            <span style={{ fontWeight: 500, color: 'var(--gold-s)' }}>Equipe do Gran SPA by L&rsquo;Occitane</span><br />
             <span className="en">Gran SPA by L&rsquo;Occitane team</span>
           </p>
         </footer>

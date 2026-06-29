@@ -45,8 +45,8 @@ export function SunLogo({ size = 48, color = '#6B6B6B', strokeWidth = 0.8 }) {
 export function GranSpaWordmark({ style = {} }) {
   return (
     <span style={{ fontWeight: 300, letterSpacing: '0.16em', whiteSpace: 'nowrap', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", ...style }}>
-      <span style={{ color: '#4A4A4A' }}>GRAN</span>
-      <span style={{ color: '#9C5843', marginLeft: '0.34em' }}>SPA</span>
+      <span style={{ color: 'var(--fg-2)' }}>GRAN</span>
+      <span style={{ color: 'var(--gold)', marginLeft: '0.34em' }}>SPA</span>
     </span>
   );
 }
@@ -61,7 +61,7 @@ export function Smiley({ type = 'great', size = 36, color = '#6B6B6B', filled = 
   };
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" aria-hidden="true">
-      <circle cx="20" cy="20" r="17" fill={filled ? '#9C5843' : 'none'} stroke={stroke} strokeWidth={strokeWidth} />
+      <circle cx="20" cy="20" r="17" style={{ fill: filled ? 'var(--gold)' : 'none' }} stroke={stroke} strokeWidth={strokeWidth} />
       <circle cx="14.6" cy="16.4" r="1.7" fill={stroke} />
       <circle cx="25.4" cy="16.4" r="1.7" fill={stroke} />
       <path d={mouths[type]} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
@@ -74,11 +74,11 @@ export function LinenBackground() {
     <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <pattern id="linen" width="6" height="6" patternUnits="userSpaceOnUse">
-          <rect width="6" height="6" fill="#E3DACC" />
-          <path d="M0 0 H6" stroke="#E3DACC" strokeWidth="1.4" />
-          <path d="M0 3 H6" stroke="#E3DACC" strokeWidth="0.6" opacity="0.5" />
-          <path d="M0 0 V6" stroke="#E3DACC" strokeWidth="1.4" />
-          <path d="M3 0 V6" stroke="#E3DACC" strokeWidth="0.6" opacity="0.5" />
+          <rect width="6" height="6" style={{ fill: 'var(--bg-alt)' }} />
+          <path d="M0 0 H6" style={{ stroke: 'var(--bg-alt)' }} strokeWidth="1.4" />
+          <path d="M0 3 H6" style={{ stroke: 'var(--bg-alt)' }} strokeWidth="0.6" opacity="0.5" />
+          <path d="M0 0 V6" style={{ stroke: 'var(--bg-alt)' }} strokeWidth="1.4" />
+          <path d="M3 0 V6" style={{ stroke: 'var(--bg-alt)' }} strokeWidth="0.6" opacity="0.5" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#linen)" />
@@ -89,7 +89,7 @@ export function LinenBackground() {
 export function FieldLabel({ htmlFor, pt, en }) {
   return (
     <label htmlFor={htmlFor} style={{ marginBottom: 5, lineHeight: 1.3, display: 'block' }}>
-      <span style={{ fontSize: 13.5, color: '#4A4A4A', letterSpacing: '0.005em' }}>{pt}</span>{' '}
+      <span style={{ fontSize: 13.5, color: 'var(--fg-2)', letterSpacing: '0.005em' }}>{pt}</span>{' '}
       {en && <span className="en" style={{ fontSize: 12 }}>{en}</span>}
     </label>
   );
@@ -132,7 +132,7 @@ export function RatingRow({ q, value, onPick }) {
   return (
     <div className="rating-row">
       <div className="rating-text">
-        <span style={{ color: '#1A1A1A', fontSize: 15.5 }}>{q.pt}</span>{' '}
+        <span style={{ color: 'var(--fg)', fontSize: 15.5 }}>{q.pt}</span>{' '}
         <span className="en" style={{ fontSize: 13 }}>{q.en}</span>
       </div>
       <div className="rating-smileys" role="group" aria-label={q.pt}>
@@ -157,7 +157,7 @@ export function RadioOption({ checked, onClick, pt, en, children }) {
       <button type="button" className="radio-opt" onClick={onClick} aria-pressed={checked}>
         <span className={'radio-dot ease-spa' + (checked ? ' on' : '')}></span>
         <span>
-          <span style={{ color: '#1A1A1A' }}>{pt}</span>{' '}
+          <span style={{ color: 'var(--fg)' }}>{pt}</span>{' '}
           {en && <span className="en" style={{ fontSize: 13 }}>{en}</span>}
         </span>
       </button>

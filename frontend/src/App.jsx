@@ -24,6 +24,14 @@ export default function App() {
   const [i18n,         setI18n]         = useState(null);
   const pollRef = useRef(null);
 
+  const [theme, setTheme] = useState(() => {
+    try { const t = localStorage.getItem('gm-theme'); return t === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('gm-theme', theme); } catch {}
+  }, [theme]);
+
   const [extrasPorSecao, setExtrasPorSecao] = useState([]);
   const [secoesOrdenadas, setSecoesOrdenadas] = useState([]);
   const [pesquisaVersao, setPesquisaVersao] = useState(null);
@@ -178,6 +186,17 @@ export default function App() {
 
   return (
     <div className="app-root">
+      <button
+        type="button"
+        className="theme-toggle"
+        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        aria-label="Alternar tema"
+      >
+        {theme === 'dark'
+          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4 19 19M19 5l-1.6 1.6M6.6 17.4 5 19"/></svg>
+          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a6.5 6.5 0 1 0 10.5 10.5z"/></svg>
+        }
+      </button>
       {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
       {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} secoesOrdenadas={secoesOrdenadas} pesquisaVersao={pesquisaVersao} />}
       {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
