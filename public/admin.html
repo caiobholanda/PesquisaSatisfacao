@@ -61,6 +61,7 @@
       --danger:      #B85450;
       --danger-dim:  rgba(184,84,80,.10);
       --header-bg:   rgba(244, 238, 225, 0.82);
+      --logo-filter: none;
       --font:        'Inter', 'DM Sans', system-ui, sans-serif;
       --serif:       'Helvetica Neue', Helvetica, Arial, sans-serif, Georgia, serif;
       --mono:        'JetBrains Mono', monospace;
@@ -89,6 +90,7 @@
       --danger:      #D86862;
       --danger-dim:  rgba(216,104,98,.18);
       --header-bg:   rgba(10, 14, 26, 0.72);
+      --logo-filter: brightness(0) invert(1);
       --bg-grad-1:   rgba(156,88,67,.08);
       --bg-grad-2:   rgba(156,88,67,.04);
       --sala-s1-text: #F2D7A6;
@@ -161,13 +163,11 @@
       gap: 1.25rem;
     }
 
-    .header-brand .brand-name {
-      font-family: var(--serif);
-      font-size: 1.5rem;
-      font-weight: 300;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--text);
+    .header-brand .brand-logo {
+      height: 32px;
+      width: auto;
+      filter: var(--logo-filter);
+      transition: filter 0.3s ease;
     }
 
     .header-brand .sep {
@@ -3417,7 +3417,7 @@
 <div id="app-screen">
   <header>
     <a class="header-brand" href="https://hub-granmarquise.fly.dev" target="_blank" rel="noopener noreferrer" title="Abrir o Hub em nova aba" style="text-decoration:none;color:inherit;cursor:pointer">
-      <span class="brand-name">Gran Marquise</span>
+      <img class="brand-logo" src="https://letsimage.s3.amazonaws.com/editor/granmarquise/imgs/1760033174793-hotelgranmarquise_pos_footer.png" alt="Gran Marquise">
       <span class="sep"></span>
       <small>Pesquisa de Satisfação</small>
     </a>

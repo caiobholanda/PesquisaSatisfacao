@@ -1,4 +1,4 @@
-import { SunLogo, GranSpaWordmark, LinenBackground } from './shared.jsx';
+import { GranSpaWordmark, LinenBackground } from './shared.jsx';
 
 function _tokenValido(tokenData) {
   if (!tokenData) return false;
@@ -14,13 +14,11 @@ export default function WelcomeScreen({ visible, onStart, tokenData }) {
       <div className="relative bg-[#ECE4D2] flex flex-col justify-end p-12 md:p-20 min-h-[42vh] md:min-h-screen order-2 md:order-1">
         <div className="absolute left-0 right-0" style={{ top: '52%', height: 24, background: '#9C5843' }}></div>
         <div className="relative z-10">
-          <div className="flex items-center gap-4">
-            <SunLogo size={52} color="#6B6B6B" />
-            <div style={{ lineHeight: 1.18 }}>
-              <div style={{ fontSize: 12, letterSpacing: '0.34em', color: '#6B6B6B', fontWeight: 300 }}>HOTEL</div>
-              <div style={{ fontSize: 19, letterSpacing: '0.18em', color: '#4A4A4A', fontWeight: 300 }}>GRAN&nbsp;MARQUISE</div>
-            </div>
-          </div>
+          <img
+            src="https://letsimage.s3.amazonaws.com/editor/granmarquise/imgs/1760033174793-hotelgranmarquise_pos_footer.png"
+            alt="Gran Marquise"
+            style={{ height: 52, width: 'auto' }}
+          />
           <div style={{ marginTop: 22, fontSize: 12.5, color: '#6B6B6B', fontWeight: 300, lineHeight: 1.9 }}>
             <div>Av. Beira Mar, 3980</div>
             <div>(85) 4006-5000</div>
