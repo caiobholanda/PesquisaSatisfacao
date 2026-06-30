@@ -1586,6 +1586,16 @@
       border-color: var(--border-soft);
     }
 
+    /* Lupa nos campos de busca */
+    .search-wrap { position: relative; }
+    .search-wrap > .search-lupa {
+      position: absolute; left: 0.625rem; top: 50%;
+      transform: translateY(-50%); pointer-events: none;
+      color: var(--muted);
+    }
+    .search-wrap > input { padding-left: 2rem; }
+    .res-cb-lupa { margin-left: 0.625rem; flex-shrink: 0; color: var(--muted); pointer-events: none; }
+
     /* Itens da lista */
     .mgmt-list {
       display: flex;
@@ -3611,7 +3621,10 @@
         </div>
         <div class="filter-group">
           <label>Busca</label>
-          <input type="text" id="f-busca" placeholder="Nome ou e-mail…" style="width:215px">
+          <div class="search-wrap" style="width:215px">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="f-busca" placeholder="Nome ou e-mail…" style="width:100%">
+          </div>
         </div>
         <div class="filter-actions">
           <button class="btn btn-gold" id="btn-filtrar">Filtrar</button>
@@ -3698,7 +3711,10 @@
           <div class="mgmt-err" id="err-massagista" style="margin-top:.5rem"></div>
         </div>
         <div class="mgmt-search">
-          <input type="text" id="search-massagistas" placeholder="Buscar por nome…" autocomplete="new-password" name="search-massagistas-x">
+          <div class="search-wrap">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search-massagistas" placeholder="Buscar por nome…" autocomplete="new-password" name="search-massagistas-x">
+          </div>
         </div>
         <div id="list-massagistas">
           <div class="mgmt-empty">Nenhuma massoterapeuta cadastrada.</div>
@@ -3802,7 +3818,10 @@
           <div class="mgmt-err" id="err-tipo" style="margin-top:.5rem"></div>
         </div>
         <div class="mgmt-search">
-          <input type="text" id="search-tipos" placeholder="Buscar por nome…">
+          <div class="search-wrap">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search-tipos" placeholder="Buscar por nome…">
+          </div>
         </div>
         <div id="list-tipos">
           <div class="mgmt-empty">Nenhum tipo de tratamento cadastrado.</div>
@@ -4125,7 +4144,10 @@
         </div>
         <div class="filter-group">
           <label>Busca</label>
-          <input type="text" id="hc-busca" placeholder="Nome ou e-mail…" style="width:200px">
+          <div class="search-wrap" style="width:200px">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="hc-busca" placeholder="Nome ou e-mail…" style="width:100%">
+          </div>
         </div>
         <div class="filter-actions">
           <button class="btn btn-gold" id="btn-hc-filtrar">Filtrar</button>
@@ -4253,7 +4275,10 @@
         </div>
         <div class="filter-group">
           <label>Quem (usuário)</label>
-          <input type="text" id="aud-ator" placeholder="email ou parte dele">
+          <div class="search-wrap">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="aud-ator" placeholder="email ou parte dele">
+          </div>
         </div>
         <div class="filter-group">
           <label>Recurso</label>
@@ -4263,7 +4288,10 @@
         </div>
         <div class="filter-group">
           <label>Ação</label>
-          <input type="text" id="aud-acao" placeholder="ex: criar, atualizar, login">
+          <div class="search-wrap">
+            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="aud-acao" placeholder="ex: criar, atualizar, login">
+          </div>
         </div>
         <div class="filter-group">
           <label>Status</label>
@@ -4478,6 +4506,7 @@
           <label>Tratamento</label>
           <div class="res-cb" id="res-cb-trat">
             <div class="res-cb-wrap">
+              <svg class="res-cb-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" class="res-cb-inp" id="res-cb-trat-inp" placeholder="— Pesquisar tratamento —" autocomplete="off" spellcheck="false">
               <button type="button" class="res-cb-clr" id="res-cb-trat-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
             </div>
@@ -4509,6 +4538,7 @@
           </label>
           <div class="res-cb" id="res-cb-mass">
             <div class="res-cb-wrap">
+              <svg class="res-cb-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" class="res-cb-inp" id="res-cb-mass-inp" placeholder="— Pesquisar profissional —" autocomplete="off" spellcheck="false">
               <button type="button" class="res-cb-clr" id="res-cb-mass-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
             </div>
@@ -4565,6 +4595,7 @@
             <label>Tratamento</label>
             <div class="res-cb" id="res-cb-trat2">
               <div class="res-cb-wrap">
+                <svg class="res-cb-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="res-cb-inp" id="res-cb-trat2-inp" placeholder="— Pesquisar tratamento —" autocomplete="off" spellcheck="false">
                 <button type="button" class="res-cb-clr" id="res-cb-trat2-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
               </div>
@@ -4576,6 +4607,7 @@
             <label>Massoterapeuta</label>
             <div class="res-cb" id="res-cb-mass2">
               <div class="res-cb-wrap">
+                <svg class="res-cb-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="res-cb-inp" id="res-cb-mass2-inp" placeholder="— Pesquisar profissional —" autocomplete="off" spellcheck="false">
                 <button type="button" class="res-cb-clr" id="res-cb-mass2-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
               </div>
