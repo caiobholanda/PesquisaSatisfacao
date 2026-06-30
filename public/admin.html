@@ -4053,7 +4053,10 @@
         <!-- Coluna lateral: busca + lista -->
         <aside style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
           <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
-            <input id="cli-q" placeholder="Nome, CPF, e-mail…" style="flex:1;padding:.55rem;border:1px solid var(--border);background:var(--bg);font-size:.9rem">
+            <div class="search-wrap" style="flex:1">
+              <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="cli-q" placeholder="Nome, CPF, e-mail…" style="width:100%;padding:.55rem .55rem .55rem 2rem;border:1px solid var(--border);background:var(--bg);font-size:.9rem">
+            </div>
           </div>
           <p style="margin:0 0 .8rem 0;font-size:.74rem;color:var(--muted);line-height:1.4">
             Esta tela é somente leitura. Novos clientes são criados automaticamente
