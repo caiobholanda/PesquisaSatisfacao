@@ -17,6 +17,7 @@ import qualidadeRouter from './routes/qualidade.js';
 import clientesRouter from './routes/clientes.js';
 import auditoriaRouter from './routes/auditoria.js';
 import terapeutaRouter from './routes/terapeuta.js';
+import gqRouter from './routes/gq.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
 import { auditMiddleware } from './middleware/audit.js';
 
@@ -248,6 +249,8 @@ app.use('/api/auditoria', auditoriaRouter);
 app.use('/api/terapeuta', terapeutaRouter);
 // URL bonita /terapeuta serve a pagina mobile
 app.get('/terapeuta', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'terapeuta.html')));
+app.use('/api/gq', gqRouter);
+app.get('/gestao-qualidade', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'gestao-qualidade.html')));
 app.use('/api/reservas', reservasRouter);
 app.use('/api', cadastrosRouter);
 
