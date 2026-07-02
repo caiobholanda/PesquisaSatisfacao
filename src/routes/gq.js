@@ -36,6 +36,7 @@ function buildFilters(req) {
 
 // GET /api/gq/stats?slug&from&to&tipo&origem&massagista
 router.get('/stats', (req, res) => {
+  try {
   const db = getDb();
   const slug = (req.query.slug || 'spa-locc-v1').toString();
   const { from: defFrom, to: defTo } = defaultPeriod();
@@ -149,7 +150,7 @@ router.get('/stats', (req, res) => {
   }
 
   const txtRows = db.prepare(`
-    SELECT ri.pergunta_chave, ri.valor_texto, rp.submitted_at, f.nome_hospede, f.nome_casal
+    SELECT ri.pergunta_chave, ri.valor_texto, rp.submitted_at, f.nome
     FROM resposta_pesquisa rp
     LEFT JOIN feedback f ON f.id = rp.feedback_id
     JOIN resposta_item ri ON ri.resposta_pesquisa_id = rp.id
@@ -162,7 +163,7 @@ router.get('/stats', (req, res) => {
     if (!txtMap[r.pergunta_chave]) txtMap[r.pergunta_chave] = [];
     txtMap[r.pergunta_chave].push({
       text: r.valor_texto,
-      author: r.nome_hospede || r.nome_casal || 'Hóspede',
+      author: r.nome || 'Hóspede',
       date: fmtDate(r.submitted_at)
     });
   }
@@ -179,10 +180,15 @@ router.get('/stats', (req, res) => {
     secoes: Object.values(secaoMap).filter(s => s.perguntas.length > 0).sort((a, b) => a.ordem - b.ordem),
     comentarios
   });
+  } catch (e) {
+    console.error('[gq/stats]', e);
+    res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
 });
 
 // GET /api/gq/respostas?slug&from&to&q&tipo&origem&page&limit
 router.get('/respostas', (req, res) => {
+  try {
   const db = getDb();
   const slug = (req.query.slug || 'spa-locc-v1').toString();
   const { from: defFrom, to: defTo } = defaultPeriod();
@@ -217,7 +223,7 @@ router.get('/respostas', (req, res) => {
   `).get(...params).t;
 
   const rows = db.prepare(`
-    SELECT rp.id, rp.submitted_at, f.nome_hospede, f.nome_casal, f.email, f.tipo_cliente, f.origem,
+    SELECT rp.id, rp.submitted_at, f.nome, f.email, f.tipo_cliente, f.origem,
            AVG(ri.valor_numerico) as avg_val, COUNT(ri.id) as resp_cnt
     FROM resposta_pesquisa rp
     LEFT JOIN feedback f ON f.id = rp.feedback_id
@@ -231,7 +237,7 @@ router.get('/respostas', (req, res) => {
   const items = rows.map(r => ({
     id: r.id,
     date: fmtDate(r.submitted_at),
-    nome: r.nome_hospede || r.nome_casal || 'Sem nome',
+    nome: r.nome || 'Sem nome',
     email: r.email || '—',
     tipo: r.tipo_cliente || '—',
     origem: r.origem || 'hospede',
@@ -240,6 +246,10 @@ router.get('/respostas', (req, res) => {
   }));
 
   res.json({ ok: true, total, items });
+  } catch (e) {
+    console.error('[gq/respostas]', e);
+    res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
 });
 
 export default router;
