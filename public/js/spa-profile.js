@@ -33,6 +33,10 @@ function validarCPF(cpf) {
   return r === +cpf[10];
 }
 
+function validarPassaporte(p) {
+  return /^[A-Z0-9]{5,20}$/.test((p || '').trim().toUpperCase());
+}
+
 function validarEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 }
@@ -237,7 +241,8 @@ function validateAll(showErrors) {
     const cpfOk = docNum.length > 0 && validarCPF(docNum);
     chk('f-doc-num', 'err-doc', cpfOk, docNum.length === 0 ? E.doc_number : E.cpf_invalid);
   } else {
-    chk('f-doc-num', 'err-doc', docNum.length > 0, E.doc_number);
+    const passOk = docNum.length > 0 && validarPassaporte(docNum);
+    chk('f-doc-num', 'err-doc', passOk, docNum.length === 0 ? E.doc_number : E.passport_invalid);
   }
 
   chk('f-email',    'err-email',    validarEmail(email), E.email);

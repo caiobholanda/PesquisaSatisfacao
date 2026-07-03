@@ -100,6 +100,7 @@
     "last_name": "Los apellidos son obligatorios.",
     "doc_number": "El número de documento es obligatorio.",
     "cpf_invalid": "Número de CPF inválido. Verifique e inténtelo de nuevo.",
+    "passport_invalid": "Pasaporte inválido. Use solo letras y números (5–20 caracteres).",
     "email": "Introduzca una dirección de correo electrónico válida.",
     "phone": "Teléfono inválido. Use formato BR o internacional (+...).",
     "medical": "Por favor, describa la información médica relevante.",

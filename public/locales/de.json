@@ -100,6 +100,7 @@
     "last_name": "Der Nachname ist erforderlich.",
     "doc_number": "Die Dokumentennummer ist erforderlich.",
     "cpf_invalid": "Ungültige CPF-Nummer. Bitte überprüfen und erneut versuchen.",
+    "passport_invalid": "Ungültiger Reisepass. Verwenden Sie nur Buchstaben und Zahlen (5–20 Zeichen).",
     "email": "Bitte geben Sie eine gültige E-Mail-Adresse an.",
     "phone": "Ungültige Telefonnummer. Bitte BR-Format oder international (+...).",
     "medical": "Bitte beschreiben Sie relevante medizinische Informationen.",

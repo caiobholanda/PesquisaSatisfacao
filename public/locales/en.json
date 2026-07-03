@@ -100,6 +100,7 @@
     "last_name": "Last name is required.",
     "doc_number": "Document number is required.",
     "cpf_invalid": "Invalid CPF number. Please check and try again.",
+    "passport_invalid": "Invalid passport. Use only letters and numbers (5–20 characters).",
     "email": "A valid email address is required.",
     "phone": "Invalid phone number. Use Brazilian (85 99999-9999) or international (+...).",
     "medical": "Please describe any relevant medical information.",
