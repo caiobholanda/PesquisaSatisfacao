@@ -3105,7 +3105,7 @@ function renderCalDia() {
   calUpdateNowLine(ds, true);
 }
 
-window.calCancelar=async(id)=>{
+window.calCancelar=async(id, overlayEl = null)=>{
   const ok = await confirmarAcao({
     titulo: 'Cancelar reserva?',
     mensagem: 'Esta ação remove a reserva da agenda. Não é possível desfazer.',
@@ -3114,6 +3114,7 @@ window.calCancelar=async(id)=>{
     perigoso: true,
   });
   if (!ok) return;
+  if (overlayEl) { overlayEl.style.display = 'none'; _modalOpen = false; }
   const res = await api(`/api/reservas/${id}`, { method: 'DELETE' });
   if (res) { loadReservas(); showToast('Reserva cancelada.'); }
 };
@@ -3822,14 +3823,14 @@ async function calVerDetalhes(id) {
   const btnCancel = document.getElementById('resdet-cancelar-res');
   const inicioMs = new Date(`${r.data}T${r.hora_inicio}:00`).getTime();
   const cancelBloqueado = Date.now() > inicioMs + 30 * 60 * 1000;
-  btnCancel.disabled = cancelBloqueado;
-  btnCancel.textContent = cancelBloqueado ? 'Cancelamento expirado' : 'Cancelar Reserva';
-  btnCancel.title = cancelBloqueado ? 'Só é possível cancelar até 30 min após o início' : '';
+  btnCancel.disabled = false;
+  btnCancel.textContent = 'Cancelar Reserva';
+  btnCancel.title = '';
   btnCancel.style.opacity = '';
   btnCancel.style.cursor = '';
+  btnCancel.style.display = cancelBloqueado ? 'none' : '';
   btnCancel.onclick = cancelBloqueado ? null : () => {
-    document.getElementById('resdet-overlay').style.display = 'none';
-    calCancelar(r.id);
+    calCancelar(r.id, document.getElementById('resdet-overlay'));
   };
   _modalOpen = true;
   document.getElementById('resdet-overlay').style.display = 'flex';
