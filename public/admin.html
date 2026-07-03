@@ -2520,10 +2520,13 @@
     .res-cb { position: relative; }
     .res-cb-wrap {
       display: flex; align-items: center;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 7px; transition: border-color .15s, box-shadow .15s;
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid var(--border);
+      border-radius: 0;
+      transition: border-color .15s;
     }
-    .res-cb-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
+    .res-cb-wrap:focus-within { border-bottom-color: var(--gold); }
     .res-cb-inp {
       flex: 1; min-width: 0; border: none; outline: none; background: transparent;
       font-family: var(--font); font-size: .9375rem; color: var(--text);
