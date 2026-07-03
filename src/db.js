@@ -405,11 +405,13 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS clientes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       cpf TEXT,
+      passaporte TEXT,
       nome TEXT NOT NULL,
       email TEXT,
       telefone TEXT,
       data_nascimento TEXT,
       locale_pref TEXT DEFAULT 'pt-BR',
+      nacionalidade TEXT,
       observacao TEXT,
       criado_em TEXT NOT NULL DEFAULT (datetime('now')),
       atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
