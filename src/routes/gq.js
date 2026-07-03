@@ -39,9 +39,8 @@ router.get('/stats', (req, res) => {
   try {
   const db = getDb();
   const slug = (req.query.slug || 'spa-locc-v1').toString();
-  const { from: defFrom, to: defTo } = defaultPeriod();
-  const from = (req.query.from || defFrom).toString();
-  const to = (req.query.to || defTo).toString();
+  const from = (req.query.from || '').toString().trim();
+  const to = (req.query.to || '').toString().trim();
 
   const pesquisa = db.prepare(
     `SELECT id FROM pesquisa WHERE slug = ? AND ativo = 1 ORDER BY versao DESC LIMIT 1`
@@ -50,8 +49,10 @@ router.get('/stats', (req, res) => {
   const pid = pesquisa.id;
 
   const { extra, params: ep } = buildFilters(req);
-  const allWhere = [`rp.pesquisa_id = ?`, `date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`, ...extra].join(' AND ');
-  const allParams = [pid, from, to, ...ep];
+  const dateClause = from && to ? [`date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`] : [];
+  const dateParams = from && to ? [from, to] : [];
+  const allWhere = [`rp.pesquisa_id = ?`, ...dateClause, ...extra].join(' AND ');
+  const allParams = [pid, ...dateParams, ...ep];
 
   const total = db.prepare(`
     SELECT COUNT(DISTINCT rp.id) as t
@@ -87,11 +88,14 @@ router.get('/stats', (req, res) => {
   `).get(...allParams);
   const pctRecomendacao = total > 0 ? Math.round(recomRow.t / total * 1000) / 10 : null;
 
-  const semAv = db.prepare(`
+  const semAv = from && to ? db.prepare(`
     SELECT COUNT(*) as t FROM survey_tokens
     WHERE respondida_em IS NULL AND liberada_em IS NOT NULL
       AND date(liberada_em, '-3 hours') BETWEEN ? AND ?
-  `).get(from, to).t;
+  `).get(from, to).t : db.prepare(`
+    SELECT COUNT(*) as t FROM survey_tokens
+    WHERE respondida_em IS NULL AND liberada_em IS NOT NULL
+  `).get().t;
 
   const secoes = db.prepare(`
     SELECT ps.id, ps.ordem, COALESCE(pst.titulo, CAST(ps.id AS TEXT)) as titulo
@@ -192,9 +196,8 @@ router.get('/respostas', (req, res) => {
   try {
   const db = getDb();
   const slug = (req.query.slug || 'spa-locc-v1').toString();
-  const { from: defFrom, to: defTo } = defaultPeriod();
-  const from = (req.query.from || defFrom).toString();
-  const to = (req.query.to || defTo).toString();
+  const from = (req.query.from || '').toString().trim();
+  const to = (req.query.to || '').toString().trim();
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, parseInt(req.query.limit) || 20);
   const offset = (page - 1) * limit;
@@ -213,8 +216,10 @@ router.get('/respostas', (req, res) => {
   if (tipo) { extra.push('f.tipo_cliente = ?'); ep.push(tipo); }
   if (origem) { extra.push('f.origem = ?'); ep.push(origem); }
 
-  const where = [`rp.pesquisa_id = ?`, `date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`, ...extra].join(' AND ');
-  const params = [pesquisa.id, from, to, ...ep];
+  const dateClause = from && to ? [`date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`] : [];
+  const dateParams = from && to ? [from, to] : [];
+  const where = [`rp.pesquisa_id = ?`, ...dateClause, ...extra].join(' AND ');
+  const params = [pesquisa.id, ...dateParams, ...ep];
 
   const total = db.prepare(`
     SELECT COUNT(DISTINCT rp.id) as t
