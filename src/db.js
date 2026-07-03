@@ -1293,7 +1293,7 @@ export function listarReservasSemana(from, to) {
   ).all(from, to);
 }
 
-export function listarTodasReservas({ from, to, sala, salas, busca, limit = 100, offset = 0 } = {}) {
+export function listarTodasReservas({ from, to, sala, salas, busca, massagista_id, limit = 100, offset = 0 } = {}) {
   const db = getDb();
   const conds = [];
   const params = [];
@@ -1308,6 +1308,7 @@ export function listarTodasReservas({ from, to, sala, salas, busca, limit = 100,
     conds.push(`r.sala IN (${salasUniq.map(() => '?').join(',')})`);
     params.push(...salasUniq);
   }
+  if (massagista_id) { conds.push('(r.massagista_id = ? OR r.massagista_id2 = ?)'); params.push(massagista_id, massagista_id); }
   if (busca)  { conds.push('(LOWER(r.cliente) LIKE ? OR LOWER(r.email) LIKE ?)'); params.push(`%${busca.toLowerCase()}%`, `%${busca.toLowerCase()}%`); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const total = db.prepare(`SELECT COUNT(*) AS t FROM reservas r ${where}`).get(...params).t;

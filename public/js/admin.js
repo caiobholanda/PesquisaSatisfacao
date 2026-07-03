@@ -186,7 +186,7 @@ function showApp() {
     if (st.histId) showHistoricoMassagista(st.histId, st.histNome);
     else { showView('view-massagistas'); loadMassagistas(); }
   }
-  else if (view === 'view-historico-clientes') { loadHistoricoClientes(); }
+  else if (view === 'view-historico-clientes') { _hcCarregarMassagistas(); loadHistoricoClientes(); }
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
@@ -704,7 +704,7 @@ function showView(id) {
   // Renderiza a barra de sub-abas de Relatórios quando uma das 3 views está
   // ativa. Carrega os dados da view que acabou de ser ativada também.
   renderTabsRelatorios(id);
-  if (id === 'view-historico-clientes') loadHistoricoClientes();
+  if (id === 'view-historico-clientes') { _hcCarregarMassagistas(); loadHistoricoClientes(); }
   if (id === 'view-escala') loadEscala();
   if (id === 'view-anamnese-editor') initAnamneseEditor();
   if (id === 'view-pesquisa-editor') initPesquisaEditor();
@@ -4948,6 +4948,7 @@ document.getElementById('btn-hc-limpar').addEventListener('click',()=>{
   document.getElementById('hc-to').value='';
   _hcResetSalas();
   const st = document.getElementById('hc-status'); if (st) st.value = 'todos';
+  const ms = document.getElementById('hc-massagista'); if (ms) ms.value = '';
   document.getElementById('hc-busca').value='';
   loadHistoricoClientes();
 });
@@ -5004,6 +5005,23 @@ function _hcResetSalas(){
 document.getElementById('hc-busca').addEventListener('keydown', e=>{ if(e.key==='Enter') loadHistoricoClientes(); });
 document.getElementById('hc-status')?.addEventListener('change', () => loadHistoricoClientes());
 
+let _hcMassagistasCarregadas = false;
+async function _hcCarregarMassagistas() {
+  if (_hcMassagistasCarregadas) return;
+  const sel = document.getElementById('hc-massagista');
+  if (!sel) return;
+  const r = await api('/api/massagistas-ativas');
+  if (!r) return;
+  const d = await r.json();
+  (d.items || []).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.nome;
+    sel.appendChild(opt);
+  });
+  _hcMassagistasCarregadas = true;
+}
+
 const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
 const TIPO_CLIENTE_LABEL = { hospede: 'Hóspede', passante: 'Passante' };
 
@@ -5012,6 +5030,7 @@ function _hcParams(off=0) {
   const to    = document.getElementById('hc-to').value || '';
   const salas = _hcSelectedSalas();
   const busca = document.getElementById('hc-busca').value.trim() || '';
+  const massagista_id = document.getElementById('hc-massagista')?.value || '';
   const p = new URLSearchParams({ limit: _hcLimit, offset: off });
   if (from)  p.set('from',  from);
   if (to)    p.set('to',    to);
@@ -5019,6 +5038,7 @@ function _hcParams(off=0) {
   if (salas.length && salas.length < _hcSalaCbs().length) {
     salas.forEach(v => p.append('sala', v));
   }
+  if (massagista_id) p.set('massagista_id', massagista_id);
   if (busca) p.set('busca', busca);
   return p.toString();
 }

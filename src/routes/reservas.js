@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/historico', (req, res) => {
-  const { from, to, busca, limit, offset } = req.query;
+  const { from, to, busca, limit, offset, massagista_id } = req.query;
   // sala aceita: ?sala=1, ?sala=1&sala=2, ?sala=1,2 (retrocompat)
   const salaRaw = req.query.sala;
   const salaList = []
@@ -28,11 +28,13 @@ router.get('/historico', (req, res) => {
     .map(v => parseInt(v, 10))
     .filter(n => Number.isInteger(n) && n >= 1 && n <= 5);
   const salas = [...new Set(salaList)];
+  const midInt = massagista_id ? parseInt(massagista_id, 10) : null;
   const result = listarTodasReservas({
     from: from || null,
     to: to || null,
     salas,
     busca: busca || null,
+    massagista_id: Number.isInteger(midInt) && midInt > 0 ? midInt : null,
     limit: limit ? +limit : 100,
     offset: offset ? +offset : 0,
   });
