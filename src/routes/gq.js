@@ -50,7 +50,7 @@ router.get('/stats', (req, res) => {
   const pid = pesquisa.id;
 
   const { extra, params: ep } = buildFilters(req);
-  const allWhere = [`rp.pesquisa_id = ?`, `date(rp.submitted_at) BETWEEN ? AND ?`, ...extra].join(' AND ');
+  const allWhere = [`rp.pesquisa_id = ?`, `date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`, ...extra].join(' AND ');
   const allParams = [pid, from, to, ...ep];
 
   const total = db.prepare(`
@@ -90,7 +90,7 @@ router.get('/stats', (req, res) => {
   const semAv = db.prepare(`
     SELECT COUNT(*) as t FROM survey_tokens
     WHERE respondida_em IS NULL AND liberada_em IS NOT NULL
-      AND date(liberada_em) BETWEEN ? AND ?
+      AND date(liberada_em, '-3 hours') BETWEEN ? AND ?
   `).get(from, to).t;
 
   const secoes = db.prepare(`
@@ -156,6 +156,7 @@ router.get('/stats', (req, res) => {
     JOIN resposta_item ri ON ri.resposta_pesquisa_id = rp.id
     WHERE ${allWhere} AND ri.valor_texto IS NOT NULL AND trim(ri.valor_texto) != ''
     ORDER BY rp.submitted_at DESC
+    LIMIT 500
   `).all(...allParams);
 
   const txtMap = {};
@@ -208,11 +209,11 @@ router.get('/respostas', (req, res) => {
   const q = (req.query.q || '').toString().trim();
   const tipo = (req.query.tipo || '').toString().trim();
   const origem = (req.query.origem || '').toString().trim();
-  if (q) { extra.push('(f.nome_hospede LIKE ? OR f.nome_casal LIKE ? OR f.email LIKE ?)'); ep.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (q) { extra.push('(LOWER(f.nome_hospede) LIKE LOWER(?) OR LOWER(f.nome_casal) LIKE LOWER(?) OR LOWER(f.email) LIKE LOWER(?))'); ep.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   if (tipo) { extra.push('f.tipo_cliente = ?'); ep.push(tipo); }
   if (origem) { extra.push('f.origem = ?'); ep.push(origem); }
 
-  const where = [`rp.pesquisa_id = ?`, `date(rp.submitted_at) BETWEEN ? AND ?`, ...extra].join(' AND ');
+  const where = [`rp.pesquisa_id = ?`, `date(rp.submitted_at, '-3 hours') BETWEEN ? AND ?`, ...extra].join(' AND ');
   const params = [pesquisa.id, from, to, ...ep];
 
   const total = db.prepare(`
