@@ -1576,9 +1576,14 @@
 
     /* Search */
     .mgmt-search {
-      padding: 0.625rem 1rem;
+      padding: 0.5rem 1rem;
       border-bottom: 1px solid var(--border-soft);
       background: var(--surface2);
+      transition: background .2s, border-color .2s;
+    }
+    .mgmt-search:focus-within {
+      background: var(--surface);
+      border-bottom-color: var(--gold);
     }
 
     .mgmt-search .search-wrap {
@@ -1586,9 +1591,18 @@
       align-items: center;
     }
 
-    .mgmt-search input {
-      background: var(--surface);
-      border-color: var(--border-soft);
+    .mgmt-search .search-wrap > input {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding-top: .3rem;
+      padding-bottom: .3rem;
+    }
+    .mgmt-search .search-wrap > input:focus {
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
     }
 
     /* Campos de busca — integrados e elegantes */
