@@ -94,6 +94,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
     tipo_doc, doc, quarto,
     tipo_doc2, doc2, quarto2,
+    idioma, nacionalidade,
+    idioma2, nacionalidade2,
     // compat: clientes antigos podem ainda enviar cpf/cpf2
     cpf: _cpfLegacy, cpf2: _cpf2Legacy,
   } = req.body || {};
@@ -202,28 +204,32 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       return res.status(400).json({ ok: false, error: 'Passaporte inválido (mínimo 5 caracteres)' });
     }
 
+    const _locale1 = idioma?.trim() || null;
+    const _nac1 = nacionalidade?.trim() || null;
     let clienteIdReserva = null;
     if (tipoDoc1 === 'cpf') {
       const existing = buscarClientePorCpf(docNorm1);
       clienteIdReserva = existing
         ? existing.id
-        : inserirCliente({ cpf: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null });
+        : inserirCliente({ cpf: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
     } else {
       const existing = buscarClientePorPassaporte(docNorm1);
       clienteIdReserva = existing
         ? existing.id
-        : inserirCliente({ passaporte: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null });
+        : inserirCliente({ passaporte: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
     }
 
     // Pessoa 2: upserta cliente também (cadastro central).
     if (_p2Presente && docNorm2) {
+      const _locale2 = idioma2?.trim() || null;
+      const _nac2 = nacionalidade2?.trim() || null;
       try {
         if (tipoDoc2 === 'cpf' && validarCpfMod11(docNorm2)) {
           if (!buscarClientePorCpf(docNorm2))
-            inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null });
+            inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
         } else if (tipoDoc2 === 'passaporte' && docNorm2.length >= 5) {
           if (!buscarClientePorPassaporte(docNorm2))
-            inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null });
+            inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
         }
       } catch {}
     }

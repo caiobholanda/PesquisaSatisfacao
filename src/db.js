@@ -217,6 +217,8 @@ export function initDb() {
   `);
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
+  // Migration: nacionalidade do cliente
+  try { db.exec(`ALTER TABLE clientes ADD COLUMN nacionalidade TEXT`); } catch {}
 
   // ── Modulo Receita & Comissao (planilha SPA 2026) ────────────────────────
   // Tabela de lancamentos manuais de receita por (massagista, terapia, faixa
@@ -2208,7 +2210,7 @@ export function listarClientes({ q, limit = 100, offset = 0 } = {}) {
     args = [needle, cpfN, passN, needle, needle];
   }
   const items = db.prepare(`
-    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, criado_em, atualizado_em
     FROM clientes WHERE ${where}
     ORDER BY nome
     LIMIT ? OFFSET ?
@@ -2219,7 +2221,7 @@ export function listarClientes({ q, limit = 100, offset = 0 } = {}) {
 
 export function buscarClientePorId(id) {
   return getDb().prepare(`
-    SELECT id, cpf, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao, criado_em, atualizado_em
     FROM clientes WHERE id=?
   `).get(id) || null;
 }
@@ -2228,7 +2230,7 @@ export function buscarClientePorCpf(cpf) {
   const n = _normCpf(cpf);
   if (!n) return null;
   return getDb().prepare(`
-    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao, criado_em, atualizado_em
     FROM clientes WHERE cpf=? LIMIT 1
   `).get(n) || null;
 }
@@ -2237,12 +2239,12 @@ export function buscarClientePorPassaporte(passaporte) {
   const p = (passaporte || '').toString().trim().toUpperCase();
   if (!p) return null;
   return getDb().prepare(`
-    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao, criado_em, atualizado_em
+    SELECT id, cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao, criado_em, atualizado_em
     FROM clientes WHERE passaporte=? LIMIT 1
   `).get(p) || null;
 }
 
-export function inserirCliente({ cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
+export function inserirCliente({ cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao }) {
   if (!nome) throw new Error('nome obrigatorio');
   const cpfN = _normCpf(cpf) || null;
   const passN = passaporte ? passaporte.toString().trim().toUpperCase() : null;
@@ -2256,13 +2258,13 @@ export function inserirCliente({ cpf, passaporte, nome, email, telefone, data_na
     if (existing) return existing.id;
   }
   const r = getDb().prepare(`
-    INSERT INTO clientes (cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, observacao)
-    VALUES (?,?,?,?,?,?,?,?)
-  `).run(cpfN, passN, nome, email || null, telefone || null, data_nascimento || null, locale_pref || 'pt-BR', observacao || null);
+    INSERT INTO clientes (cpf, passaporte, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao)
+    VALUES (?,?,?,?,?,?,?,?,?)
+  `).run(cpfN, passN, nome, email || null, telefone || null, data_nascimento || null, locale_pref || 'pt-BR', nacionalidade || null, observacao || null);
   return r.lastInsertRowid;
 }
 
-export function atualizarCliente(id, { cpf, nome, email, telefone, data_nascimento, locale_pref, observacao }) {
+export function atualizarCliente(id, { cpf, nome, email, telefone, data_nascimento, locale_pref, nacionalidade, observacao }) {
   const db = getDb();
   const sets = [], args = [];
   if (cpf !== undefined) {
@@ -2275,6 +2277,7 @@ export function atualizarCliente(id, { cpf, nome, email, telefone, data_nascimen
   if (telefone !== undefined)        { sets.push('telefone=?');        args.push(telefone); }
   if (data_nascimento !== undefined) { sets.push('data_nascimento=?'); args.push(data_nascimento); }
   if (locale_pref !== undefined)     { sets.push('locale_pref=?');     args.push(locale_pref); }
+  if (nacionalidade !== undefined)   { sets.push('nacionalidade=?');   args.push(nacionalidade); }
   if (observacao !== undefined)      { sets.push('observacao=?');      args.push(observacao); }
   if (!sets.length) return false;
   sets.push("atualizado_em=datetime('now')");

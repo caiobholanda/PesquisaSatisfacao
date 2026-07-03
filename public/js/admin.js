@@ -3235,9 +3235,10 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res-fg-apto').style.display='none';
   const _nomeFg = document.getElementById('res-fg-nome');
   if (_nomeFg) _nomeFg.style.gridColumn = '1 / -1';
-  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-cpf'].forEach(id=>{
+  ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-cpf','res-inp-nacionalidade'].forEach(id=>{
     const el = document.getElementById(id); if (el) el.value='';
   });
+  const _idiomaEl = document.getElementById('res-inp-idioma'); if (_idiomaEl) _idiomaEl.value = '';
   const _tipoDocSel = document.getElementById('res-sel-tipo-doc');
   if (_tipoDocSel) { _tipoDocSel.value = 'cpf'; _tipoDocSel.dispatchEvent(new Event('change')); }
   const _cpfInfo = document.getElementById('res-cpf-info');
@@ -3250,9 +3251,10 @@ function calOpenModal(salaId, data, hora) {
   document.querySelectorAll('[data-tipo2]').forEach(b => b.classList.remove('active'));
   const _q2Fg = document.getElementById('res2-fg-quarto');
   if (_q2Fg) _q2Fg.style.display = 'none';
-  ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel'].forEach(id => {
+  ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel','res2-inp-nacionalidade'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const _idioma2El = document.getElementById('res2-inp-idioma'); if (_idioma2El) _idioma2El.value = '';
   const _tipoDoc2Sel = document.getElementById('res2-sel-tipo-doc');
   if (_tipoDoc2Sel) { _tipoDoc2Sel.value = 'cpf'; _tipoDoc2Sel.dispatchEvent(new Event('change')); }
   const _cpf2Info = document.getElementById('res2-cpf-info');
@@ -4231,12 +4233,16 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
       tipo_doc: tipoDoc, doc: cpfInpVal,
       quarto: quartoInp || null,
+      idioma: document.getElementById('res-inp-idioma')?.value || null,
+      nacionalidade: document.getElementById('res-inp-nacionalidade')?.value?.trim() || null,
     };
     if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {
         cliente2: nome2, tipo_cliente2: tipo2 || null, apto2, email2, telefone2: tel2,
         tratamento2, tipo_massagem_id2: tratObj2?.id || null, massagista_id2: massagistaId2,
         tipo_doc2: tipoDoc2, doc2: cpf2, quarto2,
+        idioma2: document.getElementById('res2-inp-idioma')?.value || null,
+        nacionalidade2: document.getElementById('res2-inp-nacionalidade')?.value?.trim() || null,
       });
     }
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify(body)});
@@ -5333,6 +5339,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
         ${c.email ? `<span>✉ ${escHtml(c.email)}</span>` : ''}
         ${c.telefone ? `<span>☎ ${escHtml(c.telefone)}</span>` : ''}
         ${c.locale_pref ? `<span>🌐 ${escHtml(c.locale_pref)}</span>` : ''}
+        ${c.nacionalidade ? `<span>🏳 ${escHtml(c.nacionalidade)}</span>` : ''}
       </div>
     </div>
 
@@ -6113,7 +6120,7 @@ function _confirmar(msg) {
 // nome/email/telefone. Não bloqueia o submit se for cliente novo.
 // ────────────────────────────────────────────────────────────────────────────
 // Wire generico de documento (CPF ou Passaporte) — máscara + autofill
-function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId }) {
+function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId, idiomaId, nacionalidadeId }) {
   const inp = document.getElementById(inpId);
   if (!inp) return;
 
@@ -6160,6 +6167,8 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId 
           const c = d.cliente;
           const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
+          if (idiomaId) set(idiomaId, c.locale_pref);
+          if (nacionalidadeId) set(nacionalidadeId, c.nacionalidade);
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
@@ -6178,6 +6187,8 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId 
           const c = d.cliente;
           const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
+          if (idiomaId) set(idiomaId, c.locale_pref);
+          if (nacionalidadeId) set(nacionalidadeId, c.nacionalidade);
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'Passaporte válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
@@ -6186,8 +6197,8 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId 
     }
   });
 }
-_wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel',  tipoDocSelId: 'res-sel-tipo-doc'  });
-_wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel', tipoDocSelId: 'res2-sel-tipo-doc' });
+_wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel',  tipoDocSelId: 'res-sel-tipo-doc',  idiomaId: 'res-inp-idioma',  nacionalidadeId: 'res-inp-nacionalidade'  });
+_wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel', tipoDocSelId: 'res2-sel-tipo-doc', idiomaId: 'res2-inp-idioma', nacionalidadeId: 'res2-inp-nacionalidade' });
 
 // ────────────────────────────────────────────────────────────────────────────
 // Máscara automática do TELEFONE na Nova Reserva.
