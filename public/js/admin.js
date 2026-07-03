@@ -784,7 +784,7 @@ function _estadoBtnFicha(r) {
   if (+h > 23 || +m[2] > 59) return 'ok';
   const inicio = new Date(`${r.data}T${h}:${m[2]}:00-03:00`).getTime();
   if (!Number.isFinite(inicio)) return 'ok';
-  if (Date.now() > inicio + 10 * 60 * 1000) return 'fora_prazo';
+  if (Date.now() > inicio + 15 * 60 * 1000) return 'fora_prazo';
   return 'ok';
 }
 

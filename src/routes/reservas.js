@@ -379,7 +379,7 @@ router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
     if (hhmm) {
       const inicioMs = new Date(`${reserva.data}T${hhmm}:00-03:00`).getTime();
       if (Number.isFinite(inicioMs)) {
-        const limiteMs = inicioMs + 10 * 60 * 1000;
+        const limiteMs = inicioMs + 15 * 60 * 1000;
         if (Date.now() > limiteMs) {
           return res.status(409).json({ ok: false, error: 'tempo_expirado',
             message: 'Tempo para enviar anamnese expirado' });
