@@ -1261,7 +1261,6 @@ function setupDelegation() {
 // sincrono e le _massagistas. Como sessionStorage._vst.view pode
 // restaurar a view de massagistas em F5, declarar como let abaixo do
 // IIFE colocava a leitura na Temporal Dead Zone -> ReferenceError.
-let _tabMassagistas = 'ativas';
 let _massagistas = [];
 // Distingue "ainda não tentei carregar" (mostra Carregando…) de
 // "carreguei e veio vazio" (mostra Nenhuma…). Evita mensagem enganosa
@@ -1308,16 +1307,6 @@ document.getElementById('btn-header-home')?.addEventListener('click', () => { sh
 // scripts em /scripts ou as telas de cadastro convencionais.
 
 // ── Massagistas ──
-// Estado (_tabMassagistas, _massagistas, _editMId, _editTId) declarado
-// no topo do arquivo para evitar TDZ via showApp()->showView() sincrono.
-
-document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    _tabMassagistas = btn.dataset.tab;
-    document.querySelectorAll('#tabs-massagistas .mgmt-tab').forEach(b => b.classList.toggle('active', b === btn));
-    renderMassagistas();
-  });
-});
 
 document.getElementById('search-massagistas').addEventListener('input', renderMassagistas);
 
@@ -1355,19 +1344,11 @@ function renderMassagistas() {
     return;
   }
 
-  const ativas = _massagistas.filter(m => m.ativo);
-  const inativas = _massagistas.filter(m => !m.ativo);
-
-  const tabA = document.querySelector('#tabs-massagistas [data-tab="ativas"]');
-  const tabI = document.querySelector('#tabs-massagistas [data-tab="inativas"]');
-  if (tabA) tabA.textContent = `Ativas (${ativas.length})`;
-  if (tabI) tabI.textContent = `Inativas (${inativas.length})`;
-
-  let filtered = _tabMassagistas === 'ativas' ? ativas : inativas;
+  let filtered = _massagistas.filter(m => m.ativo);
   if (busca) filtered = filtered.filter(m => m.nome.toLowerCase().includes(busca));
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : _tabMassagistas === 'ativas' ? 'Nenhuma massoterapeuta ativa.' : 'Nenhuma massoterapeuta inativa.'}</div>`;
+    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : 'Nenhuma massoterapeuta ativa.'}</div>`;
     return;
   }
   el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => {
