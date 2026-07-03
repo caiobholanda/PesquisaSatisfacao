@@ -2262,9 +2262,27 @@
     .cal-res-block.s5:hover { box-shadow: 0 5px 16px rgba(168,126,44,.28); }
     /* Casal: meias-cards unidos */
     .cal-res-block.casal-left { border-right: none !important; border-radius: 6px 0 0 6px !important; }
-    .cal-res-block.casal-right { border-left: none !important; border-radius: 0 6px 6px 0 !important; border: 1px solid rgba(139,74,107,.32); box-shadow: 0 1px 5px rgba(139,74,107,.15); }
-    .cal-res-block.casal-right:hover { box-shadow: 0 5px 16px rgba(139,74,107,.22); }
-    .cal-casal-chip { display:inline-flex;align-items:center;gap:.2rem;background:linear-gradient(90deg,rgba(45,122,79,.38),rgba(139,74,107,.38));color:#1c3a20;border-radius:3px;padding:.04rem .3rem;font-size:.56rem;font-weight:800;letter-spacing:.07em;line-height:1.45;flex-shrink:0;align-self:flex-start;text-transform:uppercase; }
+    .cal-res-block.casal-right {
+      border-left: none !important;
+      border-radius: 0 6px 6px 0 !important;
+      background: linear-gradient(150deg, rgba(45,122,79,.09) 0%, rgba(45,122,79,.17) 100%) !important;
+      border: 1px solid rgba(45,122,79,.26) !important;
+      box-shadow: 0 1px 5px rgba(45,122,79,.12) !important;
+    }
+    .cal-res-block.casal-right:hover { box-shadow: 0 5px 16px rgba(45,122,79,.18) !important; }
+    .cal-res-block.casal-right .cal-res-name { color: var(--sala-s3-text) !important; }
+    .cal-res-block.casal-right .cal-res-trat { color: var(--sala-s3-text) !important; }
+    .cal-res-block.casal-right .cal-res-time { color: var(--sala-s3-text) !important; }
+    .cal-res-block.casal-right .cal-res-by   { color: var(--sala-s3-text) !important; }
+    .cal-casal-chip {
+      display: flex; align-items: center; justify-content: center; gap: .22rem;
+      background: linear-gradient(90deg, rgba(45,122,79,.28), rgba(45,122,79,.18));
+      color: var(--sala-s3-text, #144228);
+      border: 1px solid rgba(45,122,79,.35);
+      border-radius: 4px; padding: .1rem .45rem;
+      font-size: .55rem; font-weight: 800; letter-spacing: .08em; line-height: 1.5;
+      text-transform: uppercase; align-self: center; width: fit-content; margin: 0 auto;
+    }
 
     .cal-res-name {
       font-family: var(--serif); font-size: .85rem; font-weight: 500;

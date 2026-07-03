@@ -3131,14 +3131,16 @@ function renderCalDia() {
               `;
             } else if (modo === 'medium') {
               inner = `
-                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${casalChip}${anamP1badge}</div>
+                <div style="display:flex;justify-content:center;margin-bottom:.15rem">${casalChip}</div>
+                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
                 <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
               `;
             } else {
               inner = `
-                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${casalChip}${anamP1badge}</div>
+                <div style="display:flex;justify-content:center;margin-bottom:.15rem">${casalChip}</div>
+                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
                 <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto?' · qto '+escHtml(res.quarto):''}</div>
