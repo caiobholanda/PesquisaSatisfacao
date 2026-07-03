@@ -3120,18 +3120,17 @@ function renderCalDia() {
           // Casal: redefine inner para Pessoa 1 apenas (left half); S4 mostra Pessoa 2
           if (isCasalCard) {
             const anamP1badge = _anamP1Ok ? `<span class="cal-anam-badge" title="Anamnese Pessoa 1 preenchida">✓</span>` : '';
-            const casalChip = `<span class="cal-casal-chip">🤝 Casal</span>`;
+            const casalChipInline = `<span class="cal-casal-chip">🤝 Casal</span>`;
             if (modo === 'compact') {
               inner = `
                 <div style="display:flex;align-items:center;gap:.25rem;overflow:hidden">
-                  ${casalChip}${anamP1badge}
+                  ${casalChipInline}${anamP1badge}
                   <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;font-weight:600">${escHtml(res.cliente)}</span>
                 </div>
                 <div style="font-size:.68rem;opacity:.75;white-space:nowrap">${res.hora_inicio}–${res.hora_fim}</div>
               `;
             } else if (modo === 'medium') {
               inner = `
-                <div style="display:flex;justify-content:center;margin-bottom:.15rem">${casalChip}</div>
                 <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
@@ -3139,7 +3138,6 @@ function renderCalDia() {
               `;
             } else {
               inner = `
-                <div style="display:flex;justify-content:center;margin-bottom:.15rem">${casalChip}</div>
                 <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
@@ -3150,8 +3148,12 @@ function renderCalDia() {
           }
           const casalLeftCls = isCasalCard ? ' casal-left' : '';
           const casalRightPx = isCasalCard ? '0' : '4';
+          const casalChipOverlay = (isCasalCard && modo !== 'compact')
+            ? `<span class="cal-casal-chip" style="position:absolute;top:50%;right:-1px;transform:translate(50%,-50%);z-index:5;pointer-events:none">🤝 Casal</span>`
+            : '';
           html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
             <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}${casalLeftCls}" style="position:absolute;left:0;right:${casalRightPx}px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyle}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(titleParts)}">
+              ${casalChipOverlay}
               ${inner}
               ${cancelBtn}
             </div>
