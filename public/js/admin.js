@@ -860,7 +860,7 @@ function _aplicarEstadoLiberada(btn, estado) {
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
   } else if (estado === 'antes_fim') {
-    btn.textContent = 'Disponível 40 min após o término';
+    btn.textContent = 'Disponível ao fim do tratamento';
   } else {
     btn.textContent = 'Liberar Pesquisa';
   }
@@ -870,8 +870,8 @@ function _aplicarEstadoLiberada(btn, estado) {
 }
 
 function _estadoBtnLiberar(r) {
-  // ⚠️ MODO TEMPORARIO: sem fora_prazo e sem _pesquisasLiberadas (permite reenvio).
-  // Gate ativo: liberacao so' permitida 40min apos hora_fim (BRT UTC-3 fixo).
+  // ⚠️ MODO TEMPORARIO: sem _pesquisasLiberadas (permite reenvio).
+  // Janela: disponivel ao fim do tratamento, admin tem 40min para liberar.
   // Reverter quando user disser "volte o tempo como era antes".
   if (!r || !r.data || !r.hora_fim) return 'ok';
   const raw = String(r.hora_fim);
@@ -880,7 +880,9 @@ function _estadoBtnLiberar(r) {
   const h = match[1].padStart(2, '0');
   const fim = new Date(`${r.data}T${h}:${match[2]}:00-03:00`).getTime();
   if (!Number.isFinite(fim)) return 'ok';
-  if (Date.now() < fim + 40 * 60 * 1000) return 'antes_fim';
+  const now = Date.now();
+  if (now < fim) return 'antes_fim';
+  if (now > fim + 40 * 60 * 1000) return 'fora_prazo';
   return 'ok';
   /* VERSAO ORIGINAL (com janela de fim+30min):
   if (_pesquisasLiberadas.has(r.id)) return 'liberada';
