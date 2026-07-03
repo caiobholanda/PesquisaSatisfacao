@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -144,8 +144,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     if (docNorm2) {
       if (tipoDoc2 === 'cpf' && !validarCpfMod11(docNorm2))
         return res.status(400).json({ ok: false, error: 'Pessoa 2: CPF inválido' });
-      if (tipoDoc2 === 'passaporte' && docNorm2.length < 5)
-        return res.status(400).json({ ok: false, error: 'Pessoa 2: passaporte inválido (mínimo 5 caracteres)' });
+      if (tipoDoc2 === 'passaporte' && !validarPassaporte(docNorm2))
+        return res.status(400).json({ ok: false, error: 'Pessoa 2: passaporte inválido — use apenas letras e números (5–20 caracteres)' });
       if (docNorm1 && docNorm1 === docNorm2)
         return res.status(400).json({ ok: false, error: 'Pessoa 1 e Pessoa 2 não podem ter o mesmo documento' });
     }
@@ -200,8 +200,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     if (tipoDoc1 === 'cpf' && !validarCpfMod11(docNorm1)) {
       return res.status(400).json({ ok: false, error: 'CPF inválido' });
     }
-    if (tipoDoc1 === 'passaporte' && docNorm1.length < 5) {
-      return res.status(400).json({ ok: false, error: 'Passaporte inválido (mínimo 5 caracteres)' });
+    if (tipoDoc1 === 'passaporte' && !validarPassaporte(docNorm1)) {
+      return res.status(400).json({ ok: false, error: 'Passaporte inválido — use apenas letras e números (5–20 caracteres)' });
     }
 
     const _locale1 = idioma?.trim() || null;
@@ -227,7 +227,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         if (tipoDoc2 === 'cpf' && validarCpfMod11(docNorm2)) {
           if (!buscarClientePorCpf(docNorm2))
             inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
-        } else if (tipoDoc2 === 'passaporte' && docNorm2.length >= 5) {
+        } else if (tipoDoc2 === 'passaporte' && validarPassaporte(docNorm2)) {
           if (!buscarClientePorPassaporte(docNorm2))
             inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
         }

@@ -4147,7 +4147,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   if(!sala){err.textContent='Selecione uma sala.';return;}
   if(!cpfInpVal){err.textContent='Informe o documento do cliente (CPF ou Passaporte).';document.getElementById('res-inp-cpf')?.focus();return;}
   if(tipoDoc==='cpf'&&!validarCpfMod11(cpfInpVal)){err.textContent='CPF inválido.';document.getElementById('res-inp-cpf')?.focus();return;}
-  if(tipoDoc==='passaporte'&&cpfInpVal.length<5){err.textContent='Passaporte inválido (mínimo 5 caracteres).';document.getElementById('res-inp-cpf')?.focus();return;}
+  if(tipoDoc==='passaporte'&&!validarPassaporte(cpfInpVal)){err.textContent='Passaporte inválido — use apenas letras e números (5–20 caracteres).';document.getElementById('res-inp-cpf')?.focus();return;}
   if(!tipo){err.textContent='Selecione o tipo de cliente (Hóspede ou Passante).';return;}
   if(!nome){err.textContent='Informe o nome do cliente.';return;}
   if(!email){err.textContent='Informe o e-mail.';return;}
@@ -4247,7 +4247,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       // Pessoa 2 preenchida → exige coerencia
       if (!cpf2InpVal) { err.textContent = 'Pessoa 2: informe o documento (CPF ou Passaporte).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (tipoDoc2==='cpf'&&!validarCpfMod11(cpf2InpVal)) { err.textContent = 'Pessoa 2: CPF inválido.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
-      if (tipoDoc2==='passaporte'&&cpf2InpVal.length<5) { err.textContent = 'Pessoa 2: passaporte inválido (mínimo 5 caracteres).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
+      if (tipoDoc2==='passaporte'&&!validarPassaporte(cpf2InpVal)) { err.textContent = 'Pessoa 2: passaporte inválido — use apenas letras e números (5–20 caracteres).'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (cpfInpVal && cpf2InpVal === cpfInpVal) { err.textContent = 'Pessoa 1 e Pessoa 2 nao podem ter o mesmo documento.'; document.getElementById('res2-inp-cpf')?.focus(); return; }
       if (!nome2)       { err.textContent = 'Pessoa 2: informe o nome.'; return; }
       if (!tipo2)       { err.textContent = 'Pessoa 2: selecione tipo de cliente (Hospede ou Passante).'; return; }
@@ -5338,8 +5338,12 @@ function validarCpfMod11(cpf) {
   r = (s * 10) % 11; if (r >= 10) r = 0;
   return r === +cpf[10];
 }
-window.validarCpfMod11 = validarCpfMod11; // exposto para reuso (form de reserva)
+window.validarCpfMod11 = validarCpfMod11;
 window.fmtCpfMask = fmtCpfMask;
+
+function validarPassaporte(p) {
+  return /^[A-Z0-9]{5,20}$/.test((p || '').trim().toUpperCase());
+}
 
 async function loadClientesLista() {
   const q = (document.getElementById('cli-q')?.value || '').trim();
@@ -6234,7 +6238,7 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
       // Passaporte: sem máscara, uppercase
       this.value = this.value.toUpperCase();
       const v = this.value.trim();
-      if (v.length < 5) { if (info) info.style.display = 'none'; return; }
+      if (!validarPassaporte(v)) { if (info) info.style.display = 'none'; return; }
       try {
         const r = await api('/api/clientes/buscar?passaporte=' + encodeURIComponent(v));
         if (!r) return;

@@ -4,7 +4,7 @@ import {
   listarClientes, buscarClientePorId, buscarClientePorCpf, buscarClientePorPassaporte,
   inserirCliente, atualizarCliente, buscarCliente360,
   inserirProdutoCliente, atualizarProdutoCliente, removerProdutoCliente,
-  validarCpfMod11, getDb, logAuditoria,
+  validarCpfMod11, validarPassaporte, getDb, logAuditoria,
 } from '../db.js';
 import { recalcularHmacConsentimento, recalcularSeloComposto } from './spa.js';
 
@@ -108,7 +108,7 @@ router.get('/buscar', (req, res) => {
     return res.json({ ok: true, cliente: cli || null });
   }
   if (passaporte) {
-    if (passaporte.length < 5) return res.status(400).json({ ok: false, error: 'Passaporte invalido' });
+    if (!validarPassaporte(passaporte)) return res.status(400).json({ ok: false, error: 'Passaporte inválido — use apenas letras e números (5–20 caracteres)' });
     const cli = buscarClientePorPassaporte(passaporte);
     return res.json({ ok: true, cliente: cli || null });
   }

@@ -2201,6 +2201,10 @@ export function validarCpfMod11(cpf) {
   return r === +cpf[10];
 }
 
+export function validarPassaporte(p) {
+  return typeof p === 'string' && /^[A-Z0-9]{5,20}$/.test(p.trim().toUpperCase());
+}
+
 export function listarClientes({ q, limit = 100, offset = 0 } = {}) {
   const db = getDb();
   let where = '1=1', args = [];
