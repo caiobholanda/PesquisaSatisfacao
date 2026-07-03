@@ -2493,9 +2493,9 @@ async function showHistoricoMassagista(id, nome) {
 const CAL_ROOMS = [
   { id: 1, nome: 'Sala 1', tipo: 'Individual', cap: 1, cls: 's1' },
   { id: 2, nome: 'Sala 2', tipo: 'Individual', cap: 1, cls: 's2' },
-  { id: 3, nome: 'Sala 3', tipo: 'Individual', cap: 1, cls: 's3' },
-  { id: 4, nome: 'Sala 4', tipo: 'Individual', cap: 1, cls: 's4' },
-  { id: 5, nome: 'Espaço Beleza', tipo: 'Individual', cap: 1, cls: 's5' },
+  { id: 3, nome: 'Sala 3', tipo: 'Dupla', cap: 2, cls: 's3' },
+  { id: 4, nome: 'Sala 4', tipo: 'Dupla', cap: 2, cls: 's4' },
+  { id: 5, nome: 'Espaço Beleza', tipo: 'Eventos', cap: 1, cls: 's5' },
 ];
 const CAL_H_START = 8;
 const CAL_H_END   = 22;
@@ -2996,9 +2996,19 @@ function renderCalDia() {
             const rs3 = calTimeMin(blocker.hora_inicio), re3 = calTimeMin(blocker.hora_fim);
             const topPx = ((rs3 - slotS) / SLOT_MIN) * CAL_SLOT_PX + 2;
             const ht = ((re3 - rs3) / SLOT_MIN) * CAL_SLOT_PX - 4;
+            const ehGCB = blocker.quarto_categoria === 'gran_class';
+            const gcStyleB = ehGCB ? ';box-shadow:inset 0 0 0 2px #9C5843' : '';
+            const modoB = ht < 70 ? 'compact' : (ht < 130 ? 'medium' : 'full');
+            const casalBadgeB = `<span style="background:rgba(139,74,107,.18);color:var(--sala-s4-text,#4a1f38);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0">🤝 S3+4</span>`;
+            let innerB = '';
+            if (modoB === 'compact') {
+              innerB = `<div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${casalBadgeB}<span style="overflow:hidden;text-overflow:ellipsis">${escHtml(blocker.cliente)}${blocker.cliente2?' &amp; '+escHtml(blocker.cliente2):''}</span></div><div style="font-size:.7rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${blocker.hora_inicio}–${blocker.hora_fim}</div>`;
+            } else {
+              innerB = `<div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${casalBadgeB}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(blocker.cliente)}${blocker.cliente2?' &amp; '+escHtml(blocker.cliente2):''}</span></div>${blocker.tratamento?`<div class="cal-res-trat">${escHtml(blocker.tratamento)}${blocker.tratamento2?' / '+escHtml(blocker.tratamento2):''}</div>`:''}<div class="cal-res-time">${blocker.hora_inicio} – ${blocker.hora_fim}</div>`;
+            }
             html += `<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-              <div style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;border-radius:6px;background:var(--sala-s3-dim);border-left:3px dashed var(--sala-s3);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.65">
-                <span style="font-size:.65rem;color:var(--sala-s3-text);text-align:center;line-height:1.4">Bloqueada<br>(Sala ${outraSala} em uso)</span>
+              <div class="cal-res-block s3" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyleB}" data-action="cal-ver" data-id="${blocker.id}" title="Casal · Sala 3+4 · ${escHtml(blocker.cliente)}">
+                ${innerB}
               </div>
             </div>`;
           } else {
@@ -3699,7 +3709,7 @@ async function calVerDetalhes(id) {
   const sala = CAL_ROOMS.find(s => s.id === r.sala);
   const salaName = sala ? sala.nome : `Sala ${r.sala}`;
   const salaCls = sala ? sala.cls : 's1';
-  const salaTipo = r.cliente2 ? 'Casal · Sala 3+4' : (sala ? `${sala.tipo} · ${sala.cap} pessoa` : '');
+  const salaTipo = r.cliente2 ? 'Casal · Sala 3+4' : (sala ? `${sala.tipo} · ${sala.cap} ${sala.cap > 1 ? 'pessoas' : 'pessoa'}` : '');
   const tipoCli = r.tipo_cliente === 'hospede' ? 'Hóspede' : (r.tipo_cliente === 'passante' ? 'Passante' : '—');
   const tipoCliCls = r.tipo_cliente === 'hospede' ? 'hospede' : 'passante';
   const dur = calTimeMin(r.hora_fim) - calTimeMin(r.hora_inicio);
