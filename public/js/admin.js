@@ -3032,14 +3032,13 @@ function renderCalDia() {
             const p2Mass = blocker.massagista_nome2 || '';
             const anamP2ok = !!blocker.documento_perfil_id2;
             const anamP2badge = anamP2ok ? `<span class="cal-anam-badge" title="Anamnese Pessoa 2 preenchida">✓</span>` : '';
-            const casalChipHeader = `<div style="display:flex;justify-content:center;margin-bottom:.05rem;flex-shrink:0"><span class="cal-casal-chip">🤝 Casal</span></div>`;
             let innerB = '';
             if (modoB === 'compact') {
               innerB = `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:.2rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis">${escHtml(p2Nome)}</span></div>`;
             } else if (modoB === 'medium') {
-              innerB = `${casalChipHeader}<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}`;
+              innerB = `<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}`;
             } else {
-              innerB = `${casalChipHeader}<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}<div class="cal-res-time">${blocker.hora_inicio} – ${blocker.hora_fim}</div>${p2Mass?`<div class="cal-res-by">${escHtml(p2Mass)}</div>`:''}`;
+              innerB = `<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}<div class="cal-res-time">${blocker.hora_inicio} – ${blocker.hora_fim}</div>${p2Mass?`<div class="cal-res-by">${escHtml(p2Mass)}</div>`:''}`;
             }
             html += `<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
               <div class="cal-res-block s4 casal-right" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyleB}" data-action="cal-ver" data-id="${blocker.id}" title="Casal · Sala 4 · ${escHtml(p2Nome)}">
@@ -3120,19 +3119,18 @@ function renderCalDia() {
           // Casal: redefine inner para Pessoa 1 apenas (left half); S4 mostra Pessoa 2
           if (isCasalCard) {
             const anamP1badge = _anamP1Ok ? `<span class="cal-anam-badge" title="Anamnese Pessoa 1 preenchida">✓</span>` : '';
-            const casalChipInline = `<span class="cal-casal-chip">🤝 Casal</span>`;
-            const casalSpacer = `<div style="height:1.35rem;flex-shrink:0"></div>`;
+            const casalChip = `<div style="display:flex;justify-content:center;margin-bottom:.15rem;flex-shrink:0"><span class="cal-casal-chip">🤝 Casal</span></div>`;
             if (modo === 'compact') {
               inner = `
                 <div style="display:flex;align-items:center;gap:.25rem;overflow:hidden">
-                  ${casalChipInline}${anamP1badge}
+                  <span class="cal-casal-chip">🤝 Casal</span>${anamP1badge}
                   <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;font-weight:600">${escHtml(res.cliente)}</span>
                 </div>
                 <div style="font-size:.68rem;opacity:.75;white-space:nowrap">${res.hora_inicio}–${res.hora_fim}</div>
               `;
             } else if (modo === 'medium') {
               inner = `
-                ${casalSpacer}
+                ${casalChip}
                 <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
@@ -3140,7 +3138,7 @@ function renderCalDia() {
               `;
             } else {
               inner = `
-                ${casalSpacer}
+                ${casalChip}
                 <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${anamP1badge}</div>
                 <div class="cal-res-name">${escHtml(res.cliente)}</div>
                 ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
