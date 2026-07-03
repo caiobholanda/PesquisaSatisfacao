@@ -1576,9 +1576,14 @@
 
     /* Search */
     .mgmt-search {
-      padding: 0.625rem 1.25rem;
+      padding: 0.625rem 1rem;
       border-bottom: 1px solid var(--border-soft);
       background: var(--surface2);
+    }
+
+    .mgmt-search .search-wrap {
+      display: flex;
+      align-items: center;
     }
 
     .mgmt-search input {
@@ -1586,14 +1591,29 @@
       border-color: var(--border-soft);
     }
 
-    /* Lupa nos campos de busca */
-    .search-wrap { position: relative; }
+    /* Campos de busca — integrados e elegantes */
+    .search-wrap { position: relative; display: block; }
     .search-wrap > .search-lupa {
-      position: absolute; left: 0.625rem; top: 50%;
+      position: absolute; left: 0.7rem; top: 50%;
       transform: translateY(-50%); pointer-events: none;
-      color: var(--muted);
+      color: var(--muted); opacity: .55;
+      transition: color .2s, opacity .2s;
     }
-    .search-wrap > input { padding-left: 2rem; }
+    .search-wrap:focus-within > .search-lupa {
+      color: var(--gold); opacity: 1;
+    }
+    .search-wrap > input {
+      padding-left: 2.15rem;
+      border-radius: 8px;
+      border-color: var(--border-soft);
+      background: var(--surface);
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .search-wrap > input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+      background: var(--surface);
+    }
     .res-cb-lupa { margin-left: 0.625rem; flex-shrink: 0; color: var(--muted); pointer-events: none; }
 
     /* Itens da lista */
@@ -3622,7 +3642,7 @@
         <div class="filter-group">
           <label>Busca</label>
           <div class="search-wrap" style="width:215px">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="f-busca" placeholder="Nome ou e-mail…" style="width:100%">
           </div>
         </div>
@@ -3712,7 +3732,7 @@
         </div>
         <div class="mgmt-search">
           <div class="search-wrap">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="search-massagistas" placeholder="Buscar por nome…" autocomplete="new-password" name="search-massagistas-x">
           </div>
         </div>
@@ -3819,7 +3839,7 @@
         </div>
         <div class="mgmt-search">
           <div class="search-wrap">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="search-tipos" placeholder="Buscar por nome…">
           </div>
         </div>
@@ -4054,7 +4074,7 @@
         <aside style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
           <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
             <div class="search-wrap" style="flex:1">
-              <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input id="cli-q" placeholder="Nome, CPF, e-mail…" style="width:100%;padding:.55rem .55rem .55rem 2rem;border:1px solid var(--border);background:var(--bg);font-size:.9rem">
             </div>
           </div>
@@ -4148,7 +4168,7 @@
         <div class="filter-group">
           <label>Busca</label>
           <div class="search-wrap" style="width:200px">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="hc-busca" placeholder="Nome ou e-mail…" style="width:100%">
           </div>
         </div>
@@ -4279,7 +4299,7 @@
         <div class="filter-group">
           <label>Quem (usuário)</label>
           <div class="search-wrap">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="aud-ator" placeholder="email ou parte dele">
           </div>
         </div>
@@ -4292,7 +4312,7 @@
         <div class="filter-group">
           <label>Ação</label>
           <div class="search-wrap">
-            <svg class="search-lupa" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="aud-acao" placeholder="ex: criar, atualizar, login">
           </div>
         </div>
