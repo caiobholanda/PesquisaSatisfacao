@@ -1390,7 +1390,7 @@ function renderMassagistas() {
           ${m.especialidade_original ? `<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>` : ''}
           ${statHtml}
         </div>
-        <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Ver histórico</button>
+        <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
         <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
         <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
         <button class="btn btn-outline btn-sm" data-action="ver-escala" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Ver escala mensal">Escala</button>
