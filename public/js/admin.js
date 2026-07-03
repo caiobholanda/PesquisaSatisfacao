@@ -1399,45 +1399,6 @@ function renderMassagistas() {
   }).join('') + '</div>';
 }
 
-function toggleFormMassagista(show) {
-  const wrap = document.getElementById('form-massagista-wrap');
-  wrap.style.display = show ? 'block' : 'none';
-  if (show) document.getElementById('inp-m-nome').focus();
-  else {
-    document.getElementById('inp-m-nome').value = '';
-    document.getElementById('inp-m-cargo').value = '';
-    document.getElementById('inp-m-matricula').value = '';
-    document.getElementById('inp-m-vinculo').value = '';
-    document.getElementById('inp-m-bilingue').checked = false;
-    document.getElementById('err-massagista').textContent = '';
-  }
-}
-
-document.getElementById('btn-toggle-form-massagista').addEventListener('click', () => {
-  const open = document.getElementById('form-massagista-wrap').style.display !== 'none';
-  toggleFormMassagista(!open);
-});
-
-document.getElementById('btn-cancel-form-massagista').addEventListener('click', () => toggleFormMassagista(false));
-
-document.getElementById('btn-add-massagista').addEventListener('click', async () => {
-  const nome = document.getElementById('inp-m-nome').value.trim();
-  const funcao = document.getElementById('inp-m-cargo').value.trim();
-  const matricula = document.getElementById('inp-m-matricula').value.trim();
-  const vinculo = document.getElementById('inp-m-vinculo').value || null;
-  const bilingue = document.getElementById('inp-m-bilingue').checked;
-  const err = document.getElementById('err-massagista');
-  err.textContent = '';
-  if (!nome) { err.textContent = 'Informe o nome.'; return; }
-  if (!funcao) { err.textContent = 'Informe o cargo.'; return; }
-  if (!matricula) { err.textContent = 'Informe a matrícula.'; return; }
-  const res = await api('/api/massagistas', { method: 'POST', body: JSON.stringify({ nome, funcao, matricula, vinculo, bilingue }) });
-  if (!res) return;
-  const d = await res.json();
-  if (!d.ok) { err.textContent = d.error; return; }
-  toggleFormMassagista(false);
-  loadMassagistas();
-});
 
 const DISP_DAYS = [
   { key: 'seg', label: 'Segunda' },
