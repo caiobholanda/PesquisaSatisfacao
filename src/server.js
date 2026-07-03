@@ -6,7 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto, seedReceitaTerapias } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto, seedReceitaTerapias, buscarMassagistaById, atualizarMassagista } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -324,6 +324,31 @@ app.get('/admin', (req, res) => {
     clearAdminCookie(res);
     res.redirect('/acesso-hub.html?next=%2Fadmin');
   }
+});
+
+// ── Hub S2S: massoterapeutas ──────────────────────────────────────────────────
+function s2sAuth(req, res) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token || token !== process.env.SSO_SECRET) {
+    res.status(403).json({ ok: false, erro: 'Acesso negado' });
+    return false;
+  }
+  return true;
+}
+app.get('/api/hub/massagistas', (req, res) => {
+  if (!s2sAuth(req, res)) return;
+  res.json({ ok: true, items: listarMassagistas() });
+});
+app.patch('/api/hub/massagistas/:id/ativo', (req, res) => {
+  if (!s2sAuth(req, res)) return;
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ ok: false, erro: 'ID inválido' });
+  const m = buscarMassagistaById(id);
+  if (!m) return res.status(404).json({ ok: false, erro: 'Não encontrada' });
+  const ativo = req.body?.ativo ? 1 : 0;
+  atualizarMassagista(id, m.nome, ativo);
+  res.json({ ok: true });
 });
 
 app.use((err, _req, res, _next) => {
