@@ -252,4 +252,20 @@ router.get('/respostas', (req, res) => {
   }
 });
 
+// GET /api/gq/resposta/:id — detalhe por resposta_pesquisa.id (usado pelo GestaoQualidade)
+router.get('/resposta/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: 'ID inválido' });
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT f.*
+    FROM resposta_pesquisa rp
+    JOIN feedback f ON f.id = rp.feedback_id
+    WHERE rp.id = ?
+  `).get(id);
+  if (!row) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  delete row.ip_address; delete row.user_agent;
+  return res.json({ ok: true, item: row });
+});
+
 export default router;
