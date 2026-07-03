@@ -1074,11 +1074,27 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
 // pessoa em reserva casal.
 let _pessoaAnamneseAlvo = 0;
 
-function enviarPreMassagemReserva() {
+async function enviarPreMassagemReserva() {
   if (!_resDetAtual) return;
   const estado = _estadoBtnFicha(_resDetAtual);
   if (estado !== 'ok') return;
+  const r = _resDetAtual;
+  // Default pt-BR; tenta pré-preencher com locale_pref do cliente
   _langSelected = 'pt-BR';
+  try {
+    const usarPessoa2 = _pessoaAnamneseAlvo === 2;
+    const cpfBusca = usarPessoa2 ? null : (r.cpf || null);
+    const passBusca = usarPessoa2 ? null : (r.passaporte || null);
+    let clienteLocale = null;
+    if (cpfBusca) {
+      const resp = await api('/api/clientes/buscar?cpf=' + cpfBusca.replace(/\D/g, ''));
+      if (resp) { const d = await resp.json(); if (d.ok && d.cliente?.locale_pref) clienteLocale = d.cliente.locale_pref; }
+    } else if (passBusca) {
+      const resp = await api('/api/clientes/buscar?passaporte=' + encodeURIComponent(passBusca));
+      if (resp) { const d = await resp.json(); if (d.ok && d.cliente?.locale_pref) clienteLocale = d.cliente.locale_pref; }
+    }
+    if (clienteLocale && LANGS_PRE.some(l => l.code === clienteLocale)) _langSelected = clienteLocale;
+  } catch {}
   const grid = document.getElementById('lang-grid');
   grid.innerHTML = LANGS_PRE.map(l => `
     <div class="lang-card${l.code === _langSelected ? ' selected' : ''}" data-action="sel-lang" data-lang="${l.code}">
@@ -3010,15 +3026,23 @@ function renderCalDia() {
             const ehGCB = blocker.quarto_categoria === 'gran_class';
             const gcStyleB = ehGCB ? ';box-shadow:inset 0 0 0 2px #9C5843' : '';
             const modoB = ht < 70 ? 'compact' : (ht < 130 ? 'medium' : 'full');
-            const casalBadgeB = `<span style="background:rgba(139,74,107,.18);color:var(--sala-s4-text,#4a1f38);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0">🤝 S3+4</span>`;
+            // S4: metade direita do card casal — Pessoa 2
+            const p2Nome = blocker.cliente2 || '';
+            const p2Trat = blocker.tratamento2 || '';
+            const p2Mass = blocker.massagista_nome2 || '';
+            const anamP2ok = !!blocker.documento_perfil_id2;
+            const anamP2badge = anamP2ok ? `<span class="cal-anam-badge" title="Anamnese Pessoa 2 preenchida">✓</span>` : '';
+            const chipSpacer = modoB !== 'compact' ? `<div style="height:1.35rem;flex-shrink:0"></div>` : '';
             let innerB = '';
             if (modoB === 'compact') {
-              innerB = `<div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${casalBadgeB}<span style="overflow:hidden;text-overflow:ellipsis">${escHtml(blocker.cliente)}${blocker.cliente2?' &amp; '+escHtml(blocker.cliente2):''}</span></div><div style="font-size:.7rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${blocker.hora_inicio}–${blocker.hora_fim}</div>`;
+              innerB = `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:.2rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis">${escHtml(p2Nome)}</span></div>`;
+            } else if (modoB === 'medium') {
+              innerB = `${chipSpacer}<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}`;
             } else {
-              innerB = `<div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${casalBadgeB}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(blocker.cliente)}${blocker.cliente2?' &amp; '+escHtml(blocker.cliente2):''}</span></div>${blocker.tratamento?`<div class="cal-res-trat">${escHtml(blocker.tratamento)}${blocker.tratamento2?' / '+escHtml(blocker.tratamento2):''}</div>`:''}<div class="cal-res-time">${blocker.hora_inicio} – ${blocker.hora_fim}</div>`;
+              innerB = `${chipSpacer}<div class="cal-res-name" style="display:flex;align-items:center;gap:.25rem">${anamP2badge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p2Nome)}</span></div>${p2Trat?`<div class="cal-res-trat">${escHtml(p2Trat)}</div>`:''}<div class="cal-res-time">${blocker.hora_inicio} – ${blocker.hora_fim}</div>${p2Mass?`<div class="cal-res-by">${escHtml(p2Mass)}</div>`:''}`;
             }
             html += `<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-              <div class="cal-res-block s3" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyleB}" data-action="cal-ver" data-id="${blocker.id}" title="Casal · Sala 3+4 · ${escHtml(blocker.cliente)}">
+              <div class="cal-res-block s4 casal-right" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyleB}" data-action="cal-ver" data-id="${blocker.id}" title="Casal · Sala 4 · ${escHtml(p2Nome)}">
                 ${innerB}
               </div>
             </div>`;
@@ -3067,6 +3091,7 @@ function renderCalDia() {
           const anamBadge = _anamN > 0
             ? `<span class="cal-anam-badge" title="Anamnese preenchida${res.cliente2 ? ' ('+_anamN+'/2)' : ''}">✓${res.cliente2 ? ' '+_anamN+'/2' : ''}</span>`
             : '';
+          const isCasalCard = !!res.cliente2;
           let inner = '';
           if (modo === 'compact') {
             // Ultra compacto: nome + GC badge + horario na mesma linha
@@ -3092,8 +3117,39 @@ function renderCalDia() {
               <div class="cal-res-by">por ${res.criado_por ? escHtml(res.criado_por) : '—'}</div>
             `;
           }
+          // Casal: redefine inner para Pessoa 1 apenas (left half); S4 mostra Pessoa 2
+          if (isCasalCard) {
+            const anamP1badge = _anamP1Ok ? `<span class="cal-anam-badge" title="Anamnese Pessoa 1 preenchida">✓</span>` : '';
+            const casalChip = `<span class="cal-casal-chip">🤝 Casal</span>`;
+            if (modo === 'compact') {
+              inner = `
+                <div style="display:flex;align-items:center;gap:.25rem;overflow:hidden">
+                  ${casalChip}${anamP1badge}
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.76rem;font-weight:600">${escHtml(res.cliente)}</span>
+                </div>
+                <div style="font-size:.68rem;opacity:.75;white-space:nowrap">${res.hora_inicio}–${res.hora_fim}</div>
+              `;
+            } else if (modo === 'medium') {
+              inner = `
+                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${casalChip}${anamP1badge}</div>
+                <div class="cal-res-name">${escHtml(res.cliente)}</div>
+                ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
+                <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}</div>
+              `;
+            } else {
+              inner = `
+                <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">${gcBadge}${casalChip}${anamP1badge}</div>
+                <div class="cal-res-name">${escHtml(res.cliente)}</div>
+                ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}</div>`:''}
+                <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto?' · qto '+escHtml(res.quarto):''}</div>
+                ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}</div>`:''}
+              `;
+            }
+          }
+          const casalLeftCls = isCasalCard ? ' casal-left' : '';
+          const casalRightPx = isCasalCard ? '0' : '4';
           html+=`<div class="cal-slot occupied${halfClass}" style="overflow:visible;position:relative">
-            <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}" style="position:absolute;left:0;right:4px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyle}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(titleParts)}">
+            <div class="cal-res-block ${room.cls}${ehGC ? ' is-gran-class' : ''}${casalLeftCls}" style="position:absolute;left:0;right:${casalRightPx}px;top:${topPx}px;height:${ht}px;padding:.3rem .4rem;display:flex;flex-direction:column;gap:.1rem${gcStyle}" data-action="cal-ver" data-id="${res.id}" title="${escHtml(titleParts)}">
               ${inner}
               ${cancelBtn}
             </div>
