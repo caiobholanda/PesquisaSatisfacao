@@ -1255,7 +1255,7 @@ function setupDelegation() {
       const url = `${location.origin}/terapeuta?nome=${encodeURIComponent(el.dataset.nome)}`;
       navigator.clipboard.writeText(url).then(() => showToast(`Link copiado: ${el.dataset.nome}`)).catch(() => prompt('Copie o link:', url));
     }
-    else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome, +el.dataset.ativo); }
+    else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'ver-escala'){ showEscalaMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'edit-tipo') {
       const { id, nome, dur, preco, ativo, desc } = el.dataset;
@@ -1400,7 +1400,7 @@ function renderMassagistas() {
         <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
         <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
         <button class="btn btn-outline btn-sm" data-action="ver-escala" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Ver escala mensal">Escala</button>
-        <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}" data-ativo="${m.ativo?1:0}">Editar</button>
+        <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
       </div>`;
   }).join('') + '</div>';
 }
@@ -1602,13 +1602,10 @@ document.getElementById('mgmt-exc-salvar')?.addEventListener('click', async () =
   } finally { btn.disabled = false; }
 });
 
-window.openEditMassagista = (id, nome, ativo) => {
+window.openEditMassagista = (id, nome) => {
   _editMId = id;
   document.getElementById('mgmt-m-sub').textContent = nome;
   document.getElementById('mgmt-m-nome').value = nome;
-  const chk = document.getElementById('mgmt-m-ativo');
-  chk.checked = !!ativo;
-  document.getElementById('mgmt-m-ativo-txt').textContent = ativo ? 'Ativa' : 'Inativa';
   document.getElementById('mgmt-m-err').textContent = '';
   const m = _massagistas.find(x => x.id === id);
   document.getElementById('mgmt-m-cargo').value = m?.funcao || '';
@@ -1621,9 +1618,6 @@ window.openEditMassagista = (id, nome, ativo) => {
   setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
 };
 
-document.getElementById('mgmt-m-ativo').addEventListener('change', function() {
-  document.getElementById('mgmt-m-ativo-txt').textContent = this.checked ? 'Ativa' : 'Inativa';
-});
 function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
 document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);
 document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM);
@@ -1635,13 +1629,12 @@ document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   const funcao = document.getElementById('mgmt-m-cargo').value.trim() || null;
   const vinculo = document.getElementById('mgmt-m-vinculo').value || null;
   const bilingue = document.getElementById('mgmt-m-bilingue').checked;
-  const ativo = document.getElementById('mgmt-m-ativo').checked ? 1 : 0;
   const btn = document.getElementById('mgmt-m-salvar');
   btn.disabled = true;
   try {
     const disponibilidade = _coletarDisp();
     if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, ativo, funcao, vinculo, bilingue, disponibilidade }) });
+    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, funcao, vinculo, bilingue, disponibilidade }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
