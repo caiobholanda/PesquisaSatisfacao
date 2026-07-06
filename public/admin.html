@@ -2538,43 +2538,6 @@
       border-color: var(--gold);
       box-shadow: 0 0 0 3px var(--gold-dim);
     }
-    /* ── Lang Pills ── */
-    .lang-pill-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      padding: 2px 0;
-    }
-    .lang-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 11px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted, #8a7b6a);
-      font-family: 'JetBrains Mono', 'Courier New', monospace;
-      font-size: 10px;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background 120ms, border-color 120ms, color 120ms;
-      white-space: nowrap;
-      border-radius: 0;
-      outline: none;
-      user-select: none;
-    }
-    .lang-pill:hover:not(.active) {
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-    .lang-pill.active {
-      background: var(--gold);
-      border-color: var(--gold);
-      color: var(--surface, #ECE4D2);
-    }
-    [data-theme="dark"] .lang-pill.active {
-      color: #fff;
-    }
 
     /* ── Combobox filtável ── */
     .res-cb { position: relative; }
@@ -4572,18 +4535,9 @@
           </div>
         </div>
         <div class="res-frow">
-          <div class="res-fg" style="grid-column:1/-1">
+          <div class="res-fg">
             <label>Idioma</label>
-            <div class="lang-pill-group" id="res-pills-idioma">
-              <button type="button" class="lang-pill active" data-value="pt-BR">PT Brasil</button>
-              <button type="button" class="lang-pill" data-value="pt-PT">PT Portugal</button>
-              <button type="button" class="lang-pill" data-value="en">Inglês</button>
-              <button type="button" class="lang-pill" data-value="fr">Francês</button>
-              <button type="button" class="lang-pill" data-value="es">Espanhol</button>
-              <button type="button" class="lang-pill" data-value="it">Italiano</button>
-              <button type="button" class="lang-pill" data-value="de">Alemão</button>
-            </div>
-            <select id="res-inp-idioma" style="display:none">
+            <select id="res-inp-idioma">
               <option value="pt-BR" selected>Português (Brasil)</option>
               <option value="pt-PT">Português (Portugal)</option>
               <option value="en">Inglês</option>
@@ -4702,18 +4656,9 @@
             </div>
           </div>
           <div class="res-frow">
-            <div class="res-fg" style="grid-column:1/-1">
+            <div class="res-fg">
               <label>Idioma</label>
-              <div class="lang-pill-group" id="res2-pills-idioma">
-                <button type="button" class="lang-pill active" data-value="pt-BR">PT Brasil</button>
-                <button type="button" class="lang-pill" data-value="pt-PT">PT Portugal</button>
-                <button type="button" class="lang-pill" data-value="en">Inglês</button>
-                <button type="button" class="lang-pill" data-value="fr">Francês</button>
-                <button type="button" class="lang-pill" data-value="es">Espanhol</button>
-                <button type="button" class="lang-pill" data-value="it">Italiano</button>
-                <button type="button" class="lang-pill" data-value="de">Alemão</button>
-              </div>
-              <select id="res2-inp-idioma" style="display:none">
+              <select id="res2-inp-idioma">
                 <option value="pt-BR" selected>Português (Brasil)</option>
                 <option value="pt-PT">Português (Portugal)</option>
                 <option value="en">Inglês</option>
@@ -5099,52 +5044,5 @@
 </div>
 
 <script src="/js/admin.js?v=99"></script>
-<script>
-(function() {
-  function initPills(groupId, selectId) {
-    var group = document.getElementById(groupId);
-    var sel = document.getElementById(selectId);
-    if (!group || !sel) return;
-    var pills = group.querySelectorAll('.lang-pill');
-
-    function setActive(val) {
-      var found = false;
-      pills.forEach(function(p) {
-        var match = p.dataset.value === val;
-        p.classList.toggle('active', match);
-        if (match) found = true;
-      });
-      if (!found && pills.length) pills[0].classList.add('active');
-    }
-
-    // Init visual state from select
-    setActive(sel.value || pills[0].dataset.value);
-
-    // Pill click → sync select
-    pills.forEach(function(pill) {
-      pill.addEventListener('click', function() {
-        sel.value = pill.dataset.value;
-        setActive(pill.dataset.value);
-      });
-    });
-
-    // Intercept programmatic select.value changes (autofill, reset)
-    var proto = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
-    Object.defineProperty(sel, 'value', {
-      get: function() { return proto.get.call(this); },
-      set: function(v) {
-        proto.set.call(this, v || pills[0].dataset.value);
-        setActive(this.value);
-      },
-      configurable: true
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    initPills('res-pills-idioma',  'res-inp-idioma');
-    initPills('res2-pills-idioma', 'res2-inp-idioma');
-  });
-})();
-</script>
 </body>
 </html>
