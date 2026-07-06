@@ -719,16 +719,17 @@ function init() {
       fetch('/api/spa/documento?t=' + encodeURIComponent(token))
         .then(r => r.json().catch(() => null))
         .then(d => {
+          // Link expirado (horario do procedimento passou).
+          if (d && d.expirado) {
+            const langExp = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
+            Promise.resolve(loadLocale(langExp)).then(() => _mostrarExpirado());
+            return;
+          }
           // Link de uso unico ja consumido: respeita locale do link e mostra
           // a tela "ja respondida" — sem dados do hospede, sem form.
           if (d && d.ja_respondida) {
             const langJa = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
             Promise.resolve(loadLocale(langJa)).then(() => _mostrarJaRespondida());
-            return;
-          }
-          if (d && d.expirado) {
-            const langExp = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
-            Promise.resolve(loadLocale(langExp)).then(() => _mostrarExpirado());
             return;
           }
           // BUG-A fix: token invalido/expirado nao pode TRAVAR a pagina
