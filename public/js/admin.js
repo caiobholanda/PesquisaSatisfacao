@@ -4285,7 +4285,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       tipo_doc: tipoDoc, doc: cpfInpVal,
       quarto: quartoInp || null,
       idioma: document.getElementById('res-inp-idioma')?.value || null,
-      nacionalidade: document.getElementById('res-inp-nacionalidade')?.value?.trim() || null,
+      nacionalidade: resolverNacionalidade(document.getElementById('res-inp-nacionalidade')?.value?.trim() || '', NACIONALIDADES) || null,
     };
     if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {
@@ -4293,7 +4293,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
         tratamento2, tipo_massagem_id2: tratObj2?.id || null, massagista_id2: massagistaId2,
         tipo_doc2: tipoDoc2, doc2: cpf2, quarto2,
         idioma2: document.getElementById('res2-inp-idioma')?.value || null,
-        nacionalidade2: document.getElementById('res2-inp-nacionalidade')?.value?.trim() || null,
+        nacionalidade2: resolverNacionalidade(document.getElementById('res2-inp-nacionalidade')?.value?.trim() || '', NACIONALIDADES) || null,
       });
     }
     const res=await api('/api/reservas',{method:'POST',body:JSON.stringify(body)});
@@ -6194,6 +6194,208 @@ function _confirmar(msg) {
 // Ao digitar 11 dígitos válidos, busca cliente existente e preenche
 // nome/email/telefone. Não bloqueia o submit se for cliente novo.
 // ────────────────────────────────────────────────────────────────────────────
+
+// ── Autocomplete de Nacionalidade ─────────────────────────────────────────
+const NACIONALIDADES = [
+  'Afegã','Albanesa','Alemã','Andorrana','Angolana','Antiguense',
+  'Argelina','Argentina','Armênia','Australiana','Austríaca','Azerbaijanesa',
+  'Bahamense','Bangladenha','Barbadense','Bareinita','Belga','Belizenha',
+  'Bielorrussa','Boliviana','Bósnia-herzegovínea','Botsuanesa','Brasileira',
+  'Bruneiana','Búlgara','Burkinabe','Burundesa','Butanesa',
+  'Cabo-verdiana','Camaronesa','Cambojana','Canadense','Catariana',
+  'Cazaquistanesa','Chadiana','Chilena','Chinesa','Cipriota',
+  'Colombiana','Comorense','Congolesa','Costarriquenha','Croata','Cubana',
+  'Dinamarquesa','Djiboutiana','Dominicana',
+  'Egípcia','Emiradense','Equatoguineense','Equatoriana',
+  'Eritreia','Eslovaca','Eslovena','Espanhola','Estoniana','Eswatiniana','Etíope',
+  'Fijiana','Filipina','Finlandesa','Francesa',
+  'Gabonesa','Gambiana','Ganense','Georgiana','Granadina','Grega',
+  'Guatemalteca','Guianense','Guineense','Guinéu-bissauense',
+  'Haitiana','Holandesa','Hondurenha','Húngara',
+  'Iemenita','Indiana','Indonésia','Iraniana','Iraquiana','Irlandesa',
+  'Islandesa','Israelense','Italiana',
+  'Jamaicana','Japonesa','Jordaniana',
+  'Kirguiz','Kiribatiana','Kuwaitiana',
+  'Laosiana','Lesotiana','Letã','Libanesa','Liberiana','Líbia',
+  'Liechtensteinense','Lituana','Luxemburguesa',
+  'Macedônia','Madagascarense','Malauiana','Maldiviana','Malinesa','Maltesa',
+  'Marroquina','Mauriciana','Mauritana','Mexicana','Micronésia',
+  'Moçambicana','Moldava','Monegasca','Mongol','Montenegrina',
+  'Namibiana','Nauruense','Nepalesa','Neozelandesa','Nicaraguense',
+  'Nigerina','Nigeriana','Norte-coreana','Norueguesa',
+  'Omaniense',
+  'Palauense','Palestina','Panamenha','Papua-nova-guineense','Paquistanesa',
+  'Paraguaia','Peruana','Polonesa','Portuguesa',
+  'Queniana','Quirguiz',
+  'Romena','Ruandesa','Russa',
+  'Samoana','São-cristovense','São-marinhense','São-tomense',
+  'Saudita','Senegalesa','Sérvia','Seichelense','Serra-leonesa',
+  'Singapuriana','Síria','Somaliana','Srilanquesa','Sudanesa','Sudanesa do Sul',
+  'Sueca','Sul-africana','Sul-coreana','Suíça','Surinamesa',
+  'Tailandesa','Tanzaniana','Timorense','Togolesa','Tonganesa',
+  'Trindadense','Tunisiana','Turca','Turcomena','Tuvaluense',
+  'Ucraniana','Ugandesa','Uruguaia','Uzbeque',
+  'Vanuatuana','Venezuelana','Vietnamita',
+  'Zambiana','Zimbabuense'
+];
+
+const _NAC_PAIS_MAP = {
+  'brasil':'Brasileira','portugal':'Portuguesa',
+  'estados unidos':'Americana','eua':'Americana','usa':'Americana',
+  'estados unidos da america':'Americana','estados unidos da américa':'Americana',
+  'reino unido':'Britânica','uk':'Britânica','inglaterra':'Britânica','gra-bretanha':'Britânica',
+  'canada':'Canadense','canadá':'Canadense',
+  'australia':'Australiana','austrália':'Australiana',
+  'espanha':'Espanhola',
+  'colombia':'Colombiana','colômbia':'Colombiana',
+  'mexico':'Mexicana','méxico':'Mexicana',
+  'franca':'Francesa','frança':'Francesa',
+  'italia':'Italiana','itália':'Italiana',
+  'alemanha':'Alemã',
+  'japao':'Japonesa','japão':'Japonesa',
+  'china':'Chinesa',
+  'india':'Indiana','índia':'Indiana',
+  'russia':'Russa','rússia':'Russa',
+  'uruguai':'Uruguaia','chile':'Chilena','peru':'Peruana',
+  'venezuela':'Venezuelana','paraguai':'Paraguaia',
+  'bolivia':'Boliviana','bolívia':'Boliviana',
+  'equador':'Equatoriana','cuba':'Cubana',
+  'suica':'Suíça','suíça':'Suíça',
+  'suecia':'Sueca','suécia':'Sueca',
+  'noruega':'Norueguesa','dinamarca':'Dinamarquesa',
+  'finlandia':'Finlandesa','finlândia':'Finlandesa',
+  'irlanda':'Irlandesa',
+  'holanda':'Holandesa','paises baixos':'Holandesa','países baixos':'Holandesa',
+  'belgica':'Belga','bélgica':'Belga',
+  'austria':'Austríaca','áustria':'Austríaca',
+  'grecia':'Grega','grécia':'Grega',
+  'turquia':'Turca',
+  'coreia do sul':'Sul-coreana','coreia do norte':'Norte-coreana',
+  'africa do sul':'Sul-africana','áfrica do sul':'Sul-africana',
+  'nova zelandia':'Neozelandesa','nova zelândia':'Neozelandesa',
+  'polonia':'Polonesa','polônia':'Polonesa',
+  'romenia':'Romena','romênia':'Romena',
+  'hungria':'Húngara','marrocos':'Marroquina',
+  'nigeria':'Nigeriana','nigéria':'Nigeriana',
+  'egito':'Egípcia','egito':'Egípcia',
+  'etiopia':'Etíope','etiópia':'Etíope',
+  'kenya':'Queniana','quenia':'Queniana','quênia':'Queniana',
+  'gana':'Ganense','ghana':'Ganense',
+  'tailandia':'Tailandesa','tailândia':'Tailandesa',
+  'indonesia':'Indonésia','indonésia':'Indonésia',
+  'filipinas':'Filipina',
+  'vietna':'Vietnamita','vietnã':'Vietnamita',
+  'arabia saudita':'Saudita','arábia saudita':'Saudita',
+  'emirados arabes unidos':'Emiradense','emirados árabes unidos':'Emiradense',
+  'paquistao':'Paquistanesa','paquistão':'Paquistanesa',
+  'bangladesh':'Bangladenha',
+  'sri lanka':'Srilanquesa','srilanka':'Srilanquesa',
+  'camboja':'Cambojana',
+  'laos':'Laosiana',
+};
+
+function _normAcento(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+// Converte país ou gentílico salvo no banco para o gentílico canônico da lista.
+// opcoes: array de strings válidas (NACIONALIDADES). Ordem de tentativa:
+//  a. match direto → b. mapa país->gentílico → c. match sem acento → d. ''
+function resolverNacionalidade(val, opcoes) {
+  if (!val) return '';
+  const v = val.trim();
+  if (opcoes.includes(v)) return v;
+  const nv = _normAcento(v);
+  const mapped = _NAC_PAIS_MAP[nv];
+  if (mapped && opcoes.includes(mapped)) return mapped;
+  const exactMatch = opcoes.find(o => _normAcento(o) === nv);
+  if (exactMatch) return exactMatch;
+  for (const [k, mv] of Object.entries(_NAC_PAIS_MAP)) {
+    if ((nv.includes(k) || k.includes(nv)) && opcoes.includes(mv)) return mv;
+  }
+  return '';
+}
+
+// Inicializa o autocomplete typeahead numa dupla (input, listDiv) já no DOM.
+// Reutiliza classes res-cb-* existentes. Fecha ao clicar fora ou pressionar Esc.
+function criarAutocompleteNacionalidade(inp, listEl) {
+  let _ativo = -1;
+
+  function _filtrar(q) {
+    const n = _normAcento(q);
+    return n ? NACIONALIDADES.filter(nac => _normAcento(nac).includes(n)) : NACIONALIDADES;
+  }
+
+  function _renderizar(filtrados) {
+    _ativo = -1;
+    if (!filtrados.length) {
+      listEl.innerHTML = '<div class="res-cb-opt cb-empty">Nenhuma opção encontrada</div>';
+      listEl.style.display = '';
+      return;
+    }
+    listEl.innerHTML = filtrados.map(n =>
+      `<div class="res-cb-opt" role="option" data-val="${escHtml(n)}">${escHtml(n)}</div>`
+    ).join('');
+    listEl.style.display = '';
+  }
+
+  function _fechar() { listEl.style.display = 'none'; _ativo = -1; }
+
+  function _atualizarClr() {
+    const clr = inp.parentElement?.querySelector('.res-cb-clr');
+    if (clr) clr.style.display = inp.value ? '' : 'none';
+  }
+
+  function _selecionar(val) {
+    inp.value = val; _fechar(); _atualizarClr();
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  listEl.addEventListener('mousedown', e => {
+    const item = e.target.closest('.res-cb-opt:not(.cb-empty)');
+    if (item) { e.preventDefault(); _selecionar(item.dataset.val); }
+  });
+
+  inp.addEventListener('input', () => { _renderizar(_filtrar(inp.value)); _atualizarClr(); });
+  inp.addEventListener('focus', () => { _renderizar(_filtrar(inp.value)); });
+
+  inp.addEventListener('blur', () => {
+    setTimeout(() => {
+      _fechar();
+      inp.value = resolverNacionalidade(inp.value, NACIONALIDADES);
+      _atualizarClr();
+    }, 160);
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (listEl.style.display === 'none') return;
+    const items = listEl.querySelectorAll('.res-cb-opt:not(.cb-empty)');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _ativo = Math.min(_ativo + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('cb-focused', i === _ativo));
+      items[_ativo]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _ativo = Math.max(_ativo - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('cb-focused', i === _ativo));
+      items[_ativo]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && _ativo >= 0) {
+      e.preventDefault(); _selecionar(items[_ativo].dataset.val);
+    } else if (e.key === 'Escape') { _fechar(); }
+  });
+
+  const clrBtn = inp.parentElement?.querySelector('.res-cb-clr');
+  if (clrBtn) {
+    clrBtn.addEventListener('click', () => { inp.value = ''; _fechar(); _atualizarClr(); inp.focus(); });
+  }
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !listEl.contains(e.target)) _fechar();
+  }, true);
+}
+
 // Wire generico de documento (CPF ou Passaporte) — máscara + autofill
 function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId, idiomaId, nacionalidadeId }) {
   const inp = document.getElementById(inpId);
@@ -6246,7 +6448,7 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
           const overwrite = (id, val, dflt = '') => { const el = document.getElementById(id); if (el) el.value = val || dflt; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
           if (idiomaId) overwrite(idiomaId, c.locale_pref, 'pt-BR');
-          if (nacionalidadeId) overwrite(nacionalidadeId, c.nacionalidade, '');
+          if (nacionalidadeId) overwrite(nacionalidadeId, resolverNacionalidade(c.nacionalidade, NACIONALIDADES), '');
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
@@ -6267,7 +6469,7 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
           const overwrite = (id, val, dflt = '') => { const el = document.getElementById(id); if (el) el.value = val || dflt; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
           if (idiomaId) overwrite(idiomaId, c.locale_pref, 'pt-BR');
-          if (nacionalidadeId) overwrite(nacionalidadeId, c.nacionalidade, '');
+          if (nacionalidadeId) overwrite(nacionalidadeId, resolverNacionalidade(c.nacionalidade, NACIONALIDADES), '');
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'Passaporte válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
@@ -6278,6 +6480,16 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
 }
 _wireCpfAutofill({ inpId: 'res-inp-cpf',  infoId: 'res-cpf-info',  nomeId: 'res-inp-nome',  emailId: 'res-inp-email',  telId: 'res-inp-tel',  tipoDocSelId: 'res-sel-tipo-doc',  idiomaId: 'res-inp-idioma',  nacionalidadeId: 'res-inp-nacionalidade'  });
 _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2-inp-nome', emailId: 'res2-inp-email', telId: 'res2-inp-tel', tipoDocSelId: 'res2-sel-tipo-doc', idiomaId: 'res2-inp-idioma', nacionalidadeId: 'res2-inp-nacionalidade' });
+
+(function() {
+  const _wNac = (inpId, listId) => {
+    const inp = document.getElementById(inpId);
+    const lst = document.getElementById(listId);
+    if (inp && lst) criarAutocompleteNacionalidade(inp, lst);
+  };
+  _wNac('res-inp-nacionalidade', 'res-nac-list');
+  _wNac('res2-inp-nacionalidade', 'res2-nac-list');
+})();
 
 // ────────────────────────────────────────────────────────────────────────────
 // Máscara automática do TELEFONE na Nova Reserva.

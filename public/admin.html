@@ -2583,7 +2583,7 @@
       padding: .46rem .9rem; cursor: pointer; font-size: .875rem;
       color: var(--text); line-height: 1.3;
     }
-    .res-cb-opt:hover { background: var(--surface2); }
+    .res-cb-opt:hover, .res-cb-opt.cb-focused { background: var(--surface2); }
     .res-cb-opt.cb-empty { color: var(--muted); font-style: italic; cursor: default; }
 
     .res-pessoa1-sep, .res-pessoa2-sep {
@@ -4552,22 +4552,13 @@
           </div>
           <div class="res-fg">
             <label>Nacionalidade</label>
-            <select id="res-inp-nacionalidade">
-              <option value="" disabled selected style="color:#aaa">Escolha a nacionalidade</option>
-              <option value="Brasileira">Brasileira</option>
-              <option value="Portuguesa">Portuguesa</option>
-              <option value="Americana">Americana</option>
-              <option value="Britânica">Britânica</option>
-              <option value="Canadense">Canadense</option>
-              <option value="Australiana">Australiana</option>
-              <option value="Espanhola">Espanhola</option>
-              <option value="Argentina">Argentina</option>
-              <option value="Colombiana">Colombiana</option>
-              <option value="Mexicana">Mexicana</option>
-              <option value="Francesa">Francesa</option>
-              <option value="Italiana">Italiana</option>
-              <option value="Alemã">Alemã</option>
-            </select>
+            <div class="res-cb">
+              <div class="res-cb-wrap">
+                <input type="text" class="res-cb-inp" id="res-inp-nacionalidade" placeholder="Filtrar…" autocomplete="off" spellcheck="false">
+                <button type="button" class="res-cb-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
+              </div>
+              <div class="res-cb-list" id="res-nac-list" style="display:none"></div>
+            </div>
           </div>
         </div>
         <div class="res-fg" id="res-fg-tratamento">
@@ -4674,22 +4665,13 @@
             </div>
             <div class="res-fg">
               <label>Nacionalidade</label>
-              <select id="res2-inp-nacionalidade">
-                <option value="" disabled selected style="color:#aaa">Escolha a nacionalidade</option>
-                <option value="Brasileira">Brasileira</option>
-                <option value="Portuguesa">Portuguesa</option>
-                <option value="Americana">Americana</option>
-                <option value="Britânica">Britânica</option>
-                <option value="Canadense">Canadense</option>
-                <option value="Australiana">Australiana</option>
-                <option value="Espanhola">Espanhola</option>
-                <option value="Argentina">Argentina</option>
-                <option value="Colombiana">Colombiana</option>
-                <option value="Mexicana">Mexicana</option>
-                <option value="Francesa">Francesa</option>
-                <option value="Italiana">Italiana</option>
-                <option value="Alemã">Alemã</option>
-              </select>
+              <div class="res-cb">
+                <div class="res-cb-wrap">
+                  <input type="text" class="res-cb-inp" id="res2-inp-nacionalidade" placeholder="Filtrar…" autocomplete="off" spellcheck="false">
+                  <button type="button" class="res-cb-clr" tabindex="-1" style="display:none" aria-label="Limpar">✕</button>
+                </div>
+                <div class="res-cb-list" id="res2-nac-list" style="display:none"></div>
+              </div>
             </div>
           </div>
           <div class="res-fg">
