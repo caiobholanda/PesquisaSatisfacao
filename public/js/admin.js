@@ -1105,7 +1105,7 @@ function _mostrarConfirmacaoAnamnese(onConfirm) {
       <p style="font-size:.8rem;color:var(--muted);margin:0 0 1.4rem 0;line-height:1.55">Um link exclusivo de anamnese será gerado. Você escolhe como enviar: WhatsApp, email ou copiando o link.</p>
       <div style="display:flex;gap:.6rem;justify-content:flex-end">
         <button class="btn btn-outline" data-act="cancel">Cancelar</button>
-        <button class="btn btn-gold" data-act="confirm">Gerar link</button>
+        <button class="btn btn-forest" data-act="confirm">Gerar link</button>
       </div>
     </div>
   `;
@@ -1201,7 +1201,7 @@ function abrirAnamneseCasalPopup() {
     } else if (estado === 'fora_prazo') {
       btn = `<button class="btn btn-outline btn-sm" disabled>Tempo para enviar anamnese expirado</button>`;
     } else {
-      btn = `<button class="btn btn-gold btn-sm" data-anam-cas-enviar="${pessoa}">Enviar anamnese</button>`;
+      btn = `<button class="btn btn-forest btn-sm" data-anam-cas-enviar="${pessoa}">Enviar anamnese</button>`;
     }
     return `
       <div class="anam-cas-card">
@@ -1227,7 +1227,7 @@ function abrirAnamneseCasalPopup() {
         ${linha(2)}
       </div>
       <div class="res-modal-ft" style="justify-content:flex-end">
-        <button class="btn btn-gold" data-anam-cas-close="1">Fechar</button>
+        <button class="btn btn-outline" data-anam-cas-close="1">Fechar</button>
       </div>
     </div>
   `;

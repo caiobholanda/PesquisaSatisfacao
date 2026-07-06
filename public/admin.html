@@ -751,6 +751,9 @@
       color: rgba(156,88,67,.6) !important;
     }
     .btn-gold:disabled { background: rgba(156,88,67,.35) !important; color: rgba(255,255,255,.7) !important; }
+    .btn-forest         { background: #202C28; color: #ECE4D2; border: 1px solid #202C28; }
+    .btn-forest:hover   { background: #2a3c37; border-color: #2a3c37; opacity: 1; }
+    .btn-forest:disabled, .btn-forest[disabled] { background: rgba(32,44,40,.32) !important; color: rgba(236,228,210,.45) !important; border-color: transparent !important; }
 
     /* ── Dropdown Administrativo ── */
     .admin-dropdown { position: relative; }
@@ -4771,9 +4774,9 @@
         <button class="btn btn-outline resdet-btn-danger" id="resdet-cancelar-res">Cancelar Reserva</button>
       </div>
       <div class="resdet-ft-right">
-        <button class="btn btn-outline resdet-btn-gold" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
+        <button class="btn btn-forest" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
         <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
-        <button class="btn btn-gold" id="resdet-fechar">Fechar</button>
+        <button class="btn btn-outline" id="resdet-fechar">Fechar</button>
       </div>
     </div>
   </div>
