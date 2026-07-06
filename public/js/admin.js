@@ -3235,7 +3235,7 @@ function calOpenModal(salaId, data, hora) {
   ['res-inp-nome','res-inp-apto','res-inp-email','res-inp-tel','res-inp-cpf','res-inp-nacionalidade'].forEach(id=>{
     const el = document.getElementById(id); if (el) el.value='';
   });
-  const _idiomaEl = document.getElementById('res-inp-idioma'); if (_idiomaEl) _idiomaEl.value = '';
+  const _idiomaEl = document.getElementById('res-inp-idioma'); if (_idiomaEl) _idiomaEl.value = 'pt-BR';
   const _tipoDocSel = document.getElementById('res-sel-tipo-doc');
   if (_tipoDocSel) { _tipoDocSel.value = 'cpf'; _tipoDocSel.dispatchEvent(new Event('change')); }
   const _cpfInfo = document.getElementById('res-cpf-info');
@@ -3251,7 +3251,7 @@ function calOpenModal(salaId, data, hora) {
   ['res2-inp-cpf','res2-inp-nome','res2-inp-quarto','res2-inp-email','res2-inp-tel','res2-inp-nacionalidade'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  const _idioma2El = document.getElementById('res2-inp-idioma'); if (_idioma2El) _idioma2El.value = '';
+  const _idioma2El = document.getElementById('res2-inp-idioma'); if (_idioma2El) _idioma2El.value = 'pt-BR';
   const _tipoDoc2Sel = document.getElementById('res2-sel-tipo-doc');
   if (_tipoDoc2Sel) { _tipoDoc2Sel.value = 'cpf'; _tipoDoc2Sel.dispatchEvent(new Event('change')); }
   const _cpf2Info = document.getElementById('res2-cpf-info');
