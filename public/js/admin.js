@@ -6241,9 +6241,10 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
         if (d.ok && d.cliente) {
           const c = d.cliente;
           const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+          const overwrite = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
-          if (idiomaId) set(idiomaId, c.locale_pref);
-          if (nacionalidadeId) set(nacionalidadeId, c.nacionalidade);
+          if (idiomaId) overwrite(idiomaId, c.locale_pref);
+          if (nacionalidadeId) overwrite(nacionalidadeId, c.nacionalidade);
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
@@ -6261,9 +6262,10 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
         if (d.ok && d.cliente) {
           const c = d.cliente;
           const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+          const overwrite = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
-          if (idiomaId) set(idiomaId, c.locale_pref);
-          if (nacionalidadeId) set(nacionalidadeId, c.nacionalidade);
+          if (idiomaId) overwrite(idiomaId, c.locale_pref);
+          if (nacionalidadeId) overwrite(nacionalidadeId, c.nacionalidade);
           if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'Passaporte válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
