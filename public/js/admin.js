@@ -1863,7 +1863,7 @@ function renderEscala(massagistas) {
   wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const m = _massagistas.find(x => x.id === +btn.dataset.id);
-      if (m) openEditMassagista(m.id, m.nome, m.ativo);
+      if (m) openEditMassagista(m.id, m.nome);
     });
   });
 
