@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -206,8 +206,24 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       return res.status(400).json({ ok: false, error: 'Passaporte inválido — use apenas letras e números (5–20 caracteres)' });
     }
 
+    // Valida IDs de lookup antes de qualquer INSERT (evita 500 por FK inexistente)
+    if (tipo_massagem_id && !getDb().prepare('SELECT 1 FROM tipos_massagem WHERE id=?').get(+tipo_massagem_id)) {
+      return res.status(400).json({ ok: false, error: 'Tratamento não encontrado' });
+    }
+    if (massagista_id && !buscarMassagistaById(+massagista_id)) {
+      return res.status(400).json({ ok: false, error: 'Massoterapeuta não encontrada' });
+    }
+    if (tipo_massagem_id2 && !getDb().prepare('SELECT 1 FROM tipos_massagem WHERE id=?').get(+tipo_massagem_id2)) {
+      return res.status(400).json({ ok: false, error: 'Pessoa 2: tratamento não encontrado' });
+    }
+    if (massagista_id2 && !buscarMassagistaById(+massagista_id2)) {
+      return res.status(400).json({ ok: false, error: 'Pessoa 2: massoterapeuta não encontrada' });
+    }
+
     const _locale1 = idioma?.trim() || null;
     const _nac1 = nacionalidade?.trim() || null;
+    const _locale2 = _p2Presente ? (idioma2?.trim() || null) : null;
+    const _nac2 = _p2Presente ? (nacionalidade2?.trim() || null) : null;
     const _atualizarLocale = (id, locale, nac) => {
       const upd = {};
       if (locale) upd.locale_pref = locale;
@@ -236,8 +252,6 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
 
     // Pessoa 2: upserta cliente também (cadastro central).
     if (_p2Presente && docNorm2) {
-      const _locale2 = idioma2?.trim() || null;
-      const _nac2 = nacionalidade2?.trim() || null;
       try {
         if (tipoDoc2 === 'cpf' && validarCpfMod11(docNorm2)) {
           const ex2 = buscarClientePorCpf(docNorm2);
