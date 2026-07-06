@@ -252,6 +252,34 @@ app.get('/terapeuta', (_req, res) => res.sendFile(path.join(__dirname, '..', 'pu
 app.use('/api/gq', gqRouter);
 app.get('/gestao-qualidade', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'gestao-qualidade.html')));
 app.use('/api/reservas', reservasRouter);
+
+// ── Hub S2S: massoterapeutas ──────────────────────────────────────────────────
+// Deve ficar ANTES de app.use('/api', cadastrosRouter) porque esse router tem
+// router.use(requireAuth) que interceptaria /api/hub/* antes do s2sAuth rodar.
+function s2sAuth(req, res) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token || token !== process.env.SSO_SECRET) {
+    res.status(403).json({ ok: false, erro: 'Acesso negado' });
+    return false;
+  }
+  return true;
+}
+app.get('/api/hub/massagistas', (req, res) => {
+  if (!s2sAuth(req, res)) return;
+  res.json({ ok: true, items: listarMassagistas() });
+});
+app.patch('/api/hub/massagistas/:id/ativo', (req, res) => {
+  if (!s2sAuth(req, res)) return;
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ ok: false, erro: 'ID inválido' });
+  const m = buscarMassagistaById(id);
+  if (!m) return res.status(404).json({ ok: false, erro: 'Não encontrada' });
+  const ativo = req.body?.ativo ? 1 : 0;
+  atualizarMassagista(id, m.nome, ativo);
+  res.json({ ok: true });
+});
+
 app.use('/api', cadastrosRouter);
 
 app.get('/sso', (req, res) => {
@@ -324,31 +352,6 @@ app.get('/admin', (req, res) => {
     clearAdminCookie(res);
     res.redirect('/acesso-hub.html?next=%2Fadmin');
   }
-});
-
-// ── Hub S2S: massoterapeutas ──────────────────────────────────────────────────
-function s2sAuth(req, res) {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token || token !== process.env.SSO_SECRET) {
-    res.status(403).json({ ok: false, erro: 'Acesso negado' });
-    return false;
-  }
-  return true;
-}
-app.get('/api/hub/massagistas', (req, res) => {
-  if (!s2sAuth(req, res)) return;
-  res.json({ ok: true, items: listarMassagistas() });
-});
-app.patch('/api/hub/massagistas/:id/ativo', (req, res) => {
-  if (!s2sAuth(req, res)) return;
-  const id = parseInt(req.params.id, 10);
-  if (!id) return res.status(400).json({ ok: false, erro: 'ID inválido' });
-  const m = buscarMassagistaById(id);
-  if (!m) return res.status(404).json({ ok: false, erro: 'Não encontrada' });
-  const ativo = req.body?.ativo ? 1 : 0;
-  atualizarMassagista(id, m.nome, ativo);
-  res.json({ ok: true });
 });
 
 app.use((err, _req, res, _next) => {
