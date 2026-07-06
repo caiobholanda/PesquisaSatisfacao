@@ -118,5 +118,9 @@
   "already_answered": {
     "title": "Ce formulaire a déjà été envoyé.",
     "message": "Merci pour votre réponse ! En cas de question, veuillez contacter la réception du SPA."
+  },
+  "expired_link": {
+    "title": "Ce lien n'est plus disponible.",
+    "message": "Le lien du formulaire a expiré après l'heure du soin. En cas de question, veuillez contacter la réception du SPA."
   }
 }

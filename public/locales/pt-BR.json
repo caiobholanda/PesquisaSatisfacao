@@ -118,5 +118,9 @@
   "already_answered": {
     "title": "Esta anamnese já foi respondida.",
     "message": "Obrigado pela sua resposta! Em caso de dúvidas, fale com a recepção do SPA."
+  },
+  "expired_link": {
+    "title": "Este link não está mais disponível.",
+    "message": "O link de preenchimento da anamnese expirou após o horário do procedimento. Em caso de dúvidas, fale com a recepção do SPA."
   }
 }

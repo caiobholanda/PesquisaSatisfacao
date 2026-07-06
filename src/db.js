@@ -1784,7 +1784,20 @@ export function deletarAdmin(id) {
 // Para reservas individuais, sempre usar pessoa=1.
 export function gerarDocumentoToken(reservaId, pessoa = 1) {
   const token = randomBytes(24).toString('hex');
-  const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  // Expiry = horário de FIM da reserva (UTC-3/Fortaleza). Link inválido após o procedimento.
+  // Fallback para +48h caso a reserva não seja encontrada ou hora_fim esteja ausente.
+  let expiry;
+  try {
+    const r = getDb().prepare('SELECT data, hora_fim FROM reservas WHERE id=?').get(reservaId);
+    if (r?.data && r?.hora_fim) {
+      const hm = r.hora_fim.match(/^(\d{1,2}):(\d{2})/);
+      if (hm) {
+        const h = String(+hm[1]).padStart(2, '0');
+        expiry = new Date(`${r.data}T${h}:${hm[2]}:00-03:00`).toISOString();
+      }
+    }
+  } catch {}
+  if (!expiry) expiry = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const p = pessoa === 2 ? 2 : 1;
   if (p === 2) {
     getDb().prepare(
@@ -1802,8 +1815,6 @@ export function gerarDocumentoToken(reservaId, pessoa = 1) {
 // ou cliente2). Retorna o nome/email do hospede CERTO conforme o token
 // usado, e o campo 'pessoa' (1 ou 2) pra rastreabilidade.
 export function buscarDocumentoToken(token) {
-  // ⚠️ MODO TEMPORARIO: validacao de expiracao da anamnese desativada.
-  // Para restaurar, troque pelo bloco comentado abaixo.
   const row = getDb().prepare(`
     SELECT r.id AS reserva_id, r.cliente, r.email, r.telefone, r.tratamento AS servico,
            r.idioma_documento AS locale, r.cpf, r.quarto, r.cliente_id,
@@ -1816,26 +1827,15 @@ export function buscarDocumentoToken(token) {
     LEFT JOIN clientes c ON c.id = r.cliente_id
     WHERE r.documento_token = ? OR r.documento_token2 = ?
   `).get(token, token);
-  /* VERSAO ORIGINAL (com validacao de expiracao):
-  const row = getDb().prepare(`
-    SELECT r.id AS reserva_id, r.cliente, r.email, r.tratamento AS servico,
-           r.idioma_documento AS locale,
-           r.cliente2, r.email2,
-           r.documento_token, r.documento_token2,
-           r.documento_token_expiry, r.documento_token_expiry2
-    FROM reservas r
-    WHERE (
-      r.documento_token  = ? AND (r.documento_token_expiry  IS NULL OR r.documento_token_expiry  > datetime('now'))
-    ) OR (
-      r.documento_token2 = ? AND (r.documento_token_expiry2 IS NULL OR r.documento_token_expiry2 > datetime('now'))
-    )
-  `).get(token, token);
-  */
   if (!row) return null;
   const pessoa = (row.documento_token2 === token) ? 2 : 1;
+  // Verifica expiração: se a hora_fim da reserva passou, link é inválido.
+  const expiry = pessoa === 2 ? row.documento_token_expiry2 : row.documento_token_expiry;
+  if (expiry && new Date(expiry) < new Date()) {
+    return { expirado: true, locale: row.locale || 'pt-BR' };
+  }
   // ja_respondida: o slot da pessoa em reservas ja aponta para um spa_perfis.
-  // Esse e o gate de "link de uso unico" — checado tanto no GET /documento
-  // quanto na transacao do POST /perfil (UPDATE condicional WHERE _perfil_id IS NULL).
+  // Gate de uso único — checado tanto no GET /documento quanto na transação do POST /perfil.
   const _perfilIdSlot = pessoa === 2 ? row.documento_perfil_id2 : row.documento_perfil_id;
   const ja_respondida = _perfilIdSlot != null;
   return {

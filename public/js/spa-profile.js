@@ -394,9 +394,14 @@ async function handleSubmit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(collectData()),
     });
-    // 409 ja_respondida: corrida perdida ou repost. Mostra mesma tela do GET.
+    // 409 ja_respondida: corrida perdida ou repost.
     if (res.status === 409) {
       _mostrarJaRespondida();
+      return;
+    }
+    // 410 token expirado: horario do procedimento passou.
+    if (res.status === 410) {
+      _mostrarExpirado();
       return;
     }
     const json = await res.json();
@@ -415,6 +420,25 @@ async function handleSubmit(e) {
     if (genErr) { genErr.textContent = _locale.errors.server; genErr.style.display = ''; }
     if (btn) btn.disabled = false;
     if (txt) txt.textContent = _locale.buttons.submit;
+  }
+}
+
+// Esconde form/lang-bar e exibe a tela "link expirado" no idioma atual.
+function _mostrarExpirado() {
+  const formEl    = document.getElementById('spa-form');
+  const successEl = document.getElementById('spa-success');
+  const alreadyEl = document.getElementById('spa-already-answered');
+  const expiredEl = document.getElementById('spa-expired');
+  if (formEl)    formEl.style.display = 'none';
+  if (successEl) successEl.style.display = 'none';
+  if (alreadyEl) alreadyEl.style.display = 'none';
+  if (expiredEl) {
+    expiredEl.style.display = '';
+    if (_locale && _locale.expired_link) {
+      setText('expired-title', _locale.expired_link.title);
+      setText('expired-msg',   _locale.expired_link.message);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
@@ -700,6 +724,11 @@ function init() {
           if (d && d.ja_respondida) {
             const langJa = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
             Promise.resolve(loadLocale(langJa)).then(() => _mostrarJaRespondida());
+            return;
+          }
+          if (d && d.expirado) {
+            const langExp = (d.locale && !_langForcadoNaURL) ? d.locale : lang;
+            Promise.resolve(loadLocale(langExp)).then(() => _mostrarExpirado());
             return;
           }
           // BUG-A fix: token invalido/expirado nao pode TRAVAR a pagina

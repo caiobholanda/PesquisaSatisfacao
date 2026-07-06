@@ -118,5 +118,9 @@
   "already_answered": {
     "title": "This intake form has already been submitted.",
     "message": "Thank you for your response! If you have any questions, please contact the SPA reception."
+  },
+  "expired_link": {
+    "title": "This link is no longer available.",
+    "message": "The intake form link expired after the treatment time. If you have any questions, please contact the SPA reception."
   }
 }

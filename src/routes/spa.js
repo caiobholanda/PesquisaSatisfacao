@@ -227,8 +227,11 @@ router.get('/documento', (req, res) => {
   const token = req.query.t;
   if (!token) return res.status(400).json({ ok: false, error: 'Token ausente' });
   const row = buscarDocumentoToken(token);
-  if (!row) return res.status(404).json({ ok: false, error: 'Token inválido ou expirado' });
+  if (!row) return res.status(404).json({ ok: false, error: 'Token inválido' });
   const localeSeguro = LOCALES_VALIDOS.includes(row.locale) ? row.locale : 'pt-BR';
+  if (row.expirado) {
+    return res.status(410).json({ ok: false, expirado: true, locale: localeSeguro });
+  }
   // Link de uso unico: se ja foi respondido por essa pessoa, retorna flag
   // e o locale para o frontend mostrar mensagem amigavel no idioma certo.
   // NAO retorna dados do hospede (nao e' modo leitura).
@@ -368,6 +371,9 @@ router.post('/perfil', (req, res) => {
   const _tokenRow = buscarDocumentoToken(b.documento_token);
   if (!_tokenRow) {
     return res.status(404).json({ ok: false, error: 'token_invalido' });
+  }
+  if (_tokenRow.expirado) {
+    return res.status(410).json({ ok: false, error: 'token_expirado' });
   }
   // Curto-circuito amigavel: se ja respondida, retorna 409 ANTES de
   // processar payload pesado (assinatura base64, HMAC, etc).

@@ -118,5 +118,9 @@
   "already_answered": {
     "title": "Questa anamnesi è già stata inviata.",
     "message": "Grazie per la sua risposta! In caso di domande, contatti la reception della SPA."
+  },
+  "expired_link": {
+    "title": "Questo link non è più disponibile.",
+    "message": "Il link del modulo è scaduto dopo l'orario del trattamento. In caso di domande, contatti la reception della SPA."
   }
 }
