@@ -253,6 +253,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         tratamento2: tratamento2?.trim() || null,
         tipo_massagem_id2: tipo_massagem_id2 ? +tipo_massagem_id2 : null,
         massagista_id2: massagista_id2 ? +massagista_id2 : null,
+        idioma: _locale1 || null,
+        idioma2: _locale2 || null,
       }
     );
 

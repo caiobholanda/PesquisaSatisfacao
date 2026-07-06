@@ -191,6 +191,9 @@ export function initDb() {
   for (const col of ['documento_token2 TEXT', 'documento_token_expiry2 TEXT', 'documento_perfil_id2 INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
   }
+  // Migration: idioma escolhido no cadastro da sessão (pessoa 1 e 2)
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma2 TEXT`); } catch {}
   // Migration: suporte a passaporte como alternativa ao CPF
   try { db.exec(`ALTER TABLE clientes ADD COLUMN passaporte TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_passaporte ON clientes(passaporte) WHERE passaporte IS NOT NULL AND passaporte <> ''`); } catch {}
@@ -1338,6 +1341,7 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
     linha = null, tipo_massagem_id = null, massagista_id = null, criado_por = null,
     cliente2 = null, tipo_cliente2 = null, apto2 = null, email2 = null, telefone2 = null,
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
+    idioma = null, idioma2 = null,
   } = opts;
   const db = getDb();
 
@@ -1398,12 +1402,13 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
 
   return db.prepare(
     `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id, criado_por,
-       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim,
     linha, tipo_massagem_id, massagista_id, criado_por,
-    cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2
+    cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
+    idioma, idioma2
   ).lastInsertRowid;
 }
 

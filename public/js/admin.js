@@ -1079,31 +1079,10 @@ async function enviarPreMassagemReserva() {
   const estado = _estadoBtnFicha(_resDetAtual);
   if (estado !== 'ok') return;
   const r = _resDetAtual;
-  // Default pt-BR; tenta pré-preencher com locale_pref do cliente
-  _langSelected = 'pt-BR';
-  try {
-    const usarPessoa2 = _pessoaAnamneseAlvo === 2;
-    const cpfBusca = usarPessoa2 ? null : (r.cpf || null);
-    const passBusca = usarPessoa2 ? null : (r.passaporte || null);
-    let clienteLocale = null;
-    if (cpfBusca) {
-      const resp = await api('/api/clientes/buscar?cpf=' + cpfBusca.replace(/\D/g, ''));
-      if (resp) { const d = await resp.json(); if (d.ok && d.cliente?.locale_pref) clienteLocale = d.cliente.locale_pref; }
-    } else if (passBusca) {
-      const resp = await api('/api/clientes/buscar?passaporte=' + encodeURIComponent(passBusca));
-      if (resp) { const d = await resp.json(); if (d.ok && d.cliente?.locale_pref) clienteLocale = d.cliente.locale_pref; }
-    }
-    if (clienteLocale && LANGS_PRE.some(l => l.code === clienteLocale)) _langSelected = clienteLocale;
-  } catch {}
-  const grid = document.getElementById('lang-grid');
-  grid.innerHTML = LANGS_PRE.map(l => `
-    <div class="lang-card${l.code === _langSelected ? ' selected' : ''}" data-action="sel-lang" data-lang="${l.code}">
-      <span class="lang-card-flag">${l.flag}</span>
-      <span class="lang-card-name">${l.name}</span>
-      <span class="lang-card-code">${l.code}</span>
-    </div>
-  `).join('');
-  document.getElementById('lang-overlay').style.display = 'flex';
+  const usarPessoa2 = _pessoaAnamneseAlvo === 2;
+  const idiomaReserva = (usarPessoa2 ? r.idioma2 : r.idioma) || 'pt-BR';
+  _langSelected = LANGS_PRE.some(l => l.code === idiomaReserva) ? idiomaReserva : 'pt-BR';
+  await _executarEnvioAnamnese();
 }
 
 function _iniciarEnvioAnamnesePessoa(pessoa) {
@@ -1249,10 +1228,6 @@ function setupDelegation() {
     else if (action === 'enviar-pre-massagem'){ enviarPreMassagemReserva(); }
     else if (action === 'abrir-anamnese-casal'){ abrirAnamneseCasalPopup(); }
     else if (action === 'ver-anamnese-pessoa'){ abrirAnamneseReadonly(_resDetAtual?.id, +el.dataset.pessoa || 1); }
-    else if (action === 'sel-lang') {
-      _langSelected = el.dataset.lang;
-      document.querySelectorAll('.lang-card').forEach(c => c.classList.toggle('selected', c.dataset.lang === _langSelected));
-    }
   });
 }
 
@@ -3851,18 +3826,9 @@ document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 
 // Modal idioma pré-massagem
-const _closeLangOverlay = () => {
-  document.getElementById('lang-overlay').style.display = 'none';
-  // Reseta alvo pra evitar vazamento entre fluxos (casal cancelado → individual).
-  _pessoaAnamneseAlvo = 0;
-};
-document.getElementById('lang-x').addEventListener('click', _closeLangOverlay);
-document.getElementById('lang-cancelar').addEventListener('click', _closeLangOverlay);
-document.getElementById('lang-confirmar').addEventListener('click', async () => {
+async function _executarEnvioAnamnese() {
   const r = _resDetAtual;
   if (!r) return;
-  const btn = document.getElementById('lang-confirmar');
-  btn.disabled = true; btn.textContent = 'Gerando…';
   try {
     // Envia { pessoa: N } se o fluxo foi disparado pelo popup casal pra
     // uma pessoa especifica. Senao envia {} (legado: casal gera ambos).
@@ -3872,11 +3838,9 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     if (!res) return;
     const d = await res.json();
     if (!d.ok) {
-      // Janela de envio expirada: backend recusa com 409. Mostra texto
-      // amigavel exato e re-renderiza o detalhe para o botao ficar travado.
       if (d.error === 'tempo_expirado') {
         alert(d.message || 'Tempo para enviar anamnese expirado');
-        _closeLangOverlay();
+        _pessoaAnamneseAlvo = 0;
         return;
       }
       alert('Erro ao gerar ficha: ' + (d.error || ''));
@@ -3888,7 +3852,6 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
 
     // ⚠️ MODO TEMPORARIO: nao marca para permitir reenvio.
     // _fichasEnviadas.add(r.id);
-    _closeLangOverlay();
 
     // Atualiza estado local pra UI refletir sem refetch.
     // Backend setou expiry de 48h; copiamos pro cache.
@@ -3908,7 +3871,6 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
         _resDetAtual.documento_token_expiry = _futExp;
       }
     }
-    // Reset do alvo
     _pessoaAnamneseAlvo = 0;
 
     const btnFicha = document.getElementById('resdet-ficha');
@@ -3917,15 +3879,14 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
     }
 
     if (d.casal) {
-      // RESERVA CASAL: 2 links distintos, 1 por hospede. Cada um tem seu
-      // proprio token amarrado ao slot (cliente1 ou cliente2) — nao
-      // sobrescrevem a anamnese um do outro.
+      // RESERVA CASAL: idioma por pessoa vem do cadastro da sessão.
       const h1 = d.hospede1, h2 = d.hospede2;
-      const url1 = `${h1.url}&lang=${_langSelected}`;
-      const url2 = `${h2.url}&lang=${_langSelected}`;
+      const lang1 = (r.idioma  && LANGS_PRE.some(l => l.code === r.idioma))  ? r.idioma  : 'pt-BR';
+      const lang2 = (r.idioma2 && LANGS_PRE.some(l => l.code === r.idioma2)) ? r.idioma2 : lang1;
+      const url1 = `${h1.url}&lang=${lang1}`;
+      const url2 = `${h2.url}&lang=${lang2}`;
       const msg1 = baseMsg(h1.nome, url1);
       const msg2 = baseMsg(h2.nome, url2);
-      // Modal simples: 2 botoes WhatsApp + 2 copiar
       const ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
       ov.innerHTML = `
@@ -3983,8 +3944,13 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
       });
       document.body.appendChild(ov);
     } else {
-      // RESERVA INDIVIDUAL: 1 link
-      const url = `${d.baseUrl}?t=${d.token}&lang=${_langSelected}`;
+      // RESERVA INDIVIDUAL: idioma vem do cadastro da sessão.
+      const p = d.pessoa || 1;
+      const langInd = (() => {
+        const raw = p === 2 ? (r.idioma2 || r.idioma) : r.idioma;
+        return (raw && LANGS_PRE.some(l => l.code === raw)) ? raw : 'pt-BR';
+      })();
+      const url = `${d.baseUrl}?t=${d.token}&lang=${langInd}`;
       const raw = (r.telefone || '').replace(/\D/g, '');
       const phone = raw.startsWith('55') ? raw : '55' + raw;
       const msg = baseMsg(r.cliente, url);
@@ -3995,10 +3961,11 @@ document.getElementById('lang-confirmar').addEventListener('click', async () => 
         showToast(`Link copiado! ${url}`);
       }
     }
-  } finally {
-    btn.disabled = false; btn.textContent = 'Enviar via WhatsApp';
+  } catch (err) {
+    console.error('[_executarEnvioAnamnese]', err);
+    alert('Erro inesperado ao gerar ficha. Tente novamente.');
   }
-});
+}
 
 function calCloseModal(){
   _modalOpen = false;
