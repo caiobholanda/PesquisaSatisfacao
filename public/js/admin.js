@@ -1074,6 +1074,56 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
 // pessoa em reserva casal.
 let _pessoaAnamneseAlvo = 0;
 
+function _mostrarConfirmacaoAnamnese(onConfirm) {
+  const r = _resDetAtual;
+  if (!r) return;
+  let nomeExib;
+  if (_pessoaAnamneseAlvo === 1)      nomeExib = r.cliente;
+  else if (_pessoaAnamneseAlvo === 2) nomeExib = r.cliente2 || r.cliente;
+  else nomeExib = r.cliente2 ? `${r.cliente} & ${r.cliente2}` : r.cliente;
+  const langInfo = LANGS_PRE.find(l => l.code === _langSelected) || { flag: '🌐', name: _langSelected };
+
+  document.body.style.overflow = 'hidden';
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.65);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.25rem;box-sizing:border-box';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:2rem 2rem 1.75rem;box-shadow:0 24px 64px rgba(0,0,0,.35);position:relative;box-sizing:border-box">
+      <button data-act="close" style="position:absolute;top:1rem;right:1rem;background:none;border:1px solid var(--border-soft);cursor:pointer;color:var(--muted);font-size:.9rem;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✕</button>
+      <div style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.5rem">Confirmar envio</div>
+      <h3 style="margin:0 0 1.35rem 0;font-family:var(--font);font-size:1.25rem;color:var(--text);line-height:1.25">Enviar Anamnese</h3>
+      <div style="background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:.9rem 1.1rem;margin-bottom:1.1rem;display:grid;gap:.55rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+          <span style="font-size:.78rem;color:var(--muted);flex-shrink:0">Hóspede</span>
+          <span style="font-size:.875rem;color:var(--text);font-weight:500;text-align:right;word-break:break-word">${escHtml(nomeExib || '—')}</span>
+        </div>
+        <div style="height:1px;background:var(--border-soft)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+          <span style="font-size:.78rem;color:var(--muted);flex-shrink:0">Idioma</span>
+          <span style="font-size:.875rem;color:var(--text)">${langInfo.flag} ${escHtml(langInfo.name)}</span>
+        </div>
+      </div>
+      <p style="font-size:.8rem;color:var(--muted);margin:0 0 1.4rem 0;line-height:1.55">Um link exclusivo de anamnese será gerado. Você escolhe como enviar: WhatsApp, email ou copiando o link.</p>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <button class="btn btn-outline" data-act="cancel">Cancelar</button>
+        <button class="btn btn-gold" data-act="confirm">Gerar link</button>
+      </div>
+    </div>
+  `;
+  ov.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'confirm') {
+      ov.remove();
+      onConfirm(); // scroll continua travado — modal de resultado destravar
+    } else if (act === 'cancel' || act === 'close') {
+      document.body.style.overflow = '';
+      ov.remove();
+      _pessoaAnamneseAlvo = 0;
+    }
+    // backdrop click: nada
+  });
+  document.body.appendChild(ov);
+}
+
 async function enviarPreMassagemReserva() {
   if (!_resDetAtual) return;
   const estado = _estadoBtnFicha(_resDetAtual);
@@ -1082,7 +1132,7 @@ async function enviarPreMassagemReserva() {
   const usarPessoa2 = _pessoaAnamneseAlvo === 2;
   const idiomaReserva = (usarPessoa2 ? r.idioma2 : r.idioma) || 'pt-BR';
   _langSelected = LANGS_PRE.some(l => l.code === idiomaReserva) ? idiomaReserva : 'pt-BR';
-  await _executarEnvioAnamnese();
+  _mostrarConfirmacaoAnamnese(() => _executarEnvioAnamnese());
 }
 
 function _iniciarEnvioAnamnesePessoa(pessoa) {
@@ -3835,9 +3885,10 @@ async function _executarEnvioAnamnese() {
     const pessoaAlvo = (r.cliente2 && (_pessoaAnamneseAlvo === 1 || _pessoaAnamneseAlvo === 2)) ? _pessoaAnamneseAlvo : 0;
     const body = pessoaAlvo ? JSON.stringify({ pessoa: pessoaAlvo }) : '{}';
     const res = await api(`/api/reservas/${r.id}/gerar-ficha`, { method: 'POST', body });
-    if (!res) return;
+    if (!res) { document.body.style.overflow = ''; return; }
     const d = await res.json();
     if (!d.ok) {
+      document.body.style.overflow = '';
       if (d.error === 'tempo_expirado') {
         alert(d.message || 'Tempo para enviar anamnese expirado');
         _pessoaAnamneseAlvo = 0;
@@ -3888,11 +3939,17 @@ async function _executarEnvioAnamnese() {
       const msg1 = baseMsg(h1.nome, url1);
       const msg2 = baseMsg(h2.nome, url2);
       const ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.25rem;box-sizing:border-box';
       ov.innerHTML = `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-          <h3 style="margin:0 0 .8rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem">Reserva CASAL — 2 links</h3>
-          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">Cada hóspede tem seu próprio link de anamnese. Envie um para cada pessoa.</p>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:520px;width:100%;padding:1.75rem 2rem;box-shadow:0 24px 64px rgba(0,0,0,.4);box-sizing:border-box">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.2rem;gap:.75rem">
+            <div>
+              <div style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.3rem">Link gerado</div>
+              <h3 style="margin:0;font-size:1.2rem;color:var(--text);line-height:1.25">Reserva CASAL — 2 links</h3>
+            </div>
+            <button data-act="close" style="background:none;border:1px solid var(--border-soft);cursor:pointer;color:var(--muted);font-size:.9rem;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">✕</button>
+          </div>
+          <p style="color:var(--muted);font-size:.82rem;margin:0 0 1.1rem 0;line-height:1.55">Cada hóspede tem seu próprio link. Envie separadamente por WhatsApp, e-mail ou copie o link.</p>
           ${[
             { idx: 1, h: h1, url: url1, msg: msg1, tel: h1.telefone },
             { idx: 2, h: h2, url: url2, msg: msg2, tel: h2.telefone },
@@ -3900,9 +3957,9 @@ async function _executarEnvioAnamnese() {
             const tRaw = (tel || '').replace(/\\D/g, '');
             const tPhone = tRaw.startsWith('55') ? tRaw : '55' + tRaw;
             return `
-              <div style="border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.7rem">
-                <div style="font-weight:600;margin-bottom:.4rem">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
-                <div style="font-size:.78rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.4rem .6rem;border-radius:4px;margin-bottom:.55rem">${escHtml(url)}</div>
+              <div style="border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;margin-bottom:.75rem">
+                <div style="font-weight:600;font-size:.9rem;margin-bottom:.5rem;color:var(--text)">Hóspede ${idx}: ${escHtml(h.nome || '(sem nome)')}</div>
+                <div style="font-size:.73rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.5rem .7rem;border-radius:7px;margin-bottom:.6rem;line-height:1.5;border:1px solid var(--border-soft)">${escHtml(url)}</div>
                 <div style="display:flex;gap:.4rem;flex-wrap:wrap">
                   ${tRaw ? `<button class="btn btn-gold btn-sm" data-zap="${tPhone}" data-msg="${escHtml(msg)}">📱 WhatsApp</button>` : ''}
                   <button class="btn btn-outline btn-sm" data-copy="${escHtml(url)}">📋 Copiar link</button>
@@ -3910,18 +3967,18 @@ async function _executarEnvioAnamnese() {
               </div>
             `;
           }).join('')}
-          <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
+          <div style="display:flex;justify-content:flex-end;margin-top:.9rem">
             <button class="btn btn-outline" data-act="close">Fechar</button>
           </div>
         </div>
       `;
-      const _confirmarFechar = () => {
+      const _confirmarFecharCasal = () => {
         const cf = document.createElement('div');
-        cf.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:10000;display:grid;place-items:center;padding:1rem;margin:0;box-sizing:border-box';
+        cf.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:1.25rem;box-sizing:border-box';
         cf.innerHTML = `
-          <div style="background:var(--surface);border:1px solid var(--gold);border-radius:10px;max-width:420px;width:calc(100% - 2rem);padding:1.5rem 1.7rem;box-shadow:0 14px 44px rgba(0,0,0,.5);margin:auto;box-sizing:border-box">
-            <h4 style="margin:0 0 .6rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.25rem;color:var(--text);text-align:center">Tem certeza que deseja fechar?</h4>
-            <p style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 1.2rem 0;text-align:center">Os links de anamnese desta reserva não poderão ser reabertos depois. Recomendamos enviar os dois antes de sair.</p>
+          <div style="background:var(--surface);border:1px solid var(--gold);border-radius:14px;max-width:400px;width:100%;padding:1.75rem 2rem;box-shadow:0 24px 64px rgba(0,0,0,.5);box-sizing:border-box">
+            <h4 style="margin:0 0 .6rem 0;font-family:var(--font);font-size:1.15rem;color:var(--text);text-align:center">Fechar sem enviar os dois?</h4>
+            <p style="color:var(--muted);font-size:.82rem;line-height:1.55;margin:0 0 1.3rem 0;text-align:center">Os links já foram gerados. Se fechar agora sem enviar para os dois hóspedes, você pode perder o acesso rápido a eles.</p>
             <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
               <button class="btn btn-outline" data-cf="cancel">Continuar enviando</button>
               <button class="btn btn-danger" data-cf="ok">Fechar mesmo assim</button>
@@ -3929,39 +3986,69 @@ async function _executarEnvioAnamnese() {
           </div>
         `;
         cf.addEventListener('click', e => {
-          if (e.target.dataset.cf === 'cancel') cf.remove();
-          else if (e.target.dataset.cf === 'ok') { cf.remove(); ov.remove(); }
+          const val = e.target.closest('[data-cf]')?.dataset.cf;
+          if (val === 'cancel') cf.remove();
+          else if (val === 'ok') { document.body.style.overflow = ''; cf.remove(); ov.remove(); }
         });
         document.body.appendChild(cf);
       };
       ov.addEventListener('click', e => {
-        if (e.target.dataset.act === 'close') _confirmarFechar();
-        else if (e.target.dataset.zap) {
-          window.open(`https://wa.me/${e.target.dataset.zap}?text=${encodeURIComponent(e.target.dataset.msg)}`, '_blank');
-        } else if (e.target.dataset.copy) {
-          try { navigator.clipboard.writeText(e.target.dataset.copy); showToast('Link copiado!'); } catch {}
-        }
+        const act = e.target.closest('[data-act]')?.dataset.act;
+        const zapEl = e.target.closest('[data-zap]');
+        const copyEl = e.target.closest('[data-copy]');
+        if (act === 'close') _confirmarFecharCasal();
+        else if (zapEl) window.open(`https://wa.me/${zapEl.dataset.zap}?text=${encodeURIComponent(zapEl.dataset.msg)}`, '_blank');
+        else if (copyEl) { try { navigator.clipboard.writeText(copyEl.dataset.copy); showToast('Link copiado!'); } catch {} }
       });
       document.body.appendChild(ov);
     } else {
-      // RESERVA INDIVIDUAL: idioma vem do cadastro da sessão.
+      // RESERVA INDIVIDUAL: modal com WhatsApp + Copiar link.
       const p = d.pessoa || 1;
-      const langInd = (() => {
+      const nomeHosp = p === 2 ? (r.cliente2 || r.cliente) : r.cliente;
+      const telHosp  = p === 2 ? (r.telefone2 || r.telefone) : r.telefone;
+      const langInd  = (() => {
         const raw = p === 2 ? (r.idioma2 || r.idioma) : r.idioma;
         return (raw && LANGS_PRE.some(l => l.code === raw)) ? raw : 'pt-BR';
       })();
-      const url = `${d.baseUrl}?t=${d.token}&lang=${langInd}`;
-      const raw = (r.telefone || '').replace(/\D/g, '');
-      const phone = raw.startsWith('55') ? raw : '55' + raw;
-      const msg = baseMsg(r.cliente, url);
-      if (raw) {
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-      } else {
-        try { navigator.clipboard.writeText(url); } catch {}
-        showToast(`Link copiado! ${url}`);
-      }
+      const url     = `${d.baseUrl}?t=${d.token}&lang=${langInd}`;
+      const rawTel  = (telHosp || '').replace(/\D/g, '');
+      const phone   = rawTel.startsWith('55') ? rawTel : '55' + rawTel;
+      const msg     = baseMsg(nomeHosp, url);
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.65);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.25rem;box-sizing:border-box';
+      ov.innerHTML = `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:460px;width:100%;padding:1.75rem 2rem;box-shadow:0 24px 64px rgba(0,0,0,.38);box-sizing:border-box">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:.75rem">
+            <div>
+              <div style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.3rem">Link gerado</div>
+              <h3 style="margin:0;font-size:1.2rem;color:var(--text);line-height:1.25">${escHtml(nomeHosp || 'Hóspede')}</h3>
+            </div>
+            <button data-act="close" style="background:none;border:1px solid var(--border-soft);cursor:pointer;color:var(--muted);font-size:.9rem;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">✕</button>
+          </div>
+          <div style="font-size:.73rem;color:var(--muted);word-break:break-all;background:var(--bg);padding:.6rem .8rem;border-radius:8px;margin-bottom:1.2rem;line-height:1.5;border:1px solid var(--border-soft)">${escHtml(url)}</div>
+          <p style="font-size:.8rem;color:var(--muted);margin:0 0 1.1rem 0;line-height:1.55">Escolha como enviar o link ao hóspede:</p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem">
+            ${rawTel ? `<button class="btn btn-gold" data-zap="${escHtml(phone)}" data-msg="${escHtml(msg)}">📱 WhatsApp</button>` : ''}
+            <button class="btn btn-outline" data-copy="${escHtml(url)}">📋 Copiar link</button>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-outline btn-sm" data-act="close">Fechar</button>
+          </div>
+        </div>
+      `;
+      ov.addEventListener('click', e => {
+        const act    = e.target.closest('[data-act]')?.dataset.act;
+        const zapEl  = e.target.closest('[data-zap]');
+        const copyEl = e.target.closest('[data-copy]');
+        if (act === 'close') { document.body.style.overflow = ''; ov.remove(); }
+        else if (zapEl)  window.open(`https://wa.me/${zapEl.dataset.zap}?text=${encodeURIComponent(zapEl.dataset.msg)}`, '_blank');
+        else if (copyEl) { try { navigator.clipboard.writeText(copyEl.dataset.copy); showToast('Link copiado!'); } catch {} }
+        // backdrop click: nada
+      });
+      document.body.appendChild(ov);
     }
   } catch (err) {
+    document.body.style.overflow = '';
     console.error('[_executarEnvioAnamnese]', err);
     alert('Erro inesperado ao gerar ficha. Tente novamente.');
   }
