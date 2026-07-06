@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -208,17 +208,30 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
 
     const _locale1 = idioma?.trim() || null;
     const _nac1 = nacionalidade?.trim() || null;
+    const _atualizarLocale = (id, locale, nac) => {
+      const upd = {};
+      if (locale) upd.locale_pref = locale;
+      if (nac)    upd.nacionalidade = nac;
+      if (Object.keys(upd).length) try { atualizarCliente(id, upd); } catch {}
+    };
+
     let clienteIdReserva = null;
     if (tipoDoc1 === 'cpf') {
       const existing = buscarClientePorCpf(docNorm1);
-      clienteIdReserva = existing
-        ? existing.id
-        : inserirCliente({ cpf: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
+      if (existing) {
+        clienteIdReserva = existing.id;
+        _atualizarLocale(existing.id, _locale1, _nac1);
+      } else {
+        clienteIdReserva = inserirCliente({ cpf: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
+      }
     } else {
       const existing = buscarClientePorPassaporte(docNorm1);
-      clienteIdReserva = existing
-        ? existing.id
-        : inserirCliente({ passaporte: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
+      if (existing) {
+        clienteIdReserva = existing.id;
+        _atualizarLocale(existing.id, _locale1, _nac1);
+      } else {
+        clienteIdReserva = inserirCliente({ passaporte: docNorm1, nome: cliente.trim(), email: email.trim() || null, telefone: telefone?.trim() || null, locale_pref: _locale1, nacionalidade: _nac1 });
+      }
     }
 
     // Pessoa 2: upserta cliente também (cadastro central).
@@ -227,11 +240,13 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       const _nac2 = nacionalidade2?.trim() || null;
       try {
         if (tipoDoc2 === 'cpf' && validarCpfMod11(docNorm2)) {
-          if (!buscarClientePorCpf(docNorm2))
-            inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
+          const ex2 = buscarClientePorCpf(docNorm2);
+          if (ex2) { _atualizarLocale(ex2.id, _locale2, _nac2); }
+          else inserirCliente({ cpf: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
         } else if (tipoDoc2 === 'passaporte' && validarPassaporte(docNorm2)) {
-          if (!buscarClientePorPassaporte(docNorm2))
-            inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
+          const ex2 = buscarClientePorPassaporte(docNorm2);
+          if (ex2) { _atualizarLocale(ex2.id, _locale2, _nac2); }
+          else inserirCliente({ passaporte: docNorm2, nome: cliente2.trim(), email: email2?.trim() || null, telefone: telefone2?.trim() || null, locale_pref: _locale2, nacionalidade: _nac2 });
         }
       } catch {}
     }
