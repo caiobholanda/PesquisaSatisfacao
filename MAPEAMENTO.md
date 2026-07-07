@@ -14,7 +14,7 @@
 PesquisaSatisfacaoSPA/
 ├── src/
 │   ├── server.js           # Entrada + helmet/cors/middlewares
-│   ├── db.js               # ~2600 linhas — 24 tabelas, 70+ funções
+│   ├── db.js               # ~2600 linhas — 25 tabelas, 73+ funções
 │   ├── qualidade.js        # 318 linhas — engine de pesquisas/metas
 │   ├── routes/
 │   │   ├── reservas.js     # CRUD reservas + geração de ficha
@@ -44,6 +44,7 @@ PesquisaSatisfacaoSPA/
 │   ├── terapeuta.html      # App mobile PIN
 │   ├── gestao-qualidade.html
 │   ├── acesso-hub.html
+│   ├── escala-spa.html     # Escala mensal de turnos (standalone, auth JWT)
 │   ├── js/admin.js         # ~6100+ linhas — toda lógica admin
 │   └── spa-profile.js      # Lógica do formulário de perfil
 ├── scripts/                # 14 scripts (seção 12)
