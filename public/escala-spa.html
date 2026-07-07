@@ -44,10 +44,12 @@
   /* siglas */
   --sig-m-bg:  rgba(21,112,90,.13);   --sig-m-fg:  #15705A;  --sig-m-bd:  rgba(21,112,90,.28);
   --sig-t-bg:  rgba(27,94,168,.11);   --sig-t-fg:  #1B5EA8;  --sig-t-bd:  rgba(27,94,168,.24);
+  --sig-n-bg:  rgba(55,30,110,.10);   --sig-n-fg:  #4830A8;  --sig-n-bd:  rgba(55,30,110,.24);
   --sig-fe-bg: rgba(156,88,67,.12);   --sig-fe-fg: #9C5843;  --sig-fe-bd: rgba(156,88,67,.28);
   --sig-at-bg: rgba(184,84,80,.11);   --sig-at-fg: #B85450;  --sig-at-bd: rgba(184,84,80,.28);
   --sig-cf-bg: rgba(100,60,160,.09);  --sig-cf-fg: #6A3CA0;  --sig-cf-bd: rgba(100,60,160,.22);
-  --sig-f-bg:  transparent;           --sig-f-fg:  rgba(96,87,56,.30); --sig-f-bd: rgba(96,87,56,.18);
+  --sig-aa-bg: rgba(170,110,20,.10);  --sig-aa-fg: #966010;  --sig-aa-bd: rgba(170,110,20,.26);
+  --sig-f-bg:  rgba(160,20,70,.10);   --sig-f-fg:  #A01040;  --sig-f-bd:  rgba(160,20,70,.28);
   /* misc */
   --wk-bg:    rgba(96,87,56,.07);
   --fer-bg:   rgba(156,88,67,.08);
@@ -76,10 +78,12 @@
   /* siglas */
   --sig-m-bg:  #1a3a2c;  --sig-m-fg:  #4dbe8a;  --sig-m-bd:  #2e6048;
   --sig-t-bg:  #162a3d;  --sig-t-fg:  #5292d0;  --sig-t-bd:  #2a4a72;
+  --sig-n-bg:  #1a1238;  --sig-n-fg:  #8870e0;  --sig-n-bd:  #2e2060;
   --sig-fe-bg: #2e1f08;  --sig-fe-fg: #d4924a;  --sig-fe-bd: #5a3a12;
   --sig-at-bg: #2e1010;  --sig-at-fg: #d06060;  --sig-at-bd: #5a2020;
   --sig-cf-bg: #1e1030;  --sig-cf-fg: #9a7ad8;  --sig-cf-bd: #3a2060;
-  --sig-f-bg:  transparent; --sig-f-fg: rgba(255,255,255,.18); --sig-f-bd: rgba(255,255,255,.10);
+  --sig-aa-bg: #281a00;  --sig-aa-fg: #d09030;  --sig-aa-bd: #4a3010;
+  --sig-f-bg:  #2a0815;  --sig-f-fg:  #e06090;  --sig-f-bd:  #5a1030;
   /* misc */
   --wk-bg:    rgba(0,0,0,.25);
   --fer-bg:   rgba(156,88,67,.09);
@@ -273,14 +277,16 @@ body {
 
 .sig-M  { background: var(--sig-m-bg);  color: var(--sig-m-fg);  border: 1.5px solid var(--sig-m-bd); }
 .sig-T  { background: var(--sig-t-bg);  color: var(--sig-t-fg);  border: 1.5px solid var(--sig-t-bd); }
+.sig-N  { background: var(--sig-n-bg);  color: var(--sig-n-fg);  border: 1.5px solid var(--sig-n-bd); }
 .sig-FE { background: var(--sig-fe-bg); color: var(--sig-fe-fg); border: 1.5px solid var(--sig-fe-bd); font-size: 11px; }
 .sig-AT { background: var(--sig-at-bg); color: var(--sig-at-fg); border: 1.5px solid var(--sig-at-bd); font-size: 13px; }
 .sig-LS { background: var(--sig-at-bg); color: var(--sig-at-fg); border: 1.5px solid var(--sig-at-bd); font-size: 13px; }
 .sig-LC { background: var(--sig-at-bg); color: var(--sig-at-fg); border: 1.5px solid var(--sig-at-bd); font-size: 13px; }
 .sig-CF { background: var(--sig-cf-bg); color: var(--sig-cf-fg); border: 1.5px solid var(--sig-cf-bd); font-size: 13px; }
 .sig-CH { background: var(--sig-cf-bg); color: var(--sig-cf-fg); border: 1.5px solid var(--sig-cf-bd); font-size: 13px; }
+.sig-AA { background: var(--sig-aa-bg); color: var(--sig-aa-fg); border: 1.5px solid var(--sig-aa-bd); font-size: 13px; }
 .sig-F  { background: var(--sig-f-bg);  color: var(--sig-f-fg);  border: 1.5px solid var(--sig-f-bd);  font-size: 13px; }
-.sig-X  { background: var(--sig-f-bg);  color: var(--sig-f-fg);  border: 1.5px solid var(--sig-f-bd);  font-size: 13px; }
+.sig-X  { background: transparent; color: var(--dot-empty); border: 1.5px solid var(--border); font-size: 13px; }
 
 .cell-empty { width: 6px; height: 6px; border-radius: 50%; background: var(--dot-empty); pointer-events: none; }
 
@@ -328,7 +334,8 @@ body {
 .cp-opt.active { background: var(--border-soft); color: var(--text); }
 .cp-opt .sigla { width: 28px; height: 28px; font-size: 11px; border-radius: 4px; flex-shrink: 0; }
 .cp-opt .sigla.sig-FE, .cp-opt .sigla.sig-CF, .cp-opt .sigla.sig-CH,
-.cp-opt .sigla.sig-AT, .cp-opt .sigla.sig-LS, .cp-opt .sigla.sig-LC { font-size: 8px; }
+.cp-opt .sigla.sig-AT, .cp-opt .sigla.sig-LS, .cp-opt .sigla.sig-LC,
+.cp-opt .sigla.sig-AA { font-size: 8px; }
 .cp-sep { height: 1px; background: var(--border-soft); margin: 4px 0; }
 .cp-clear { color: var(--muted); }
 .cp-clear:hover { color: var(--danger); }
@@ -385,10 +392,10 @@ body {
   <div class="legend">
     <div class="leg-item"><div class="leg-chip sig-M">M</div>Manhã</div>
     <div class="leg-item"><div class="leg-chip sig-T">T</div>Tarde</div>
+    <div class="leg-item"><div class="leg-chip sig-N">N</div>Noturno</div>
     <div class="leg-item"><div class="leg-chip sig-FE" style="font-size:8px">FÉR</div>Férias</div>
     <div class="leg-item"><div class="leg-chip sig-AT" style="font-size:9px">AT</div>Atestado</div>
-    <div class="leg-item"><div class="leg-chip sig-CF" style="font-size:9px">CF</div>Comp.Feriado</div>
-    <div class="leg-item"><div class="leg-chip sig-F">F</div>Folga</div>
+    <div class="leg-item"><div class="leg-chip sig-F" style="font-size:9px">F</div>Falta</div>
   </div>
 </div>
 
@@ -403,14 +410,16 @@ body {
 <div id="cell-picker">
   <button class="cp-opt" data-turno="M"><span class="sigla sig-M">M</span><span>Manhã</span></button>
   <button class="cp-opt" data-turno="T"><span class="sigla sig-T">T</span><span>Tarde</span></button>
-  <button class="cp-opt" data-turno="F"><span class="sigla sig-F">F</span><span>Folga</span></button>
+  <button class="cp-opt" data-turno="N"><span class="sigla sig-N">N</span><span>Noturno (17:30)</span></button>
+  <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga</span></button>
   <button class="cp-opt" data-turno="FE"><span class="sigla sig-FE">FÉR</span><span>Férias</span></button>
   <button class="cp-opt" data-turno="AT"><span class="sigla sig-AT">AT</span><span>Atestado</span></button>
+  <button class="cp-opt" data-turno="AA"><span class="sigla sig-AA">AA</span><span>Afastamento</span></button>
   <button class="cp-opt" data-turno="CF"><span class="sigla sig-CF">CF</span><span>Comp. Feriado</span></button>
   <button class="cp-opt" data-turno="CH"><span class="sigla sig-CH">CH</span><span>Comp. Hora</span></button>
   <button class="cp-opt" data-turno="LS"><span class="sigla sig-LS">LS</span><span>Lic. Sindical</span></button>
   <button class="cp-opt" data-turno="LC"><span class="sigla sig-LC">LC</span><span>Lic. Casamento</span></button>
-  <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga prog.</span></button>
+  <button class="cp-opt" data-turno="F"><span class="sigla sig-F">F</span><span>Falta</span></button>
   <div class="cp-sep"></div>
   <button class="cp-opt cp-clear" data-turno=""><span class="cp-clear-icon">✕</span><span>Limpar célula</span></button>
 </div>
@@ -456,14 +465,14 @@ const FERIADOS = (() => {
   return { ...F, ...moveis };
 })();
 
-const SIG_LABEL = { M:'M', T:'T', FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC' };
+const SIG_LABEL = { M:'M', T:'T', N:'N', FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC', AA:'AA' };
 const SIG_TIP   = {
-  M:'Manhã · 08:00–17:00', T:'Tarde · 13:00–22:00', FE:'Férias programadas',
-  F:'Folga', X:'Folga programada', AT:'Atestado Médico',
-  CF:'Compensação de Feriado', CH:'Compensação de Hora',
-  LS:'Licença Sindical', LC:'Licença Casamento',
+  M:'Manhã · entrada 09h–10h', T:'Tarde · entrada 12h–14h', N:'Noturno · entrada 17:30',
+  FE:'Férias programadas', F:'Falta (ausência injustificada)', X:'Folga',
+  AT:'Atestado Médico', CF:'Compensação de Feriado', CH:'Compensação de Hora',
+  LS:'Licença Sindical', LC:'Licença Casamento', AA:'Afastamento Abonado',
 };
-const SIG_CLS = { M:'sig-M', T:'sig-T', FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC' };
+const SIG_CLS = { M:'sig-M', T:'sig-T', N:'sig-N', FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC', AA:'sig-AA' };
 
 // ─── ESTADO ───────────────────────────────────────────────────────────────────
 function initPeriodo() {
