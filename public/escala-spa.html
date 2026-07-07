@@ -678,38 +678,20 @@ picker.querySelectorAll('[data-turno]').forEach(btn => {
   btn.addEventListener('click', async e => {
     e.stopPropagation();
     if (pickerMId === null) return;
+    const mId   = pickerMId;
+    const date  = pickerDate;
     const turno = btn.dataset.turno || null;
-    const key   = `${pickerMId}-${pickerDate}`;
-    const prev  = turnos[key] || null;
+    const key   = `${mId}-${date}`;
 
-    // Optimistic update
     if (turno) turnos[key] = turno;
     else delete turnos[key];
 
-    // Update just the clicked cell
-    const cellEl = document.querySelector(`[data-mid="${pickerMId}"][data-date="${pickerDate}"]`);
-    if (cellEl) {
-      cellEl.innerHTML = siglaHTML(turno);
-      cellEl.setAttribute('data-tip', turno ? (SIG_TIP[turno] || turno) : '—');
-    }
-    // Update totals row
-    _renderTotals();
-
     hidePicker();
-    await saveTurno(pickerMId, pickerDate, turno);
+    render();
+
+    await saveTurno(mId, date, turno);
   });
 });
-
-function _renderTotals() {
-  const dias = getDias(periodo.ano, periodo.mes);
-  const totCells = document.querySelectorAll('.tot-cel');
-  dias.forEach((d, i) => {
-    if (!totCells[i]) return;
-    let n = 0;
-    for (const p of profs) if (['M', 'T'].includes(turnos[`${p.id}-${d.i}`])) n++;
-    totCells[i].innerHTML = `<span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span>`;
-  });
-}
 
 // Event delegation on grid
 document.getElementById('grid-outer').addEventListener('click', e => {
