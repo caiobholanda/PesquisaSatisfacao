@@ -247,7 +247,10 @@ router.delete('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
 });
 
 // ── Escala mensal (turnos) ──
-const TURNOS_VALIDOS = new Set(['M','T','N','F','FE','AT','CF','CH','LS','LC','X','AA']);
+const TURNOS_VALIDOS = new Set([
+  '09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30',
+  'X','FE','AT','AA','CF','CH','LS','LC','F',
+]);
 
 router.get('/escala-spa', (req, res) => {
   const ano = parseInt(req.query.ano);

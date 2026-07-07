@@ -322,8 +322,24 @@ body {
   position: fixed; z-index: 500;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px; display: none; flex-direction: column; gap: 2px;
-  box-shadow: 0 8px 24px var(--picker-shadow); min-width: 140px;
+  box-shadow: 0 8px 24px var(--picker-shadow); min-width: 188px;
 }
+.cp-section-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .10em; color: var(--muted);
+  padding: 4px 8px 2px; font-family: var(--mono); pointer-events: none;
+}
+.cp-times {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 2px 4px 4px;
+}
+.cp-time {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; line-height: 1;
+  border: 1.5px solid var(--border); border-radius: 5px;
+  padding: 7px 2px; cursor: pointer; background: var(--surface2);
+  color: var(--muted); text-align: center; transition: background .1s, color .1s, border-color .1s;
+}
+.cp-time.tm:hover, .cp-time.tm.active { background: var(--sig-m-bg); color: var(--sig-m-fg); border-color: var(--sig-m-bd); }
+.cp-time.tt:hover, .cp-time.tt.active { background: var(--sig-t-bg); color: var(--sig-t-fg); border-color: var(--sig-t-bd); }
+.cp-time.tn:hover, .cp-time.tn.active { background: var(--sig-n-bg); color: var(--sig-n-fg); border-color: var(--sig-n-bd); }
 .cp-opt {
   display: flex; align-items: center; gap: 10px; padding: 6px 10px;
   background: transparent; border: none; cursor: pointer; border-radius: 5px;
@@ -408,9 +424,21 @@ body {
 
 <!-- CELL PICKER -->
 <div id="cell-picker">
-  <button class="cp-opt" data-turno="M"><span class="sigla sig-M">M</span><span>Manhã</span></button>
-  <button class="cp-opt" data-turno="T"><span class="sigla sig-T">T</span><span>Tarde</span></button>
-  <button class="cp-opt" data-turno="N"><span class="sigla sig-N">N</span><span>Noturno (17:30)</span></button>
+  <div class="cp-section-label">Horário de entrada</div>
+  <div class="cp-times">
+    <button class="cp-time tm" data-turno="09:00">09h</button>
+    <button class="cp-time tm" data-turno="10:00">10h</button>
+    <button class="cp-time tt" data-turno="11:00">11h</button>
+    <button class="cp-time tt" data-turno="12:00">12h</button>
+    <button class="cp-time tt" data-turno="13:00">13h</button>
+    <button class="cp-time tt" data-turno="14:00">14h</button>
+    <button class="cp-time tt" data-turno="15:00">15h</button>
+    <button class="cp-time tt" data-turno="16:00">16h</button>
+    <button class="cp-time tn" data-turno="17:00">17h</button>
+    <button class="cp-time tn" data-turno="17:30">17:30</button>
+  </div>
+  <div class="cp-sep"></div>
+  <div class="cp-section-label">Status especial</div>
   <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga</span></button>
   <button class="cp-opt" data-turno="FE"><span class="sigla sig-FE">FÉR</span><span>Férias</span></button>
   <button class="cp-opt" data-turno="AT"><span class="sigla sig-AT">AT</span><span>Atestado</span></button>
@@ -465,14 +493,27 @@ const FERIADOS = (() => {
   return { ...F, ...moveis };
 })();
 
-const SIG_LABEL = { M:'M', T:'T', N:'N', FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC', AA:'AA' };
+// Horários de entrada: chave = valor salvo no banco
+const TIMES_CFG = {
+  '09:00': { cls: 'sig-M', lbl: '09h' },
+  '10:00': { cls: 'sig-M', lbl: '10h' },
+  '11:00': { cls: 'sig-T', lbl: '11h' },
+  '12:00': { cls: 'sig-T', lbl: '12h' },
+  '13:00': { cls: 'sig-T', lbl: '13h' },
+  '14:00': { cls: 'sig-T', lbl: '14h' },
+  '15:00': { cls: 'sig-T', lbl: '15h' },
+  '16:00': { cls: 'sig-T', lbl: '16h' },
+  '17:00': { cls: 'sig-N', lbl: '17h' },
+  '17:30': { cls: 'sig-N', lbl: '17:30' },
+};
+// Status especiais
+const SIG_LABEL = { FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC', AA:'AA' };
 const SIG_TIP   = {
-  M:'Manhã · entrada 09h–10h', T:'Tarde · entrada 12h–14h', N:'Noturno · entrada 17:30',
   FE:'Férias programadas', F:'Falta (ausência injustificada)', X:'Folga',
   AT:'Atestado Médico', CF:'Compensação de Feriado', CH:'Compensação de Hora',
   LS:'Licença Sindical', LC:'Licença Casamento', AA:'Afastamento Abonado',
 };
-const SIG_CLS = { M:'sig-M', T:'sig-T', N:'sig-N', FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC', AA:'sig-AA' };
+const SIG_CLS = { FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC', AA:'sig-AA' };
 
 // ─── ESTADO ───────────────────────────────────────────────────────────────────
 function initPeriodo() {
@@ -504,6 +545,11 @@ function getDias(ano, mes) {
 
 function siglaHTML(tipo) {
   if (!tipo) return '<div class="cell-empty"></div>';
+  if (TIMES_CFG[tipo]) {
+    const { cls, lbl } = TIMES_CFG[tipo];
+    const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
+    return `<div class="sigla ${cls}"${fs}>${lbl}</div>`;
+  }
   const cls = SIG_CLS[tipo] || 'sig-X';
   const lbl = SIG_LABEL[tipo] || tipo;
   return `<div class="sigla ${cls}">${lbl}</div>`;
@@ -630,7 +676,9 @@ function render() {
         const isWk  = w === 0 || w === 6;
         const isFer = !!FERIADOS[d.i];
         const tipo  = turnos[`${prof.id}-${d.i}`] || null;
-        const tip   = tipo ? (SIG_TIP[tipo] || tipo) : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
+        const tip   = tipo
+          ? (TIMES_CFG[tipo] ? `Entrada ${tipo}` : (SIG_TIP[tipo] || tipo))
+          : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
         const cls   = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : ''].filter(Boolean).join(' ');
         html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo)}</div>`;
       }
@@ -643,7 +691,7 @@ function render() {
   html += '<div class="tot-prof"><span class="tot-label">Trabalhando / dia</span></div>';
   for (const d of dias) {
     let n = 0;
-    for (const p of profs) if (['M', 'T'].includes(turnos[`${p.id}-${d.i}`])) n++;
+    for (const p of profs) if (TIMES_CFG[turnos[`${p.id}-${d.i}`]]) n++;
     html += `<div class="tot-cel"><span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span></div>`;
   }
   html += '</div>';
@@ -668,7 +716,7 @@ function showPicker(cellEl, mId, date) {
   });
   picker.style.display = 'flex';
   const cr = cellEl.getBoundingClientRect();
-  const pw = 150, ph = picker.offsetHeight || 340;
+  const pw = picker.offsetWidth || 196, ph = picker.offsetHeight || 380;
   let top  = cr.bottom + 6;
   let left = cr.left + cr.width / 2 - pw / 2;
   if (top + ph > window.innerHeight - 8) top = cr.top - ph - 6;
