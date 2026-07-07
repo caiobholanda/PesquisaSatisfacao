@@ -5,6 +5,7 @@ import {
   listarMassagistas, listarMassagistasComStats,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
+  listarTurnosPeriodo, upsertTurno, deletarTurno,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -242,6 +243,35 @@ router.put('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
 router.delete('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
   const changes = deletarTipoMassagem(parseInt(req.params.id));
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  res.json({ ok: true });
+});
+
+// ── Escala mensal (turnos) ──
+const TURNOS_VALIDOS = new Set(['M','T','F','FE','AT','CF','CH','LS','LC','X']);
+
+router.get('/escala-spa', (req, res) => {
+  const ano = parseInt(req.query.ano);
+  const mes = parseInt(req.query.mes);
+  if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11) {
+    return res.status(400).json({ ok: false, error: 'ano e mes (0-11) obrigatórios' });
+  }
+  const profs = listarMassagistas().filter(m => m.ativo).map(({ pin_hash, disponibilidade, excecoes, ...rest }) => rest);
+  const turnos = listarTurnosPeriodo(ano, mes);
+  res.json({ ok: true, profs, turnos });
+});
+
+router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
+  const mId = parseInt(req.params.mId);
+  const { data } = req.params;
+  const { turno } = req.body || {};
+  if (!TURNOS_VALIDOS.has(turno)) return res.status(400).json({ ok: false, error: 'turno inválido' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
+  upsertTurno(mId, data, turno);
+  res.json({ ok: true });
+});
+
+router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
+  deletarTurno(parseInt(req.params.mId), req.params.data);
   res.json({ ok: true });
 });
 

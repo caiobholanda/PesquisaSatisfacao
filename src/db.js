@@ -172,6 +172,16 @@ export function initDb() {
     observacao TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   )`); } catch {}
+  // Migration: turnos diários da escala mensal (M/T/F/FE/AT/CF/etc.)
+  try { db.exec(`CREATE TABLE IF NOT EXISTS turno_massagista (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    massagista_id INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    turno TEXT NOT NULL,
+    obs TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE(massagista_id, data)
+  )`); } catch {}
   // Migration: add enriched fields to reservas if absent
   for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER', 'massagista_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
@@ -845,6 +855,28 @@ export function feriasConflito(massagista_id, data_inicio, data_fim, excludeId) 
   return !!getDb().prepare(
     'SELECT 1 FROM ferias_massagista WHERE massagista_id=? AND data_inicio<=? AND data_fim>=?'
   ).get(massagista_id, data_fim, data_inicio);
+}
+
+// ── Turnos (escala mensal) ──
+export function listarTurnosPeriodo(ano, mes) {
+  const p2 = n => String(n).padStart(2, '0');
+  const a2 = mes === 11 ? ano + 1 : ano;
+  const m2 = mes === 11 ? 0 : mes + 1;
+  const dataIni = `${ano}-${p2(mes + 1)}-21`;
+  const dataFim = `${a2}-${p2(m2 + 1)}-20`;
+  return getDb().prepare(
+    'SELECT massagista_id, data, turno FROM turno_massagista WHERE data >= ? AND data <= ? ORDER BY data ASC'
+  ).all(dataIni, dataFim);
+}
+export function upsertTurno(massagista_id, data, turno) {
+  return getDb().prepare(
+    'INSERT INTO turno_massagista (massagista_id, data, turno) VALUES (?,?,?) ON CONFLICT(massagista_id, data) DO UPDATE SET turno=excluded.turno'
+  ).run(massagista_id, data, turno);
+}
+export function deletarTurno(massagista_id, data) {
+  return getDb().prepare(
+    'DELETE FROM turno_massagista WHERE massagista_id=? AND data=?'
+  ).run(massagista_id, data).changes;
 }
 
 // ── Tipos de Massagem ──

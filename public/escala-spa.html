@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Escala SPA — Gran Marquise</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #111110;
+  --surface:  #171615;
+  --s2:       #1d1c1b;
+  --s3:       #222120;
+  --b1:       #2b2a28;
+  --b2:       #353432;
+  --text:     #f2ede8;
+  --sub:      #a09890;
+  --dim:      #6a625a;
+  --gold:     #c8a04a;
+  --amber:    #d4823a;
+  --green:    #3a9e78;
+  --blue:     #3d82c4;
+  --purple:   #8b5fd4;
+  --red:      #c45050;
+  --col-prof: 220px;
+  --col-d:    58px;
+  --row-h:    58px;
+  --head-h:   72px;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TOP BAR ─────────────────────────────────── */
+.topbar {
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--b1);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 90;
+}
+.topbar-back {
+  height: 32px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--b2);
+  color: var(--sub);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color .12s, border-color .12s;
+  flex-shrink: 0;
+}
+.topbar-back:hover { color: var(--text); border-color: var(--sub); }
+.topbar-div { width: 1px; height: 20px; background: var(--b1); flex-shrink: 0; }
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-dot {
+  width: 7px; height: 7px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.topbar-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text);
+}
+.topbar-sep { flex: 1; }
+.save-ind {
+  font-size: 11px;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em;
+  min-width: 80px;
+  text-align: right;
+  transition: color .15s;
+}
+.save-ind.saving { color: var(--amber); }
+.save-ind.saved  { color: var(--green); }
+.save-ind.err    { color: var(--red); }
+.topbar-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid var(--b2);
+  color: var(--sub);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color .12s, border-color .12s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.topbar-btn:hover { color: var(--text); border-color: var(--sub); }
+
+/* ── PERÍODO NAV ──────────────────────────────── */
+.periodo-bar {
+  height: 56px;
+  background: var(--s2);
+  border-bottom: 1px solid var(--b1);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 89;
+}
+.pnav-btn {
+  width: 34px; height: 34px;
+  background: transparent;
+  border: 1px solid var(--b2);
+  color: var(--sub);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.pnav-btn:hover { color: var(--text); border-color: var(--sub); background: var(--b1); }
+.pnav-label {
+  padding: 0 20px;
+  min-width: 220px;
+  text-align: center;
+}
+.pnav-main {
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+.pnav-sub {
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+  margin-top: 1px;
+}
+.periodo-bar-sep { flex: 1; }
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: .01em;
+}
+.leg-chip {
+  width: 26px;
+  height: 20px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+/* ── GRID ─────────────────────────────────────── */
+.grid-outer {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+.grid-inner {
+  display: inline-block;
+  min-width: 100%;
+}
+.grid-loading {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+  letter-spacing: .05em;
+}
+
+/* Sticky header */
+.grid-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  background: var(--bg);
+  border-bottom: 2px solid var(--b2);
+}
+.gh-prof {
+  width: var(--col-prof);
+  flex-shrink: 0;
+  height: var(--head-h);
+  position: sticky;
+  left: 0;
+  z-index: 85;
+  background: var(--bg);
+  border-right: 2px solid var(--b2);
+  display: flex;
+  align-items: flex-end;
+  padding: 0 16px 12px;
+}
+.gh-prof-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.gh-day {
+  width: var(--col-d);
+  flex-shrink: 0;
+  height: var(--head-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  gap: 3px;
+  border-left: 1px solid var(--b1);
+  transition: background .1s;
+  position: relative;
+}
+.gh-day.wk  { background: #0d0d0c; }
+.gh-day.fer { background: #1e1a0e; }
+.gh-day.hoje { background: #111a14; }
+.gh-day:first-child { border-left: none; }
+
+.gh-mes-label {
+  position: absolute;
+  top: 8px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+}
+.gh-num {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+.gh-num.wkc  { color: var(--dim); }
+.gh-num.hoje-c { color: var(--green); }
+.gh-dsem {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.gh-dsem.wkc  { color: #4a4238; }
+.gh-dsem.hoje-c { color: var(--green); }
+.gh-fer-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  position: absolute;
+  top: 44px;
+}
+
+/* Grupos de função */
+.group-sep {
+  display: flex;
+  border-bottom: 1px solid var(--b1);
+  height: 28px;
+  background: var(--bg);
+}
+.gs-label-wrap {
+  width: var(--col-prof);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 40;
+  background: var(--bg);
+  border-right: 2px solid var(--b2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+.gs-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+}
+.gs-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+.gs-line {
+  height: 1px;
+  flex: 1;
+  background: var(--b1);
+}
+
+/* Rows */
+.grid-row {
+  display: flex;
+  border-bottom: 1px solid var(--b1);
+  transition: background .08s;
+}
+.grid-row:hover { background: #ffffff04; }
+.grid-row:hover .cell-prof { background: #141312; }
+
+.cell-prof {
+  width: var(--col-prof);
+  flex-shrink: 0;
+  height: var(--row-h);
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  background: var(--bg);
+  border-right: 2px solid var(--b2);
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: background .08s;
+}
+.prof-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.prof-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.prof-pill {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--dim);
+  background: var(--b1);
+  border: 1px solid var(--b2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Células */
+.cell-d {
+  width: var(--col-d);
+  flex-shrink: 0;
+  height: var(--row-h);
+  border-left: 1px solid var(--b1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background .08s;
+  cursor: pointer;
+}
+.cell-d.wk   { background: #0c0c0b; }
+.cell-d.fer  { background: #141208; }
+.cell-d:hover { background: #1e1d1b !important; }
+
+/* Sigla grande centralizada */
+.sigla {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  line-height: 1;
+  transition: transform .08s;
+  user-select: none;
+  pointer-events: none;
+}
+.cell-d:hover .sigla { transform: scale(1.06); }
+
+.sig-M   { background: #1a3a2c; color: #4dbe8a; border: 1.5px solid #2e6048; }
+.sig-T   { background: #162a3d; color: #5292d0; border: 1.5px solid #2a4a72; }
+.sig-FE  { background: #2e1f08; color: #d4924a; border: 1.5px solid #5a3a12; font-size: 11px; }
+.sig-F   { background: transparent; color: var(--b2); border: 1.5px solid var(--b1); font-size: 13px; }
+.sig-X   { background: transparent; color: var(--b2); border: 1.5px solid var(--b1); font-size: 13px; }
+.sig-AT  { background: #2e1010; color: #d06060; border: 1.5px solid #5a2020; font-size: 13px; }
+.sig-CF  { background: #1e1030; color: #9a7ad8; border: 1.5px solid #3a2060; font-size: 13px; }
+.sig-CH  { background: #1e1030; color: #9a7ad8; border: 1.5px solid #3a2060; font-size: 13px; }
+.sig-LS  { background: #2e1010; color: #d06060; border: 1.5px solid #5a2020; font-size: 13px; }
+.sig-LC  { background: #2e1010; color: #d06060; border: 1.5px solid #5a2020; font-size: 13px; }
+.sig-FER { background: #1e1a08; color: #b0902a; border: 1.5px dashed #5a4010; font-size: 11px; }
+
+/* Vazio */
+.cell-empty {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--b1);
+  pointer-events: none;
+}
+
+/* Tooltip */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  color: var(--sub);
+  font-size: 10px;
+  letter-spacing: .05em;
+  padding: 5px 10px;
+  white-space: nowrap;
+  z-index: 999;
+  pointer-events: none;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Totais */
+.totais-row {
+  display: flex;
+  position: sticky;
+  bottom: 0;
+  z-index: 70;
+  background: var(--s2);
+  border-top: 2px solid var(--b2);
+}
+.tot-prof {
+  width: var(--col-prof);
+  flex-shrink: 0;
+  height: 40px;
+  position: sticky;
+  left: 0;
+  z-index: 75;
+  background: var(--s2);
+  border-right: 2px solid var(--b2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+.tot-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.tot-cel {
+  width: var(--col-d);
+  flex-shrink: 0;
+  height: 40px;
+  border-left: 1px solid var(--b1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tot-num {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+}
+.tot-num.z { color: var(--b2); font-size: 11px; }
+
+/* ── PICKER ───────────────────────────────────── */
+#cell-picker {
+  position: fixed;
+  z-index: 500;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 8px;
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  min-width: 140px;
+}
+.cp-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  color: var(--sub);
+  font-size: 12px;
+  font-family: inherit;
+  text-align: left;
+  transition: background .08s, color .08s;
+}
+.cp-opt:hover { background: var(--b1); color: var(--text); }
+.cp-opt.active { background: var(--b1); color: var(--text); }
+.cp-opt .sigla {
+  width: 28px; height: 28px;
+  font-size: 11px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cp-opt .sigla.sig-FE, .cp-opt .sigla.sig-CF, .cp-opt .sigla.sig-CH,
+.cp-opt .sigla.sig-AT, .cp-opt .sigla.sig-LS, .cp-opt .sigla.sig-LC { font-size: 8px; }
+.cp-sep {
+  height: 1px;
+  background: var(--b1);
+  margin: 4px 0;
+}
+.cp-clear { color: var(--dim); }
+.cp-clear:hover { color: var(--red); }
+.cp-clear-icon {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  background: var(--b1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+.cp-opt.cp-clear:hover .cp-clear-icon { color: var(--red); }
+
+/* ── TOAST ────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  color: var(--sub);
+  font-size: 12px;
+  letter-spacing: .04em;
+  padding: 8px 18px;
+  border-radius: 6px;
+  pointer-events: none;
+  transition: transform .2s, opacity .2s;
+  opacity: 0;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.err  { color: var(--red); border-color: #5a2020; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a href="/admin" class="topbar-back">← Painel</a>
+  <div class="topbar-div"></div>
+  <div class="topbar-brand">
+    <div class="topbar-dot"></div>
+    <span class="topbar-name">Escala SPA · Gran Marquise</span>
+  </div>
+  <div class="topbar-sep"></div>
+  <span class="save-ind" id="save-ind"></span>
+  <button class="topbar-btn" onclick="window.print()">⎙ Imprimir</button>
+</div>
+
+<!-- PERÍODO + LEGENDA -->
+<div class="periodo-bar">
+  <button class="pnav-btn" id="btn-prev">‹</button>
+  <div class="pnav-label">
+    <div class="pnav-main" id="lbl-main"></div>
+    <div class="pnav-sub" id="lbl-sub"></div>
+  </div>
+  <button class="pnav-btn" id="btn-next">›</button>
+  <div class="periodo-bar-sep"></div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-chip sig-M">M</div>Manhã</div>
+    <div class="leg-item"><div class="leg-chip sig-T">T</div>Tarde</div>
+    <div class="leg-item"><div class="leg-chip sig-FE" style="font-size:8px">FÉR</div>Férias</div>
+    <div class="leg-item"><div class="leg-chip sig-AT" style="font-size:9px">AT</div>Atestado</div>
+    <div class="leg-item"><div class="leg-chip sig-CF" style="font-size:9px">CF</div>Comp.Feriado</div>
+    <div class="leg-item"><div class="leg-chip sig-F">F</div>Folga</div>
+  </div>
+</div>
+
+<!-- GRID -->
+<div class="grid-outer" id="grid-outer">
+  <div class="grid-inner" id="grid-root">
+    <div class="grid-loading">Carregando…</div>
+  </div>
+</div>
+
+<!-- CELL PICKER -->
+<div id="cell-picker">
+  <button class="cp-opt" data-turno="M"><span class="sigla sig-M">M</span><span>Manhã</span></button>
+  <button class="cp-opt" data-turno="T"><span class="sigla sig-T">T</span><span>Tarde</span></button>
+  <button class="cp-opt" data-turno="F"><span class="sigla sig-F">F</span><span>Folga</span></button>
+  <button class="cp-opt" data-turno="FE"><span class="sigla sig-FE">FÉR</span><span>Férias</span></button>
+  <button class="cp-opt" data-turno="AT"><span class="sigla sig-AT">AT</span><span>Atestado</span></button>
+  <button class="cp-opt" data-turno="CF"><span class="sigla sig-CF">CF</span><span>Comp. Feriado</span></button>
+  <button class="cp-opt" data-turno="CH"><span class="sigla sig-CH">CH</span><span>Comp. Hora</span></button>
+  <button class="cp-opt" data-turno="LS"><span class="sigla sig-LS">LS</span><span>Lic. Sindical</span></button>
+  <button class="cp-opt" data-turno="LC"><span class="sigla sig-LC">LC</span><span>Lic. Casamento</span></button>
+  <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga prog.</span></button>
+  <div class="cp-sep"></div>
+  <button class="cp-opt cp-clear" data-turno=""><span class="cp-clear-icon">✕</span><span>Limpar célula</span></button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+const TOKEN = localStorage.getItem('token');
+if (!TOKEN) { location.href = '/admin'; }
+
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(url, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + TOKEN,
+      ...(opts.headers || {}),
+    },
+  });
+  if (r.status === 401) { location.href = '/admin'; return null; }
+  return r;
+}
+
+// ─── CONSTANTES ───────────────────────────────────────────────────────────────
+const MESES     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABR = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const DS_ABR    = ['D','S','T','Q','Q','S','S'];
+const DS_NOM    = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+const FERIADOS = (() => {
+  const F = {};
+  const fixos = [
+    ['01-01','Ano Novo'],['03-19','São José'],['03-25','Data Magna CE'],
+    ['04-21','Tiradentes'],['05-01','Dia do Trabalho'],['06-24','São João'],
+    ['08-15','N.Sra. Assunção'],['09-07','Independência'],['10-12','N.Sra. Aparecida'],
+    ['11-02','Finados'],['11-15','Proclamação da República'],['11-20','Consciência Negra'],['12-25','Natal'],
+  ];
+  for (const ano of [2025, 2026, 2027, 2028]) {
+    for (const [md, nome] of fixos) F[`${ano}-${md}`] = nome;
+  }
+  const moveis = {
+    '2026-02-16':'Carnaval','2026-02-17':'Carnaval',
+    '2026-04-03':'Sexta-feira Santa','2026-04-13':'Aniversário de Fortaleza',
+    '2026-06-04':'Corpus Christi',
+    '2027-02-08':'Carnaval','2027-02-09':'Carnaval',
+    '2027-03-26':'Sexta-feira Santa','2027-05-27':'Corpus Christi',
+  };
+  return { ...F, ...moveis };
+})();
+
+const SIG_LABEL = { M:'M', T:'T', FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC' };
+const SIG_TIP   = {
+  M:'Manhã · 08:00–17:00', T:'Tarde · 13:00–22:00', FE:'Férias programadas',
+  F:'Folga', X:'Folga programada', AT:'Atestado Médico',
+  CF:'Compensação de Feriado', CH:'Compensação de Hora',
+  LS:'Licença Sindical', LC:'Licença Casamento',
+};
+const SIG_CLS = { M:'sig-M', T:'sig-T', FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC' };
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+function initPeriodo() {
+  const now = new Date();
+  if (now.getDate() >= 21) return { ano: now.getFullYear(), mes: now.getMonth() };
+  return now.getMonth() === 0
+    ? { ano: now.getFullYear() - 1, mes: 11 }
+    : { ano: now.getFullYear(), mes: now.getMonth() - 1 };
+}
+
+let periodo = initPeriodo();
+let profs   = [];
+let turnos  = {}; // key: `${massagista_id}-${data}` → turno string
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const p2  = n => String(n).padStart(2, '0');
+const iso = (a, m, d) => `${a}-${p2(m + 1)}-${p2(d)}`;
+const dow = (a, m, d) => new Date(a, m, d).getDay();
+
+function getDias(ano, mes) {
+  const dias = [];
+  const last = new Date(ano, mes + 1, 0).getDate();
+  for (let d = 21; d <= last; d++) dias.push({ ano, mes, dia: d, i: iso(ano, mes, d) });
+  const a2 = mes === 11 ? ano + 1 : ano;
+  const m2 = mes === 11 ? 0 : mes + 1;
+  for (let d = 1; d <= 20; d++) dias.push({ ano: a2, mes: m2, dia: d, i: iso(a2, m2, d) });
+  return dias;
+}
+
+function siglaHTML(tipo) {
+  if (!tipo) return '<div class="cell-empty"></div>';
+  const cls = SIG_CLS[tipo] || 'sig-F';
+  const lbl = SIG_LABEL[tipo] || tipo;
+  return `<div class="sigla ${cls}">${lbl}</div>`;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 2000);
+}
+
+// ─── SAVE INDICATOR ──────────────────────────────────────────────────────────
+let _saveTimer = null;
+function setSaveInd(state, txt) {
+  const el = document.getElementById('save-ind');
+  el.className = 'save-ind' + (state ? ' ' + state : '');
+  el.textContent = txt;
+  if (state === 'saved') {
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => { el.textContent = ''; el.className = 'save-ind'; }, 2000);
+  }
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────────────────────────
+async function loadData() {
+  const { ano, mes } = periodo;
+  const r = await apiFetch(`/api/escala-spa?ano=${ano}&mes=${mes}`);
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) { showToast('Erro ao carregar dados', 'err'); return; }
+  profs  = d.profs || [];
+  turnos = {};
+  for (const t of (d.turnos || [])) turnos[`${t.massagista_id}-${t.data}`] = t.turno;
+  render();
+}
+
+// ─── SAVE TURNO ──────────────────────────────────────────────────────────────
+async function saveTurno(mId, data, turno) {
+  setSaveInd('saving', 'salvando…');
+  try {
+    let r;
+    if (!turno) {
+      r = await apiFetch(`/api/escala-spa/${mId}/${data}`, { method: 'DELETE' });
+    } else {
+      r = await apiFetch(`/api/escala-spa/${mId}/${data}`, {
+        method: 'PUT',
+        body: JSON.stringify({ turno }),
+      });
+    }
+    if (!r) return;
+    if (r.status === 403) { showToast('Sem permissão para editar', 'err'); setSaveInd('err', 'erro'); return; }
+    if (!r.ok) { showToast('Erro ao salvar', 'err'); setSaveInd('err', 'erro'); return; }
+    setSaveInd('saved', '✓ salvo');
+  } catch {
+    showToast('Erro de conexão', 'err');
+    setSaveInd('err', 'erro');
+  }
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const { ano, mes } = periodo;
+  const m2 = mes === 11 ? 0 : mes + 1;
+  const a2 = mes === 11 ? ano + 1 : ano;
+
+  document.getElementById('lbl-main').textContent = `${MESES[mes].slice(0, 3)} – ${MESES[m2].slice(0, 3)} ${a2}`;
+  document.getElementById('lbl-sub').textContent  = `21/${p2(mes + 1)} → 20/${p2(m2 + 1)}`;
+
+  const dias  = getDias(ano, mes);
+  const hoje  = new Date().toISOString().slice(0, 10);
+
+  let html = '';
+
+  // ── Header ──
+  html += '<div class="grid-header">';
+  html += '<div class="gh-prof"><span class="gh-prof-label">Profissional</span></div>';
+  let prevMes = null;
+  for (const d of dias) {
+    const w     = dow(d.ano, d.mes, d.dia);
+    const isWk  = w === 0 || w === 6;
+    const isFer = !!FERIADOS[d.i];
+    const isHj  = d.i === hoje;
+    const mudou = prevMes !== null && prevMes !== d.mes;
+    prevMes = d.mes;
+    const cls  = ['gh-day', isWk ? 'wk' : '', isFer ? 'fer' : '', isHj ? 'hoje' : ''].filter(Boolean).join(' ');
+    const ncls = isHj ? 'hoje-c' : isWk ? 'wkc' : '';
+    const dcls = isHj ? 'hoje-c' : isWk ? 'wkc' : '';
+    html += `<div class="${cls}" data-tip="${isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w] + (isHj ? ' · Hoje' : '')}">`;
+    if (mudou) html += `<div class="gh-mes-label">${MESES_ABR[d.mes]}</div>`;
+    html += `<div class="gh-num ${ncls}">${p2(d.dia)}</div>`;
+    html += `<div class="gh-dsem ${dcls}">${DS_ABR[w]}</div>`;
+    if (isFer) html += `<div class="gh-fer-dot"></div>`;
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── Grupos ──
+  const massoterapeutas = profs.filter(p => !p.funcao || !p.funcao.toLowerCase().includes('recep'));
+  const recepcionistas  = profs.filter(p => p.funcao && p.funcao.toLowerCase().includes('recep'));
+  const grupos = [];
+  if (massoterapeutas.length) grupos.push({ label: 'Massoterapeutas', profs: massoterapeutas });
+  if (recepcionistas.length)  grupos.push({ label: 'Recepcionistas',  profs: recepcionistas });
+  if (!grupos.length) { document.getElementById('grid-root').innerHTML = '<div class="grid-loading">Nenhuma profissional ativa.</div>'; return; }
+
+  for (const grp of grupos) {
+    html += '<div class="group-sep">';
+    html += `<div class="gs-label-wrap"><span class="gs-label">${grp.label}</span></div>`;
+    html += '<div class="gs-bar"><div class="gs-line"></div></div>';
+    html += '</div>';
+
+    for (const prof of grp.profs) {
+      const pill = prof.vinculo || prof.funcao || '—';
+      html += '<div class="grid-row">';
+      html += `<div class="cell-prof">
+        <div class="prof-name">${escH(prof.nome)}</div>
+        <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span></div>
+      </div>`;
+      for (const d of dias) {
+        const w     = dow(d.ano, d.mes, d.dia);
+        const isWk  = w === 0 || w === 6;
+        const isFer = !!FERIADOS[d.i];
+        const tipo  = turnos[`${prof.id}-${d.i}`] || null;
+        const tip   = tipo ? (SIG_TIP[tipo] || tipo) : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
+        const cls   = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : ''].filter(Boolean).join(' ');
+        html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo)}</div>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  // ── Totais ──
+  html += '<div class="totais-row">';
+  html += '<div class="tot-prof"><span class="tot-label">Trabalhando / dia</span></div>';
+  for (const d of dias) {
+    let n = 0;
+    for (const p of profs) if (['M', 'T'].includes(turnos[`${p.id}-${d.i}`])) n++;
+    html += `<div class="tot-cel"><span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span></div>`;
+  }
+  html += '</div>';
+
+  document.getElementById('grid-root').innerHTML = html;
+}
+
+function escH(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── PICKER ──────────────────────────────────────────────────────────────────
+const picker = document.getElementById('cell-picker');
+let pickerMId = null, pickerDate = null;
+
+function showPicker(cellEl, mId, date) {
+  pickerMId  = mId;
+  pickerDate = date;
+  const curr = turnos[`${mId}-${date}`] || '';
+  picker.querySelectorAll('[data-turno]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.turno === curr);
+  });
+  picker.style.display = 'flex';
+  const cr = cellEl.getBoundingClientRect();
+  const pw = 150, ph = picker.offsetHeight || 340;
+  let top  = cr.bottom + 6;
+  let left = cr.left + cr.width / 2 - pw / 2;
+  if (top + ph > window.innerHeight - 8) top = cr.top - ph - 6;
+  if (left + pw > window.innerWidth  - 8) left = window.innerWidth - pw - 8;
+  if (left < 8) left = 8;
+  picker.style.top  = top  + 'px';
+  picker.style.left = left + 'px';
+}
+
+function hidePicker() {
+  picker.style.display = 'none';
+  pickerMId = null; pickerDate = null;
+}
+
+picker.querySelectorAll('[data-turno]').forEach(btn => {
+  btn.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (pickerMId === null) return;
+    const turno = btn.dataset.turno || null;
+    const key   = `${pickerMId}-${pickerDate}`;
+    const prev  = turnos[key] || null;
+
+    // Optimistic update
+    if (turno) turnos[key] = turno;
+    else delete turnos[key];
+
+    // Update just the clicked cell
+    const cellEl = document.querySelector(`[data-mid="${pickerMId}"][data-date="${pickerDate}"]`);
+    if (cellEl) {
+      cellEl.innerHTML = siglaHTML(turno);
+      cellEl.setAttribute('data-tip', turno ? (SIG_TIP[turno] || turno) : '—');
+    }
+    // Update totals row
+    _renderTotals();
+
+    hidePicker();
+    await saveTurno(pickerMId, pickerDate, turno);
+  });
+});
+
+function _renderTotals() {
+  const dias = getDias(periodo.ano, periodo.mes);
+  const totCells = document.querySelectorAll('.tot-cel');
+  dias.forEach((d, i) => {
+    if (!totCells[i]) return;
+    let n = 0;
+    for (const p of profs) if (['M', 'T'].includes(turnos[`${p.id}-${d.i}`])) n++;
+    totCells[i].innerHTML = `<span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span>`;
+  });
+}
+
+// Event delegation on grid
+document.getElementById('grid-outer').addEventListener('click', e => {
+  const cell = e.target.closest('.cell-d');
+  if (!cell) { hidePicker(); return; }
+  const mId  = parseInt(cell.dataset.mid);
+  const date = cell.dataset.date;
+  if (!mId || !date) return;
+  // Toggle picker or hide if same cell
+  if (picker.style.display === 'flex' && pickerMId === mId && pickerDate === date) {
+    hidePicker();
+  } else {
+    showPicker(cell, mId, date);
+  }
+});
+
+document.addEventListener('click', e => {
+  if (!picker.contains(e.target) && !e.target.closest('.cell-d')) hidePicker();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePicker(); });
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+document.getElementById('btn-prev').onclick = () => {
+  periodo = periodo.mes === 0
+    ? { ano: periodo.ano - 1, mes: 11 }
+    : { ano: periodo.ano, mes: periodo.mes - 1 };
+  loadData();
+};
+document.getElementById('btn-next').onclick = () => {
+  periodo = periodo.mes === 11
+    ? { ano: periodo.ano + 1, mes: 0 }
+    : { ano: periodo.ano, mes: periodo.mes + 1 };
+  loadData();
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
