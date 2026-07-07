@@ -504,7 +504,7 @@ function getDias(ano, mes) {
 
 function siglaHTML(tipo) {
   if (!tipo) return '<div class="cell-empty"></div>';
-  const cls = SIG_CLS[tipo] || 'sig-F';
+  const cls = SIG_CLS[tipo] || 'sig-X';
   const lbl = SIG_LABEL[tipo] || tipo;
   return `<div class="sigla ${cls}">${lbl}</div>`;
 }
