@@ -723,7 +723,7 @@ function render() {
   html += '<div class="tot-prof"><span class="tot-label">Trabalhando / dia</span></div>';
   for (const d of dias) {
     let n = 0;
-    for (const p of profs) if (TIMES_CFG[turnos[`${p.id}-${d.i}`]]) n++;
+    for (const p of profs) { const t = turnos[`${p.id}-${d.i}`]; if (t && (TIMES_CFG[t] || t.includes('|'))) n++; }
     html += `<div class="tot-cel"><span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span></div>`;
   }
   html += '</div>';
