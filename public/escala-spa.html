@@ -660,19 +660,12 @@ body {
 
 <script>
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-const TOKEN = localStorage.getItem('token');
-if (!TOKEN) { location.href = '/admin'; }
-
 async function apiFetch(url, opts = {}) {
-  const r = await fetch(url, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + TOKEN,
-      ...(opts.headers || {}),
-    },
-  });
-  if (r.status === 401) { location.href = '/admin'; return null; }
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  const t = sessionStorage.getItem('granspa_token');
+  if (t) headers['Authorization'] = 'Bearer ' + t;
+  const r = await fetch(url, { ...opts, headers, credentials: 'include' });
+  if (r.status === 401) { location.href = '/acesso-hub.html'; return null; }
   return r;
 }
 
