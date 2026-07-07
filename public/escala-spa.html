@@ -340,6 +340,10 @@ body {
 .cp-time.tm:hover, .cp-time.tm.active { background: var(--sig-m-bg); color: var(--sig-m-fg); border-color: var(--sig-m-bd); }
 .cp-time.tt:hover, .cp-time.tt.active { background: var(--sig-t-bg); color: var(--sig-t-fg); border-color: var(--sig-t-bd); }
 .cp-time.tn:hover, .cp-time.tn.active { background: var(--sig-n-bg); color: var(--sig-n-fg); border-color: var(--sig-n-bd); }
+.sig-composite {
+  width: auto; min-width: 38px; max-width: 52px; padding: 0 3px;
+  font-size: 8.5px; letter-spacing: -.02em; white-space: nowrap;
+}
 .cp-opt {
   display: flex; align-items: center; gap: 10px; padding: 6px 10px;
   background: transparent; border: none; cursor: pointer; border-radius: 5px;
@@ -424,18 +428,34 @@ body {
 
 <!-- CELL PICKER -->
 <div id="cell-picker">
-  <div class="cp-section-label">Horário de entrada</div>
+  <div class="cp-section-label">Entrada</div>
   <div class="cp-times">
-    <button class="cp-time tm" data-turno="09:00">09h</button>
-    <button class="cp-time tm" data-turno="10:00">10h</button>
-    <button class="cp-time tt" data-turno="11:00">11h</button>
-    <button class="cp-time tt" data-turno="12:00">12h</button>
-    <button class="cp-time tt" data-turno="13:00">13h</button>
-    <button class="cp-time tt" data-turno="14:00">14h</button>
-    <button class="cp-time tt" data-turno="15:00">15h</button>
-    <button class="cp-time tt" data-turno="16:00">16h</button>
-    <button class="cp-time tn" data-turno="17:00">17h</button>
-    <button class="cp-time tn" data-turno="17:30">17:30</button>
+    <button class="cp-time tm" data-entrada="09:00">09h</button>
+    <button class="cp-time tm" data-entrada="10:00">10h</button>
+    <button class="cp-time tt" data-entrada="11:00">11h</button>
+    <button class="cp-time tt" data-entrada="12:00">12h</button>
+    <button class="cp-time tt" data-entrada="13:00">13h</button>
+    <button class="cp-time tt" data-entrada="14:00">14h</button>
+    <button class="cp-time tt" data-entrada="15:00">15h</button>
+    <button class="cp-time tt" data-entrada="16:00">16h</button>
+    <button class="cp-time tn" data-entrada="17:00">17h</button>
+    <button class="cp-time tn" data-entrada="17:30">17:30</button>
+  </div>
+  <div class="cp-sep"></div>
+  <div class="cp-section-label">Saída</div>
+  <div class="cp-times">
+    <button class="cp-time tm" data-saida="13:00">13h</button>
+    <button class="cp-time tm" data-saida="14:00">14h</button>
+    <button class="cp-time tm" data-saida="15:00">15h</button>
+    <button class="cp-time tt" data-saida="16:00">16h</button>
+    <button class="cp-time tt" data-saida="17:00">17h</button>
+    <button class="cp-time tt" data-saida="18:00">18h</button>
+    <button class="cp-time tt" data-saida="19:00">19h</button>
+    <button class="cp-time tt" data-saida="20:00">20h</button>
+    <button class="cp-time tn" data-saida="20:20">20:20</button>
+    <button class="cp-time tn" data-saida="21:00">21h</button>
+    <button class="cp-time tn" data-saida="22:00">22h</button>
+    <button class="cp-time tn" data-saida="22:20">22:20</button>
   </div>
   <div class="cp-sep"></div>
   <div class="cp-section-label">Status especial</div>
@@ -543,13 +563,23 @@ function getDias(ano, mes) {
   return dias;
 }
 
+function fmtHora(h) { return h.endsWith(':00') ? h.slice(0,2)+'h' : h; }
+
 function siglaHTML(tipo) {
   if (!tipo) return '<div class="cell-empty"></div>';
+  // Composite: "09:00|22:00"
+  if (tipo.includes('|')) {
+    const [e, s] = tipo.split('|');
+    const cls = TIMES_CFG[e]?.cls || 'sig-T';
+    return `<div class="sigla ${cls} sig-composite">${fmtHora(e)}–${fmtHora(s)}</div>`;
+  }
+  // Single time (fallback / legado)
   if (TIMES_CFG[tipo]) {
     const { cls, lbl } = TIMES_CFG[tipo];
     const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
     return `<div class="sigla ${cls}"${fs}>${lbl}</div>`;
   }
+  // Status especial
   const cls = SIG_CLS[tipo] || 'sig-X';
   const lbl = SIG_LABEL[tipo] || tipo;
   return `<div class="sigla ${cls}">${lbl}</div>`;
@@ -677,7 +707,9 @@ function render() {
         const isFer = !!FERIADOS[d.i];
         const tipo  = turnos[`${prof.id}-${d.i}`] || null;
         const tip   = tipo
-          ? (TIMES_CFG[tipo] ? `Entrada ${tipo}` : (SIG_TIP[tipo] || tipo))
+          ? (tipo.includes('|')
+              ? `Entrada ${tipo.split('|')[0]} · Saída ${tipo.split('|')[1]}`
+              : (TIMES_CFG[tipo] ? `Entrada ${tipo}` : (SIG_TIP[tipo] || tipo)))
           : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
         const cls   = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : ''].filter(Boolean).join(' ');
         html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo)}</div>`;
@@ -706,17 +738,36 @@ function escH(s) {
 // ─── PICKER ──────────────────────────────────────────────────────────────────
 const picker = document.getElementById('cell-picker');
 let pickerMId = null, pickerDate = null;
+let pickerEntrada = null, pickerSaida = null;
+
+function _updatePickerActive() {
+  picker.querySelectorAll('[data-entrada]').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.entrada === pickerEntrada));
+  picker.querySelectorAll('[data-saida]').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.saida === pickerSaida));
+}
 
 function showPicker(cellEl, mId, date) {
   pickerMId  = mId;
   pickerDate = date;
   const curr = turnos[`${mId}-${date}`] || '';
-  picker.querySelectorAll('[data-turno]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.turno === curr);
-  });
+
+  if (curr.includes('|')) {
+    const [e, s] = curr.split('|');
+    pickerEntrada = e; pickerSaida = s;
+  } else if (TIMES_CFG[curr]) {
+    pickerEntrada = curr; pickerSaida = null;
+  } else {
+    pickerEntrada = null; pickerSaida = null;
+  }
+  _updatePickerActive();
+
+  picker.querySelectorAll('[data-turno]').forEach(btn =>
+    btn.classList.toggle('active', !!curr && btn.dataset.turno === curr && !curr.includes('|') && !TIMES_CFG[curr]));
+
   picker.style.display = 'flex';
   const cr = cellEl.getBoundingClientRect();
-  const pw = picker.offsetWidth || 196, ph = picker.offsetHeight || 380;
+  const pw = picker.offsetWidth || 196, ph = picker.offsetHeight || 520;
   let top  = cr.bottom + 6;
   let left = cr.left + cr.width / 2 - pw / 2;
   if (top + ph > window.innerHeight - 8) top = cr.top - ph - 6;
@@ -730,23 +781,51 @@ function showPicker(cellEl, mId, date) {
 function hidePicker() {
   picker.style.display = 'none';
   pickerMId = null; pickerDate = null;
+  pickerEntrada = null; pickerSaida = null;
 }
 
+async function _commitComposite() {
+  const mId = pickerMId, date = pickerDate;
+  const turno = `${pickerEntrada}|${pickerSaida}`;
+  turnos[`${mId}-${date}`] = turno;
+  hidePicker();
+  render();
+  await saveTurno(mId, date, turno);
+}
+
+// Botões de entrada
+picker.querySelectorAll('[data-entrada]').forEach(btn => {
+  btn.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (pickerMId === null) return;
+    pickerEntrada = btn.dataset.entrada;
+    _updatePickerActive();
+    if (pickerSaida) await _commitComposite();
+  });
+});
+
+// Botões de saída
+picker.querySelectorAll('[data-saida]').forEach(btn => {
+  btn.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (pickerMId === null) return;
+    pickerSaida = btn.dataset.saida;
+    _updatePickerActive();
+    if (pickerEntrada) await _commitComposite();
+  });
+});
+
+// Status especial + limpar
 picker.querySelectorAll('[data-turno]').forEach(btn => {
   btn.addEventListener('click', async e => {
     e.stopPropagation();
     if (pickerMId === null) return;
-    const mId   = pickerMId;
-    const date  = pickerDate;
+    const mId = pickerMId, date = pickerDate;
     const turno = btn.dataset.turno || null;
-    const key   = `${mId}-${date}`;
-
-    if (turno) turnos[key] = turno;
-    else delete turnos[key];
-
+    if (turno) turnos[`${mId}-${date}`] = turno;
+    else delete turnos[`${mId}-${date}`];
     hidePicker();
     render();
-
     await saveTurno(mId, date, turno);
   });
 });

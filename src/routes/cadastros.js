@@ -247,10 +247,15 @@ router.delete('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
 });
 
 // ── Escala mensal (turnos) ──
-const TURNOS_VALIDOS = new Set([
-  '09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30',
-  'X','FE','AT','AA','CF','CH','LS','LC','F',
-]);
+const VALID_TIMES  = new Set(['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30','18:00','19:00','20:00','20:20','21:00','22:00','22:20']);
+const VALID_STATUS = new Set(['X','FE','AT','AA','CF','CH','LS','LC','F']);
+function turnoValido(t) {
+  if (!t) return false;
+  if (VALID_STATUS.has(t)) return true;
+  if (VALID_TIMES.has(t)) return true;
+  const p = t.split('|');
+  return p.length === 2 && VALID_TIMES.has(p[0]) && VALID_TIMES.has(p[1]);
+}
 
 router.get('/escala-spa', (req, res) => {
   const ano = parseInt(req.query.ano);
@@ -267,7 +272,7 @@ router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
   const mId = parseInt(req.params.mId);
   const { data } = req.params;
   const { turno } = req.body || {};
-  if (!TURNOS_VALIDOS.has(turno)) return res.status(400).json({ ok: false, error: 'turno inválido' });
+  if (!turnoValido(turno)) return res.status(400).json({ ok: false, error: 'turno inválido' });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
   upsertTurno(mId, data, turno);
   res.json({ ok: true });
