@@ -172,7 +172,7 @@ export function initDb() {
     observacao TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   )`); } catch {}
-  // Migration: turnos diários da escala mensal (M/T/F/FE/AT/CF/etc.)
+  // Migration: turnos diários da escala mensal (09:00/14:00/17:30/X/FE/AT/AA/etc.)
   try { db.exec(`CREATE TABLE IF NOT EXISTS turno_massagista (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     massagista_id INTEGER NOT NULL,
