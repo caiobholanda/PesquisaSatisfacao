@@ -1287,6 +1287,8 @@ let _massagistas = [];
 let _massagistasLoaded = false;
 let _editMId = null;
 let _editTId = null;
+let _feriasList = [];
+let _editFeriaId = null;
 
 // ── Init ──
 (function init() {
@@ -1601,9 +1603,118 @@ window.openEditMassagista = (id, nome) => {
   }
   const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
   _renderDispGrid(disp);
+  // Reset e carrega férias
+  _editFeriaId = null;
+  document.getElementById('mgmt-m-ferias-form').style.display = 'none';
+  document.getElementById('mgmt-m-ferias-add-btn').style.display = '';
+  document.getElementById('mgmt-m-ferias-form-err').style.display = 'none';
+  document.getElementById('mgmt-m-ferias-list').innerHTML = '<div style="font-size:.8rem;color:var(--muted)">Carregando…</div>';
+  _loadFerias(id);
   _modalOpen = true;
   document.getElementById('mgmt-m-overlay').style.display = 'flex';
 };
+
+function _fmtDataFerias(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+async function _loadFerias(massagistaId) {
+  try {
+    const res = await api(`/api/massagistas/${massagistaId}/ferias`);
+    if (!res) return;
+    const d = await res.json();
+    _feriasList = d.ok ? (d.ferias || []) : [];
+  } catch { _feriasList = []; }
+  _renderFeriasList();
+}
+
+function _renderFeriasList() {
+  const el = document.getElementById('mgmt-m-ferias-list');
+  if (!el) return;
+  if (_feriasList.length === 0) {
+    el.innerHTML = '<div style="font-size:.8rem;color:var(--muted);font-style:italic;padding:.25rem 0 .5rem">Nenhum período programado.</div>';
+    return;
+  }
+  el.innerHTML = _feriasList.map(f => `
+    <div style="display:flex;align-items:flex-start;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border-soft)" data-fid="${f.id}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:600;color:var(--text)">${_fmtDataFerias(f.data_inicio)} → ${_fmtDataFerias(f.data_fim)}</div>
+        ${f.observacao ? `<div style="font-size:.75rem;color:var(--muted);margin-top:2px">${f.observacao}</div>` : ''}
+      </div>
+      <button class="btn btn-outline ferias-edit-btn" data-fid="${f.id}" type="button" style="padding:.2rem .6rem;font-size:.72rem;flex-shrink:0">Editar</button>
+      <button class="btn ferias-del-btn" data-fid="${f.id}" type="button" style="padding:.2rem .6rem;font-size:.72rem;flex-shrink:0;background:transparent;color:var(--danger);border:1px solid var(--danger)">✕</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.ferias-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fid = parseInt(btn.dataset.fid);
+      const f = _feriasList.find(x => x.id === fid);
+      if (!f) return;
+      _editFeriaId = fid;
+      document.getElementById('mgmt-m-ferias-inicio').value = f.data_inicio;
+      document.getElementById('mgmt-m-ferias-fim').value = f.data_fim;
+      document.getElementById('mgmt-m-ferias-obs').value = f.observacao || '';
+      document.getElementById('mgmt-m-ferias-form-err').style.display = 'none';
+      document.getElementById('mgmt-m-ferias-form').style.display = '';
+      document.getElementById('mgmt-m-ferias-add-btn').style.display = 'none';
+    });
+  });
+  el.querySelectorAll('.ferias-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const fid = parseInt(btn.dataset.fid);
+      if (!confirm('Excluir este período de férias?')) return;
+      const res = await api(`/api/massagistas/${_editMId}/ferias/${fid}`, { method: 'DELETE' });
+      if (!res) return;
+      const d = await res.json();
+      if (!d.ok) { showToast(d.error || 'Erro ao excluir'); return; }
+      await _loadFerias(_editMId);
+    });
+  });
+}
+
+document.getElementById('mgmt-m-ferias-add-btn').addEventListener('click', () => {
+  _editFeriaId = null;
+  document.getElementById('mgmt-m-ferias-inicio').value = '';
+  document.getElementById('mgmt-m-ferias-fim').value = '';
+  document.getElementById('mgmt-m-ferias-obs').value = '';
+  document.getElementById('mgmt-m-ferias-form-err').style.display = 'none';
+  document.getElementById('mgmt-m-ferias-form').style.display = '';
+  document.getElementById('mgmt-m-ferias-add-btn').style.display = 'none';
+});
+
+document.getElementById('mgmt-m-ferias-form-cancel').addEventListener('click', () => {
+  document.getElementById('mgmt-m-ferias-form').style.display = 'none';
+  document.getElementById('mgmt-m-ferias-add-btn').style.display = '';
+  _editFeriaId = null;
+});
+
+document.getElementById('mgmt-m-ferias-form-save').addEventListener('click', async () => {
+  const inicio = document.getElementById('mgmt-m-ferias-inicio').value;
+  const fim = document.getElementById('mgmt-m-ferias-fim').value;
+  const obs = document.getElementById('mgmt-m-ferias-obs').value.trim();
+  const errEl = document.getElementById('mgmt-m-ferias-form-err');
+  errEl.style.display = 'none';
+  if (!inicio || !fim) { errEl.textContent = 'Preencha as datas de início e fim.'; errEl.style.display = ''; return; }
+  if (inicio > fim) { errEl.textContent = 'Início deve ser anterior ao fim.'; errEl.style.display = ''; return; }
+  const btn = document.getElementById('mgmt-m-ferias-form-save');
+  btn.disabled = true;
+  try {
+    const url = _editFeriaId
+      ? `/api/massagistas/${_editMId}/ferias/${_editFeriaId}`
+      : `/api/massagistas/${_editMId}/ferias`;
+    const method = _editFeriaId ? 'PUT' : 'POST';
+    const res = await api(url, { method, body: JSON.stringify({ data_inicio: inicio, data_fim: fim, observacao: obs || null }) });
+    if (!res) return;
+    const d = await res.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Erro ao salvar.'; errEl.style.display = ''; return; }
+    document.getElementById('mgmt-m-ferias-form').style.display = 'none';
+    document.getElementById('mgmt-m-ferias-add-btn').style.display = '';
+    _editFeriaId = null;
+    await _loadFerias(_editMId);
+  } finally { btn.disabled = false; }
+});
 
 function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
 document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);

@@ -163,6 +163,15 @@ export function initDb() {
   // Migration: add email field to massagistas for Hub SSO login
   try { db.exec(`ALTER TABLE massagistas ADD COLUMN email TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_massagistas_email ON massagistas(email) WHERE email IS NOT NULL AND email <> ''`); } catch {}
+  // Migration: tabela de férias programadas por massoterapeuta
+  try { db.exec(`CREATE TABLE IF NOT EXISTS ferias_massagista (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    massagista_id INTEGER NOT NULL,
+    data_inicio TEXT NOT NULL,
+    data_fim TEXT NOT NULL,
+    observacao TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )`); } catch {}
   // Migration: add enriched fields to reservas if absent
   for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER', 'massagista_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
@@ -808,6 +817,34 @@ export function atualizarMassagista(id, nome, ativo, opts = {}) {
 }
 export function deletarMassagista(id) {
   return getDb().prepare('DELETE FROM massagistas WHERE id=?').run(id).changes;
+}
+
+// ── Férias massagista ──
+export function listarFeriasMassagista(massagista_id) {
+  return getDb().prepare('SELECT * FROM ferias_massagista WHERE massagista_id=? ORDER BY data_inicio ASC').all(massagista_id);
+}
+export function criarFeriasMassagista(massagista_id, data_inicio, data_fim, observacao) {
+  return getDb().prepare(
+    'INSERT INTO ferias_massagista (massagista_id, data_inicio, data_fim, observacao) VALUES (?,?,?,?)'
+  ).run(massagista_id, data_inicio, data_fim, observacao || null).lastInsertRowid;
+}
+export function atualizarFeriasMassagista(id, data_inicio, data_fim, observacao) {
+  return getDb().prepare(
+    'UPDATE ferias_massagista SET data_inicio=?, data_fim=?, observacao=? WHERE id=?'
+  ).run(data_inicio, data_fim, observacao || null, id).changes;
+}
+export function excluirFeriasMassagista(id) {
+  return getDb().prepare('DELETE FROM ferias_massagista WHERE id=?').run(id).changes;
+}
+export function feriasConflito(massagista_id, data_inicio, data_fim, excludeId) {
+  if (excludeId) {
+    return !!getDb().prepare(
+      'SELECT 1 FROM ferias_massagista WHERE massagista_id=? AND id<>? AND data_inicio<=? AND data_fim>=?'
+    ).get(massagista_id, excludeId, data_fim, data_inicio);
+  }
+  return !!getDb().prepare(
+    'SELECT 1 FROM ferias_massagista WHERE massagista_id=? AND data_inicio<=? AND data_fim>=?'
+  ).get(massagista_id, data_fim, data_inicio);
 }
 
 // ── Tipos de Massagem ──

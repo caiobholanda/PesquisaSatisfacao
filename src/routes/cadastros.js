@@ -4,6 +4,7 @@ import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
+  listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -144,6 +145,49 @@ router.get('/massagistas/:id/receita', (req, res) => {
 router.delete('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
   const changes = deletarMassagista(parseInt(req.params.id));
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  res.json({ ok: true });
+});
+
+// ── Férias massagista ──
+router.get('/massagistas/:id/ferias', (req, res) => {
+  const m = buscarMassagistaById(parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrada' });
+  res.json({ ok: true, ferias: listarFeriasMassagista(m.id) });
+});
+
+router.post('/massagistas/:id/ferias', ...podeEscreverSpa, (req, res) => {
+  const m = buscarMassagistaById(parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrada' });
+  const { data_inicio, data_fim, observacao } = req.body || {};
+  if (!data_inicio || !data_fim) return res.status(400).json({ ok: false, error: 'data_inicio e data_fim são obrigatórios' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data_inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(data_fim))
+    return res.status(400).json({ ok: false, error: 'Datas inválidas (YYYY-MM-DD)' });
+  if (data_inicio > data_fim) return res.status(400).json({ ok: false, error: 'Início deve ser anterior ao fim' });
+  if (feriasConflito(m.id, data_inicio, data_fim, null))
+    return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  const id = criarFeriasMassagista(m.id, data_inicio, data_fim, observacao?.trim() || null);
+  res.json({ ok: true, id });
+});
+
+router.put('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
+  const m = buscarMassagistaById(parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrada' });
+  const { data_inicio, data_fim, observacao } = req.body || {};
+  if (!data_inicio || !data_fim) return res.status(400).json({ ok: false, error: 'data_inicio e data_fim são obrigatórios' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data_inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(data_fim))
+    return res.status(400).json({ ok: false, error: 'Datas inválidas (YYYY-MM-DD)' });
+  if (data_inicio > data_fim) return res.status(400).json({ ok: false, error: 'Início deve ser anterior ao fim' });
+  const fId = parseInt(req.params.fId);
+  if (feriasConflito(m.id, data_inicio, data_fim, fId))
+    return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  const changes = atualizarFeriasMassagista(fId, data_inicio, data_fim, observacao?.trim() || null);
+  if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
+  res.json({ ok: true });
+});
+
+router.delete('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
+  const changes = excluirFeriasMassagista(parseInt(req.params.fId));
+  if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
   res.json({ ok: true });
 });
 

@@ -4850,6 +4850,34 @@
         <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala semanal padrão</div>
         <div id="mgmt-m-disp-grid" style="display:flex;flex-direction:column;gap:.375rem"></div>
       </div>
+      <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Férias programadas</div>
+          <button class="btn btn-outline" id="mgmt-m-ferias-add-btn" type="button" style="padding:.25rem .7rem;font-size:.75rem">+ Adicionar</button>
+        </div>
+        <div id="mgmt-m-ferias-list"></div>
+        <div id="mgmt-m-ferias-form" style="display:none;border:1px solid var(--border-soft);padding:.75rem;margin-top:.5rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div class="res-fg" style="margin:0">
+              <label>Início <span style="color:var(--danger)">*</span></label>
+              <input type="date" id="mgmt-m-ferias-inicio">
+            </div>
+            <div class="res-fg" style="margin:0">
+              <label>Fim <span style="color:var(--danger)">*</span></label>
+              <input type="date" id="mgmt-m-ferias-fim">
+            </div>
+          </div>
+          <div class="res-fg" style="margin-bottom:.5rem">
+            <label>Observação</label>
+            <input type="text" id="mgmt-m-ferias-obs" maxlength="200" placeholder="Ex: Férias de julho">
+          </div>
+          <div id="mgmt-m-ferias-form-err" style="color:var(--danger);font-size:.8rem;margin-bottom:.5rem;display:none"></div>
+          <div style="display:flex;gap:.5rem;justify-content:flex-end">
+            <button class="btn btn-outline" id="mgmt-m-ferias-form-cancel" type="button" style="padding:.3rem .75rem;font-size:.8rem">Cancelar</button>
+            <button class="btn btn-gold" id="mgmt-m-ferias-form-save" type="button" style="padding:.3rem .75rem;font-size:.8rem">Salvar</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="res-modal-err" id="mgmt-m-err"></div>
     <div class="res-modal-ft">
