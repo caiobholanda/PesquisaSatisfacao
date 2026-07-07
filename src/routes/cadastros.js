@@ -96,8 +96,10 @@ function _validarDisp(disponibilidade) {
 }
 
 router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
-  const { nome, ativo = 1, matricula, funcao, vinculo, bilingue, disponibilidade, excecoes } = req.body || {};
-  if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
+  // nome/funcao/vinculo/bilingue são gerenciados pelo Hub — ignorados se enviados pelo frontend
+  const { nome, ativo = 1, matricula, disponibilidade, excecoes } = req.body || {};
+  const existing = buscarMassagistaById(parseInt(req.params.id));
+  if (!existing) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   if (disponibilidade !== undefined) {
     const erroDisp = _validarDisp(disponibilidade);
     if (erroDisp) return res.status(400).json({ ok: false, error: erroDisp });
@@ -106,19 +108,7 @@ router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
     const erroExc = _validarExcecoes(excecoes);
     if (erroExc) return res.status(400).json({ ok: false, error: erroExc });
   }
-  const existing = buscarMassagistaById(parseInt(req.params.id));
-  if (!existing) return res.status(404).json({ ok: false, error: 'Não encontrado' });
-
-  const resolvedFuncao = funcao !== undefined ? (funcao?.trim() || 'Massoterapeuta') : (existing.funcao || 'Massoterapeuta');
-  const resolvedVinculo = vinculo !== undefined ? (vinculo?.trim() || null) : existing.vinculo;
-  const resolvedBilingue = bilingue !== undefined ? (bilingue ? 1 : 0) : existing.bilingue;
-
-  const opts = {
-    funcao: resolvedFuncao,
-    vinculo: resolvedVinculo,
-    bilingue: resolvedBilingue,
-    especialidade_original: _computarEsp(resolvedFuncao, resolvedBilingue, resolvedVinculo),
-  };
+  const opts = {};
   if (matricula !== undefined) opts.matricula = matricula?.trim() || null;
   if (disponibilidade !== undefined) opts.disponibilidade = disponibilidade
     ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade))
@@ -127,7 +117,7 @@ router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
     ? JSON.stringify(excecoes)
     : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null);
 
-  atualizarMassagista(parseInt(req.params.id), nome, ativo ? 1 : 0, opts);
+  atualizarMassagista(parseInt(req.params.id), nome || existing.nome, ativo ? 1 : 0, opts);
   res.json({ ok: true });
 });
 

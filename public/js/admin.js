@@ -1431,7 +1431,7 @@ function _renderDispGrid(disp) {
         <span class="disp-row-sep">–</span>
         <input type="time" class="disp-fim" data-day="${key}" value="${fim || '17:00'}" min="08:00" max="22:00" ${on ? '' : 'disabled'}>
       </div>
-      ${!on ? '<span class="disp-row-off">Não trabalha</span>' : ''}
+      ${!on ? '<span class="disp-row-off">Folga</span>' : ''}
     </div>`;
   }).join('');
   grid.querySelectorAll('.disp-chk').forEach(chk => {
@@ -1440,7 +1440,7 @@ function _renderDispGrid(disp) {
       row.querySelectorAll('input[type=time]').forEach(t => { t.disabled = !this.checked; });
       let off = row.querySelector('.disp-row-off');
       if (!this.checked) {
-        if (!off) { off = document.createElement('span'); off.className = 'disp-row-off'; off.textContent = 'Não trabalha'; row.appendChild(off); }
+        if (!off) { off = document.createElement('span'); off.className = 'disp-row-off'; off.textContent = 'Folga padrão semanal'; row.appendChild(off); }
       } else if (off) off.remove();
     });
   });
@@ -1605,17 +1605,21 @@ document.getElementById('mgmt-exc-salvar')?.addEventListener('click', async () =
 window.openEditMassagista = (id, nome) => {
   _editMId = id;
   document.getElementById('mgmt-m-sub').textContent = nome;
-  document.getElementById('mgmt-m-nome').value = nome;
   document.getElementById('mgmt-m-err').textContent = '';
   const m = _massagistas.find(x => x.id === id);
-  document.getElementById('mgmt-m-cargo').value = m?.funcao || '';
-  document.getElementById('mgmt-m-vinculo').value = m?.vinculo || '';
-  document.getElementById('mgmt-m-bilingue').checked = !!m?.bilingue;
+  document.getElementById('mgmt-m-nome-display').textContent    = nome || '—';
+  document.getElementById('mgmt-m-cargo-display').textContent   = m?.funcao  || '—';
+  document.getElementById('mgmt-m-vinculo-display').textContent = m?.vinculo || '—';
+  const biEl = document.getElementById('mgmt-m-bilingue-display');
+  if (m?.bilingue) {
+    biEl.innerHTML = '<span class="hub-bilingue-badge">🌐 Bilíngue</span>';
+  } else {
+    biEl.innerHTML = '<span class="hub-bilingue-none">—</span>';
+  }
   const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
   _renderDispGrid(disp);
   _modalOpen = true;
   document.getElementById('mgmt-m-overlay').style.display = 'flex';
-  setTimeout(() => document.getElementById('mgmt-m-nome').focus(), 50);
 };
 
 function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
@@ -1624,17 +1628,16 @@ document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM)
 document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
   const err = document.getElementById('mgmt-m-err');
   err.textContent = '';
-  const nome = document.getElementById('mgmt-m-nome').value.trim();
-  if (!nome) { err.textContent = 'Informe o nome.'; return; }
-  const funcao = document.getElementById('mgmt-m-cargo').value.trim() || null;
-  const vinculo = document.getElementById('mgmt-m-vinculo').value || null;
-  const bilingue = document.getElementById('mgmt-m-bilingue').checked;
   const btn = document.getElementById('mgmt-m-salvar');
   btn.disabled = true;
   try {
     const disponibilidade = _coletarDisp();
     if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const res = await api(`/api/massagistas/${_editMId}`, { method: 'PUT', body: JSON.stringify({ nome, funcao, vinculo, bilingue, disponibilidade }) });
+    const m = _massagistas.find(x => x.id === _editMId);
+    const res = await api(`/api/massagistas/${_editMId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ nome: m?.nome || '', disponibilidade })
+    });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }

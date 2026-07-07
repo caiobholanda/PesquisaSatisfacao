@@ -2705,6 +2705,61 @@
       background: rgba(91,103,150,.12);
       color: var(--indigo);
     }
+    /* ── Read-only Hub fields ── */
+    .hub-ro-field {
+      padding: .55rem .7rem .55rem .85rem;
+      background: var(--gold-dim);
+      border-left: 2.5px solid var(--gold);
+      border-radius: 6px;
+    }
+    .hub-ro-label {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .25rem;
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .hub-badge {
+      font-size: .6rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: none;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 3px;
+      padding: 0 .3rem;
+      opacity: .7;
+      line-height: 1.5;
+    }
+    .hub-ro-value {
+      font-size: .92rem;
+      font-weight: 500;
+      color: var(--text);
+      min-height: 1.2em;
+    }
+    .hub-bilingue-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--gold-dark);
+      background: var(--gold-dim);
+      border: 1px solid var(--gold);
+      border-radius: 20px;
+      padding: .2rem .6rem;
+      margin-top: .15rem;
+    }
+    .hub-bilingue-none {
+      font-size: .82rem;
+      color: var(--muted);
+      opacity: .6;
+      margin-top: .1rem;
+    }
     .mgmt-item-esp {
       display: block;
       font-size: 0.74rem;
@@ -4775,31 +4830,25 @@
     </div>
     <div class="res-modal-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-        <div class="res-fg" style="margin:0">
-          <label>Nome <span style="color:var(--danger)">*</span></label>
-          <input type="text" id="mgmt-m-nome">
+        <div class="hub-ro-field" style="margin:0">
+          <div class="hub-ro-label">Nome <span class="hub-badge">↑ Hub</span></div>
+          <div class="hub-ro-value" id="mgmt-m-nome-display">—</div>
         </div>
-        <div class="res-fg" style="margin:0">
-          <label>Cargo</label>
-          <input type="text" id="mgmt-m-cargo" placeholder="Ex: Massoterapeuta">
+        <div class="hub-ro-field" style="margin:0">
+          <div class="hub-ro-label">Cargo <span class="hub-badge">↑ Hub</span></div>
+          <div class="hub-ro-value" id="mgmt-m-cargo-display">—</div>
         </div>
-        <div class="res-fg" style="margin:0">
-          <label>Vínculo</label>
-          <select id="mgmt-m-vinculo" style="width:100%">
-            <option value="">—</option>
-            <option value="Pleno">Pleno</option>
-            <option value="Part Time">Part Time</option>
-            <option value="Estagiário">Estagiário</option>
-          </select>
+        <div class="hub-ro-field" style="margin:0">
+          <div class="hub-ro-label">Vínculo <span class="hub-badge">↑ Hub</span></div>
+          <div class="hub-ro-value" id="mgmt-m-vinculo-display">—</div>
         </div>
-        <div class="res-fg" style="margin:0;display:flex;align-items:flex-end;padding-bottom:.35rem">
-          <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.85rem;color:var(--text)">
-            <input type="checkbox" id="mgmt-m-bilingue"> Bilíngue
-          </label>
+        <div class="hub-ro-field" style="margin:0;display:flex;flex-direction:column;justify-content:center">
+          <div class="hub-ro-label">Bilíngue <span class="hub-badge">↑ Hub</span></div>
+          <div id="mgmt-m-bilingue-display"></div>
         </div>
       </div>
       <div style="padding-top:1rem;border-top:1px solid var(--border-soft)">
-        <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala Semanal</div>
+        <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Escala semanal padrão</div>
         <div id="mgmt-m-disp-grid" style="display:flex;flex-direction:column;gap:.375rem"></div>
       </div>
     </div>
