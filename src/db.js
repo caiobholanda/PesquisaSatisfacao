@@ -160,6 +160,9 @@ export function initDb() {
   }
   // Migration: set default funcao for existing records that have null
   try { db.exec(`UPDATE massagistas SET funcao = 'Massoterapeuta' WHERE funcao IS NULL OR funcao = ''`); } catch {}
+  // Migration: add email field to massagistas for Hub SSO login
+  try { db.exec(`ALTER TABLE massagistas ADD COLUMN email TEXT`); } catch {}
+  try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_massagistas_email ON massagistas(email) WHERE email IS NOT NULL AND email <> ''`); } catch {}
   // Migration: add enriched fields to reservas if absent
   for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER', 'massagista_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
@@ -2537,6 +2540,10 @@ export function buscarMassagistaPorNome(nome) {
 }
 export function buscarMassagistaPorId(id) {
   return getDb().prepare("SELECT id, nome, ativo, disponibilidade FROM massagistas WHERE id = ?").get(id) || null;
+}
+export function buscarMassagistaPorEmail(email) {
+  if (!email) return null;
+  return getDb().prepare("SELECT id, nome, ativo, disponibilidade FROM massagistas WHERE LOWER(email) = LOWER(?) LIMIT 1").get(email) || null;
 }
 export function setMassagistaPinHash(id, pinHash) {
   getDb().prepare("UPDATE massagistas SET pin_hash = ? WHERE id = ?").run(pinHash, id);

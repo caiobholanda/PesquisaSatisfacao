@@ -6,7 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto, seedReceitaTerapias, buscarMassagistaById, atualizarMassagista } from './db.js';
+import { initDb, listarMassagistas, listarTiposMassagem, buscarSurveyToken, buscarSurveyTokenAtivo, logAuditoria, listarQuartos, isGranClass, categoriaQuarto, seedReceitaTerapias, buscarMassagistaById, atualizarMassagista, buscarMassagistaPorEmail } from './db.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
 import cadastrosRouter from './routes/cadastros.js';
@@ -303,7 +303,7 @@ app.get('/sso', (req, res) => {
       role = 'master';
     } else {
       const siteRole = payload.site_roles && payload.site_roles['pesquisa-satisfacao'];
-      if (siteRole && ['master', 'admin', 'spa', 'satisfacao'].includes(siteRole)) {
+      if (siteRole && ['master', 'admin', 'spa', 'satisfacao', 'massoterapeuta'].includes(siteRole)) {
         role = siteRole;
       } else if (Array.isArray(payload.sites_admin) && payload.sites_admin.includes('pesquisa-satisfacao')) {
         role = 'admin';
@@ -311,6 +311,29 @@ app.get('/sso', (req, res) => {
         role = 'user';
       }
     }
+
+    // Massoterapeuta: fluxo separado — cookie spa_terapeuta_sess + redirect /terapeuta
+    if (role === 'massoterapeuta') {
+      const m = buscarMassagistaPorEmail(email);
+      if (m && m.ativo) {
+        const terapeutaToken = jwt.sign(
+          { massagista_id: m.id, nome: m.nome, role: 'terapeuta' },
+          process.env.JWT_SECRET,
+          { expiresIn: '12h' }
+        );
+        const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+        res.appendHeader('Set-Cookie', `spa_terapeuta_sess=${encodeURIComponent(terapeutaToken)}; HttpOnly; SameSite=Lax; Max-Age=43200; Path=/${secure}`);
+        try {
+          const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim() || null;
+          logAuditoria({ ator_username: email, ator_role: 'massoterapeuta', ator_ip: ip, metodo: 'GET', rota: '/sso', acao: 'login_sso', recurso: 'auth', status: 200, sucesso: true, detalhes: JSON.stringify({ via: 'hub', massagista_id: m.id }) });
+        } catch {}
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>window.location.replace('/terapeuta');<\/script></head></html>`);
+      }
+      // Email não vinculado a nenhuma massagista ativa — trata como usuário comum
+      role = 'user';
+    }
+
     const isAdmin = role !== 'user';
     const token = jwt.sign(
       { sub: 0, username: email, role },
