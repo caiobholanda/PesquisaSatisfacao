@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Escala SPA — Gran Marquise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>
 (function() {
   try {
@@ -36,6 +39,8 @@
   --warn:        #9C5843;
   /* layout */
   --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
+  --font: 'Inter', 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
   /* siglas */
   --sig-m-bg:  rgba(21,112,90,.13);   --sig-m-fg:  #15705A;  --sig-m-bd:  rgba(21,112,90,.28);
   --sig-t-bg:  rgba(27,94,168,.11);   --sig-t-fg:  #1B5EA8;  --sig-t-bd:  rgba(27,94,168,.24);
@@ -66,6 +71,8 @@
   --warn:        #d4823a;
   /* layout */
   --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
+  --font: 'Inter', 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
   /* siglas */
   --sig-m-bg:  #1a3a2c;  --sig-m-fg:  #4dbe8a;  --sig-m-bd:  #2e6048;
   --sig-t-bg:  #162a3d;  --sig-t-fg:  #5292d0;  --sig-t-bd:  #2a4a72;
@@ -87,7 +94,7 @@ html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -132,7 +139,7 @@ body {
 .topbar-sep { flex: 1; }
 .save-ind {
   font-size: 11px; color: var(--muted);
-  font-family: 'JetBrains Mono', monospace; letter-spacing: .04em;
+  font-family: var(--mono); letter-spacing: .04em;
   min-width: 80px; text-align: right; transition: color .15s;
 }
 .save-ind.saving { color: var(--warn); }
@@ -168,7 +175,7 @@ body {
 .pnav-main { font-size: 17px; font-weight: 300; color: var(--text); letter-spacing: -.01em; }
 .pnav-sub {
   font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 1px;
+  color: var(--muted); font-family: var(--mono); margin-top: 1px;
 }
 .periodo-bar-sep { flex: 1; }
 .legend { display: flex; align-items: center; gap: 16px; }
@@ -205,12 +212,12 @@ body {
 .gh-mes-label {
   position: absolute; top: 8px; left: 0; right: 0; text-align: center;
   font-size: 8px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--gold); font-family: 'JetBrains Mono', monospace;
+  color: var(--gold); font-family: var(--mono);
 }
 .gh-num { font-size: 16px; font-weight: 700; line-height: 1; color: var(--text); }
 .gh-num.wkc   { color: var(--muted); opacity: .6; }
 .gh-num.hoje-c { color: var(--success); }
-.gh-dsem { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.gh-dsem { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
 .gh-dsem.wkc   { opacity: .45; }
 .gh-dsem.hoje-c { color: var(--success); }
 .gh-fer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); position: absolute; top: 44px; }
@@ -221,7 +228,7 @@ body {
   background: var(--bg); border-right: 2px solid var(--border);
   display: flex; align-items: center; padding: 0 16px;
 }
-.gs-label { font-size: 8px; font-weight: 700; letter-spacing: .25em; text-transform: uppercase; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+.gs-label { font-size: 8px; font-weight: 700; letter-spacing: .25em; text-transform: uppercase; color: var(--gold); font-family: var(--mono); }
 .gs-bar { flex: 1; display: flex; align-items: center; padding-left: 12px; }
 .gs-line { height: 1px; flex: 1; background: var(--border-soft); }
 
@@ -242,7 +249,7 @@ body {
   font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
   padding: 2px 6px; border-radius: 3px; color: var(--muted);
   background: var(--border-soft); border: 1px solid var(--border);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--mono);
 }
 
 .cell-d {
@@ -285,7 +292,7 @@ body {
   background: var(--surface); border: 1px solid var(--border); color: var(--muted);
   font-size: 10px; letter-spacing: .05em; padding: 5px 10px;
   white-space: nowrap; z-index: 999; pointer-events: none;
-  border-radius: 3px; font-family: 'JetBrains Mono', monospace;
+  border-radius: 3px; font-family: var(--mono);
   box-shadow: 0 4px 12px var(--picker-shadow);
 }
 
@@ -299,9 +306,9 @@ body {
   position: sticky; left: 0; z-index: 75; background: var(--surface2);
   border-right: 2px solid var(--border); display: flex; align-items: center; padding: 0 16px;
 }
-.tot-label { font-size: 9px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.tot-label { font-size: 9px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
 .tot-cel { width: var(--col-d); flex-shrink: 0; height: 40px; border-left: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; }
-.tot-num { font-size: 13px; font-weight: 800; color: var(--success); font-family: 'JetBrains Mono', monospace; }
+.tot-num { font-size: 13px; font-weight: 800; color: var(--success); font-family: var(--mono); }
 .tot-num.z { color: var(--border); font-size: 11px; }
 
 /* ── PICKER ───────────────────────────────────── */
@@ -364,7 +371,6 @@ body {
   </div>
   <div class="topbar-sep"></div>
   <span class="save-ind" id="save-ind"></span>
-  <button class="topbar-btn" onclick="window.print()">⎙ Imprimir</button>
 </div>
 
 <!-- PERÍODO + LEGENDA -->
