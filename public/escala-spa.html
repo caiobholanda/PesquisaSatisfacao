@@ -715,7 +715,7 @@ function render() {
       _firstRowDone = true;
       html += '<div class="grid-row">';
       html += `<div class="cell-prof">
-        <div class="prof-name" data-tip="${escH(prof.nome)}">${escH(prof.nome)}</div>
+        <div class="prof-name">${escH(prof.nome)}</div>
         <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span></div>
       </div>`;
       for (const [di, d] of dias.entries()) {
