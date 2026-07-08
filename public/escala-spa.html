@@ -38,7 +38,7 @@
   --danger:      #B85450;
   --warn:        #9C5843;
   /* layout */
-  --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
+  --col-prof: 178px; --col-d: 44px; --row-h: 44px; --head-h: 58px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
   /* siglas — cor única, igual ao quadrado 10h */
@@ -73,7 +73,7 @@
   --danger:      #D86862;
   --warn:        #d4823a;
   /* layout */
-  --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
+  --col-prof: 178px; --col-d: 44px; --row-h: 44px; --head-h: 58px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
   /* siglas dark — cor única, igual ao quadrado 10h */
@@ -234,10 +234,11 @@ body {
 /* Sigla grande centralizada */
 .sigla {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 6px;
-  font-size: 16px; font-weight: 900; letter-spacing: .02em; line-height: 1;
-  transition: transform .08s; user-select: none; pointer-events: none;
+  width: 30px; height: 30px; border-radius: 4px;
+  font-size: 11px; font-weight: 900; letter-spacing: .02em; line-height: 1;
+  transition: transform .08s; user-select: none; pointer-events: none; overflow: hidden;
 }
+.sig-composite { font-size: 7px; }
 .cell-d:hover .sigla { transform: scale(1.06); }
 
 .sig-M  { background: var(--sig-m-bg);  color: var(--sig-m-fg);  border: 1.5px solid var(--sig-m-bd); }
@@ -742,8 +743,8 @@ function render() {
   const massoterapeutas = profs.filter(p => !p.funcao || !p.funcao.toLowerCase().includes('recep'));
   const recepcionistas  = profs.filter(p => p.funcao && p.funcao.toLowerCase().includes('recep'));
   const grupos = [];
-  if (massoterapeutas.length) grupos.push({ label: 'Massoterapeutas', profs: massoterapeutas });
   if (recepcionistas.length)  grupos.push({ label: 'Recepcionistas',  profs: recepcionistas });
+  if (massoterapeutas.length) grupos.push({ label: 'Massoterapeutas', profs: massoterapeutas });
   if (!grupos.length) { document.getElementById('grid-root').innerHTML = '<div class="grid-loading">Nenhuma profissional ativa.</div>'; return; }
 
   let _firstRowDone = false;
