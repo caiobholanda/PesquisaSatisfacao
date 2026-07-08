@@ -328,18 +328,22 @@ body {
   font-size: 9px; text-transform: uppercase; letter-spacing: .10em; color: var(--muted);
   padding: 4px 8px 2px; font-family: var(--mono); pointer-events: none;
 }
-.cp-times {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 2px 4px 4px;
+.cp-horario { padding: 4px 6px 6px; display: flex; flex-direction: column; gap: 6px; }
+.cp-time-row { display: flex; align-items: center; gap: 8px; }
+.cp-time-label { font-size: 10px; color: var(--muted); font-family: var(--mono); width: 44px; flex-shrink: 0; }
+.cp-time-input {
+  flex: 1; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 5px; color: var(--text); font-family: var(--mono);
+  font-size: 13px; padding: 5px 8px; outline: none; transition: border-color .1s;
+  color-scheme: light dark;
 }
-.cp-time {
-  font-family: var(--mono); font-size: 11px; font-weight: 600; line-height: 1;
-  border: 1.5px solid var(--border); border-radius: 5px;
-  padding: 7px 2px; cursor: pointer; background: var(--surface2);
-  color: var(--muted); text-align: center; transition: background .1s, color .1s, border-color .1s;
+.cp-time-input:focus { border-color: var(--gold); }
+.cp-btn-salvar {
+  background: var(--success); color: #fff; border: none; border-radius: 5px;
+  padding: 7px; font-size: 12px; cursor: pointer; font-family: inherit;
+  font-weight: 600; letter-spacing: .03em; transition: opacity .1s; margin-top: 2px;
 }
-.cp-time.tm:hover, .cp-time.tm.active { background: var(--sig-m-bg); color: var(--sig-m-fg); border-color: var(--sig-m-bd); }
-.cp-time.tt:hover, .cp-time.tt.active { background: var(--sig-t-bg); color: var(--sig-t-fg); border-color: var(--sig-t-bd); }
-.cp-time.tn:hover, .cp-time.tn.active { background: var(--sig-n-bg); color: var(--sig-n-fg); border-color: var(--sig-n-bd); }
+.cp-btn-salvar:hover { opacity: .85; }
 .sig-composite {
   width: auto; min-width: 38px; max-width: 52px; padding: 0 3px;
   font-size: 8.5px; letter-spacing: -.02em; white-space: nowrap;
