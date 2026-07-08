@@ -198,6 +198,8 @@
       var toggle = document.getElementById(toggleId);
       var menu   = document.getElementById(menuId);
       if (!toggle || !menu) return;
+      if (toggle.dataset.ddBound) return;
+      toggle.dataset.ddBound = "1";
       toggle.addEventListener("click", function (e) {
         e.stopPropagation();
         var wasOpen = menu.classList.contains("open");

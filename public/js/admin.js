@@ -4831,28 +4831,7 @@ async function apiSend(method, url, body) {
 // para uso futuro (nao ha caller hoje, mas a remocao introduz risco baixo).
 document.getElementById('btn-back-reservas').addEventListener('click',()=>showView('view-reservas'));
 
-// Dropdowns SPA e Administrativo
-(function setupDropdowns() {
-  const allMenus = ['spa-dropdown-menu', 'admin-dropdown-menu'];
-  function closeAll() { allMenus.forEach(id => document.getElementById(id).classList.remove('open')); }
-  function makeDropdown(toggleId, menuId) {
-    const toggle = document.getElementById(toggleId);
-    const menu   = document.getElementById(menuId);
-    toggle.addEventListener('click', e => {
-      e.stopPropagation();
-      const wasOpen = menu.classList.contains('open');
-      closeAll();
-      if (!wasOpen) menu.classList.add('open');
-    });
-    menu.addEventListener('click', () => menu.classList.remove('open'));
-  }
-  makeDropdown('btn-spa-toggle', 'spa-dropdown-menu');
-  makeDropdown('btn-admin-toggle', 'admin-dropdown-menu');
-  document.addEventListener('click', () => {
-    document.getElementById('spa-dropdown-menu').classList.remove('open');
-    document.getElementById('admin-dropdown-menu').classList.remove('open');
-  });
-})();
+// Dropdowns gerenciados por shared-header.js (setupDropdownToggles)
 
 // Usuários
 // ── Usuários ──
