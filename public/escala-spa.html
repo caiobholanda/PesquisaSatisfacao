@@ -105,42 +105,6 @@ body {
   transition: background-color .3s, color .3s;
 }
 
-/* ── TOP BAR ─────────────────────────────────── */
-.topbar {
-  height: 56px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 16px;
-  flex-shrink: 0;
-  z-index: 90;
-  transition: background-color .3s, border-color .3s;
-}
-.topbar-back {
-  height: 32px;
-  padding: 0 12px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  border-radius: 4px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color .12s, border-color .12s;
-  flex-shrink: 0;
-}
-.topbar-back:hover { color: var(--text); border-color: var(--muted); }
-.topbar-div { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
-.topbar-brand { display: flex; align-items: center; gap: 10px; }
-.topbar-dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; flex-shrink: 0; }
-.topbar-name { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text); }
-.topbar-sep { flex: 1; }
 .save-ind {
   font-size: 11px; color: var(--muted);
   font-family: var(--mono); letter-spacing: .04em;
@@ -149,14 +113,6 @@ body {
 .save-ind.saving { color: var(--warn); }
 .save-ind.saved  { color: var(--success); }
 .save-ind.err    { color: var(--danger); }
-.topbar-btn {
-  height: 32px; padding: 0 14px; background: transparent;
-  border: 1px solid var(--border); color: var(--muted);
-  font-size: 12px; font-family: inherit; cursor: pointer;
-  border-radius: 4px; transition: color .12s, border-color .12s;
-  display: flex; align-items: center; gap: 6px;
-}
-.topbar-btn:hover { color: var(--text); border-color: var(--muted); }
 
 /* ── PERÍODO NAV ──────────────────────────────── */
 .periodo-bar {
@@ -401,17 +357,8 @@ body {
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <a href="/admin" class="topbar-back">← Painel</a>
-  <div class="topbar-div"></div>
-  <div class="topbar-brand">
-    <div class="topbar-dot"></div>
-    <span class="topbar-name">Escala SPA · Gran Marquise</span>
-  </div>
-  <div class="topbar-sep"></div>
-  <span class="save-ind" id="save-ind"></span>
-</div>
+<script src="/js/shared-header.js"></script>
+<script>if (window.initSharedHeader) initSharedHeader({ context: 'escala-spa' });</script>
 
 <!-- PERÍODO + LEGENDA -->
 <div class="periodo-bar">
@@ -422,6 +369,7 @@ body {
   </div>
   <button class="pnav-btn" id="btn-next">›</button>
   <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
+  <span class="save-ind" id="save-ind"></span>
   <div class="periodo-bar-sep"></div>
   <div class="legend">
     <div class="leg-item"><div class="leg-chip sig-M" style="font-size:10px">09h</div>Manhã</div>
