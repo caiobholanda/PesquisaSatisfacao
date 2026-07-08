@@ -1071,37 +1071,37 @@ function pmRenderizar(items) {
     let padrao = {};
     try { padrao = JSON.parse(prof.padrao_entrada || '{}'); } catch {}
     const semHub = !prof.email
-      ? '<span style="font-size:.68rem;color:var(--muted);background:var(--surface2);padding:1px 6px;border-radius:3px;margin-left:6px;border:1px solid var(--border-soft)">sem vínculo Hub</span>'
+      ? '<span class="pm-no-hub">sem vínculo Hub</span>'
       : '';
     const diasHtml = PM_DIAS.map(({ key, lbl }) => {
-      const val     = padrao[key] ?? null;
-      const isE     = val && val !== 'FOLGA';
-      const isF     = val === 'FOLGA';
-      const isN     = !val;
+      const val       = padrao[key] ?? null;
+      const isE       = val && val !== 'FOLGA';
+      const isF       = val === 'FOLGA';
+      const isN       = !val;
       const horaAtual = isE ? val : '09:00';
-      const opts    = PM_HORAS.map(h => `<option value="${h}"${h===horaAtual?' selected':''}>${pmFmtH(h)}</option>`).join('');
-      return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:26px;flex-shrink:0;font-family:var(--mono)">${escH(lbl)}</span>
-        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+      const opts      = PM_HORAS.map(h => `<option value="${h}"${h===horaAtual?' selected':''}>${pmFmtH(h)}</option>`).join('');
+      return `<div class="pm-dia-row">
+        <span class="pm-dia-lbl">${escH(lbl)}</span>
+        <label class="pm-radio-lbl">
           <input type="radio" name="pm-${prof.id}-${key}" value="entrada" ${isE?'checked':''} style="accent-color:var(--gold)" data-pm-mid="${prof.id}" data-pm-dia="${key}">Entrada
         </label>
-        <select id="pm-sel-${prof.id}-${key}" ${!isE?'disabled':''} style="font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text);font-family:var(--mono)">${opts}</select>
-        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+        <select id="pm-sel-${prof.id}-${key}" class="pm-hora-sel" ${!isE?'disabled':''}>${opts}</select>
+        <label class="pm-radio-lbl">
           <input type="radio" name="pm-${prof.id}-${key}" value="folga" ${isF?'checked':''} style="accent-color:var(--gold)">Folga fixa
         </label>
-        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+        <label class="pm-radio-lbl">
           <input type="radio" name="pm-${prof.id}-${key}" value="nulo" ${isN?'checked':''} style="accent-color:var(--gold)">Não escalada
         </label>
       </div>`;
     }).join('');
 
-    return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px">
+    return `<div class="pm-card">
+      <div class="pm-card-head">
         <div>
-          <div style="font-weight:600;font-size:.9rem;color:var(--text)">${escH(prof.nome)}${semHub}</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${escH(prof.funcao||'—')} · ${escH(prof.vinculo||'—')}</div>
+          <div class="pm-card-name">${escH(prof.nome)}${semHub}</div>
+          <div class="pm-card-meta">${escH(prof.funcao||'—')} · ${escH(prof.vinculo||'—')}</div>
         </div>
-        <button data-pm-save="${prof.id}" style="flex-shrink:0;padding:.3rem .9rem;border-radius:6px;border:none;background:var(--gold);color:#fff;cursor:pointer;font-weight:600;font-size:.78rem;white-space:nowrap">Salvar</button>
+        <button data-pm-save="${prof.id}" class="pm-save-btn">Salvar</button>
       </div>
       ${diasHtml}
     </div>`;
