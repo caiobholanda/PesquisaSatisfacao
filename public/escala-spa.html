@@ -274,20 +274,6 @@ body {
 /* 1ª linha de dados: aparece abaixo — não cobre o cabeçalho de dias */
 .row-first[data-tip]:hover::after { bottom: auto; top: calc(100% + 6px); }
 
-/* Totais */
-.totais-row {
-  display: flex; position: sticky; bottom: 0; z-index: 70;
-  background: var(--surface2); border-top: 2px solid var(--border);
-}
-.tot-prof {
-  width: var(--col-prof); flex-shrink: 0; height: 40px;
-  position: sticky; left: 0; z-index: 75; background: var(--surface2);
-  border-right: 2px solid var(--border); display: flex; align-items: center; padding: 0 16px;
-}
-.tot-label { font-size: 9px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
-.tot-cel { width: var(--col-d); flex-shrink: 0; height: 40px; border-left: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: center; }
-.tot-num { font-size: 13px; font-weight: 800; color: var(--success); font-family: var(--mono); }
-.tot-num.z { color: var(--border); font-size: 11px; }
 
 /* ── PICKER ───────────────────────────────────── */
 #cell-picker {
@@ -784,15 +770,6 @@ function render() {
     }
   }
 
-  // ── Totais ──
-  html += '<div class="totais-row">';
-  html += '<div class="tot-prof"><span class="tot-label">Trabalhando / dia</span></div>';
-  for (const d of dias) {
-    let n = 0;
-    for (const p of profs) { const t = turnos[`${p.id}-${d.i}`]; if (t && (TIMES_CFG[t] || t.includes('|'))) n++; }
-    html += `<div class="tot-cel"><span class="tot-num${n === 0 ? ' z' : ''}">${n || '—'}</span></div>`;
-  }
-  html += '</div>';
 
   document.getElementById('grid-root').innerHTML = html;
 }
