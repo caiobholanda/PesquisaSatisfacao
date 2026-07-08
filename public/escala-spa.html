@@ -38,7 +38,7 @@
   --danger:      #B85450;
   --warn:        #9C5843;
   /* layout */
-  --col-prof: 200px; --col-d: 44px; --row-h: 54px; --head-h: 58px;
+  --col-prof: 200px; --col-d: 44px; --row-h: 48px; --head-h: 50px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
   /* siglas — cor única, igual ao quadrado 10h */
@@ -73,7 +73,7 @@
   --danger:      #D86862;
   --warn:        #d4823a;
   /* layout */
-  --col-prof: 200px; --col-d: 44px; --row-h: 54px; --head-h: 58px;
+  --col-prof: 200px; --col-d: 44px; --row-h: 48px; --head-h: 50px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
   /* siglas dark — cor única, igual ao quadrado 10h */
@@ -118,7 +118,7 @@ body {
 
 /* ── PERÍODO NAV ──────────────────────────────── */
 .periodo-bar {
-  height: 56px;
+  height: 46px;
   background: var(--surface2);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 24px; gap: 0;
@@ -157,13 +157,13 @@ body {
   width: var(--col-prof); flex-shrink: 0; height: var(--head-h);
   position: sticky; left: 0; z-index: 85; background: var(--bg);
   border-right: 2px solid var(--border);
-  display: flex; align-items: flex-end; padding: 0 16px 12px;
+  display: flex; align-items: flex-end; padding: 0 12px 8px;
 }
 .gh-prof-label { font-size: 9px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 .gh-day {
   width: var(--col-d); flex-shrink: 0; height: var(--head-h);
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 10px; gap: 3px; border-left: 1px solid var(--border-soft);
+  padding-bottom: 8px; gap: 2px; border-left: 1px solid var(--border-soft);
   transition: background .1s; position: relative;
 }
 .gh-day.wk   { background: var(--wk-bg); }
@@ -182,9 +182,9 @@ body {
 .gh-dsem { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
 .gh-dsem.wkc   { opacity: .45; }
 .gh-dsem.hoje-c { color: var(--success); }
-.gh-fer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); position: absolute; top: 44px; }
+.gh-fer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); position: absolute; top: 36px; }
 
-.group-sep { display: flex; border-bottom: 1px solid var(--border); height: 34px; background: var(--surface2); }
+.group-sep { display: flex; border-bottom: 1px solid var(--border); height: 22px; background: var(--surface2); }
 .gs-label-wrap {
   width: var(--col-prof); flex-shrink: 0; position: sticky; left: 0; z-index: 40;
   background: var(--surface2); border-right: 2px solid var(--border);
@@ -202,7 +202,7 @@ body {
   width: var(--col-prof); flex-shrink: 0; height: var(--row-h);
   position: sticky; left: 0; z-index: 30; background: var(--bg);
   border-right: 2px solid var(--border);
-  padding: 0 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  padding: 0 12px; display: flex; flex-direction: column; justify-content: center; gap: 2px;
   transition: background .08s; overflow: hidden; min-width: 0;
 }
 .prof-name-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
@@ -246,7 +246,7 @@ body {
 /* Sigla grande centralizada */
 .sigla {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 4px;
+  width: 26px; height: 26px; border-radius: 4px;
   font-size: 11px; font-weight: 900; letter-spacing: .02em; line-height: 1;
   transition: transform .08s; user-select: none; pointer-events: none; overflow: hidden;
 }
