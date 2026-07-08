@@ -639,8 +639,57 @@ export function initDb() {
     db.prepare(`INSERT INTO admin_users (username, password_hash, nome, role) VALUES (?, ?, ?, 'master')
       ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`).run(u.username, hash, u.nome);
   }
-  // Garante que todos os usuários existentes sejam master
-  db.prepare(`UPDATE admin_users SET role = 'master' WHERE role IS NULL OR role != 'master'`).run();
+  // Garante que todos os usuários existentes sejam master (exceto recepcionistas com role spa)
+  db.prepare(`UPDATE admin_users SET role = 'master' WHERE (role IS NULL OR role != 'master') AND role != 'spa'`).run();
+
+  // Migration: seed recepcionistas Georgia Gomes e Julia Santos na escala
+  try {
+    const _mIns = db.prepare(`INSERT OR IGNORE INTO massagistas (nome, funcao, vinculo, email, padrao_entrada, ativo)
+      VALUES (?, 'Recepcionista', 'Pleno', ?, ?, 1)`);
+    const _mGet = db.prepare(`SELECT id FROM massagistas WHERE email = ?`);
+    const _tIns = db.prepare(`INSERT OR IGNORE INTO turno_massagista (massagista_id, data, turno) VALUES (?, ?, ?)`);
+
+    _mIns.run('GEORGIA GOMES', 'georgia.gomes@granmarquise.com.br',
+      '{"dom":"12:00","seg":"15:00","ter":"FOLGA","qua":"14:00","qui":"15:00","sex":"15:00","sab":"15:00"}');
+    const geId = _mGet.get('georgia.gomes@granmarquise.com.br')?.id;
+    if (geId) for (const [d,t] of [
+      ['2026-06-21','CH'], ['2026-06-22','16:00'], ['2026-06-23','X'],
+      ['2026-06-24','14:00'], ['2026-06-25','09:00'], ['2026-06-26','14:00'],
+      ['2026-06-27','09:00'], ['2026-06-28','12:00'], ['2026-06-29','16:00'],
+      ['2026-06-30','X'], ['2026-07-01','14:00'], ['2026-07-02','15:00'],
+      ['2026-07-03','15:00'], ['2026-07-04','15:00'], ['2026-07-06','15:00'],
+      ['2026-07-07','X'], ['2026-07-08','14:00'], ['2026-07-09','15:00'],
+      ['2026-07-10','15:00'], ['2026-07-11','15:00'], ['2026-07-12','12:00'],
+      ['2026-07-13','15:00'], ['2026-07-14','X'], ['2026-07-15','14:00'],
+      ['2026-07-16','15:00'], ['2026-07-17','15:00'], ['2026-07-18','15:00'],
+      ['2026-07-19','X'], ['2026-07-20','15:00'],
+    ]) _tIns.run(geId, d, t);
+
+    _mIns.run('JULIA SANTOS', 'julia.santos@granmarquise.com.br',
+      '{"dom":"09:00","seg":"09:00","ter":"14:00","qua":"FOLGA","qui":"09:00","sex":"09:00","sab":"09:00"}');
+    const juId = _mGet.get('julia.santos@granmarquise.com.br')?.id;
+    if (juId) for (const [d,t] of [
+      ['2026-06-21','12:00'], ['2026-06-22','09:00'], ['2026-06-23','12:00'],
+      ['2026-06-24','X'], ['2026-06-25','CH'], ['2026-06-26','CH'],
+      ['2026-06-27','CH'], ['2026-06-28','09:00'], ['2026-06-29','09:00'],
+      ['2026-06-30','14:00'], ['2026-07-01','X'], ['2026-07-02','09:00'],
+      ['2026-07-03','09:00'], ['2026-07-04','09:00'], ['2026-07-06','09:00'],
+      ['2026-07-07','14:00'], ['2026-07-08','X'], ['2026-07-09','09:00'],
+      ['2026-07-10','09:00'], ['2026-07-11','09:00'], ['2026-07-12','X'],
+      ['2026-07-13','09:00'], ['2026-07-14','14:00'], ['2026-07-15','X'],
+      ['2026-07-16','09:00'], ['2026-07-17','09:00'], ['2026-07-18','09:00'],
+      ['2026-07-19','12:00'], ['2026-07-20','09:00'],
+    ]) _tIns.run(juId, d, t);
+
+    // Hub users com role spa (acesso leitura+escrita na escala, sem admin master)
+    for (const [username, nome] of [
+      ['georgia.gomes@granmarquise.com.br', 'Georgia Gomes'],
+      ['julia.santos@granmarquise.com.br', 'Julia Santos'],
+    ]) {
+      db.prepare(`INSERT OR IGNORE INTO admin_users (username, password_hash, nome, role) VALUES (?, ?, ?, 'spa')`)
+        .run(username, hash, nome);
+    }
+  } catch (e) { console.error('[seed recepcionistas]', e.message); }
 }
 
 export function inserirFeedback(dados) {
