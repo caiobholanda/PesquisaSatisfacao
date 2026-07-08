@@ -850,6 +850,31 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePicker(); });
 
+// ─── TOOLTIP NOME COMPLETO ───────────────────────────────────────────────────
+const nameTip = document.getElementById('name-tip');
+function hideNameTip() { nameTip.style.display = 'none'; }
+
+document.getElementById('grid-outer').addEventListener('mouseover', e => {
+  const el = e.target.closest('.prof-name');
+  if (!el) { hideNameTip(); return; }
+  if (el.scrollHeight <= el.clientHeight + 1) return; // nome cabe inteiro — sem tooltip
+  nameTip.textContent = el.textContent;
+  nameTip.style.display = 'block';
+  const r  = el.getBoundingClientRect();
+  const tw = nameTip.offsetWidth, th = nameTip.offsetHeight;
+  let left = r.left;
+  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+  if (left < 8) left = 8;
+  let top = r.bottom + 6;
+  if (top + th > window.innerHeight - 8) top = r.top - th - 6;
+  nameTip.style.left = left + 'px';
+  nameTip.style.top  = top  + 'px';
+});
+document.getElementById('grid-outer').addEventListener('mouseout', e => {
+  if (e.target.closest('.prof-name')) hideNameTip();
+});
+document.getElementById('grid-outer').addEventListener('scroll', hideNameTip, { passive: true });
+
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 document.getElementById('btn-prev').onclick = () => {
   periodo = periodo.mes === 0
