@@ -377,6 +377,7 @@ body {
   </div>
   <button class="pnav-btn" id="btn-next">›</button>
   <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
+  <button class="pnav-btn" id="btn-padroes" title="Padrões semanais" style="margin-left:6px;font-size:15px">⚙</button>
   <span class="save-ind" id="save-ind"></span>
   <div class="periodo-bar-sep"></div>
   <div class="legend">
@@ -428,6 +429,22 @@ body {
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- MODAL PADRÕES SEMANAIS -->
+<div id="padroes-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:820;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
+  <div id="padroes-modal" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem;width:720px;max-width:96vw;box-shadow:0 8px 32px rgba(0,0,0,.35);margin:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <div style="font-weight:700;font-size:1.05rem;color:var(--text)">⚙ Padrões semanais</div>
+      <button id="btn-padroes-close" style="background:none;border:none;font-size:1.5rem;line-height:1;color:var(--muted);cursor:pointer;padding:0 6px">×</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:.75rem">
+      Alterações aqui não afetam períodos já preenchidos — o novo padrão vale apenas para as próximas aplicações de "Aplicar padrão".
+    </div>
+    <div id="padroes-lista">
+      <div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Carregando…</div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL APLICAR PADRÃO -->
 <div id="ap-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;align-items:center;justify-content:center">
@@ -912,6 +929,138 @@ document.querySelectorAll('input[name="ap-mode"]').forEach(radio => {
     document.getElementById('ap-opt-vazios').style.borderColor = _apMode === 'vazios' ? 'var(--gold)' : 'var(--border)';
     document.getElementById('ap-opt-sob').style.borderColor = _apMode === 'sobrescrever' ? 'var(--gold)' : 'var(--border)';
   });
+});
+
+// ─── MODAL PADRÕES SEMANAIS ──────────────────────────────────────────────────
+const PM_DIAS = [
+  { key: 'seg', lbl: 'Seg' }, { key: 'ter', lbl: 'Ter' }, { key: 'qua', lbl: 'Qua' },
+  { key: 'qui', lbl: 'Qui' }, { key: 'sex', lbl: 'Sex' }, { key: 'sab', lbl: 'Sáb' },
+  { key: 'dom', lbl: 'Dom' },
+];
+const PM_HORAS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30'];
+function pmFmtH(h) { return h === '17:30' ? '17:30' : h.slice(0,2) + 'h'; }
+
+function openPadroesModal() {
+  document.getElementById('padroes-overlay').style.display = 'flex';
+  pmCarregar();
+}
+function closePadroesModal() {
+  document.getElementById('padroes-overlay').style.display = 'none';
+}
+
+async function pmCarregar() {
+  const lista = document.getElementById('padroes-lista');
+  lista.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Carregando…</div>';
+  const r = await apiFetch('/api/massagistas/padroes');
+  if (!r) return;
+  const d = await r.json();
+  if (!d.ok) {
+    lista.innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.85rem">Erro ao carregar profissionais.</div>';
+    return;
+  }
+  pmRenderizar(d.items);
+}
+
+function pmRenderizar(items) {
+  const lista = document.getElementById('padroes-lista');
+  if (!items.length) {
+    lista.innerHTML = '<div style="color:var(--muted);padding:1rem;font-size:.85rem">Nenhum profissional ativo.</div>';
+    return;
+  }
+
+  lista.innerHTML = items.map(prof => {
+    let padrao = {};
+    try { padrao = JSON.parse(prof.padrao_entrada || '{}'); } catch {}
+    const semHub = !prof.email
+      ? '<span style="font-size:.68rem;color:var(--muted);background:var(--surface2);padding:1px 6px;border-radius:3px;margin-left:6px;border:1px solid var(--border-soft)">sem vínculo Hub</span>'
+      : '';
+    const diasHtml = PM_DIAS.map(({ key, lbl }) => {
+      const val     = padrao[key] ?? null;
+      const isE     = val && val !== 'FOLGA';
+      const isF     = val === 'FOLGA';
+      const isN     = !val;
+      const horaAtual = isE ? val : '09:00';
+      const opts    = PM_HORAS.map(h => `<option value="${h}"${h===horaAtual?' selected':''}>${pmFmtH(h)}</option>`).join('');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:26px;flex-shrink:0;font-family:var(--mono)">${escH(lbl)}</span>
+        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+          <input type="radio" name="pm-${prof.id}-${key}" value="entrada" ${isE?'checked':''} style="accent-color:var(--gold)" data-pm-mid="${prof.id}" data-pm-dia="${key}">Entrada
+        </label>
+        <select id="pm-sel-${prof.id}-${key}" ${!isE?'disabled':''} style="font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text);font-family:var(--mono)">${opts}</select>
+        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+          <input type="radio" name="pm-${prof.id}-${key}" value="folga" ${isF?'checked':''} style="accent-color:var(--gold)">Folga fixa
+        </label>
+        <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;white-space:nowrap">
+          <input type="radio" name="pm-${prof.id}-${key}" value="nulo" ${isN?'checked':''} style="accent-color:var(--gold)">Não escalada
+        </label>
+      </div>`;
+    }).join('');
+
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px">
+        <div>
+          <div style="font-weight:600;font-size:.9rem;color:var(--text)">${escH(prof.nome)}${semHub}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${escH(prof.funcao||'—')} · ${escH(prof.vinculo||'—')}</div>
+        </div>
+        <button data-pm-save="${prof.id}" style="flex-shrink:0;padding:.3rem .9rem;border-radius:6px;border:none;background:var(--gold);color:#fff;cursor:pointer;font-weight:600;font-size:.78rem;white-space:nowrap">Salvar</button>
+      </div>
+      ${diasHtml}
+    </div>`;
+  }).join('');
+
+  // radio → habilita/desabilita select de hora
+  lista.querySelectorAll('input[type="radio"][data-pm-mid]').forEach(r => {
+    r.addEventListener('change', () => {
+      const sel = document.getElementById(`pm-sel-${r.dataset.pmMid}-${r.dataset.pmDia}`);
+      if (sel) sel.disabled = r.value !== 'entrada';
+    });
+  });
+
+  // botões salvar
+  lista.querySelectorAll('[data-pm-save]').forEach(btn => {
+    btn.addEventListener('click', () => pmSalvar(parseInt(btn.dataset.pmSave)));
+  });
+}
+
+async function pmSalvar(mId) {
+  const btn = document.querySelector(`[data-pm-save="${mId}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  const padrao = {};
+  let erro = null;
+  for (const { key, lbl } of PM_DIAS) {
+    let checked = null;
+    document.querySelectorAll(`input[name="pm-${mId}-${key}"]`).forEach(r => { if (r.checked) checked = r.value; });
+    if (!checked) { erro = `Selecione uma opção para ${lbl}`; break; }
+    if (checked === 'entrada') {
+      const sel = document.getElementById(`pm-sel-${mId}-${key}`);
+      if (!sel || !PM_HORAS.includes(sel.value)) { erro = `Horário inválido para ${lbl}`; break; }
+      padrao[key] = sel.value;
+    } else {
+      padrao[key] = checked === 'folga' ? 'FOLGA' : null;
+    }
+  }
+
+  if (erro) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+    showToast(erro, 'err');
+    return;
+  }
+
+  const r = await apiFetch(`/api/massagistas/${mId}/padrao`, {
+    method: 'PUT',
+    body: JSON.stringify({ padrao }),
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+  if (!r) return;
+  const d = await r.json();
+  showToast(d.ok ? '✓ Padrão salvo' : (d.error || 'Erro ao salvar'), d.ok ? '' : 'err');
+}
+
+document.getElementById('btn-padroes').addEventListener('click', openPadroesModal);
+document.getElementById('btn-padroes-close').addEventListener('click', closePadroesModal);
+document.getElementById('padroes-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('padroes-overlay')) closePadroesModal();
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────

@@ -2,10 +2,10 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
-  listarMassagistas, listarMassagistasComStats,
+  listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
-  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada,
+  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -30,6 +30,11 @@ function _computarEsp(funcao, bilingue, vinculo) {
 
 // ── Massagistas ──
 router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
+
+// Padrões semanais — leitura (qualquer autenticado do SPA)
+router.get('/massagistas/padroes', requireSpa, (req, res) => {
+  res.json({ ok: true, items: listarMassagistasParaPadroes() });
+});
 
 router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
   const { nome, matricula, funcao, vinculo, bilingue, disponibilidade, excecoes } = req.body || {};
@@ -120,6 +125,30 @@ router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
     : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null);
 
   atualizarMassagista(parseInt(req.params.id), nome || existing.nome, ativo ? 1 : 0, opts);
+  res.json({ ok: true });
+});
+
+// Alterar padrão semanal de um massagista (escrita)
+const PM_DIAS_VALIDOS = ['seg','ter','qua','qui','sex','sab','dom'];
+const PM_HORAS_VALIDAS = new Set(['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30']);
+
+router.put('/massagistas/:id/padrao', ...podeEscreverSpa, (req, res) => {
+  const mId = parseInt(req.params.id);
+  if (isNaN(mId)) return res.status(400).json({ ok: false, error: 'id inválido' });
+  const { padrao } = req.body || {};
+  if (!padrao || typeof padrao !== 'object' || Array.isArray(padrao))
+    return res.status(400).json({ ok: false, error: 'padrao inválido' });
+  for (const dia of PM_DIAS_VALIDOS) {
+    if (!(dia in padrao)) return res.status(400).json({ ok: false, error: `Dia "${dia}" ausente` });
+    const val = padrao[dia];
+    if (val !== null && val !== 'FOLGA' && !PM_HORAS_VALIDAS.has(val))
+      return res.status(400).json({ ok: false, error: `Horário inválido para ${dia}: ${val}` });
+  }
+  const existing = buscarMassagistaById(mId);
+  if (!existing) return res.status(404).json({ ok: false, error: 'Massagista não encontrado' });
+  if (!existing.ativo) return res.status(400).json({ ok: false, error: 'Massagista inativo' });
+  registrarLogPadrao(mId, existing.padrao_entrada, JSON.stringify(padrao), req.user?.username || null);
+  setPadraoEntrada(mId, padrao);
   res.json({ ok: true });
 });
 

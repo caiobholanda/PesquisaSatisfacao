@@ -184,6 +184,15 @@ export function initDb() {
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     UNIQUE(massagista_id, data)
   )`); } catch {}
+  // Migration: auditoria de alterações de padrao_entrada
+  try { db.exec(`CREATE TABLE IF NOT EXISTS padrao_entrada_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    massagista_id INTEGER NOT NULL,
+    antes TEXT,
+    depois TEXT,
+    usuario TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )`); } catch {}
   // Migration: add enriched fields to reservas if absent
   for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER', 'massagista_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
@@ -796,6 +805,21 @@ export function listarMassagistas() {
 export function setPadraoEntrada(id, padrao) {
   getDb().prepare('UPDATE massagistas SET padrao_entrada=? WHERE id=?')
     .run(typeof padrao === 'string' ? padrao : JSON.stringify(padrao), id);
+}
+
+export function registrarLogPadrao(mId, antes, depois, usuario) {
+  getDb().prepare(
+    'INSERT INTO padrao_entrada_log (massagista_id, antes, depois, usuario) VALUES (?,?,?,?)'
+  ).run(mId, antes || null, typeof depois === 'object' ? JSON.stringify(depois) : depois || null, usuario || null);
+}
+
+export function listarMassagistasParaPadroes() {
+  return getDb().prepare(`
+    SELECT id, nome, ativo, funcao, vinculo, email, padrao_entrada
+    FROM massagistas
+    WHERE ativo = 1
+    ORDER BY nome ASC
+  `).all();
 }
 
 export function seedPadraoEntrada() {
