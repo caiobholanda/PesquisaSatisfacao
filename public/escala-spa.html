@@ -205,11 +205,7 @@ body {
   padding: 0 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
   transition: background .08s; overflow: hidden; min-width: 0;
 }
-.prof-name {
-  font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  white-space: normal; overflow: hidden;
-}
+.prof-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #name-tip {
   position: fixed; display: none; z-index: 999; pointer-events: none;
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
