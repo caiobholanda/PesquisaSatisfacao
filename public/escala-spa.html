@@ -41,15 +41,16 @@
   --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
-  /* siglas — fundo igual ao da página, distinção por texto e borda */
-  --sig-m-bg:  #ECE4D2;  --sig-m-fg:  #15705A;  --sig-m-bd:  rgba(21,112,90,.28);
-  --sig-t-bg:  #ECE4D2;  --sig-t-fg:  #1B5EA8;  --sig-t-bd:  rgba(27,94,168,.24);
-  --sig-n-bg:  #ECE4D2;  --sig-n-fg:  #4830A8;  --sig-n-bd:  rgba(55,30,110,.24);
-  --sig-fe-bg: #ECE4D2;  --sig-fe-fg: #9C5843;  --sig-fe-bd: rgba(156,88,67,.28);
-  --sig-at-bg: #ECE4D2;  --sig-at-fg: #B85450;  --sig-at-bd: rgba(184,84,80,.28);
-  --sig-cf-bg: #ECE4D2;  --sig-cf-fg: #6A3CA0;  --sig-cf-bd: rgba(100,60,160,.22);
-  --sig-aa-bg: #ECE4D2;  --sig-aa-fg: #966010;  --sig-aa-bd: rgba(170,110,20,.26);
-  --sig-f-bg:  #ECE4D2;  --sig-f-fg:  #A01040;  --sig-f-bd:  rgba(160,20,70,.28);
+  /* siglas — cor única, igual ao quadrado 10h */
+  --sig-clr-fg: #15705A;  --sig-clr-bd: rgba(21,112,90,.28);  --sig-clr-bg: #ECE4D2;
+  --sig-m-bg:  var(--sig-clr-bg);  --sig-m-fg:  var(--sig-clr-fg);  --sig-m-bd:  var(--sig-clr-bd);
+  --sig-t-bg:  var(--sig-clr-bg);  --sig-t-fg:  var(--sig-clr-fg);  --sig-t-bd:  var(--sig-clr-bd);
+  --sig-n-bg:  var(--sig-clr-bg);  --sig-n-fg:  var(--sig-clr-fg);  --sig-n-bd:  var(--sig-clr-bd);
+  --sig-fe-bg: var(--sig-clr-bg);  --sig-fe-fg: var(--sig-clr-fg);  --sig-fe-bd: var(--sig-clr-bd);
+  --sig-at-bg: var(--sig-clr-bg);  --sig-at-fg: var(--sig-clr-fg);  --sig-at-bd: var(--sig-clr-bd);
+  --sig-cf-bg: var(--sig-clr-bg);  --sig-cf-fg: var(--sig-clr-fg);  --sig-cf-bd: var(--sig-clr-bd);
+  --sig-aa-bg: var(--sig-clr-bg);  --sig-aa-fg: var(--sig-clr-fg);  --sig-aa-bd: var(--sig-clr-bd);
+  --sig-f-bg:  var(--sig-clr-bg);  --sig-f-fg:  var(--sig-clr-fg);  --sig-f-bd:  var(--sig-clr-bd);
   /* misc */
   --wk-bg:    rgba(96,87,56,.07);
   --fer-bg:   rgba(156,88,67,.08);
@@ -75,15 +76,16 @@
   --col-prof: 220px; --col-d: 58px; --row-h: 58px; --head-h: 72px;
   --font: 'Inter', 'DM Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', monospace;
-  /* siglas dark — fundo igual ao da página */
-  --sig-m-bg:  #202C28;  --sig-m-fg:  #4dbe8a;  --sig-m-bd:  #2e6048;
-  --sig-t-bg:  #202C28;  --sig-t-fg:  #5292d0;  --sig-t-bd:  #2a4a72;
-  --sig-n-bg:  #202C28;  --sig-n-fg:  #8870e0;  --sig-n-bd:  #2e2060;
-  --sig-fe-bg: #202C28;  --sig-fe-fg: #d4924a;  --sig-fe-bd: #5a3a12;
-  --sig-at-bg: #202C28;  --sig-at-fg: #d06060;  --sig-at-bd: #5a2020;
-  --sig-cf-bg: #202C28;  --sig-cf-fg: #9a7ad8;  --sig-cf-bd: #3a2060;
-  --sig-aa-bg: #202C28;  --sig-aa-fg: #d09030;  --sig-aa-bd: #4a3010;
-  --sig-f-bg:  #202C28;  --sig-f-fg:  #e06090;  --sig-f-bd:  #5a1030;
+  /* siglas dark — cor única, igual ao quadrado 10h */
+  --sig-clr-fg: #4dbe8a;  --sig-clr-bd: #2e6048;  --sig-clr-bg: #202C28;
+  --sig-m-bg:  var(--sig-clr-bg);  --sig-m-fg:  var(--sig-clr-fg);  --sig-m-bd:  var(--sig-clr-bd);
+  --sig-t-bg:  var(--sig-clr-bg);  --sig-t-fg:  var(--sig-clr-fg);  --sig-t-bd:  var(--sig-clr-bd);
+  --sig-n-bg:  var(--sig-clr-bg);  --sig-n-fg:  var(--sig-clr-fg);  --sig-n-bd:  var(--sig-clr-bd);
+  --sig-fe-bg: var(--sig-clr-bg);  --sig-fe-fg: var(--sig-clr-fg);  --sig-fe-bd: var(--sig-clr-bd);
+  --sig-at-bg: var(--sig-clr-bg);  --sig-at-fg: var(--sig-clr-fg);  --sig-at-bd: var(--sig-clr-bd);
+  --sig-cf-bg: var(--sig-clr-bg);  --sig-cf-fg: var(--sig-clr-fg);  --sig-cf-bd: var(--sig-clr-bd);
+  --sig-aa-bg: var(--sig-clr-bg);  --sig-aa-fg: var(--sig-clr-fg);  --sig-aa-bd: var(--sig-clr-bd);
+  --sig-f-bg:  var(--sig-clr-bg);  --sig-f-fg:  var(--sig-clr-fg);  --sig-f-bd:  var(--sig-clr-bd);
   /* misc */
   --wk-bg:    rgba(0,0,0,.25);
   --fer-bg:   rgba(156,88,67,.09);
