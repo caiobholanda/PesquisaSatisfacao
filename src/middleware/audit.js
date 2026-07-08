@@ -8,6 +8,7 @@ const ROTAS_IGNORAR = [
   /^\/api\/survey\/live$/,        // polling do quiosque
   /^\/api\/massagistas-ativas/,
   /^\/api\/tipos-massagem-ativos/,
+  /^\/api\/escala-spa\/cf-acumulado$/, // consulta de saldo (POST por causa do body) — não é escrita
 ];
 
 const ROTULOS_RECURSOS = {
@@ -19,6 +20,7 @@ const ROTULOS_RECURSOS = {
   survey: 'Gestão da qualidade',
   spa: 'Anamnese',
   massagistas: 'Massoterapeutas',
+  'escala-spa': 'Escala mensal',
   'tipos-massagem': 'Tipos de tratamento',
   relatorios: 'Relatórios',
   dev: 'Ferramenta dev',
@@ -38,6 +40,7 @@ function _descobrirAcao(method, path) {
   if (/\/despublicar/.test(path))        return 'despublicar_pesquisa';
   if (/\/clonar/.test(path))             return 'clonar_pesquisa';
   if (/\/perfil$/.test(path) && r === 'spa') return 'salvar_anamnese';
+  if (/\/aplicar-padrao$/.test(path))    return 'aplicar_padrao_escala';
   if (/\/login$/.test(path))             return 'login';
   if (/\/seed-demo/.test(path))          return 'reset_demo';
   if (method === 'POST')   return 'criar_' + r;

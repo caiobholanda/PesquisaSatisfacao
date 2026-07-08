@@ -193,6 +193,18 @@ export function initDb() {
     usuario TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   )`); } catch {}
+  // Migration: histórico antes→depois por célula da escala mensal (mesmo padrão de padrao_entrada_log)
+  try { db.exec(`CREATE TABLE IF NOT EXISTS turno_historico (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    massagista_id INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    antes TEXT,
+    depois TEXT,
+    usuario TEXT,
+    origem TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )`); } catch {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_turno_hist_cell ON turno_historico (massagista_id, data)'); } catch {}
   // Migration: add enriched fields to reservas if absent
   for (const col of ['tipo_cliente TEXT', 'apto TEXT', 'email TEXT', 'telefone TEXT', 'tratamento TEXT', 'linha TEXT', 'tipo_massagem_id INTEGER', 'massagista_id INTEGER']) {
     try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
@@ -996,6 +1008,20 @@ export function deletarTurno(massagista_id, data) {
   return getDb().prepare(
     'DELETE FROM turno_massagista WHERE massagista_id=? AND data=?'
   ).run(massagista_id, data).changes;
+}
+export function buscarTurno(massagista_id, data) {
+  const r = getDb().prepare('SELECT turno FROM turno_massagista WHERE massagista_id=? AND data=?').get(massagista_id, data);
+  return r ? r.turno : null;
+}
+export function registrarTurnoHistorico(massagista_id, data, antes, depois, usuario, origem) {
+  getDb().prepare(
+    'INSERT INTO turno_historico (massagista_id, data, antes, depois, usuario, origem) VALUES (?,?,?,?,?,?)'
+  ).run(massagista_id, data, antes || null, depois || null, usuario || null, origem || null);
+}
+export function listarTurnoHistorico(massagista_id, data, limit = 50) {
+  return getDb().prepare(
+    'SELECT antes, depois, usuario, origem, criado_em FROM turno_historico WHERE massagista_id=? AND data=? ORDER BY id DESC LIMIT ?'
+  ).all(massagista_id, data, Math.min(Math.max(1, limit), 200));
 }
 
 // ── Tipos de Massagem ──

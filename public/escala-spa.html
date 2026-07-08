@@ -340,6 +340,26 @@ body {
 }
 .cp-opt.cp-clear:hover .cp-clear-icon { color: var(--danger); }
 
+/* ── HISTÓRICO DA CÉLULA ───────────────────────── */
+#hist-pop {
+  position: fixed; display: none; z-index: 760;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 28px var(--picker-shadow);
+  width: 280px; max-height: 340px; overflow-y: auto;
+  padding: .6rem .7rem; font-size: .78rem;
+}
+#hist-pop .hp-title {
+  font-weight: 700; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .45rem;
+}
+#hist-pop .hp-item {
+  padding: .4rem 0; border-top: 1px solid var(--border-soft); line-height: 1.45;
+}
+#hist-pop .hp-title + .hp-item { border-top: none; }
+#hist-pop .hp-mud { color: var(--text); font-family: var(--mono); font-size: .76rem; }
+#hist-pop .hp-meta { color: var(--muted); font-size: .68rem; margin-top: .1rem; }
+#hist-pop .hp-empty { color: var(--muted); padding: .5rem 0; text-align: center; }
+
 /* ── BOTÃO APLICAR PADRÃO ──────────────────────── */
 .ap-trigger-btn {
   padding: .3rem .85rem; border-radius: 6px; font-size: .78rem; font-weight: 600;
@@ -555,7 +575,12 @@ body {
   <button class="cp-opt" data-turno="F"><span class="sigla sig-F">F</span><span>Falta</span></button>
   <div class="cp-sep"></div>
   <button class="cp-opt cp-clear" data-turno=""><span class="cp-clear-icon">✕</span><span>Limpar célula</span></button>
+  <div class="cp-sep"></div>
+  <button class="cp-opt" id="cp-btn-hist" type="button"><span>📜</span><span>Histórico da célula</span></button>
 </div>
+
+<!-- HISTÓRICO DA CÉLULA -->
+<div id="hist-pop"></div>
 
 <!-- TOAST -->
 <div id="toast"></div>
@@ -761,8 +786,14 @@ async function loadData() {
 }
 
 // ─── SAVE TURNO ──────────────────────────────────────────────────────────────
-async function saveTurno(mId, data, turno) {
+// anterior: valor da célula antes da atualização otimista — restaurado se o save falhar
+async function saveTurno(mId, data, turno, anterior) {
   setSaveInd('saving', 'salvando…');
+  const rollback = () => {
+    if (anterior) turnos[`${mId}-${data}`] = anterior;
+    else delete turnos[`${mId}-${data}`];
+    render();
+  };
   try {
     let r;
     if (!turno) {
@@ -774,13 +805,14 @@ async function saveTurno(mId, data, turno) {
       });
     }
     if (!r) return;
-    if (r.status === 403) { showToast('Sem permissão para editar', 'err'); setSaveInd('err', 'erro'); return; }
-    if (!r.ok) { showToast('Erro ao salvar', 'err'); setSaveInd('err', 'erro'); return; }
+    if (r.status === 403) { showToast('Sem permissão para editar', 'err'); setSaveInd('err', 'erro'); rollback(); return; }
+    if (!r.ok) { showToast('Erro ao salvar', 'err'); setSaveInd('err', 'erro'); rollback(); return; }
     setSaveInd('saved', '✓ salvo');
     reloadCf();
   } catch {
     showToast('Erro de conexão', 'err');
     setSaveInd('err', 'erro');
+    rollback();
   }
 }
 
@@ -937,11 +969,12 @@ picker.querySelectorAll('[data-entrada]').forEach(btn => {
     if (pickerMId === null) return;
     const mId = pickerMId, date = pickerDate;
     const turno = btn.dataset.entrada;
+    const anterior = turnos[`${mId}-${date}`] || null;
     pickerEntrada = turno;
     turnos[`${mId}-${date}`] = turno;
     hidePicker();
     render();
-    await saveTurno(mId, date, turno);
+    await saveTurno(mId, date, turno, anterior);
   });
 });
 
@@ -952,11 +985,12 @@ picker.querySelectorAll('[data-turno]').forEach(btn => {
     if (pickerMId === null) return;
     const mId = pickerMId, date = pickerDate;
     const turno = btn.dataset.turno || null;
+    const anterior = turnos[`${mId}-${date}`] || null;
     if (turno) turnos[`${mId}-${date}`] = turno;
     else delete turnos[`${mId}-${date}`];
     hidePicker();
     render();
-    await saveTurno(mId, date, turno);
+    await saveTurno(mId, date, turno, anterior);
   });
 });
 
@@ -979,6 +1013,75 @@ document.addEventListener('click', e => {
   if (!picker.contains(e.target) && !e.target.closest('.cell-d')) hidePicker();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePicker(); });
+
+// ─── HISTÓRICO DA CÉLULA ─────────────────────────────────────────────────────
+const histPop = document.getElementById('hist-pop');
+
+function _fmtTurnoHist(t) {
+  if (!t) return 'vazio';
+  if (t.includes('|')) { const [e, s] = t.split('|'); return `${fmtHora(e)}–${fmtHora(s)}`; }
+  if (TIMES_CFG[t]) return TIMES_CFG[t].lbl;
+  return SIG_LABEL[t] || t;
+}
+
+function hideHistPop() { histPop.style.display = 'none'; }
+
+async function showHistPop(mId, date, anchorTop, anchorLeft) {
+  const prof = profs.find(p => p.id === mId);
+  const [a, m, d] = date.split('-');
+  histPop.innerHTML = `<div class="hp-title">Histórico — ${escH(prof?.nome || '')} · ${d}/${m}/${a}</div><div class="hp-empty">Carregando…</div>`;
+  histPop.style.display = 'block';
+  let top = anchorTop, left = anchorLeft;
+  const hw = histPop.offsetWidth || 280, hh = histPop.offsetHeight || 200;
+  if (left + hw > window.innerWidth - 8) left = window.innerWidth - hw - 8;
+  if (left < 8) left = 8;
+  if (top + hh > window.innerHeight - 8) top = window.innerHeight - hh - 8;
+  if (top < 8) top = 8;
+  histPop.style.top = top + 'px';
+  histPop.style.left = left + 'px';
+  try {
+    const r = await apiFetch(`/api/escala-spa/historico/${mId}/${date}`);
+    if (!r) return;
+    const dd = await r.json();
+    if (!dd.ok) { histPop.querySelector('.hp-empty').textContent = 'Erro ao carregar histórico.'; return; }
+    const items = dd.items || [];
+    const body = !items.length
+      ? '<div class="hp-empty">Nenhuma alteração registrada.</div>'
+      : items.map(it => {
+          const quando = escH((it.criado_em || '').slice(0, 16).replace('T', ' '));
+          const quem = it.usuario ? escH(it.usuario) : '—';
+          const origem = it.origem === 'aplicar-padrao' ? ' · padrão' : '';
+          return `<div class="hp-item">
+            <div class="hp-mud">${escH(_fmtTurnoHist(it.antes))} → ${escH(_fmtTurnoHist(it.depois))}</div>
+            <div class="hp-meta">${quando} · ${quem}${origem}</div>
+          </div>`;
+        }).join('');
+    histPop.innerHTML = `<div class="hp-title">Histórico — ${escH(prof?.nome || '')} · ${d}/${m}/${a}</div>${body}`;
+    // Re-clampa a posição: a altura real pode ser maior que a do "Carregando…"
+    let t2 = parseFloat(histPop.style.top) || top;
+    if (t2 + histPop.offsetHeight > window.innerHeight - 8) t2 = window.innerHeight - histPop.offsetHeight - 8;
+    if (t2 < 8) t2 = 8;
+    histPop.style.top = t2 + 'px';
+  } catch {
+    const el = histPop.querySelector('.hp-empty');
+    if (el) el.textContent = 'Erro de conexão.';
+  }
+}
+
+document.getElementById('cp-btn-hist').addEventListener('click', e => {
+  e.stopPropagation();
+  if (pickerMId === null) return;
+  const mId = pickerMId, date = pickerDate;
+  const pr = picker.getBoundingClientRect();
+  hidePicker();
+  showHistPop(mId, date, pr.top, pr.left);
+});
+
+document.addEventListener('click', e => {
+  if (histPop.style.display === 'block' && !histPop.contains(e.target) && e.target.id !== 'cp-btn-hist' && !e.target.closest('#cp-btn-hist')) hideHistPop();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideHistPop(); });
+document.getElementById('grid-outer').addEventListener('scroll', hideHistPop, { passive: true });
 
 // ─── TOOLTIP NOME COMPLETO ───────────────────────────────────────────────────
 const nameTip = document.getElementById('name-tip');

@@ -6,6 +6,7 @@ import {
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
   listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
+  buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -286,6 +287,13 @@ function turnoValido(t) {
   return p.length === 2 && VALID_TIMES.has(p[0]) && VALID_TIMES.has(p[1]);
 }
 
+// Data em formato ISO E com valores reais (rejeita 2026-13-45, 2026-02-30 etc.)
+function dataRealValida(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T12:00:00Z');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
 router.get('/escala-spa', (req, res) => {
   const ano = parseInt(req.query.ano);
   const mes = parseInt(req.query.mes);
@@ -302,14 +310,37 @@ router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
   const { data } = req.params;
   const { turno } = req.body || {};
   if (!turnoValido(turno)) return res.status(400).json({ ok: false, error: 'turno inválido' });
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
-  upsertTurno(mId, data, turno);
+  if (!dataRealValida(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
+  const m = buscarMassagistaById(mId);
+  if (!m) return res.status(404).json({ ok: false, error: 'Massagista não encontrada' });
+  if (!m.ativo) return res.status(400).json({ ok: false, error: 'Massagista inativa' });
+  const antes = buscarTurno(mId, data);
+  if (antes !== turno) {
+    upsertTurno(mId, data, turno);
+    // Histórico nunca pode derrubar a operação real
+    try { registrarTurnoHistorico(mId, data, antes, turno, req.user?.username || null, 'manual'); } catch {}
+  }
   res.json({ ok: true });
 });
 
 router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
-  deletarTurno(parseInt(req.params.mId), req.params.data);
+  const mId = parseInt(req.params.mId);
+  const { data } = req.params;
+  if (isNaN(mId) || !dataRealValida(data)) return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+  const antes = buscarTurno(mId, data);
+  const changes = deletarTurno(mId, data);
+  if (changes) {
+    try { registrarTurnoHistorico(mId, data, antes, null, req.user?.username || null, 'manual'); } catch {}
+  }
   res.json({ ok: true });
+});
+
+// Histórico antes→depois de uma célula da escala mensal
+router.get('/escala-spa/historico/:mId/:data', (req, res) => {
+  const mId = parseInt(req.params.mId);
+  const { data } = req.params;
+  if (isNaN(mId) || !dataRealValida(data)) return res.status(400).json({ ok: false, error: 'parâmetros inválidos' });
+  res.json({ ok: true, items: listarTurnoHistorico(mId, data) });
 });
 
 // Aplica padrão semanal a um período 21→20. body: { ano, mes, sobrescrever?, preview? }
@@ -333,7 +364,7 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
 
   const DOW_KEYS = ['dom','seg','ter','qua','qui','sex','sab'];
   const profs = listarMassagistas().filter(m => m.ativo && m.padrao_entrada);
-  const existentes = new Set(listarTurnosPeriodo(ano, mes).map(t => `${t.massagista_id}-${t.data}`));
+  const existentes = new Map(listarTurnosPeriodo(ano, mes).map(t => [`${t.massagista_id}-${t.data}`, t.turno]));
 
   const alteracoes = [];
   for (const prof of profs) {
@@ -342,13 +373,21 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
     for (const dataIso of dias) {
       const val = padrao[DOW_KEYS[new Date(dataIso + 'T12:00:00Z').getUTCDay()]];
       if (!val) continue;
-      if (existentes.has(`${prof.id}-${dataIso}`) && !sobrescrever) continue;
-      alteracoes.push({ massagista_id: prof.id, data: dataIso, turno: val === 'FOLGA' ? 'X' : val });
+      const key = `${prof.id}-${dataIso}`;
+      const atual = existentes.has(key) ? existentes.get(key) : null;
+      if (existentes.has(key) && !sobrescrever) continue;
+      const turnoNovo = val === 'FOLGA' ? 'X' : val;
+      if (atual === turnoNovo) continue;
+      alteracoes.push({ massagista_id: prof.id, data: dataIso, turno: turnoNovo, antes: atual });
     }
   }
 
   if (preview) return res.json({ ok: true, preview: true, total: alteracoes.length });
-  for (const { massagista_id, data, turno } of alteracoes) upsertTurno(massagista_id, data, turno);
+  const usuario = req.user?.username || null;
+  for (const { massagista_id, data, turno, antes } of alteracoes) {
+    upsertTurno(massagista_id, data, turno);
+    try { registrarTurnoHistorico(massagista_id, data, antes, turno, usuario, 'aplicar-padrao'); } catch {}
+  }
   res.json({ ok: true, total: alteracoes.length });
 });
 
