@@ -53,7 +53,7 @@
   --sig-f-bg:  var(--sig-clr-bg);  --sig-f-fg:  var(--sig-clr-fg);  --sig-f-bd:  var(--sig-clr-bd);
   /* misc */
   --wk-bg:    rgba(96,87,56,.07);
-  --fer-bg:   rgba(156,88,67,.08);
+  --fer-bg:   rgba(156,88,67,.12);
   --hoje-bg:  rgba(21,112,90,.08);
   --hover-bg: rgba(0,0,0,.03);
   --prof-hover-bg: rgba(0,0,0,.04);
@@ -88,7 +88,7 @@
   --sig-f-bg:  var(--sig-clr-bg);  --sig-f-fg:  var(--sig-clr-fg);  --sig-f-bd:  var(--sig-clr-bd);
   /* misc */
   --wk-bg:    rgba(0,0,0,.25);
-  --fer-bg:   rgba(156,88,67,.09);
+  --fer-bg:   rgba(156,88,67,.15);
   --hoje-bg:  rgba(21,112,90,.12);
   --hover-bg: rgba(255,255,255,.025);
   --prof-hover-bg: rgba(255,255,255,.035);
@@ -229,6 +229,8 @@ body {
 }
 .cell-d.wk  { background: var(--wk-bg); }
 .cell-d.fer { background: var(--fer-bg); }
+.cell-d.fer .sigla { background: rgba(156,88,67,.18) !important; border-color: rgba(156,88,67,.5) !important; color: #9C5843 !important; }
+[data-theme="dark"] .cell-d.fer .sigla { background: rgba(156,88,67,.3) !important; border-color: rgba(156,88,67,.6) !important; color: #d4823a !important; }
 .cell-d:hover { background: var(--hover-bg) !important; }
 
 /* Sigla grande centralizada */
@@ -543,19 +545,23 @@ const FERIADOS = (() => {
   const F = {};
   const fixos = [
     ['01-01','Ano Novo'],['03-19','São José'],['03-25','Data Magna CE'],
-    ['04-21','Tiradentes'],['05-01','Dia do Trabalho'],['06-24','São João'],
-    ['08-15','N.Sra. Assunção'],['09-07','Independência'],['10-12','N.Sra. Aparecida'],
-    ['11-02','Finados'],['11-15','Proclamação da República'],['11-20','Consciência Negra'],['12-25','Natal'],
+    ['04-13','Aniversário de Fortaleza'],['04-21','Tiradentes'],['05-01','Dia do Trabalho'],
+    ['06-24','São João'],['08-15','N.Sra. Assunção'],['09-07','Independência'],
+    ['10-12','N.Sra. Aparecida'],['11-02','Finados'],['11-15','Proclamação da República'],
+    ['11-20','Consciência Negra'],['12-25','Natal'],
   ];
   for (const ano of [2025, 2026, 2027, 2028]) {
     for (const [md, nome] of fixos) F[`${ano}-${md}`] = nome;
   }
   const moveis = {
+    '2025-03-03':'Carnaval','2025-03-04':'Carnaval',
+    '2025-04-18':'Sexta-feira Santa','2025-06-19':'Corpus Christi',
     '2026-02-16':'Carnaval','2026-02-17':'Carnaval',
-    '2026-04-03':'Sexta-feira Santa','2026-04-13':'Aniversário de Fortaleza',
-    '2026-06-04':'Corpus Christi',
+    '2026-04-03':'Sexta-feira Santa','2026-06-04':'Corpus Christi',
     '2027-02-08':'Carnaval','2027-02-09':'Carnaval',
     '2027-03-26':'Sexta-feira Santa','2027-05-27':'Corpus Christi',
+    '2028-02-28':'Carnaval','2028-02-29':'Carnaval',
+    '2028-04-14':'Sexta-feira Santa','2028-06-15':'Corpus Christi',
   };
   return { ...F, ...moveis };
 })();
