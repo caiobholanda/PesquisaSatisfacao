@@ -429,28 +429,28 @@ body {
 
 <!-- MODAL APLICAR PADRÃO -->
 <div id="ap-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;align-items:center;justify-content:center">
-  <div id="ap-modal" style="background:var(--bg-card);border:1px solid var(--bd);border-radius:14px;padding:1.5rem 1.75rem;width:400px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.35)">
-    <div style="font-weight:700;font-size:1.05rem;margin-bottom:.25rem;color:var(--tx-1)">Aplicar padrão de escala</div>
-    <div style="font-size:.82rem;color:var(--tx-2);margin-bottom:1.25rem">Período: <span id="ap-periodo-label"></span></div>
+  <div id="ap-modal" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem;width:400px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div style="font-weight:700;font-size:1.05rem;margin-bottom:.25rem;color:var(--text)">Aplicar padrão de escala</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">Período: <span id="ap-periodo-label"></span></div>
 
     <label id="ap-opt-vazios" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem;border-radius:9px;border:2px solid var(--gold);margin-bottom:.65rem;transition:border-color .15s">
       <input type="radio" name="ap-mode" value="vazios" style="margin-top:2px;accent-color:var(--gold)" checked>
       <span>
-        <div style="font-weight:600;font-size:.9rem;color:var(--tx-1)">Preencher apenas células vazias</div>
-        <div style="font-size:.8rem;color:var(--tx-2);margin-top:.2rem"><span id="ap-cnt-vazios">calculando…</span></div>
+        <div style="font-weight:600;font-size:.9rem;color:var(--text)">Preencher apenas células vazias</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem"><span id="ap-cnt-vazios">calculando…</span></div>
       </span>
     </label>
 
-    <label id="ap-opt-sob" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem;border-radius:9px;border:1.5px solid var(--bd);transition:border-color .15s">
+    <label id="ap-opt-sob" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem;border-radius:9px;border:1.5px solid var(--border);transition:border-color .15s">
       <input type="radio" name="ap-mode" value="sobrescrever" style="margin-top:2px;accent-color:var(--gold)">
       <span>
-        <div style="font-weight:600;font-size:.9rem;color:var(--tx-1)">Sobrescrever tudo</div>
-        <div style="font-size:.8rem;color:var(--tx-2);margin-top:.2rem"><span id="ap-cnt-sob">calculando…</span></div>
+        <div style="font-weight:600;font-size:.9rem;color:var(--text)">Sobrescrever tudo</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:.2rem"><span id="ap-cnt-sob">calculando…</span></div>
       </span>
     </label>
 
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem">
-      <button id="ap-cancel" style="padding:.5rem 1.1rem;border-radius:7px;border:1.5px solid var(--bd);background:transparent;color:var(--tx-1);cursor:pointer;font-size:.88rem">Cancelar</button>
+      <button id="ap-cancel" style="padding:.5rem 1.1rem;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-size:.88rem">Cancelar</button>
       <button id="ap-confirm" style="padding:.5rem 1.25rem;border-radius:7px;border:none;background:var(--gold);color:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Confirmar</button>
     </div>
   </div>
