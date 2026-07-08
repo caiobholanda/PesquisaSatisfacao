@@ -44,7 +44,7 @@ PesquisaSatisfacaoSPA/
 │   ├── terapeuta.html      # App mobile PIN
 │   ├── gestao-qualidade.html
 │   ├── acesso-hub.html
-│   ├── escala-spa.html     # Escala mensal de turnos (standalone, auth JWT)
+│   ├── escala-spa.html     # Escala mensal de turnos (standalone, auth JWT); tooltip posicionado via col-first/col-last/row-first
 │   ├── js/admin.js         # ~4900+ linhas — toda lógica admin (header extraído)
 │   ├── js/shared-header.js # Cabeçalho compartilhado: logo, dropdowns SPA/Admin, relógio, tema, Sair
 │   └── spa-profile.js      # Lógica do formulário de perfil
