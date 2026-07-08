@@ -45,7 +45,8 @@ PesquisaSatisfacaoSPA/
 │   ├── gestao-qualidade.html
 │   ├── acesso-hub.html
 │   ├── escala-spa.html     # Escala mensal de turnos (standalone, auth JWT)
-│   ├── js/admin.js         # ~6100+ linhas — toda lógica admin
+│   ├── js/admin.js         # ~4900+ linhas — toda lógica admin (header extraído)
+│   ├── js/shared-header.js # Cabeçalho compartilhado: logo, dropdowns SPA/Admin, relógio, tema, Sair
 │   └── spa-profile.js      # Lógica do formulário de perfil
 ├── scripts/                # 14 scripts (seção 12)
 ├── seed-data/
