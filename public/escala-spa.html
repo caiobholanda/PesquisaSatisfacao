@@ -257,6 +257,12 @@ body {
   border-radius: 3px; font-family: var(--mono);
   box-shadow: 0 4px 12px var(--picker-shadow);
 }
+/* 1ª coluna de dias: ancora à esquerda — não invade coluna de nome (220px) */
+.col-first[data-tip]:hover::after { left: 0; transform: none; }
+/* última coluna: ancora à direita — não vaza da viewport */
+.col-last[data-tip]:hover::after  { left: auto; right: 0; transform: none; }
+/* 1ª linha de dados: aparece abaixo — não cobre o cabeçalho de dias */
+.row-first[data-tip]:hover::after { bottom: auto; top: calc(100% + 6px); }
 
 /* Totais */
 .totais-row {
@@ -679,6 +685,7 @@ function render() {
   if (recepcionistas.length)  grupos.push({ label: 'Recepcionistas',  profs: recepcionistas });
   if (!grupos.length) { document.getElementById('grid-root').innerHTML = '<div class="grid-loading">Nenhuma profissional ativa.</div>'; return; }
 
+  let _firstRowDone = false;
   for (const grp of grupos) {
     html += '<div class="group-sep">';
     html += `<div class="gs-label-wrap"><span class="gs-label">${grp.label}</span></div>`;
@@ -687,12 +694,14 @@ function render() {
 
     for (const prof of grp.profs) {
       const pill = prof.vinculo || prof.funcao || '—';
+      const isFirstRow = !_firstRowDone;
+      _firstRowDone = true;
       html += '<div class="grid-row">';
       html += `<div class="cell-prof">
         <div class="prof-name">${escH(prof.nome)}</div>
         <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span></div>
       </div>`;
-      for (const d of dias) {
+      for (const [di, d] of dias.entries()) {
         const w     = dow(d.ano, d.mes, d.dia);
         const isWk  = w === 0 || w === 6;
         const isFer = !!FERIADOS[d.i];
@@ -702,7 +711,9 @@ function render() {
               ? `Entrada ${tipo.split('|')[0]} · Saída ${tipo.split('|')[1]}`
               : (TIMES_CFG[tipo] ? `Entrada ${tipo}` : (SIG_TIP[tipo] || tipo)))
           : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
-        const cls   = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : ''].filter(Boolean).join(' ');
+        const cls = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : '',
+                     di === 0 ? 'col-first' : '', di === dias.length - 1 ? 'col-last' : '',
+                     isFirstRow ? 'row-first' : ''].filter(Boolean).join(' ');
         html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo)}</div>`;
       }
       html += '</div>';
