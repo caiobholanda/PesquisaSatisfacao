@@ -372,6 +372,50 @@ body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── PERIOD BAR GROUPS ─────────────────────────── */
+.pbar-group { display: flex; align-items: center; gap: 6px; }
+.pbar-sep-v { width: 1px; height: 24px; background: var(--border); margin: 0 14px; flex-shrink: 0; }
+
+/* ── GEAR BUTTON ──────────────────────────────── */
+#btn-padroes { width: 36px; height: 36px; color: var(--muted); padding: 0; display: flex; align-items: center; justify-content: center; }
+#btn-padroes svg { display: block; transition: transform .45s cubic-bezier(.34,1.56,.64,1); }
+#btn-padroes:hover { color: var(--gold); border-color: var(--gold); background: rgba(156,88,67,.06); }
+#btn-padroes:hover svg { transform: rotate(72deg); }
+
+/* ── PICKER TIMES GRID ─────────────────────────── */
+.cp-times { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px 6px 8px; }
+.cp-time {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 5px; font-family: var(--mono); font-size: 12px; font-weight: 600;
+  padding: 7px 4px; cursor: pointer; text-align: center; color: var(--text);
+  transition: border-color .1s, color .1s, background .1s;
+}
+.cp-time.tm { color: var(--success); border-color: rgba(21,112,90,.3); }
+.cp-time.tn { color: var(--warn); border-color: rgba(156,88,67,.25); }
+.cp-time:hover { border-color: var(--gold); color: var(--gold); background: var(--hover-bg); }
+
+/* ── PADRÕES MODAL ─────────────────────────────── */
+.pm-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .25rem; }
+.pm-modal-title  { font-weight: 700; font-size: 1.05rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.pm-modal-close  { background: none; border: none; font-size: 1.5rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; transition: color .15s; }
+.pm-modal-close:hover { color: var(--text); }
+.pm-modal-sub    { font-size: .78rem; color: var(--muted); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: .75rem; line-height: 1.5; }
+.pm-card         { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: border-color .15s; }
+.pm-card:hover   { border-color: rgba(156,88,67,.3); }
+.pm-card-head    { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+.pm-card-name    { font-weight: 600; font-size: .9rem; color: var(--text); }
+.pm-card-meta    { font-size: .72rem; color: var(--muted); margin-top: 3px; }
+.pm-no-hub       { display: inline-block; font-size: .68rem; color: var(--muted); background: var(--surface2); padding: 1px 6px; border-radius: 3px; margin-left: 6px; border: 1px solid var(--border-soft); vertical-align: middle; }
+.pm-save-btn     { flex-shrink: 0; padding: .35rem 1rem; border-radius: 6px; border: none; background: var(--gold); color: #fff; cursor: pointer; font-weight: 600; font-size: .78rem; white-space: nowrap; transition: opacity .15s; font-family: inherit; }
+.pm-save-btn:hover { opacity: .85; }
+.pm-dia-row      { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+.pm-dia-row:last-child { border-bottom: none; padding-bottom: 0; }
+.pm-dia-lbl      { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); width: 26px; flex-shrink: 0; font-family: var(--mono); }
+.pm-radio-lbl    { display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--text); }
+.pm-hora-sel     { font-size: 11px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface2); color: var(--text); font-family: var(--mono); outline: none; transition: border-color .1s; }
+.pm-hora-sel:focus { border-color: var(--gold); }
+.pm-hora-sel:disabled { opacity: .45; }
 </style>
 </head>
 <body>
@@ -381,15 +425,25 @@ body {
 
 <!-- PERÍODO + LEGENDA -->
 <div class="periodo-bar">
-  <button class="pnav-btn" id="btn-prev">‹</button>
-  <div class="pnav-label">
-    <div class="pnav-main" id="lbl-main"></div>
-    <div class="pnav-sub" id="lbl-sub"></div>
+  <div class="pbar-group">
+    <button class="pnav-btn" id="btn-prev">‹</button>
+    <div class="pnav-label">
+      <div class="pnav-main" id="lbl-main"></div>
+      <div class="pnav-sub" id="lbl-sub"></div>
+    </div>
+    <button class="pnav-btn" id="btn-next">›</button>
   </div>
-  <button class="pnav-btn" id="btn-next">›</button>
-  <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
-  <button class="pnav-btn" id="btn-padroes" title="Padrões semanais" style="margin-left:6px;font-size:15px">⚙</button>
-  <span class="save-ind" id="save-ind"></span>
+  <div class="pbar-sep-v"></div>
+  <div class="pbar-group">
+    <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
+    <button class="pnav-btn" id="btn-padroes" title="Padrões semanais">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+  <span class="save-ind" id="save-ind" style="margin-left:8px"></span>
   <div class="periodo-bar-sep"></div>
   <div class="legend">
     <div class="leg-item"><div class="leg-chip sig-M" style="font-size:10px">09h</div>Manhã</div>
@@ -447,11 +501,17 @@ body {
 <!-- MODAL PADRÕES SEMANAIS -->
 <div id="padroes-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:820;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
   <div id="padroes-modal" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem;width:720px;max-width:96vw;box-shadow:0 8px 32px rgba(0,0,0,.35);margin:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div style="font-weight:700;font-size:1.05rem;color:var(--text)">⚙ Padrões semanais</div>
-      <button id="btn-padroes-close" style="background:none;border:none;font-size:1.5rem;line-height:1;color:var(--muted);cursor:pointer;padding:0 6px">×</button>
+    <div class="pm-modal-header">
+      <div class="pm-modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Padrões semanais
+      </div>
+      <button id="btn-padroes-close" class="pm-modal-close">×</button>
     </div>
-    <div style="font-size:.78rem;color:var(--muted);margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:.75rem">
+    <div class="pm-modal-sub">
       Alterações aqui não afetam períodos já preenchidos — o novo padrão vale apenas para as próximas aplicações de "Aplicar padrão".
     </div>
     <div id="padroes-lista">
