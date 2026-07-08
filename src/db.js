@@ -692,6 +692,21 @@ export function initDb() {
   } catch (e) { console.error('[seed recepcionistas]', e.message); }
 }
 
+export function contarCfFeriados(datas) {
+  if (!Array.isArray(datas) || !datas.length) return {};
+  const db = getDb();
+  const placeholders = datas.map(() => '?').join(',');
+  const rows = db.prepare(`
+    SELECT massagista_id, COUNT(*) as total
+    FROM turno_massagista
+    WHERE data IN (${placeholders}) AND turno LIKE '%:%'
+    GROUP BY massagista_id
+  `).all(...datas);
+  const out = {};
+  for (const r of rows) out[r.massagista_id] = r.total;
+  return out;
+}
+
 export function inserirFeedback(dados) {
   const db = getDb();
   const stmt = db.prepare(`

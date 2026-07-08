@@ -5,7 +5,7 @@ import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
-  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao,
+  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, contarCfFeriados,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -355,16 +355,7 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
 // CF acumulado: conta dias de feriado em que a profissional tem turno com horário (contém ':')
 router.post('/escala-spa/cf-acumulado', (req, res) => {
   const { datas } = req.body || {};
-  if (!Array.isArray(datas) || !datas.length) return res.json({ ok: true, cf: {} });
-  const placeholders = datas.map(() => '?').join(',');
-  const rows = getDb().prepare(`
-    SELECT massagista_id, COUNT(*) as total
-    FROM turno_massagista
-    WHERE data IN (${placeholders}) AND turno LIKE '%:%'
-    GROUP BY massagista_id
-  `).all(...datas);
-  const cf = {};
-  for (const r of rows) cf[r.massagista_id] = r.total;
+  const cf = contarCfFeriados(Array.isArray(datas) ? datas : []);
   res.json({ ok: true, cf });
 });
 
