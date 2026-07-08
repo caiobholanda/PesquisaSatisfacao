@@ -203,9 +203,18 @@ body {
   position: sticky; left: 0; z-index: 30; background: var(--bg);
   border-right: 2px solid var(--border);
   padding: 0 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
-  transition: background .08s;
+  transition: background .08s; overflow: hidden; min-width: 0;
 }
-.prof-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.cell-prof:hover { z-index: 1000; }
+.prof-name {
+  font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  white-space: normal; overflow: hidden;
+}
+.prof-name[data-tip]:hover::after {
+  bottom: auto; top: calc(100% + 6px); left: 0; transform: none;
+  max-width: 280px; white-space: normal; word-break: break-word; line-height: 1.4;
+}
 .prof-meta { display: flex; align-items: center; gap: 5px; }
 .prof-pill {
   font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
@@ -701,7 +710,7 @@ function render() {
       _firstRowDone = true;
       html += '<div class="grid-row">';
       html += `<div class="cell-prof">
-        <div class="prof-name">${escH(prof.nome)}</div>
+        <div class="prof-name" data-tip="${escH(prof.nome)}">${escH(prof.nome)}</div>
         <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span></div>
       </div>`;
       for (const [di, d] of dias.entries()) {
