@@ -1024,6 +1024,120 @@ export function listarTurnoHistorico(massagista_id, data, limit = 50) {
   ).all(massagista_id, data, Math.min(Math.max(1, limit), 200));
 }
 
+// ── Avaliação de disponibilidade por escala (mensal → semanal → sem escala) ──
+const JORNADA_MIN = 9 * 60;   // fim derivado = entrada + 9h (8h trabalho + 1h intervalo)
+const SPA_FIM_MIN = 22 * 60;  // teto 22:00
+
+function _hmEsc(s) {
+  if (!s || !/^\d{2}:\d{2}$/.test(String(s).trim())) return NaN;
+  const [h, m] = String(s).trim().split(':').map(Number);
+  return h * 60 + m;
+}
+function _minToHm(min) {
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
+
+export function listarTurnosDia(data) {
+  return getDb().prepare('SELECT massagista_id, turno FROM turno_massagista WHERE data=?').all(data);
+}
+
+export function contextoEscalaDia(data) {
+  const rows = listarTurnosDia(data);
+  return { turnosDia: new Map(rows.map(r => [r.massagista_id, r.turno])), lancada: rows.length > 0 };
+}
+
+const TURNO_STATUS_MOTIVO = {
+  X: 'folga', FE: 'férias', AT: 'atestado', AA: 'afastamento',
+  CF: 'compensação de feriado', CH: 'compensação de hora',
+  LS: 'licença sindical', LC: 'licença casamento', F: 'falta',
+};
+
+// Fonte da verdade do dia real: escala mensal (turno_massagista). Fallback:
+// escala semanal (disponibilidade+excecoes — mesma regra do modal de reservas)
+// quando a data não tem NENHUM turno lançado. Sem nada cadastrado → liberada
+// com aviso, para a operação nunca ficar travada por falta de escala digitada.
+export function avaliarEscalaMassagista(m, data, horaInicio, horaFim, ctx) {
+  const c = ctx || contextoEscalaDia(data);
+  const resIni = _hmEsc(horaInicio);
+  const resFim = _hmEsc(horaFim);
+  const rFim = Number.isNaN(resFim) ? resIni : resFim;
+  const turno = c.turnosDia.get(m.id);
+
+  if (turno) {
+    if (TURNO_STATUS_MOTIVO[turno]) {
+      return { disponivel: false, fonte: 'mensal', motivo: TURNO_STATUS_MOTIVO[turno], turno };
+    }
+    let ini, fim;
+    if (turno.includes('|')) {
+      const [e, s] = turno.split('|');
+      ini = _hmEsc(e); fim = _hmEsc(s);
+    } else {
+      ini = _hmEsc(turno);
+      fim = Number.isNaN(ini) ? NaN : Math.min(ini + JORNADA_MIN, SPA_FIM_MIN);
+    }
+    // Turno ilegível: nunca travar a operação
+    if (Number.isNaN(ini) || Number.isNaN(fim)) return { disponivel: true, fonte: 'mensal', turno };
+    const faixa = `${_minToHm(ini)}-${_minToHm(fim)}`;
+    if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'mensal', faixa, turno };
+    const ok = resIni >= ini && rFim <= fim;
+    return { disponivel: ok, fonte: 'mensal', motivo: ok ? null : 'fora do turno', faixa, turno };
+  }
+
+  if (c.lancada) {
+    return { disponivel: false, fonte: 'mensal', motivo: 'não escalada no dia' };
+  }
+
+  // Fallback semanal — espelho de _massagistaTrabalhaNoHorario (public/js/admin.js)
+  if (!m.disponibilidade && !m.excecoes) {
+    return { disponivel: true, fonte: 'sem-escala', aviso: 'escala não lançada para esta data' };
+  }
+  let excArr = [];
+  if (m.excecoes) {
+    try { excArr = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excArr = []; }
+    if (!Array.isArray(excArr)) excArr = [];
+  }
+  const excsDoDia = excArr.filter(e => e?.data === data);
+  if (excsDoDia.length) {
+    for (const e of excsDoDia) {
+      if (e.tipo !== 'indisponivel') continue;
+      if (!e.inicio || !e.fim) return { disponivel: false, fonte: 'semanal', motivo: 'folga (exceção)' };
+      const eIni = _hmEsc(e.inicio), eFim = _hmEsc(e.fim);
+      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
+      if (Number.isNaN(resIni)) return { disponivel: false, fonte: 'semanal', motivo: 'indisponível (exceção)' };
+      if (resIni < eFim && rFim > eIni) return { disponivel: false, fonte: 'semanal', motivo: 'indisponível (exceção)' };
+    }
+    for (const e of excsDoDia) {
+      if (e.tipo !== 'disponivel') continue;
+      const eIni = _hmEsc(e.inicio), eFim = _hmEsc(e.fim);
+      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
+      if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'semanal' };
+      if (resIni >= eIni && rFim <= eFim) return { disponivel: true, fonte: 'semanal' };
+    }
+  }
+  if (!m.disponibilidade) return { disponivel: true, fonte: 'semanal' };
+  let disp;
+  try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
+  catch { return { disponivel: true, fonte: 'semanal' }; }
+  if (!disp) return { disponivel: true, fonte: 'semanal' };
+  const dowKey = ['dom','seg','ter','qua','qui','sex','sab'][new Date(data + 'T12:00:00Z').getUTCDay()];
+  const faixaSem = disp[dowKey];
+  if (!faixaSem) return { disponivel: false, fonte: 'semanal', motivo: 'folga semanal' };
+  if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
+  const parts = String(faixaSem).split('-');
+  if (parts.length !== 2) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
+  const eIni = _hmEsc(parts[0].trim()), eFim = _hmEsc(parts[1].trim());
+  if (Number.isNaN(eIni) || Number.isNaN(eFim)) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
+  const ok = resIni >= eIni && rFim <= eFim;
+  return { disponivel: ok, fonte: 'semanal', motivo: ok ? null : 'fora do horário semanal', faixa: faixaSem };
+}
+
+export function listarReservasMassagistaData(massagista_id, data) {
+  return getDb().prepare(
+    `SELECT id, cliente, cliente2, sala, hora_inicio, hora_fim, massagista_id, massagista_id2
+     FROM reservas WHERE data=? AND (massagista_id=? OR massagista_id2=?) ORDER BY hora_inicio ASC`
+  ).all(data, massagista_id, massagista_id);
+}
+
 // ── Tipos de Massagem ──
 export function listarTiposMassagem() {
   return getDb().prepare('SELECT * FROM tipos_massagem ORDER BY categoria, nome ASC').all();

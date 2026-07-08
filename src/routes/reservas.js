@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById } from '../db.js';
+import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -218,6 +218,39 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     }
     if (massagista_id2 && !buscarMassagistaById(+massagista_id2)) {
       return res.status(400).json({ ok: false, error: 'Pessoa 2: massoterapeuta não encontrada' });
+    }
+
+    // ── Validação de escala (mensal → fallback semanal). O frontend já filtra,
+    // mas o backend revalida — POST direto na API não burla a escala. Override
+    // explícito (override_escala:true) permite agendar mesmo assim; a flag fica
+    // registrada na auditoria (body auditado) como decisão consciente do admin.
+    const overrideEscala = !!(req.body?.override_escala);
+    if (!overrideEscala) {
+      const ctxEscala = contextoEscalaDia(data);
+      const _validaEscala = (mid, rotulo) => {
+        if (!mid) return null;
+        const mm = buscarMassagistaById(+mid);
+        if (!mm) return null; // FK já validada acima
+        const av = avaliarEscalaMassagista(mm, data, hora_inicio, hora_fim, ctxEscala);
+        if (av.disponivel) return null;
+        return {
+          ok: false,
+          error: `${rotulo}${mm.nome} — ${av.motivo || 'fora da escala'} nesta data/horário`,
+          tipo: 'escala',
+          motivo: av.motivo || 'fora da escala',
+          fonte: av.fonte,
+          faixa: av.faixa || null,
+          massagista: mm.nome,
+          massagista_id: mm.id,
+          override_permitido: true,
+        };
+      };
+      const escErr1 = _validaEscala(massagista_id, '');
+      if (escErr1) return res.status(409).json(escErr1);
+      if (_p2Presente) {
+        const escErr2 = _validaEscala(massagista_id2, 'Pessoa 2: ');
+        if (escErr2) return res.status(409).json(escErr2);
+      }
     }
 
     const _locale1 = idioma?.trim() || null;

@@ -7,6 +7,7 @@ import {
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
   listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
+  contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -333,6 +334,28 @@ router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
     try { registrarTurnoHistorico(mId, data, antes, null, req.user?.username || null, 'manual'); } catch {}
   }
   res.json({ ok: true });
+});
+
+// Disponibilidade por escala para um dia/horário — usado pelo seletor de
+// massoterapeuta do modal de reservas. Fonte: mensal → semanal → sem-escala.
+router.get('/escala-spa/disponibilidade', (req, res) => {
+  const data = String(req.query.data || '');
+  const horaIni = req.query.hora_inicio || null;
+  const horaFim = req.query.hora_fim || null;
+  if (!dataRealValida(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
+  const ctx = contextoEscalaDia(data);
+  const items = listarMassagistas().filter(m => m.ativo).map(m => {
+    const av = avaliarEscalaMassagista(m, data, horaIni, horaFim, ctx);
+    return {
+      massagista_id: m.id,
+      disponivel: av.disponivel,
+      fonte: av.fonte,
+      motivo: av.motivo || null,
+      faixa: av.faixa || null,
+      aviso: av.aviso || null,
+    };
+  });
+  res.json({ ok: true, lancada: ctx.lancada, items });
 });
 
 // Histórico antes→depois de uma célula da escala mensal
