@@ -801,23 +801,24 @@ export function setPadraoEntrada(id, padrao) {
 export function seedPadraoEntrada() {
   const db = getDb();
   try {
-    if (db.prepare("SELECT valor FROM system_meta WHERE chave='padrao_entrada_seeded'").get()) return;
+    if (db.prepare("SELECT valor FROM system_meta WHERE chave='padrao_entrada_seeded_v2'").get()) return;
   } catch { return; }
+  // Matched by matricula (stable unique ID) — not by nome que varia entre ambientes
   const PADROES = {
-    'Ana Cristina': { seg:'10:00', ter:'10:00', qua:'10:00', qui:'10:00', sex:'10:00', sab:'10:00', dom:'10:00' },
-    'Karoline':     { seg:null,    ter:null,    qua:null,    qui:null,    sex:'09:00', sab:'09:00', dom:'09:00' },
-    'Germana':      { seg:'12:00', ter:'12:00', qua:'12:00', qui:'12:00', sex:'12:00', sab:'12:00', dom:'FOLGA' },
-    'Mayara':       { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' },
-    'Val':          { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' },
-    'Isadora':      { seg:'17:30', ter:'17:30', qua:'17:30', qui:'17:30', sex:'17:30', sab:'17:30', dom:'FOLGA' },
+    '0010001614': { seg:'10:00', ter:'10:00', qua:'10:00', qui:'10:00', sex:'10:00', sab:'10:00', dom:'10:00' }, // Ana Cristina
+    '0010001711': { seg:null,    ter:null,    qua:null,    qui:null,    sex:'09:00', sab:'09:00', dom:'09:00' }, // Karoline
+    '0010001573': { seg:'12:00', ter:'12:00', qua:'12:00', qui:'12:00', sex:'12:00', sab:'12:00', dom:'FOLGA' }, // Germana
+    '0010001881': { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' }, // Mayara
+    '0010001981': { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' }, // Val
+    '0010002052': { seg:'17:30', ter:'17:30', qua:'17:30', qui:'17:30', sex:'17:30', sab:'17:30', dom:'FOLGA' }, // Isadora
   };
   try {
-    const massas = db.prepare('SELECT id, nome FROM massagistas').all();
+    const massas = db.prepare('SELECT id, matricula FROM massagistas WHERE matricula IS NOT NULL').all();
     for (const m of massas) {
-      const p = PADROES[m.nome];
+      const p = PADROES[m.matricula];
       if (p) db.prepare('UPDATE massagistas SET padrao_entrada=? WHERE id=?').run(JSON.stringify(p), m.id);
     }
-    db.prepare("INSERT OR REPLACE INTO system_meta (chave,valor) VALUES ('padrao_entrada_seeded','1')").run();
+    db.prepare("INSERT OR REPLACE INTO system_meta (chave,valor) VALUES ('padrao_entrada_seeded_v2','1')").run();
   } catch {}
 }
 
