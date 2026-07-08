@@ -221,13 +221,13 @@ body {
   font-family: var(--mono);
 }
 .prof-cf-badge {
-  font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 3px;
-  color: #9C5843; background: rgba(156,88,67,.15); border: 1px solid rgba(156,88,67,.4);
-  font-family: var(--mono); white-space: nowrap;
+  font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 10px;
+  color: #9C5843; background: rgba(156,88,67,.13); border: 1px solid rgba(156,88,67,.38);
+  font-family: var(--mono); white-space: nowrap; cursor: default;
 }
 [data-theme="dark"] .prof-cf-badge {
-  color: #d4823a; background: rgba(156,88,67,.25); border-color: rgba(156,88,67,.5);
+  color: #d4823a; background: rgba(156,88,67,.22); border-color: rgba(156,88,67,.48);
 }
 
 .cell-d {
@@ -384,6 +384,78 @@ body {
 #btn-padroes:hover { color: var(--gold); background: rgba(156,88,67,.08); }
 #btn-padroes:hover svg { transform: rotate(72deg); }
 
+/* ── CF BUTTON ─────────────────────────────────── */
+#btn-cf {
+  height: 26px; padding: 0 8px; background: transparent;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  color: var(--muted); font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  font-family: var(--mono); cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  transition: color .15s, border-color .15s, background .15s;
+}
+#btn-cf:hover { color: #9C5843; border-color: rgba(156,88,67,.5); background: rgba(156,88,67,.07); }
+#btn-cf .cf-btn-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(156,88,67,.4); transition: background .15s;
+}
+#btn-cf:hover .cf-btn-dot { background: #9C5843; }
+
+/* ── CF MODAL ──────────────────────────────────── */
+.cf-modal-title {
+  font-weight: 700; font-size: 1.1rem; color: var(--text);
+  display: flex; align-items: center; gap: 8px; letter-spacing: .01em;
+}
+.cf-modal-sub {
+  font-size: .72rem; color: var(--muted); margin: .3rem 0 .9rem;
+  border-bottom: 1px solid var(--border); padding-bottom: .6rem; line-height: 1.5;
+}
+.cf-section-label {
+  font-size: 8px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); padding: .6rem 0 .3rem; font-family: var(--mono);
+}
+.cf-row {
+  display: grid; grid-template-columns: 46px 1fr; align-items: center; gap: 12px;
+  padding: 7px 0; border-bottom: 1px solid var(--border-soft);
+}
+.cf-row:last-child { border-bottom: none; }
+.cf-count-wrap { display: flex; justify-content: center; }
+.cf-count {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1.5px solid; transition: transform .1s;
+}
+.cf-count.has-cf {
+  background: rgba(156,88,67,.12); border-color: rgba(156,88,67,.45); color: #9C5843;
+}
+[data-theme="dark"] .cf-count.has-cf {
+  background: rgba(156,88,67,.22); border-color: rgba(156,88,67,.55); color: #d4823a;
+}
+.cf-count.no-cf {
+  background: var(--border-soft); border-color: var(--border); color: var(--muted);
+  opacity: .6;
+}
+.cf-count-num {
+  font-family: var(--mono); font-size: 15px; font-weight: 700; line-height: 1;
+}
+.cf-count-lbl { font-family: var(--mono); font-size: 7px; font-weight: 600; letter-spacing: .1em; margin-top: 1px; }
+.cf-prof-name {
+  font-size: .88rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .01em;
+}
+.cf-prof-meta { font-size: .66rem; color: var(--muted); margin-top: 1px; }
+.cf-summary-bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: .65rem .9rem; background: var(--surface2); border-radius: 8px;
+  margin-bottom: .85rem; border: 1px solid var(--border-soft);
+}
+.cf-sum-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cf-sum-num { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #9C5843; line-height: 1; }
+[data-theme="dark"] .cf-sum-num { color: #d4823a; }
+.cf-sum-lbl { font-size: 8px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
+.cf-sum-sep { width: 1px; height: 28px; background: var(--border); }
+.cf-sum-item-muted .cf-sum-num { color: var(--muted); font-size: 16px; }
+
 /* ── PICKER TIMES GRID ─────────────────────────── */
 .cp-times { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px 6px 8px; }
 .cp-time {
@@ -437,6 +509,7 @@ body {
   <div class="pbar-sep-v"></div>
   <div class="pbar-group">
     <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
+    <button id="btn-cf" title="Compensações de feriado acumuladas"><span class="cf-btn-dot"></span>CF</button>
     <button id="btn-padroes" title="Padrões semanais">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -518,6 +591,22 @@ body {
     <div id="padroes-lista">
       <div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Carregando…</div>
     </div>
+  </div>
+</div>
+
+<!-- MODAL CF ACUMULADO -->
+<div id="cf-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:820;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px">
+  <div id="cf-modal" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;width:480px;max-width:96vw;box-shadow:0 8px 32px rgba(0,0,0,.35);margin:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+      <div class="cf-modal-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2" fill="currentColor" stroke="none"/></svg>
+        Compensações de Feriado
+      </div>
+      <button id="btn-cf-close" class="pm-modal-close">×</button>
+    </div>
+    <div class="cf-modal-sub">Saldo acumulado histórico — feriados com horário de trabalho registrado na escala.</div>
+    <div id="cf-summary-bar" class="cf-summary-bar" style="display:none"></div>
+    <div id="cf-lista"></div>
   </div>
 </div>
 
@@ -1094,6 +1183,67 @@ function pmRenderizar(items) {
 
 document.getElementById('btn-padroes').addEventListener('click', openPadroesModal);
 document.getElementById('btn-padroes-close').addEventListener('click', closePadroesModal);
+
+// ─── CF MODAL ─────────────────────────────────────────────────────────────────
+function openCfModal() {
+  const ov = document.getElementById('cf-overlay');
+  ov.style.display = 'flex';
+  renderCfModal();
+}
+function closeCfModal() {
+  document.getElementById('cf-overlay').style.display = 'none';
+}
+function renderCfModal() {
+  const lista = document.getElementById('cf-lista');
+  const bar   = document.getElementById('cf-summary-bar');
+  if (!profs.length) { lista.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Nenhuma profissional cadastrada.</div>'; return; }
+
+  const comCf  = profs.filter(p => (cfAcumulado[p.id] || 0) > 0).sort((a,b) => (cfAcumulado[b.id]||0) - (cfAcumulado[a.id]||0));
+  const semCf  = profs.filter(p => (cfAcumulado[p.id] || 0) === 0);
+  const total  = comCf.reduce((s,p) => s + (cfAcumulado[p.id]||0), 0);
+
+  bar.style.display = comCf.length ? 'flex' : 'none';
+  if (comCf.length) {
+    bar.innerHTML = `
+      <div class="cf-sum-item"><div class="cf-sum-num">${comCf.length}</div><div class="cf-sum-lbl">Com CF</div></div>
+      <div class="cf-sum-sep"></div>
+      <div class="cf-sum-item"><div class="cf-sum-num">${total}</div><div class="cf-sum-lbl">CF Total</div></div>
+      <div class="cf-sum-sep"></div>
+      <div class="cf-sum-item cf-sum-item-muted"><div class="cf-sum-num">${semCf.length}</div><div class="cf-sum-lbl">Sem CF</div></div>`;
+  }
+
+  const rowHtml = (prof) => {
+    const n = cfAcumulado[prof.id] || 0;
+    const cls = n > 0 ? 'has-cf' : 'no-cf';
+    return `<div class="cf-row">
+      <div class="cf-count-wrap">
+        <div class="cf-count ${cls}">
+          <div class="cf-count-num">${n}</div>
+          <div class="cf-count-lbl">CF</div>
+        </div>
+      </div>
+      <div>
+        <div class="cf-prof-name">${escH(prof.nome)}</div>
+        <div class="cf-prof-meta">${escH(prof.funcao||'—')} · ${escH(prof.vinculo||'—')}</div>
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+  if (comCf.length) {
+    html += `<div class="cf-section-label">Com saldo</div>`;
+    html += comCf.map(rowHtml).join('');
+  }
+  if (semCf.length) {
+    html += `<div class="cf-section-label">Sem saldo</div>`;
+    html += semCf.map(rowHtml).join('');
+  }
+  lista.innerHTML = html;
+}
+
+document.getElementById('btn-cf').addEventListener('click', openCfModal);
+document.getElementById('btn-cf-close').addEventListener('click', closeCfModal);
+document.getElementById('cf-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeCfModal(); });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadData();
