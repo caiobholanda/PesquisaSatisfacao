@@ -222,16 +222,13 @@ body {
   font-family: var(--mono);
 }
 .prof-cf-badge {
-  display: inline-flex; align-items: center; gap: 2px;
-  font-family: var(--mono); font-size: 8px; font-weight: 800;
-  letter-spacing: .06em; text-transform: uppercase;
+  font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
   padding: 2px 6px; border-radius: 3px;
-  color: #fff; background: #9C5843;
-  box-shadow: 0 1px 4px rgba(156,88,67,.4);
-  white-space: nowrap; cursor: default; flex-shrink: 0; line-height: 1;
+  color: #9C5843; background: rgba(156,88,67,.09); border: 1px solid rgba(156,88,67,.28);
+  font-family: var(--mono); white-space: nowrap; cursor: default;
 }
 [data-theme="dark"] .prof-cf-badge {
-  background: #864a36; box-shadow: 0 1px 4px rgba(0,0,0,.4);
+  color: #d4823a; background: rgba(156,88,67,.14); border-color: rgba(156,88,67,.32);
 }
 
 .cell-d {
@@ -871,8 +868,8 @@ function render() {
       const cfTotal = cfAcumulado[prof.id] || 0;
       const cfBadge = cfTotal > 0 ? `<span class="prof-cf-badge" title="${cfTotal} compensação(ões) de feriado acumulada(s)">${cfTotal} CF</span>` : '';
       html += `<div class="cell-prof">
-        <div class="prof-name-row"><div class="prof-name">${escH(prof.nome)}</div>${cfBadge}</div>
-        <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span></div>
+        <div class="prof-name-row"><div class="prof-name">${escH(prof.nome)}</div></div>
+        <div class="prof-meta"><span class="prof-pill">${escH(pill)}</span>${cfBadge}</div>
       </div>`;
       for (const [di, d] of dias.entries()) {
         const w     = dow(d.ano, d.mes, d.dia);
