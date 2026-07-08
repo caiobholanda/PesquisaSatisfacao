@@ -692,19 +692,18 @@ export function initDb() {
   } catch (e) { console.error('[seed recepcionistas]', e.message); }
 }
 
-export function contarCfFeriados(datas) {
-  if (!Array.isArray(datas) || !datas.length) return {};
+// Retorna saldo CF: feriados trabalhados (ganhos) − dias com turno='CF' (usados)
+export function calcularSaldoCf(datas) {
   const db = getDb();
-  const placeholders = datas.map(() => '?').join(',');
-  const rows = db.prepare(`
-    SELECT massagista_id, COUNT(*) as total
-    FROM turno_massagista
-    WHERE data IN (${placeholders}) AND turno LIKE '%:%'
-    GROUP BY massagista_id
-  `).all(...datas);
-  const out = {};
-  for (const r of rows) out[r.massagista_id] = r.total;
-  return out;
+  const saldo = {};
+  if (Array.isArray(datas) && datas.length) {
+    const ph = datas.map(() => '?').join(',');
+    for (const r of db.prepare(`SELECT massagista_id, COUNT(*) as n FROM turno_massagista WHERE data IN (${ph}) AND turno LIKE '%:%' GROUP BY massagista_id`).all(...datas))
+      saldo[r.massagista_id] = (saldo[r.massagista_id] || 0) + r.n;
+  }
+  for (const r of db.prepare(`SELECT massagista_id, COUNT(*) as n FROM turno_massagista WHERE turno = 'CF' GROUP BY massagista_id`).all())
+    saldo[r.massagista_id] = (saldo[r.massagista_id] || 0) - r.n;
+  return saldo;
 }
 
 export function inserirFeedback(dados) {

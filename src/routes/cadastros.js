@@ -5,7 +5,7 @@ import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
-  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, contarCfFeriados,
+  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -352,10 +352,10 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
   res.json({ ok: true, total: alteracoes.length });
 });
 
-// CF acumulado: conta dias de feriado em que a profissional tem turno com horário (contém ':')
+// Saldo CF: ganhos (feriados trabalhados) − usados (turno='CF')
 router.post('/escala-spa/cf-acumulado', (req, res) => {
   const { datas } = req.body || {};
-  const cf = contarCfFeriados(Array.isArray(datas) ? datas : []);
+  const cf = calcularSaldoCf(Array.isArray(datas) ? datas : []);
   res.json({ ok: true, cf });
 });
 

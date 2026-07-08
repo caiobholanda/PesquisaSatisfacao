@@ -802,10 +802,21 @@ async function saveTurno(mId, data, turno) {
     if (r.status === 403) { showToast('Sem permissão para editar', 'err'); setSaveInd('err', 'erro'); return; }
     if (!r.ok) { showToast('Erro ao salvar', 'err'); setSaveInd('err', 'erro'); return; }
     setSaveInd('saved', '✓ salvo');
+    reloadCf();
   } catch {
     showToast('Erro de conexão', 'err');
     setSaveInd('err', 'erro');
   }
+}
+
+async function reloadCf() {
+  try {
+    const rc = await apiFetch('/api/escala-spa/cf-acumulado', {
+      method: 'POST',
+      body: JSON.stringify({ datas: Object.keys(FERIADOS) }),
+    });
+    if (rc && rc.ok) { cfAcumulado = (await rc.json()).cf || {}; render(); }
+  } catch {}
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
