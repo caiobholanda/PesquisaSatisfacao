@@ -405,21 +405,18 @@ body {
 .pm-no-hub       { display: inline-block; font-size: .65rem; color: var(--muted); background: var(--surface2); padding: 1px 5px; border-radius: 3px; margin-left: 5px; border: 1px solid var(--border-soft); vertical-align: middle; font-family: var(--font); }
 /* Table layout */
 .pm-table        { display: flex; flex-direction: column; }
-.pm-head-row, .pm-data-row { display: grid; grid-template-columns: 1fr repeat(7, 62px) 36px; align-items: center; gap: 4px; }
+.pm-head-row, .pm-data-row { display: grid; grid-template-columns: 1fr repeat(7, 62px); align-items: center; gap: 4px; }
 .pm-head-row     { padding-bottom: 7px; border-bottom: 1.5px solid var(--border); margin-bottom: 2px; }
 .pm-data-row     { padding: 5px 0; border-bottom: 1px solid var(--border-soft); }
 .pm-data-row:last-child { border-bottom: none; }
 .pm-col-day      { display: flex; justify-content: center; }
 .pm-head-row .pm-col-day { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); }
 .pm-col-name     { padding-right: 8px; min-width: 0; }
-.pm-col-save     { display: flex; justify-content: center; }
 .pm-prof-name    { font-size: .92rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .01em; }
 .pm-prof-meta    { font-size: .68rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pm-day-sel      { width: 58px; font-size: 11px; padding: 5px 2px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text); font-family: var(--mono); outline: none; text-align: center; cursor: pointer; transition: border-color .12s; -webkit-appearance: none; appearance: none; }
 .pm-day-sel:hover { border-color: var(--muted); }
 .pm-day-sel:focus { border-color: var(--gold); background: var(--surface); }
-.pm-save-btn     { width: 28px; height: 28px; border-radius: 5px; border: none; background: var(--gold); color: #fff; cursor: pointer; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: opacity .15s; flex-shrink: 0; }
-.pm-save-btn:hover { opacity: .82; }
 </style>
 </head>
 <body>
@@ -1049,6 +1046,28 @@ function openPadroesModal() {
 }
 function closePadroesModal() {
   document.getElementById('padroes-overlay').style.display = 'none';
+  pmSalvarTodos();
+}
+
+async function pmSalvarTodos() {
+  const sels = document.querySelectorAll('.pm-day-sel[data-pm-mid]');
+  if (!sels.length) return;
+  const mIds = [...new Set([...sels].map(s => parseInt(s.dataset.pmMid)))];
+  const results = await Promise.all(mIds.map(async mId => {
+    const padrao = {};
+    for (const { key } of PM_DIAS) {
+      const sel = document.querySelector(`.pm-day-sel[data-pm-mid="${mId}"][data-pm-dia="${key}"]`);
+      padrao[key] = (!sel || sel.value === '') ? null : sel.value;
+    }
+    try {
+      const r = await apiFetch(`/api/massagistas/${mId}/padrao`, { method: 'PUT', body: JSON.stringify({ padrao }) });
+      if (!r) return false;
+      const d = await r.json();
+      return d.ok;
+    } catch { return false; }
+  }));
+  const allOk = results.every(Boolean);
+  showToast(allOk ? `✓ Padrões salvos` : 'Erro ao salvar padrões', allOk ? '' : 'err');
 }
 
 async function pmCarregar() {
@@ -1095,7 +1114,6 @@ function pmRenderizar(items) {
         <div class="pm-prof-meta">${escH(prof.funcao||'—')} · ${escH(prof.vinculo||'—')}</div>
       </div>
       ${dayCells}
-      <div class="pm-col-save"><button data-pm-save="${prof.id}" class="pm-save-btn" title="Salvar">✓</button></div>
     </div>`;
   }).join('');
 
@@ -1103,35 +1121,11 @@ function pmRenderizar(items) {
     <div class="pm-head-row">
       <div class="pm-col-name"></div>
       ${headCells}
-      <div class="pm-col-save"></div>
     </div>
     ${rows}
   </div>`;
-
-  lista.querySelectorAll('[data-pm-save]').forEach(btn => {
-    btn.addEventListener('click', () => pmSalvar(parseInt(btn.dataset.pmSave)));
-  });
 }
 
-async function pmSalvar(mId) {
-  const btn = document.querySelector(`[data-pm-save="${mId}"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
-
-  const padrao = {};
-  for (const { key } of PM_DIAS) {
-    const sel = document.querySelector(`.pm-day-sel[data-pm-mid="${mId}"][data-pm-dia="${key}"]`);
-    padrao[key] = (!sel || sel.value === '') ? null : sel.value;
-  }
-
-  const r = await apiFetch(`/api/massagistas/${mId}/padrao`, {
-    method: 'PUT',
-    body: JSON.stringify({ padrao }),
-  });
-  if (btn) { btn.disabled = false; btn.textContent = '✓'; }
-  if (!r) return;
-  const d = await r.json();
-  showToast(d.ok ? '✓ Padrão salvo' : (d.error || 'Erro ao salvar'), d.ok ? '' : 'err');
-}
 
 document.getElementById('btn-padroes').addEventListener('click', openPadroesModal);
 document.getElementById('btn-padroes-close').addEventListener('click', closePadroesModal);
