@@ -162,6 +162,8 @@ export function initDb() {
   try { db.exec(`UPDATE massagistas SET funcao = 'Massoterapeuta' WHERE funcao IS NULL OR funcao = ''`); } catch {}
   // Migration: add email field to massagistas for Hub SSO login
   try { db.exec(`ALTER TABLE massagistas ADD COLUMN email TEXT`); } catch {}
+  // Migration: padrão de entrada por dia da semana (populado via seedPadraoEntrada)
+  try { db.exec(`ALTER TABLE massagistas ADD COLUMN padrao_entrada TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_massagistas_email ON massagistas(email) WHERE email IS NOT NULL AND email <> ''`); } catch {}
   // Migration: tabela de férias programadas por massoterapeuta
   try { db.exec(`CREATE TABLE IF NOT EXISTS ferias_massagista (
@@ -607,6 +609,7 @@ export function initDb() {
   seedTratamentosGranSpa();
   seedMassoterapeutasGranSpa();
   seedQuartosGranMarquise();
+  seedPadraoEntrada();
   // Modulo Qualidade: seed e' chamado em server.js apos initDb() (ESM).
 
   const adminUser = process.env.ADMIN_USER || 'admin';
@@ -785,11 +788,39 @@ function seedMassoterapeutasGranSpa() {
 export function listarMassagistas() {
   return getDb().prepare(`
     SELECT id, nome, ativo, created_at, matricula, especialidade_original,
-           funcao, vinculo, bilingue, disponibilidade, excecoes
+           funcao, vinculo, bilingue, disponibilidade, excecoes, padrao_entrada
     FROM massagistas
     ORDER BY nome ASC
   `).all();
 }
+export function setPadraoEntrada(id, padrao) {
+  getDb().prepare('UPDATE massagistas SET padrao_entrada=? WHERE id=?')
+    .run(typeof padrao === 'string' ? padrao : JSON.stringify(padrao), id);
+}
+
+export function seedPadraoEntrada() {
+  const db = getDb();
+  try {
+    if (db.prepare("SELECT valor FROM system_meta WHERE chave='padrao_entrada_seeded'").get()) return;
+  } catch { return; }
+  const PADROES = {
+    'Ana Cristina': { seg:'10:00', ter:'10:00', qua:'10:00', qui:'10:00', sex:'10:00', sab:'10:00', dom:'10:00' },
+    'Karoline':     { seg:null,    ter:null,    qua:null,    qui:null,    sex:'09:00', sab:'09:00', dom:'09:00' },
+    'Germana':      { seg:'12:00', ter:'12:00', qua:'12:00', qui:'12:00', sex:'12:00', sab:'12:00', dom:'FOLGA' },
+    'Mayara':       { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' },
+    'Val':          { seg:'14:00', ter:'14:00', qua:'14:00', qui:'14:00', sex:'14:00', sab:'14:00', dom:'12:00' },
+    'Isadora':      { seg:'17:30', ter:'17:30', qua:'17:30', qui:'17:30', sex:'17:30', sab:'17:30', dom:'FOLGA' },
+  };
+  try {
+    const massas = db.prepare('SELECT id, nome FROM massagistas').all();
+    for (const m of massas) {
+      const p = PADROES[m.nome];
+      if (p) db.prepare('UPDATE massagistas SET padrao_entrada=? WHERE id=?').run(JSON.stringify(p), m.id);
+    }
+    db.prepare("INSERT OR REPLACE INTO system_meta (chave,valor) VALUES ('padrao_entrada_seeded','1')").run();
+  } catch {}
+}
+
 export function buscarMassagistaById(id) {
   return getDb().prepare('SELECT * FROM massagistas WHERE id=?').get(id) || null;
 }

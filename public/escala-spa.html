@@ -370,6 +370,15 @@ body {
 }
 .cp-opt.cp-clear:hover .cp-clear-icon { color: var(--danger); }
 
+/* ── BOTÃO APLICAR PADRÃO ──────────────────────── */
+.ap-trigger-btn {
+  padding: .3rem .85rem; border-radius: 6px; font-size: .78rem; font-weight: 600;
+  border: 1.5px solid var(--gold); color: var(--gold); background: transparent;
+  cursor: pointer; white-space: nowrap; transition: background .15s, color .15s;
+  margin-left: .35rem;
+}
+.ap-trigger-btn:hover { background: var(--gold); color: #fff; }
+
 /* ── TOAST ────────────────────────────────────── */
 #toast {
   position: fixed; bottom: 24px; left: 50%;
@@ -412,6 +421,7 @@ body {
     <div class="pnav-sub" id="lbl-sub"></div>
   </div>
   <button class="pnav-btn" id="btn-next">›</button>
+  <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
   <div class="periodo-bar-sep"></div>
   <div class="legend">
     <div class="leg-item"><div class="leg-chip sig-M" style="font-size:10px">09h</div>Manhã</div>
@@ -478,6 +488,35 @@ body {
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- MODAL APLICAR PADRÃO -->
+<div id="ap-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;align-items:center;justify-content:center">
+  <div id="ap-modal" style="background:var(--bg-card);border:1px solid var(--bd);border-radius:14px;padding:1.5rem 1.75rem;width:400px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div style="font-weight:700;font-size:1.05rem;margin-bottom:.25rem;color:var(--tx-1)">Aplicar padrão de escala</div>
+    <div style="font-size:.82rem;color:var(--tx-2);margin-bottom:1.25rem">Período: <span id="ap-periodo-label"></span></div>
+
+    <label id="ap-opt-vazios" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem;border-radius:9px;border:2px solid var(--gold);margin-bottom:.65rem;transition:border-color .15s">
+      <input type="radio" name="ap-mode" value="vazios" style="margin-top:2px;accent-color:var(--gold)" checked>
+      <span>
+        <div style="font-weight:600;font-size:.9rem;color:var(--tx-1)">Preencher apenas células vazias</div>
+        <div style="font-size:.8rem;color:var(--tx-2);margin-top:.2rem"><span id="ap-cnt-vazios">calculando…</span></div>
+      </span>
+    </label>
+
+    <label id="ap-opt-sob" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem;border-radius:9px;border:1.5px solid var(--bd);transition:border-color .15s">
+      <input type="radio" name="ap-mode" value="sobrescrever" style="margin-top:2px;accent-color:var(--gold)">
+      <span>
+        <div style="font-weight:600;font-size:.9rem;color:var(--tx-1)">Sobrescrever tudo</div>
+        <div style="font-size:.8rem;color:var(--tx-2);margin-top:.2rem"><span id="ap-cnt-sob">calculando…</span></div>
+      </span>
+    </label>
+
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem">
+      <button id="ap-cancel" style="padding:.5rem 1.1rem;border-radius:7px;border:1.5px solid var(--bd);background:transparent;color:var(--tx-1);cursor:pointer;font-size:.88rem">Cancelar</button>
+      <button id="ap-confirm" style="padding:.5rem 1.25rem;border-radius:7px;border:none;background:var(--gold);color:#fff;cursor:pointer;font-weight:600;font-size:.88rem">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
@@ -867,6 +906,87 @@ document.getElementById('btn-next').onclick = () => {
     : { ano: periodo.ano, mes: periodo.mes + 1 };
   loadData();
 };
+
+// ─── APLICAR PADRÃO ───────────────────────────────────────────────────────────
+let _apMode = 'vazios';
+
+function _apLabel() {
+  const m2 = periodo.mes === 11 ? 0 : periodo.mes + 1;
+  const a2 = periodo.mes === 11 ? periodo.ano + 1 : periodo.ano;
+  return `21/${p2(periodo.mes + 1)} → 20/${p2(m2 + 1)} ${a2}`;
+}
+
+async function _apPreview(sobrescrever) {
+  const r = await apiFetch('/api/escala-spa/aplicar-padrao', {
+    method: 'POST',
+    body: JSON.stringify({ ano: periodo.ano, mes: periodo.mes, sobrescrever, preview: true }),
+  });
+  if (!r || !r.ok) return null;
+  const d = await r.json();
+  return d.ok ? d.total : null;
+}
+
+async function openApModal() {
+  _apMode = 'vazios';
+  document.getElementById('ap-periodo-label').textContent = _apLabel();
+  document.getElementById('ap-cnt-vazios').textContent = 'calculando…';
+  document.getElementById('ap-cnt-sob').textContent = 'calculando…';
+  document.getElementById('ap-opt-vazios').style.borderColor = 'var(--gold)';
+  document.getElementById('ap-opt-sob').style.borderColor = 'var(--bd)';
+  document.querySelectorAll('input[name="ap-mode"]').forEach(r => { r.checked = r.value === 'vazios'; });
+  document.getElementById('ap-overlay').style.display = 'flex';
+
+  _apPreview(false).then(n => {
+    document.getElementById('ap-cnt-vazios').textContent =
+      n === null ? 'erro ao calcular' : `${n} célula(s) serão preenchidas`;
+  });
+  _apPreview(true).then(n => {
+    document.getElementById('ap-cnt-sob').textContent =
+      n === null ? 'erro ao calcular' : `${n} célula(s) serão alteradas (inclui preenchidas)`;
+  });
+}
+
+function closeApModal() {
+  document.getElementById('ap-overlay').style.display = 'none';
+}
+
+async function confirmAp() {
+  const btn = document.getElementById('ap-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Aplicando…';
+  try {
+    const r = await apiFetch('/api/escala-spa/aplicar-padrao', {
+      method: 'POST',
+      body: JSON.stringify({ ano: periodo.ano, mes: periodo.mes, sobrescrever: _apMode === 'sobrescrever' }),
+    });
+    closeApModal();
+    if (!r) return;
+    const d = await r.json();
+    if (d.ok) {
+      showToast(`✓ ${d.total} célula(s) preenchidas`, '');
+      await loadData();
+    } else {
+      showToast('Erro ao aplicar padrão', 'err');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar';
+  }
+}
+
+document.getElementById('btn-ap').onclick = openApModal;
+document.getElementById('ap-cancel').onclick = closeApModal;
+document.getElementById('ap-confirm').onclick = confirmAp;
+document.getElementById('ap-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('ap-overlay')) closeApModal();
+});
+document.querySelectorAll('input[name="ap-mode"]').forEach(radio => {
+  radio.addEventListener('change', e => {
+    _apMode = e.target.value;
+    document.getElementById('ap-opt-vazios').style.borderColor = _apMode === 'vazios' ? 'var(--gold)' : 'var(--bd)';
+    document.getElementById('ap-opt-sob').style.borderColor = _apMode === 'sobrescrever' ? 'var(--gold)' : 'var(--bd)';
+  });
+});
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadData();

@@ -5,7 +5,7 @@ import {
   listarMassagistas, listarMassagistasComStats,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
-  listarTurnosPeriodo, upsertTurno, deletarTurno,
+  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
@@ -281,6 +281,46 @@ router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
 router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
   deletarTurno(parseInt(req.params.mId), req.params.data);
   res.json({ ok: true });
+});
+
+// Aplica padrão semanal a um período 21→20. body: { ano, mes, sobrescrever?, preview? }
+router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
+  const ano = parseInt(req.body?.ano);
+  const mes = parseInt(req.body?.mes);
+  const sobrescrever = !!req.body?.sobrescrever;
+  const preview = !!req.body?.preview;
+  if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11)
+    return res.status(400).json({ ok: false, error: 'ano e mes (0-11) obrigatórios' });
+
+  const p = n => String(n).padStart(2, '0');
+  const ano2 = mes === 11 ? ano + 1 : ano;
+  const mes2 = mes === 11 ? 0 : mes + 1;
+  const dataIni = `${ano}-${p(mes + 1)}-21`;
+  const dataFim  = `${ano2}-${p(mes2 + 1)}-20`;
+
+  const dias = [];
+  for (let d = new Date(dataIni + 'T12:00:00Z'), fim = new Date(dataFim + 'T12:00:00Z'); d <= fim; d.setUTCDate(d.getUTCDate() + 1))
+    dias.push(new Date(d).toISOString().slice(0, 10));
+
+  const DOW_KEYS = ['dom','seg','ter','qua','qui','sex','sab'];
+  const profs = listarMassagistas().filter(m => m.ativo && m.padrao_entrada);
+  const existentes = new Set(listarTurnosPeriodo(ano, mes).map(t => `${t.massagista_id}-${t.data}`));
+
+  const alteracoes = [];
+  for (const prof of profs) {
+    let padrao;
+    try { padrao = JSON.parse(prof.padrao_entrada); } catch { continue; }
+    for (const dataIso of dias) {
+      const val = padrao[DOW_KEYS[new Date(dataIso + 'T12:00:00Z').getUTCDay()]];
+      if (!val) continue;
+      if (existentes.has(`${prof.id}-${dataIso}`) && !sobrescrever) continue;
+      alteracoes.push({ massagista_id: prof.id, data: dataIso, turno: val === 'FOLGA' ? 'X' : val });
+    }
+  }
+
+  if (preview) return res.json({ ok: true, preview: true, total: alteracoes.length });
+  for (const { massagista_id, data, turno } of alteracoes) upsertTurno(massagista_id, data, turno);
+  res.json({ ok: true, total: alteracoes.length });
 });
 
 export default router;
