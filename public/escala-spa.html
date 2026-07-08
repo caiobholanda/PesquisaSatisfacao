@@ -410,22 +410,6 @@ body {
     <button class="cp-time tn" data-entrada="17:30">17:30</button>
   </div>
   <div class="cp-sep"></div>
-  <div class="cp-section-label">Saída</div>
-  <div class="cp-times">
-    <button class="cp-time tm" data-saida="13:00">13h</button>
-    <button class="cp-time tm" data-saida="14:00">14h</button>
-    <button class="cp-time tm" data-saida="15:00">15h</button>
-    <button class="cp-time tt" data-saida="16:00">16h</button>
-    <button class="cp-time tt" data-saida="17:00">17h</button>
-    <button class="cp-time tt" data-saida="18:00">18h</button>
-    <button class="cp-time tt" data-saida="19:00">19h</button>
-    <button class="cp-time tt" data-saida="20:00">20h</button>
-    <button class="cp-time tn" data-saida="20:20">20:20</button>
-    <button class="cp-time tn" data-saida="21:00">21h</button>
-    <button class="cp-time tn" data-saida="22:00">22h</button>
-    <button class="cp-time tn" data-saida="22:20">22:20</button>
-  </div>
-  <div class="cp-sep"></div>
   <div class="cp-section-label">Status especial</div>
   <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga</span></button>
   <button class="cp-opt" data-turno="FE"><span class="sigla sig-FE">FÉR</span><span>Férias</span></button>
@@ -740,13 +724,11 @@ function escH(s) {
 // ─── PICKER ──────────────────────────────────────────────────────────────────
 const picker = document.getElementById('cell-picker');
 let pickerMId = null, pickerDate = null;
-let pickerEntrada = null, pickerSaida = null;
+let pickerEntrada = null;
 
 function _updatePickerActive() {
   picker.querySelectorAll('[data-entrada]').forEach(btn =>
     btn.classList.toggle('active', btn.dataset.entrada === pickerEntrada));
-  picker.querySelectorAll('[data-saida]').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.saida === pickerSaida));
 }
 
 function showPicker(cellEl, mId, date) {
@@ -755,12 +737,11 @@ function showPicker(cellEl, mId, date) {
   const curr = turnos[`${mId}-${date}`] || '';
 
   if (curr.includes('|')) {
-    const [e, s] = curr.split('|');
-    pickerEntrada = e; pickerSaida = s;
+    pickerEntrada = curr.split('|')[0];
   } else if (TIMES_CFG[curr]) {
-    pickerEntrada = curr; pickerSaida = null;
+    pickerEntrada = curr;
   } else {
-    pickerEntrada = null; pickerSaida = null;
+    pickerEntrada = null;
   }
   _updatePickerActive();
 
@@ -783,37 +764,21 @@ function showPicker(cellEl, mId, date) {
 function hidePicker() {
   picker.style.display = 'none';
   pickerMId = null; pickerDate = null;
-  pickerEntrada = null; pickerSaida = null;
+  pickerEntrada = null;
 }
 
-async function _commitComposite() {
-  const mId = pickerMId, date = pickerDate;
-  const turno = `${pickerEntrada}|${pickerSaida}`;
-  turnos[`${mId}-${date}`] = turno;
-  hidePicker();
-  render();
-  await saveTurno(mId, date, turno);
-}
-
-// Botões de entrada
+// Botões de entrada — commit imediato (sem saída)
 picker.querySelectorAll('[data-entrada]').forEach(btn => {
   btn.addEventListener('click', async e => {
     e.stopPropagation();
     if (pickerMId === null) return;
-    pickerEntrada = btn.dataset.entrada;
-    _updatePickerActive();
-    if (pickerSaida) await _commitComposite();
-  });
-});
-
-// Botões de saída
-picker.querySelectorAll('[data-saida]').forEach(btn => {
-  btn.addEventListener('click', async e => {
-    e.stopPropagation();
-    if (pickerMId === null) return;
-    pickerSaida = btn.dataset.saida;
-    _updatePickerActive();
-    if (pickerEntrada) await _commitComposite();
+    const mId = pickerMId, date = pickerDate;
+    const turno = btn.dataset.entrada;
+    pickerEntrada = turno;
+    turnos[`${mId}-${date}`] = turno;
+    hidePicker();
+    render();
+    await saveTurno(mId, date, turno);
   });
 });
 
