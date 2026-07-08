@@ -366,9 +366,11 @@ body {
 #toast.err  { color: var(--danger); border-color: var(--danger); }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar { width: 8px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--surface2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; border: 2px solid var(--surface2); }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+.grid-outer { scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface2); }
 
 /* ── PERIOD BAR GROUPS ─────────────────────────── */
 .pbar-group { display: flex; align-items: center; gap: 6px; }
