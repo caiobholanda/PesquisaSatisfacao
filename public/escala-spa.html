@@ -378,9 +378,14 @@ body {
 .pbar-sep-v { width: 1px; height: 24px; background: var(--border); margin: 0 14px; flex-shrink: 0; }
 
 /* ── GEAR BUTTON ──────────────────────────────── */
-#btn-padroes { width: 36px; height: 36px; color: var(--muted); padding: 0; display: flex; align-items: center; justify-content: center; }
+#btn-padroes {
+  width: 26px; height: 26px; background: transparent; border: none;
+  color: var(--muted); padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color .18s, background .18s;
+}
 #btn-padroes svg { display: block; transition: transform .45s cubic-bezier(.34,1.56,.64,1); }
-#btn-padroes:hover { color: var(--gold); border-color: var(--gold); background: rgba(156,88,67,.06); }
+#btn-padroes:hover { color: var(--gold); background: rgba(156,88,67,.08); }
 #btn-padroes:hover svg { transform: rotate(72deg); }
 
 /* ── PICKER TIMES GRID ─────────────────────────── */
@@ -436,8 +441,8 @@ body {
   <div class="pbar-sep-v"></div>
   <div class="pbar-group">
     <button class="ap-trigger-btn" id="btn-ap">✦ Aplicar padrão</button>
-    <button class="pnav-btn" id="btn-padroes" title="Padrões semanais">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <button id="btn-padroes" title="Padrões semanais">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
