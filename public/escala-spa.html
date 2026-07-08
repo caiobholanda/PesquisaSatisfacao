@@ -1067,8 +1067,7 @@ function pmRenderizar(items) {
       const val = padrao[key] ?? null;
       const cur = val === null ? '' : val;
       const opts = [
-        `<option value="">—</option>`,
-        `<option value="FOLGA"${cur === 'FOLGA' ? ' selected' : ''}>Folga</option>`,
+        `<option value="FOLGA"${cur === 'FOLGA' || cur === '' ? ' selected' : ''}>Folga</option>`,
         ...PM_HORAS.map(h => `<option value="${h}"${cur === h ? ' selected' : ''}>${pmFmtH(h)}</option>`)
       ].join('');
       return `<div class="pm-col-day"><select class="pm-day-sel" data-pm-mid="${prof.id}" data-pm-dia="${key}">${opts}</select></div>`;
