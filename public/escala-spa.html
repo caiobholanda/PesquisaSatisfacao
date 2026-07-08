@@ -856,7 +856,7 @@ async function openApModal() {
   document.getElementById('ap-cnt-vazios').textContent = 'calculando…';
   document.getElementById('ap-cnt-sob').textContent = 'calculando…';
   document.getElementById('ap-opt-vazios').style.borderColor = 'var(--gold)';
-  document.getElementById('ap-opt-sob').style.borderColor = 'var(--bd)';
+  document.getElementById('ap-opt-sob').style.borderColor = 'var(--border)';
   document.querySelectorAll('input[name="ap-mode"]').forEach(r => { r.checked = r.value === 'vazios'; });
   document.getElementById('ap-overlay').style.display = 'flex';
 
@@ -907,8 +907,8 @@ document.getElementById('ap-overlay').addEventListener('click', e => {
 document.querySelectorAll('input[name="ap-mode"]').forEach(radio => {
   radio.addEventListener('change', e => {
     _apMode = e.target.value;
-    document.getElementById('ap-opt-vazios').style.borderColor = _apMode === 'vazios' ? 'var(--gold)' : 'var(--bd)';
-    document.getElementById('ap-opt-sob').style.borderColor = _apMode === 'sobrescrever' ? 'var(--gold)' : 'var(--bd)';
+    document.getElementById('ap-opt-vazios').style.borderColor = _apMode === 'vazios' ? 'var(--gold)' : 'var(--border)';
+    document.getElementById('ap-opt-sob').style.borderColor = _apMode === 'sobrescrever' ? 'var(--gold)' : 'var(--border)';
   });
 });
 
