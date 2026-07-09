@@ -183,6 +183,7 @@ function showApp() {
   else if (view === 'view-qualidade') { loadQualidade(); }
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
+  else if (view === 'view-salas') { loadSalas(); }
   // view-anamnese-editor e view-pesquisa-editor: ja sao carregadas
   // pelo showView(view) acima — evita fetch duplicado no boot.
   else if (view === 'view-reservas') {
