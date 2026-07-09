@@ -510,3 +510,31 @@ GestaoQualidade não tem backend próprio
 - 380 lançamentos, Janeiro–Maio 2026
 - 6 massagistas (por matrícula)
 - Exportado de planilha em 25/06/2026
+
+## Escala ↔ Reservas (integração, 2026-07-09)
+
+### Paridade escala mensal (escala-spa.html + cadastros.js + db.js)
+- `PUT/DELETE /api/escala-spa/:mId/:data` valida data REAL (`dataRealValida`, rejeita 2026-13-45) e massagista existente/ativa (404/400)
+- **Histórico por célula**: tabela `turno_historico` (massagista_id, data, antes, depois, usuario, origem 'manual'|'aplicar-padrao', criado_em) — capturado no PUT/DELETE/aplicar-padrao; `GET /api/escala-spa/historico/:mId/:data`; UI: botão "📜 Histórico da célula" no picker → popover `#hist-pop`
+- Auditoria: rótulos 'Escala mensal' + ações (audit.js ROTULOS + admin.js _AUD_*); `POST /cf-acumulado` em ROTAS_IGNORAR (era ruído); `aplicar-padrao` → ação `aplicar_padrao_escala`
+- Rollback do save otimista: `saveTurno(mId, data, turno, anterior)` restaura célula em 403/!ok/catch
+- aplicar-padrao pula no-ops (total = células efetivamente alteradas) e grava histórico por célula
+
+### Disponibilidade por escala (fonte da verdade: mensal → semanal → sem-escala)
+- `avaliarEscalaMassagista(m, data, horaIni, horaFim, ctx)` em db.js + `contextoEscalaDia(data)`:
+  - turno status (X/FE/AT/AA/CF/CH/LS/LC/F) → indisponível com motivo
+  - turno "HH:MM" → janela [entrada, min(entrada+9h, 22:00)]; composite "e|s" usa saída real
+  - sem turno mas data lançada (outras têm) → 'não escalada no dia'
+  - data 100% sem turnos → fallback semanal (espelho de `_massagistaTrabalhaNoHorario`)
+  - sem disponibilidade nem exceções → disponível fonte 'sem-escala' + aviso (operação nunca trava)
+- `GET /api/escala-spa/disponibilidade?data&hora_inicio&hora_fim` → `{ok, lancada, items:[{massagista_id, disponivel, fonte, motivo, faixa, aviso}]}`
+
+### Seletor de massoterapeuta (admin.js modal reserva)
+- `_fetchEscalaAval` (cache por data|horas, descarte de resposta antiga, retry em falha) + `_escalaFiltra` (fail-open p/ filtro semanal local) + aviso "⚠ Escala mensal não lançada" como 1º item da lista
+- POST `/api/reservas` revalida escala (P1 e P2, TODAS as violações num único erro) → **409 `tipo:'escala'`** `{motivo, fonte, faixa, massagista, override_permitido}`; body `override_escala:true` pula (auditado); handler no btn-res-salvar oferece confirm() de override
+- Editar célula com reservas na data → salva e response traz `reservas_conflitantes:[{id, cliente, sala, hora_inicio, hora_fim}]` → modal `#conf-esc-overlay` no escala-spa.html (nada é cancelado)
+
+### Invariantes
+- Escala semanal padrão (disponibilidade/excecoes/padrao_entrada) INTACTA — segue como template do aplicar-padrao e fallback
+- Contratos de endpoints existentes inalterados (só extensões aditivas)
+- E2E: 3 passagens × 41 asserts (2026-07-09) — servidor local, DB restaurado após

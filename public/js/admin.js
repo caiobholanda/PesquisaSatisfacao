@@ -2688,14 +2688,16 @@ function _renderMassagistasModal2() {
   const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
   const prevId = hid?.value;
   const mass1Id = document.getElementById('res-inp-massagista')?.value;
-  let lista = _massagistasModal.filter(m => _massagistaTrabalhaNoHorario(m, data, horaInicio, _resHoraFim));
+  if (data) _fetchEscalaAval(data, horaInicio, _resHoraFim);
+  let lista = _massagistasModal.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
   // Exclui a massagista já selecionada para pessoa 1
   if (mass1Id) lista = lista.filter(m => String(m.id) !== String(mass1Id));
+  const aviso2 = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
   if (!lista.length) {
-    list.innerHTML = '<div class="res-cb-opt cb-empty">Nenhuma massoterapeuta disponível</div>';
+    list.innerHTML = aviso2 + '<div class="res-cb-opt cb-empty">Nenhuma massoterapeuta disponível</div>';
     return;
   }
-  list.innerHTML = lista.map(m => {
+  list.innerHTML = aviso2 + lista.map(m => {
     const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
     return `<div class="res-cb-opt" data-val="${m.id}" data-label="${escHtml(m.nome)}">${escHtml(m.nome)}${suffix}${m.bilingue ? ' 🌍' : ''}</div>`;
   }).join('');
@@ -2726,6 +2728,50 @@ function _hmToMin(s) {
   if (!s) return NaN;
   const [h, m] = s.split(':').map(Number);
   return h * 60 + m;
+}
+
+// ── Disponibilidade por escala MENSAL (fonte da verdade do dia real) ─────────
+// Consulta /api/escala-spa/disponibilidade e cacheia por (data, horas). Enquanto
+// a resposta não chega (ou se falhar), o filtro semanal local continua valendo
+// (fail-open) — a operação nunca fica travada e o backend revalida no POST.
+let _escalaAvalKey = null;
+let _escalaAvalMap = null;
+let _escalaAvalLancada = null;
+
+async function _fetchEscalaAval(data, horaInicio, horaFim) {
+  const key = `${data}|${horaInicio || ''}|${horaFim || ''}`;
+  if (key === _escalaAvalKey) return;
+  _escalaAvalKey = key;
+  _escalaAvalMap = null;
+  _escalaAvalLancada = null;
+  try {
+    const qs = new URLSearchParams({ data });
+    if (horaInicio) qs.set('hora_inicio', horaInicio);
+    if (horaFim) qs.set('hora_fim', horaFim);
+    const r = await api(`/api/escala-spa/disponibilidade?${qs.toString()}`);
+    if (!r) return;
+    const d = await r.json();
+    if (_escalaAvalKey !== key) return; // resposta antiga: descarta
+    if (!d.ok) { _escalaAvalKey = null; return; } // permite retry na próxima interação
+    _escalaAvalMap = new Map((d.items || []).map(it => [it.massagista_id, it]));
+    _escalaAvalLancada = !!d.lancada;
+    _renderMassagistasModal();
+    _renderMassagistasModal2();
+  } catch { if (_escalaAvalKey === key) _escalaAvalKey = null; /* fail-open + retry */ }
+}
+
+function _escalaFiltra(m, data, horaInicio, horaFim) {
+  if (data && _escalaAvalMap && _escalaAvalKey === `${data}|${horaInicio || ''}|${horaFim || ''}`) {
+    const av = _escalaAvalMap.get(m.id);
+    if (av) return av.disponivel;
+  }
+  return _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim);
+}
+
+function _escalaAvisoHtml(data, horaInicio, horaFim) {
+  if (!data || _escalaAvalLancada !== false) return '';
+  if (_escalaAvalKey !== `${data}|${horaInicio || ''}|${horaFim || ''}`) return '';
+  return '<div class="res-cb-opt cb-empty">⚠ Escala mensal não lançada para esta data — usando padrão semanal</div>';
 }
 
 function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
@@ -2794,13 +2840,15 @@ function _renderMassagistasModal() {
   const data = document.getElementById('res-inp-data')?.value || null;
   const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
   const prevId = hid?.value;
+  if (data) _fetchEscalaAval(data, horaInicio, _resHoraFim);
   let lista = apenasBilingue ? _massagistasModal.filter(m => m.bilingue) : _massagistasModal;
-  lista = lista.filter(m => _massagistaTrabalhaNoHorario(m, data, horaInicio, _resHoraFim));
+  lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
+  const aviso = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
   if (!lista.length) {
-    list.innerHTML = `<div class="res-cb-opt cb-empty">${apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário'}</div>`;
+    list.innerHTML = aviso + `<div class="res-cb-opt cb-empty">${apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário'}</div>`;
     return;
   }
-  list.innerHTML = lista.map(m => {
+  list.innerHTML = aviso + lista.map(m => {
     const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
     return `<div class="res-cb-opt" data-val="${m.id}" data-label="${escHtml(m.nome)}">${escHtml(m.nome)}${suffix}${m.bilingue ? ' 🌍' : ''}</div>`;
   }).join('');
@@ -4355,6 +4403,31 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     if(!res)return;
     const d=await res.json();
     if(!d.ok){
+      // Fora da escala — override explícito do admin (exceções operacionais:
+      // troca informal, cobertura). A flag fica registrada na auditoria.
+      if (res.status === 409 && d.tipo === 'escala') {
+        const msg = (d.error || 'Massoterapeuta fora da escala nesta data/horário') +
+          (d.faixa ? ` (turno: ${d.faixa})` : '') + '.\n\nAgendar mesmo assim?';
+        if (confirm(msg)) {
+          const res2 = await api('/api/reservas', { method: 'POST', body: JSON.stringify({ ...body, override_escala: true }) });
+          if (!res2) return;
+          const d2 = await res2.json();
+          if (!d2.ok) {
+            if (res2.status === 409 && d2.conflito) {
+              calMostrarConflito({ tipo: d2.tipo, reserva: { ...d2.conflito, data, sala, massagista_id: massagistaId } });
+              await loadReservas();
+              return;
+            }
+            err.textContent = d2.error || 'Erro ao salvar.';
+            return;
+          }
+          calCloseModal();
+          loadReservas();
+          return;
+        }
+        err.textContent = 'Reserva não criada — massoterapeuta fora da escala neste horário.';
+        return;
+      }
       // Conflito detectado pelo servidor
       if (res.status === 409 && d.conflito) {
         calMostrarConflito({ tipo: d.tipo, reserva: { ...d.conflito, data, sala, massagista_id: massagistaId } });

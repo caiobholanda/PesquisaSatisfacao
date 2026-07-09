@@ -321,8 +321,29 @@ router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
     // Histórico nunca pode derrubar a operação real
     try { registrarTurnoHistorico(mId, data, antes, turno, req.user?.username || null, 'manual'); } catch {}
   }
-  res.json({ ok: true });
+  res.json({ ok: true, ..._conflitosReservaEscala(m, mId, data) });
 });
+
+// Após salvar/limpar um turno, lista reservas da massagista naquela data que
+// ficaram fora da nova escala. A alteração NUNCA é bloqueada nem cancela
+// reservas — o admin é avisado e decide (aviso pós-save, decisão dele).
+function _conflitosReservaEscala(m, mId, data) {
+  try {
+    const rs = listarReservasMassagistaData(mId, data);
+    if (!rs.length) return {};
+    const ctx = contextoEscalaDia(data); // contexto PÓS-alteração
+    const conflitantes = rs
+      .filter(r => !avaliarEscalaMassagista(m, data, r.hora_inicio, r.hora_fim, ctx).disponivel)
+      .map(r => ({
+        id: r.id,
+        cliente: (r.massagista_id2 === mId && r.cliente2) ? r.cliente2 : r.cliente,
+        sala: r.sala,
+        hora_inicio: r.hora_inicio,
+        hora_fim: r.hora_fim,
+      }));
+    return conflitantes.length ? { reservas_conflitantes: conflitantes } : {};
+  } catch { return {}; }
+}
 
 router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
   const mId = parseInt(req.params.mId);
@@ -333,7 +354,8 @@ router.delete('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
   if (changes) {
     try { registrarTurnoHistorico(mId, data, antes, null, req.user?.username || null, 'manual'); } catch {}
   }
-  res.json({ ok: true });
+  const m = buscarMassagistaById(mId);
+  res.json({ ok: true, ...(m ? _conflitosReservaEscala(m, mId, data) : {}) });
 });
 
 // Disponibilidade por escala para um dia/horário — usado pelo seletor de
