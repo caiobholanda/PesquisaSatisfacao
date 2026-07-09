@@ -210,14 +210,22 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     if (tipo_massagem_id && !getDb().prepare('SELECT 1 FROM tipos_massagem WHERE id=?').get(+tipo_massagem_id)) {
       return res.status(400).json({ ok: false, error: 'Tratamento não encontrado' });
     }
-    if (massagista_id && !buscarMassagistaById(+massagista_id)) {
-      return res.status(400).json({ ok: false, error: 'Massoterapeuta não encontrada' });
+    // Tratamentos só podem ser atribuídos a massoterapeutas — recepcionistas
+    // (funcao contém 'recep') existem no cadastro para a escala mensal, mas
+    // nunca atendem. Defesa backend: o seletor do modal já as oculta.
+    const _ehRecep = (mm) => !!mm?.funcao && mm.funcao.toLowerCase().includes('recep');
+    if (massagista_id) {
+      const _m1 = buscarMassagistaById(+massagista_id);
+      if (!_m1) return res.status(400).json({ ok: false, error: 'Massoterapeuta não encontrada' });
+      if (_ehRecep(_m1)) return res.status(400).json({ ok: false, error: 'Profissional selecionada é recepcionista — escolha uma massoterapeuta' });
     }
     if (tipo_massagem_id2 && !getDb().prepare('SELECT 1 FROM tipos_massagem WHERE id=?').get(+tipo_massagem_id2)) {
       return res.status(400).json({ ok: false, error: 'Pessoa 2: tratamento não encontrado' });
     }
-    if (massagista_id2 && !buscarMassagistaById(+massagista_id2)) {
-      return res.status(400).json({ ok: false, error: 'Pessoa 2: massoterapeuta não encontrada' });
+    if (massagista_id2) {
+      const _m2 = buscarMassagistaById(+massagista_id2);
+      if (!_m2) return res.status(400).json({ ok: false, error: 'Pessoa 2: massoterapeuta não encontrada' });
+      if (_ehRecep(_m2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: profissional selecionada é recepcionista — escolha uma massoterapeuta' });
     }
 
     // ── Validação de escala (mensal → fallback semanal). O frontend já filtra,

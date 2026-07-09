@@ -2689,7 +2689,8 @@ function _renderMassagistasModal2() {
   const prevId = hid?.value;
   const mass1Id = document.getElementById('res-inp-massagista')?.value;
   if (data) _fetchEscalaAval(data, horaInicio, _resHoraFim);
-  let lista = _massagistasModal.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
+  let lista = _massagistasModal.filter(m => !m.funcao?.toLowerCase().includes('recep'));
+  lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
   // Exclui a massagista já selecionada para pessoa 1
   if (mass1Id) lista = lista.filter(m => String(m.id) !== String(mass1Id));
   const aviso2 = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
@@ -2841,7 +2842,10 @@ function _renderMassagistasModal() {
   const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
   const prevId = hid?.value;
   if (data) _fetchEscalaAval(data, horaInicio, _resHoraFim);
-  let lista = apenasBilingue ? _massagistasModal.filter(m => m.bilingue) : _massagistasModal;
+  // Tratamentos são dados só por massoterapeutas — recepcionistas ficam fora
+  // do seletor (mas continuam na grade da escala mensal).
+  let lista = _massagistasModal.filter(m => !m.funcao?.toLowerCase().includes('recep'));
+  if (apenasBilingue) lista = lista.filter(m => m.bilingue);
   lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
   const aviso = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
   if (!lista.length) {
