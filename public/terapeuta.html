@@ -19,7 +19,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 /* ── Paleta Gran Marquise — dual theme ── */
 :root, :root[data-theme="light"] {
@@ -78,7 +78,7 @@ body, .tx-login-card, .tx-card, .tx-sheet, .tx-field select,
 
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
   background-color: var(--bg);
   background-image:
     radial-gradient(ellipse at 20% 55%, var(--bg-grad-1) 0%, transparent 55%),
@@ -211,113 +211,23 @@ button, input, select { font-family: inherit; }
   padding: 0 1rem;
 }
 
-/* ── Login ── */
-.tx-login {
+/* ── Loading ── */
+.tx-loading {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 0 3rem;
-}
-.tx-login-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 2.25rem 2rem 2rem;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: var(--shadow-lg);
-}
-.tx-login-eyebrow {
-  display: block;
-  font-size: .64rem;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--gold);
-  font-weight: 600;
-  margin-bottom: .75rem;
-}
-.tx-login-card h1 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 2.35rem;
-  font-weight: 400;
-  margin: 0 0 .3rem;
-  color: var(--text);
-  line-height: 1.08;
-  letter-spacing: -.01em;
-}
-.tx-login-rule {
-  width: 32px;
-  height: 2px;
-  background: var(--gold);
-  margin: .9rem 0 1rem;
-}
-.tx-login-card p { margin: 0 0 1.6rem; color: var(--muted2); font-size: .87rem; }
-.tx-field { margin-bottom: 1rem; }
-.tx-field label {
-  display: block;
-  font-size: .63rem;
   color: var(--muted);
-  margin-bottom: .4rem;
-  text-transform: uppercase;
-  letter-spacing: .16em;
-  font-weight: 600;
-}
-.tx-field select, .tx-field input {
-  width: 100%;
-  padding: .85rem 1rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 3px;
-  font-size: .95rem;
-  font-family: inherit;
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-}
-.tx-field select:focus, .tx-field input:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold-dim);
-}
-.tx-field input[type="password"] { letter-spacing: .3em; }
-:root[data-theme="dark"] .tx-field select option { background: var(--surface); color: var(--text); }
-.tx-submit {
-  width: 100%;
-  padding: .95rem;
-  margin-top: .75rem;
-  background: var(--gold);
-  color: #fff;
-  border: 0;
-  border-radius: 3px;
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.tx-submit:hover { background: var(--gold-dark); }
-.tx-submit:active { opacity: .9; }
-.tx-submit:disabled { opacity: .45; cursor: wait; }
-.tx-err {
-  background: var(--danger-dim);
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  padding: .7rem 1rem;
-  border-radius: 3px;
   font-size: .84rem;
-  margin-bottom: 1rem;
-  display: none;
+  letter-spacing: .06em;
 }
-.tx-err.show { display: block; }
 
 /* ── Agenda ── */
 .tx-agenda { flex: 1; padding: 1.25rem 0 4rem; }
 .tx-greet {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.75rem;
-  font-weight: 400;
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 600;
   margin: 0 0 .2rem;
   color: var(--text);
   line-height: 1.12;
@@ -403,9 +313,9 @@ button, input, select { font-family: inherit; }
 .tx-dia-header { display: flex; align-items: center; gap: .7rem; margin: 1.25rem 0 .6rem; }
 .tx-dia-header:first-child { margin-top: 0; }
 .tx-dia-label {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.05rem;
-  font-weight: 400;
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-size: .88rem;
+  font-weight: 600;
   color: var(--text);
   letter-spacing: .01em;
 }
@@ -453,10 +363,8 @@ button, input, select { font-family: inherit; }
 }
 .tx-card-cli { font-size: .97rem; color: var(--text); font-weight: 500; }
 .tx-card-trat {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: .98rem;
+  font-size: .88rem;
   color: var(--muted2);
-  font-style: italic;
 }
 .tx-card-tags { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .35rem; }
 .tx-tag {
@@ -486,9 +394,8 @@ button, input, select { font-family: inherit; }
 }
 .tx-empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted2); }
 .tx-empty h3 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.45rem;
-  font-weight: 400;
+  font-size: 1.1rem;
+  font-weight: 600;
   margin: 0 0 .5rem;
   color: var(--text);
 }
@@ -526,8 +433,7 @@ button, input, select { font-family: inherit; }
 }
 .tx-close:hover { border-color: var(--gold); color: var(--gold); }
 .tx-detail-titulo {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.5rem; font-weight: 400;
+  font-size: 1.2rem; font-weight: 600;
   margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
 }
 .tx-detail-meta { color: var(--muted2); font-size: .83rem; margin: 0; }
@@ -574,14 +480,6 @@ button, input, select { font-family: inherit; }
     max-width: 1080px;
     padding: 0 2.5rem;
   }
-
-  /* Login: card mais largo e espaçoso */
-  .tx-login { padding: 2.5rem 0 4rem; }
-  .tx-login-card {
-    max-width: 480px;
-    padding: 2.75rem 2.5rem 2.5rem;
-  }
-  .tx-login-card h1 { font-size: 2.8rem; }
 
   /* Agenda: layout em 2 colunas — sidebar + conteúdo */
   .tx-agenda {
@@ -630,7 +528,7 @@ button, input, select { font-family: inherit; }
   .tx-day-tab .tx-tab-num { font-size: .88rem; font-weight: 600; }
 
   /* Coluna direita: greeting, banner, lista */
-  .tx-greet     { grid-column: 2; grid-row: 1; font-size: 2.1rem; margin-bottom: .15rem; }
+  .tx-greet     { grid-column: 2; grid-row: 1; font-size: 1.55rem; margin-bottom: .15rem; }
   .tx-greet-sub { grid-column: 2; grid-row: 2; font-size: .88rem; margin-bottom: 1rem; }
   #tx-escala-banner { grid-column: 2; grid-row: 3; }
   #tx-list      { grid-column: 2; grid-row: 4; }
@@ -665,7 +563,7 @@ button, input, select { font-family: inherit; }
 @media (min-width: 1280px) {
   .app { max-width: 1200px; }
   .tx-agenda { grid-template-columns: 230px 1fr; gap: 0 2.75rem; }
-  .tx-greet { font-size: 2.35rem; }
+  .tx-greet { font-size: 1.6rem; }
 }
 </style>
 </head>
@@ -694,29 +592,8 @@ button, input, select { font-family: inherit; }
 <!-- ── CONTEÚDO ── -->
 <main class="app">
 
-  <!-- LOGIN -->
-  <div id="tx-login" class="tx-login">
-    <div class="tx-login-card">
-      <span class="tx-login-eyebrow">Gran SPA · Hotel Gran Marquise</span>
-      <h1>Minha<br>agenda</h1>
-      <div class="tx-login-rule"></div>
-      <p>Selecione seu nome e digite seu PIN de acesso.</p>
-      <div id="tx-login-err" class="tx-err"></div>
-      <form id="tx-login-form">
-        <div class="tx-field">
-          <label for="tx-nome">Nome</label>
-          <select id="tx-nome" required>
-            <option value="">Carregando…</option>
-          </select>
-        </div>
-        <div class="tx-field">
-          <label for="tx-pin">PIN</label>
-          <input type="password" id="tx-pin" inputmode="numeric" autocomplete="off" required minlength="4" maxlength="12">
-        </div>
-        <button type="submit" class="tx-submit" id="tx-submit">Entrar</button>
-      </form>
-    </div>
-  </div>
+  <!-- LOADING (visível apenas durante checarSessao) -->
+  <div id="tx-loading" class="tx-loading">Carregando…</div>
 
   <!-- APP -->
   <div id="tx-app" style="display:none;flex:1;flex-direction:column">
@@ -810,18 +687,9 @@ button, input, select { font-family: inherit; }
     banner.style.display = 'none';
   }
 
-  // ── Login ──
-  async function carregarNomes() {
-    try {
-      const r = await fetch('/api/terapeuta/nomes-ativos');
-      const d = await r.json();
-      const sel = $('tx-nome');
-      const preNome = new URLSearchParams(location.search).get('nome') || '';
-      sel.innerHTML = '<option value="">Selecione…</option>' +
-        (d.nomes || []).map(n => `<option value="${esc(n)}"${n === preNome ? ' selected' : ''}>${esc(n)}</option>`).join('');
-    } catch {
-      $('tx-nome').innerHTML = '<option value="">Erro ao carregar</option>';
-    }
+  // ── Sessão ──
+  function mostrarLogin() {
+    window.location.replace('/acesso-hub.html?next=%2Fterapeuta');
   }
 
   async function checarSessao() {
@@ -835,16 +703,8 @@ button, input, select { font-family: inherit; }
     mostrarLogin();
   }
 
-  function mostrarLogin() {
-    $('tx-login').style.display = 'flex';
-    $('tx-app').style.display = 'none';
-    $('tx-nome-header').style.display = 'none';
-    $('tx-btn-logout').style.display = 'none';
-    carregarNomes();
-  }
-
   function entrarApp() {
-    $('tx-login').style.display = 'none';
+    $('tx-loading').style.display = 'none';
     $('tx-app').style.display = 'flex';
     const nomeEl = $('tx-nome-header');
     nomeEl.textContent = _me?.nome || 'Terapeuta';
@@ -852,37 +712,6 @@ button, input, select { font-family: inherit; }
     $('tx-btn-logout').style.display = '';
     carregarAgenda();
   }
-
-  $('tx-login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = $('tx-submit'); const err = $('tx-login-err');
-    err.classList.remove('show'); btn.disabled = true; btn.textContent = 'Entrando…';
-    try {
-      const r = await fetch('/api/terapeuta/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: $('tx-nome').value, pin: $('tx-pin').value }),
-      });
-      const d = await r.json();
-      if (!r.ok || !d?.ok) {
-        err.textContent = d?.error || 'Erro ao entrar';
-        err.classList.add('show');
-        btn.disabled = false; btn.textContent = 'Entrar';
-        return;
-      }
-      try {
-        const m = await fetch('/api/terapeuta/me');
-        const md = await m.json();
-        if (md?.ok) _me = { id: md.id, nome: md.nome };
-        else _me = { nome: d.nome };
-      } catch { _me = { nome: d.nome }; }
-      $('tx-pin').value = '';
-      entrarApp();
-    } catch {
-      err.textContent = 'Erro de rede. Tente novamente.';
-      err.classList.add('show');
-      btn.disabled = false; btn.textContent = 'Entrar';
-    }
-  });
 
   $('tx-btn-logout').addEventListener('click', async () => {
     await fetch('/api/terapeuta/logout', { method: 'POST' });
