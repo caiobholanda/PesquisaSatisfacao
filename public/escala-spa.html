@@ -748,10 +748,11 @@ function siglaHTML(tipo) {
     const cls = TIMES_CFG[e]?.cls || 'sig-T';
     return `<div class="sigla ${cls} sig-composite">${fmtHora(e)}–${fmtHora(s)}</div>`;
   }
-  // Single time — mostra entrada e saída calculada (entrada + 8h20)
+  // Single time — mostra só a entrada na grade
   if (TIMES_CFG[tipo]) {
-    const { cls } = TIMES_CFG[tipo];
-    return `<div class="sigla ${cls} sig-composite">${fmtHora(tipo)}–${fmtHora(calcSaida(tipo))}</div>`;
+    const { cls, lbl } = TIMES_CFG[tipo];
+    const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
+    return `<div class="sigla ${cls}"${fs}>${lbl}</div>`;
   }
   // Status especial
   const cls = SIG_CLS[tipo] || 'sig-X';
