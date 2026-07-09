@@ -2158,11 +2158,26 @@
     }
 
     /* Sala bloqueada no calendário */
-    .cal-room-col-head.cal-room-bloqueada { background: var(--danger-dim); }
+    .cal-room-col-head.cal-room-bloqueada {
+      background-color: var(--danger-dim);
+      background-image: repeating-linear-gradient(-45deg, transparent, transparent 7px, rgba(184,84,80,.055) 7px, rgba(184,84,80,.055) 8px);
+    }
     .cal-room-col-head.cal-room-bloqueada::before { background: var(--danger) !important; }
+    .cal-room-col-head.cal-room-bloqueada .cal-room-col-name { opacity: .55; }
+    .cal-room-col-head.cal-room-bloqueada .cal-room-col-hd-inner { opacity: .65; }
     .cal-room-bloq-lbl {
-      font-size: .58rem; letter-spacing: .04em; text-transform: uppercase;
-      color: var(--danger); margin-top: .22rem; font-weight: 700;
+      font-size: .62rem; letter-spacing: .07em; text-transform: uppercase;
+      color: var(--danger); margin-top: .3rem; font-weight: 800;
+      display: flex; align-items: center; gap: .25rem;
+    }
+    /* Slots de sala bloqueada */
+    .cal-slot.cal-slot-bloq {
+      cursor: not-allowed;
+      background-color: rgba(184,84,80,.022);
+      background-image: repeating-linear-gradient(-45deg, transparent, transparent 9px, rgba(184,84,80,.05) 9px, rgba(184,84,80,.05) 10px);
+    }
+    .cal-slot.cal-slot-bloq:hover {
+      background-color: rgba(184,84,80,.038) !important;
     }
 
     /* ── Scroll ── */

@@ -1251,7 +1251,7 @@ function setupDelegation() {
     else if (action === 'dp-prev')     { e.stopPropagation(); _dpMonth--; if (_dpMonth < 0) { _dpMonth=11; _dpYear--; } dpRender(); }
     else if (action === 'dp-next')     { e.stopPropagation(); _dpMonth++; if (_dpMonth > 11) { _dpMonth=0; _dpYear++; } dpRender(); }
     else if (action === 'gc-info')     { e.stopPropagation(); _abrirModalGranClass(); }
-    else if (action === 'cal-open')    { calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
+    else if (action === 'cal-open')    { if (el.dataset.bloqueada) { showToast('⛔ Sala bloqueada — agendamentos suspensos neste período'); return; } calOpenModal(+el.dataset.sala, el.dataset.ds, el.dataset.hora); }
     else if (action === 'page')        { goPage(+el.dataset.off); }
     else if (action === 'hc-page')     { loadHistoricoClientes(+el.dataset.p); }
     else if (action === 'hc-row-detalhe') { abrirDetalheSessao(+el.dataset.id); }
@@ -2779,7 +2779,8 @@ function renderCalDia() {
           html+=`<div class="cal-slot occupied-cont${halfClass}"></div>`;
         }
       } else {
-        html+=`<div class="cal-slot${halfClass}" data-action="cal-open" data-sala="${room.id}" data-ds="${ds}" data-hora="${timeStr}"></div>`;
+        const _slotBloq = _bloqMap.has(room.id);
+        html+=`<div class="cal-slot${halfClass}${_slotBloq ? ' cal-slot-bloq' : ''}" data-action="cal-open" data-sala="${room.id}" data-ds="${ds}" data-hora="${timeStr}"${_slotBloq ? ' data-bloqueada="1"' : ''}></div>`;
       }
     });
   }
