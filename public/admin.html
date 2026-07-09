@@ -4227,38 +4227,6 @@
       <button class="res-modal-x" id="btn-res-x" aria-label="Fechar modal de reserva">✕</button>
     </div>
     <div class="res-modal-body">
-      <div class="res-fg">
-        <label>Sala</label>
-        <div class="res-room-grid" id="res-room-grid">
-          <button class="res-room-btn" data-sala="1">
-            <span class="res-room-btn-name">Sala 1</span>
-            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
-          </button>
-          <button class="res-room-btn" data-sala="2">
-            <span class="res-room-btn-name">Sala 2</span>
-            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
-          </button>
-          <button class="res-room-btn" data-sala="3">
-            <span class="res-room-btn-name">Sala 3</span>
-            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
-          </button>
-          <button class="res-room-btn" data-sala="4">
-            <span class="res-room-btn-name">Sala 4</span>
-            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
-          </button>
-          <button class="res-room-btn" data-sala="5">
-            <span class="res-room-btn-name">Espaço Beleza</span>
-            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
-          </button>
-        </div>
-        <!-- Checkbox casal: visível apenas quando Sala 3 ou Sala 4 selecionada -->
-        <div id="res-casal-chk-wrap" style="display:none;padding:.5rem .75rem;background:rgba(139,74,107,.07);border:1px dashed rgba(139,74,107,.3);border-radius:8px;margin-top:.25rem">
-          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--text);user-select:none">
-            <input type="checkbox" id="res-chk-casal" style="width:14px;height:14px;cursor:pointer;accent-color:var(--sala-s4)">
-            <span>Esta reserva é para um casal? <span style="color:var(--muted);font-size:.76rem">(une Sala 3 + Sala 4 — bloqueia as duas)</span></span>
-          </label>
-        </div>
-      </div>
       <!-- ── Separador Pessoa 1 (só Casal) ── -->
       <div id="res-sep-pessoa1" class="res-pessoa1-sep" style="display:none"><span>✦ Pessoa 1</span></div>
 
@@ -4373,6 +4341,40 @@
           <input type="hidden" id="res-inp-massagista">
         </div>
       </div><!-- /#res-pessoa1-wrap -->
+
+      <!-- ── Seleção de Sala ── -->
+      <div class="res-fg">
+        <label>Sala</label>
+        <div class="res-room-grid" id="res-room-grid">
+          <button class="res-room-btn" data-sala="1">
+            <span class="res-room-btn-name">Sala 1</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="2">
+            <span class="res-room-btn-name">Sala 2</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="3">
+            <span class="res-room-btn-name">Sala 3</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="4">
+            <span class="res-room-btn-name">Sala 4</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+          <button class="res-room-btn" data-sala="5">
+            <span class="res-room-btn-name">Espaço Beleza</span>
+            <span class="res-room-btn-sub">Individual · 1 pessoa</span>
+          </button>
+        </div>
+        <!-- Checkbox casal: visível apenas quando Sala 3 ou Sala 4 selecionada -->
+        <div id="res-casal-chk-wrap" style="display:none;padding:.5rem .75rem;background:rgba(139,74,107,.07);border:1px dashed rgba(139,74,107,.3);border-radius:8px;margin-top:.25rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--text);user-select:none">
+            <input type="checkbox" id="res-chk-casal" style="width:14px;height:14px;cursor:pointer;accent-color:var(--sala-s4)">
+            <span>Esta reserva é para um casal? <span style="color:var(--muted);font-size:.76rem">(une Sala 3 + Sala 4 — bloqueia as duas)</span></span>
+          </label>
+        </div>
+      </div>
 
       <!-- ── Seção Pessoa 2 (Casal — opcional) ── -->
       <div id="res-sec-pessoa2" style="display:none">
