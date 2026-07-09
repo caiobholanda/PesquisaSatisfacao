@@ -3016,7 +3016,7 @@ async function _atualizarDisponibilidadeSalas() {
   // hora_fim mínima = hora_inicio + 30min (probe)
   const [hh, mm] = hiVal.split(':').map(Number);
   const totalMin = hh * 60 + mm + 30;
-  const hfVal = String(Math.floor(totalMin / 60)).padStart(2, '0') + ':' + String(totalMin % 60).padStart(2, '0');
+  const hfVal = String(Math.floor(totalMin / 60) % 24).padStart(2, '0') + ':' + String(totalMin % 60).padStart(2, '0');
   try {
     const res = await api(`/api/admin/salas/disponiveis?data=${encodeURIComponent(dataVal)}&hora_inicio=${encodeURIComponent(hiVal)}&hora_fim=${encodeURIComponent(hfVal)}`);
     if (!res?.ok) return;
