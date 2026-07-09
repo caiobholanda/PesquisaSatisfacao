@@ -2157,6 +2157,14 @@
       color: var(--muted); margin-top: .22rem; opacity: .75;
     }
 
+    /* Sala bloqueada no calendário */
+    .cal-room-col-head.cal-room-bloqueada { background: var(--danger-dim); }
+    .cal-room-col-head.cal-room-bloqueada::before { background: var(--danger) !important; }
+    .cal-room-bloq-lbl {
+      font-size: .58rem; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--danger); margin-top: .22rem; font-weight: 700;
+    }
+
     /* ── Scroll ── */
     .cal-scroll {
       overflow-y: auto;
@@ -4803,6 +4811,12 @@
 }
 .sala-card-nome-v2 { font-size:1rem; font-weight:600; color:var(--text); margin-bottom:.1rem; }
 .sala-card-obs-v2 { font-size:.78rem; color:var(--muted); margin-bottom:.55rem; line-height:1.45; }
+/* Características da sala */
+.sala-card-chars { display:flex; gap:.75rem; margin:.5rem 0 .4rem; flex-wrap:wrap; }
+.sala-char { display:flex; flex-direction:column; }
+.sala-char-lbl { font-size:.6rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+.sala-char-val { font-size:.82rem; font-weight:600; color:var(--text); }
+
 .sala-bloqueio-banner {
   background:var(--danger-dim); border:1px solid var(--danger);
   border-radius:5px; padding:.55rem .75rem; margin:.55rem 0 .2rem;

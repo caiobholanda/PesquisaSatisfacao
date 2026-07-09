@@ -2597,17 +2597,26 @@ function renderCalDia() {
   const dayRes=_reservas.filter(r=>r.data===ds);
 
   const MAX_SLOTS = Math.round(((CAL_H_END - CAL_H_START) * 60) / 30);
+  // Mapa de bloqueios ativos para este dia (usa _salasData carregado por loadSalas)
+  const _bloqMap = new Map();
+  (_salasData || []).forEach(s => {
+    const ativo = (s.bloqueios || []).find(b => b.data_inicio <= ds && b.data_fim >= ds);
+    if (ativo) _bloqMap.set(s.id, ativo);
+  });
+
   document.getElementById('cal-rooms-header').innerHTML=
     `<div class="cal-time-col-head"><span class="cal-time-col-head-lbl">hora</span></div>`+
     CAL_ROOMS.map(room=>{
       const occ=dayRes.filter(r=>r.sala===room.id).length;
       const isShared=(room.id===3||room.id===4);
-      return `<div class="cal-room-col-head ${room.cls}${isShared?' cal-room-shared':''}">
+      const bloq=_bloqMap.get(room.id);
+      return `<div class="cal-room-col-head ${room.cls}${isShared?' cal-room-shared':''}${bloq?' cal-room-bloqueada':''}">
         <div class="cal-room-col-hd-inner">
           <div class="cal-room-col-name ${room.cls}">${room.nome}</div>
           ${occ>0?`<span class="cal-room-col-badge ${room.cls}">${occ}</span>`:''}
         </div>
         <div class="cal-room-col-sub">${room.tipo}</div>
+        ${bloq?`<div class="cal-room-bloq-lbl" title="${escHtml(bloq.motivo)}">⛔ Bloqueada</div>`:''}
         ${isShared?`<div class="cal-room-shared-lbl">espaço compartilhado</div>`:''}
       </div>`;
     }).join('');
@@ -8471,9 +8480,15 @@ async function loadSalas() {
 
 const TIPO_SALA_LABEL = {
   individual: 'Individual',
-  conjugada: 'Conjugada',
-  beleza: 'Beleza',
-  evento: 'Evento',
+  conjugada:  'Conjugada',
+  beleza:     'Beleza',
+  evento:     'Evento',
+};
+const TIPO_SALA_CAP = {
+  individual: '1 pessoa',
+  conjugada:  '2 pessoas',
+  beleza:     'Múltiplos',
+  evento:     'Múltiplos',
 };
 
 function renderSalas() {
@@ -8482,47 +8497,61 @@ function renderSalas() {
   const hoje = new Date().toISOString().slice(0, 10);
 
   const bloqueadasCount = _salasData.filter(s => (s.bloqueios || []).some(b => b.data_fim >= hoje)).length;
-  const el = id => document.getElementById(id);
-  if (el('sala-stat-total'))      el('sala-stat-total').textContent      = _salasData.length;
-  if (el('sala-stat-disponiveis')) el('sala-stat-disponiveis').textContent = _salasData.length - bloqueadasCount;
-  if (el('sala-stat-bloqueadas')) el('sala-stat-bloqueadas').textContent  = bloqueadasCount;
+  const elById = id => document.getElementById(id);
+  if (elById('sala-stat-total'))       elById('sala-stat-total').textContent       = _salasData.length;
+  if (elById('sala-stat-disponiveis')) elById('sala-stat-disponiveis').textContent = _salasData.length - bloqueadasCount;
+  if (elById('sala-stat-bloqueadas'))  elById('sala-stat-bloqueadas').textContent  = bloqueadasCount;
+
+  if (_salasData.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:.9rem">Nenhuma sala cadastrada.</div>';
+    return;
+  }
 
   grid.innerHTML = _salasData.map(s => {
     const bloqueiosAtivos = (s.bloqueios || []).filter(b => b.data_fim >= hoje);
     const estaBloqueada = bloqueiosAtivos.length > 0;
-    const cor = `var(--sala-s${s.id})`;
+    const bloqAtual = estaBloqueada ? bloqueiosAtivos[0] : null;
+    const corOrig = `var(--sala-s${s.id})`;
+    const cor = estaBloqueada ? 'var(--danger)' : corOrig;
     const tipoLabel = TIPO_SALA_LABEL[s.tipo] || s.tipo;
+    const capLabel  = TIPO_SALA_CAP[s.tipo]   || '—';
     return `
     <div class="sala-card-v2${estaBloqueada ? ' is-bloqueada' : ''}" data-sala-id="${s.id}">
       <div class="sala-card-accent" style="background:${cor}"></div>
       <div class="sala-card-v2-inner">
         <div class="sala-card-top">
-          <div class="sala-num-circle" style="background:${cor}18;color:${cor}">
-            ${s.id}
-          </div>
+          <div class="sala-num-circle" style="background:${cor}18;color:${cor}">${s.id}</div>
           <div class="sala-card-badges">
-            <span class="sala-tipo-badge" style="color:${cor};border-color:${cor};background:${cor}12">${tipoLabel}</span>
+            <span class="sala-tipo-badge" style="color:${corOrig};border-color:${corOrig};background:${corOrig}12">${tipoLabel}</span>
             ${estaBloqueada
               ? `<span class="sala-status-bloq">⛔ Bloqueada</span>`
               : `<span class="sala-status-ok">✓ Disponível</span>`
             }
           </div>
         </div>
-        <div class="sala-card-nome-v2">${esc(s.nome)}</div>
-        ${s.observacao ? `<div class="sala-card-obs-v2">${esc(s.observacao)}</div>` : ''}
-        ${estaBloqueada ? `
+        <div class="sala-card-nome-v2">${escHtml(s.nome)}</div>
+        <div class="sala-card-chars">
+          <div class="sala-char"><span class="sala-char-lbl">Tipo</span><span class="sala-char-val">${tipoLabel}</span></div>
+          <div class="sala-char"><span class="sala-char-lbl">Capacidade</span><span class="sala-char-val">${capLabel}</span></div>
+        </div>
+        ${s.observacao ? `<div class="sala-card-obs-v2">${escHtml(s.observacao)}</div>` : ''}
+        ${estaBloqueada && bloqAtual ? `
           <div class="sala-bloqueio-banner">
             <div class="sala-bloqueio-banner-lbl">⚠️ Motivo do bloqueio</div>
-            <div class="sala-bloqueio-banner-motivo">${esc(bloqueiosAtivos[0].motivo)}</div>
-            <div class="sala-bloqueio-banner-date">Até ${fmtDate(bloqueiosAtivos[0].data_fim)}</div>
-          </div>` : ''}
-        <div class="sala-card-actions-v2">
-          <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
-          <button class="btn btn-outline btn-sm btn-danger-outline" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
-          ${bloqueiosAtivos.length > 0
-            ? `<button class="btn btn-outline btn-sm" onclick="abrirListaBloqueios(${s.id})" style="width:100%">Histórico (${bloqueiosAtivos.length} bloqueio${bloqueiosAtivos.length > 1 ? 's' : ''})</button>`
-            : ''}
-        </div>
+            <div class="sala-bloqueio-banner-motivo">${escHtml(bloqAtual.motivo)}</div>
+            <div class="sala-bloqueio-banner-date">De ${fmtDate(bloqAtual.data_inicio)} até ${fmtDate(bloqAtual.data_fim)}${bloqAtual.bloqueado_por ? ` · Por: ${escHtml(bloqAtual.bloqueado_por)}` : ''}</div>
+          </div>
+          <div class="sala-card-actions-v2">
+            <button class="btn btn-gold btn-sm" style="flex:1" onclick="desbloquearSala(${bloqAtual.id},${s.id})">🔓 Desbloquear</button>
+            <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
+            ${bloqueiosAtivos.length > 1 ? `<button class="btn btn-outline btn-sm" style="width:100%" onclick="abrirListaBloqueios(${s.id})">Outros bloqueios (${bloqueiosAtivos.length - 1})</button>` : ''}
+          </div>
+        ` : `
+          <div class="sala-card-actions-v2">
+            <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
+            <button class="btn btn-outline btn-sm btn-danger-outline" style="flex:1" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
+          </div>
+        `}
       </div>
     </div>`;
   }).join('');
@@ -8635,8 +8664,8 @@ function renderModalConflito(total) {
   const lista = document.getElementById('conflito-lista');
   lista.innerHTML = _reservasConflito.map(r => `
     <div class="conflito-item">
-      <strong>${esc(r.cliente)}</strong>
-      <span>${fmtDate(r.data)} · ${esc(r.hora_inicio)}–${esc(r.hora_fim)}</span>
+      <strong>${escHtml(r.cliente)}</strong>
+      <span>${fmtDate(r.data)} · ${escHtml(r.hora_inicio)}–${escHtml(r.hora_fim)}</span>
     </div>`).join('');
 }
 
@@ -8709,11 +8738,11 @@ async function abrirEditorReservaManual() {
   const dd = await rd.json();
   const disponivel = dd.salas || [];
   document.getElementById('reserva-manual-info').innerHTML = `
-    <strong>${esc(r.cliente)}</strong> — ${fmtDate(r.data)} ${esc(r.hora_inicio)}–${esc(r.hora_fim)}
+    <strong>${escHtml(r.cliente)}</strong> — ${fmtDate(r.data)} ${escHtml(r.hora_inicio)}–${escHtml(r.hora_fim)}
     <br><small>Reserva #${r.id}</small>`;
   const sel = document.getElementById('reserva-manual-sala-select');
   sel.innerHTML = '<option value="">Escolha uma sala…</option>' +
-    disponivel.map(sv => `<option value="${sv.id}">${esc(sv.nome)} (${TIPO_SALA_LABEL[sv.tipo] || sv.tipo})</option>`).join('') +
+    disponivel.map(sv => `<option value="${sv.id}">${escHtml(sv.nome)} (${TIPO_SALA_LABEL[sv.tipo] || sv.tipo})</option>`).join('') +
     (disponivel.length === 0 ? '<option disabled>Sem salas disponíveis neste horário</option>' : '');
   document.getElementById('reserva-manual-idx').textContent = `${_indexReservaManual + 1} de ${_reservasConflito.length}`;
   document.getElementById('modal-reserva-manual').style.display = 'flex';
@@ -8758,8 +8787,8 @@ async function abrirListaBloqueios(salaId) {
         <strong>${fmtDate(b.data_inicio)} → ${fmtDate(b.data_fim)}</strong>
         <span class="${b.data_fim >= hoje ? 'bloqueio-ativo' : 'bloqueio-passado'}">${b.data_fim >= hoje ? 'Ativo' : 'Expirado'}</span>
       </div>
-      <div class="bloqueio-motivo">${esc(b.motivo)}</div>
-      ${b.bloqueado_por ? `<div class="bloqueio-por">Por: ${esc(b.bloqueado_por)}</div>` : ''}
+      <div class="bloqueio-motivo">${escHtml(b.motivo)}</div>
+      ${b.bloqueado_por ? `<div class="bloqueio-por">Por: ${escHtml(b.bloqueado_por)}</div>` : ''}
       ${b.data_fim >= hoje ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="removerBloqueioUI(${b.id})">Remover bloqueio</button>` : ''}
     </div>`).join('') || '<p style="color:var(--muted)">Sem bloqueios cadastrados</p>';
   document.getElementById('modal-lista-bloqueios').style.display = 'flex';
@@ -8780,4 +8809,23 @@ async function removerBloqueioUI(id) {
     document.getElementById('modal-lista-bloqueios').style.display = 'none';
     loadSalas();
   } else alert('Erro: ' + d.error);
+}
+
+async function desbloquearSala(bloqueioId, salaId) {
+  const s = _salasData.find(x => x.id === salaId);
+  const nome = s?.nome || `Sala ${salaId}`;
+  if (!confirm(`Desbloquear "${nome}"? O bloqueio atual será removido.`)) return;
+  try {
+    const r = await api(`/api/admin/salas/bloqueios/${bloqueioId}`, { method: 'DELETE' });
+    if (!r) return;
+    const d = await r.json();
+    if (d.ok) {
+      showToast(`✓ ${nome} desbloqueada`);
+      loadSalas();
+    } else {
+      showToast('Erro ao desbloquear: ' + (d.error || ''), 5000);
+    }
+  } catch (e) {
+    showToast('Erro: ' + e.message, 5000);
+  }
 }
