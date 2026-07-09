@@ -702,6 +702,38 @@ export function initDb() {
         .run(username, hash, nome);
     }
   } catch (e) { console.error('[seed recepcionistas]', e.message); }
+
+  // ── Gestão de Salas ─────────────────────────────────────────────────────
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS salas (
+        id INTEGER PRIMARY KEY,
+        nome TEXT NOT NULL,
+        tipo TEXT NOT NULL DEFAULT 'individual',
+        ativa INTEGER NOT NULL DEFAULT 1,
+        observacao TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS sala_bloqueios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sala INTEGER NOT NULL CHECK(sala IN (1,2,3,4,5)),
+        data_inicio TEXT NOT NULL,
+        data_fim TEXT NOT NULL,
+        motivo TEXT NOT NULL,
+        bloqueado_por TEXT,
+        criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sala_bloqueios_sala ON sala_bloqueios(sala, data_inicio, data_fim);
+    `);
+    db.exec(`
+      INSERT OR IGNORE INTO salas (id, nome, tipo) VALUES (1, 'Sala 1', 'individual');
+      INSERT OR IGNORE INTO salas (id, nome, tipo) VALUES (2, 'Sala 2', 'individual');
+      INSERT OR IGNORE INTO salas (id, nome, tipo) VALUES (3, 'Sala 3', 'individual');
+      INSERT OR IGNORE INTO salas (id, nome, tipo) VALUES (4, 'Sala 4', 'individual');
+      INSERT OR IGNORE INTO salas (id, nome, tipo, observacao) VALUES (5, 'Espaço Beleza', 'beleza', 'Área de serviços de beleza');
+    `);
+  } catch (e) { console.error('[migration salas]', e.message); }
 }
 
 // Retorna saldo CF: feriados trabalhados (ganhos) − dias com turno='CF' (usados)
@@ -1663,6 +1695,17 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
     idioma = null, idioma2 = null,
   } = opts;
   const db = getDb();
+
+  // Verificar bloqueio de sala
+  const _bloqueioAtivo = db.prepare(
+    `SELECT id, motivo FROM sala_bloqueios WHERE sala = ? AND data_inicio <= ? AND data_fim >= ? LIMIT 1`
+  ).get(sala, data, data);
+  if (_bloqueioAtivo) {
+    const e = new Error('SALA_BLOQUEADA');
+    e.code = 'SALA_BLOQUEADA';
+    e.motivo = _bloqueioAtivo.motivo;
+    throw e;
+  }
 
   // Conflito de sala. Salas 3 e 4 compartilham espaco fisico SOMENTE quando
   // a reserva (nova ou existente) eh CASAL — sinalizado por cliente2 != null.
@@ -2901,4 +2944,129 @@ export function buscarReservaDetalheTerapeuta(reservaId, massagistaId) {
   if (!r) return null;
   if (r.massagista_id !== massagistaId && r.massagista_id2 !== massagistaId) return null;
   return buscarReservaDetalhe(reservaId);
+}
+
+// ═══════════════════════════════════════════════════════
+// Gestão de Salas
+// ═══════════════════════════════════════════════════════
+
+export function listarSalas() {
+  return getDb().prepare('SELECT id, nome, tipo, ativa, observacao FROM salas ORDER BY id').all();
+}
+
+export function buscarSalaById(id) {
+  return getDb().prepare('SELECT id, nome, tipo, ativa, observacao FROM salas WHERE id = ?').get(id);
+}
+
+export function atualizarSala(id, { nome, tipo, observacao }) {
+  const campos = [];
+  const vals = [];
+  if (nome !== undefined) { campos.push('nome = ?'); vals.push(nome); }
+  if (tipo !== undefined) { campos.push('tipo = ?'); vals.push(tipo); }
+  if (observacao !== undefined) { campos.push('observacao = ?'); vals.push(observacao); }
+  if (!campos.length) return { ok: true, mudou: false };
+  vals.push(id);
+  const r = getDb().prepare(`UPDATE salas SET ${campos.join(', ')} WHERE id = ?`).run(...vals);
+  return { ok: true, mudou: r.changes > 0 };
+}
+
+// ─── Bloqueios ───────────────────────────────────────
+
+export function listarBloqueiosSala(sala, opts = {}) {
+  const { from, to } = opts;
+  let q = 'SELECT * FROM sala_bloqueios WHERE sala = ?';
+  const params = [sala];
+  if (from) { q += ' AND data_fim >= ?'; params.push(from); }
+  if (to)   { q += ' AND data_inicio <= ?'; params.push(to); }
+  q += ' ORDER BY data_inicio';
+  return getDb().prepare(q).all(...params);
+}
+
+export function listarTodosBloqueios(opts = {}) {
+  const { from, to } = opts;
+  let q = 'SELECT sb.*, s.nome as sala_nome FROM sala_bloqueios sb JOIN salas s ON sb.sala = s.id WHERE 1=1';
+  const params = [];
+  if (from) { q += ' AND sb.data_fim >= ?'; params.push(from); }
+  if (to)   { q += ' AND sb.data_inicio <= ?'; params.push(to); }
+  q += ' ORDER BY sb.sala, sb.data_inicio';
+  return getDb().prepare(q).all(...params);
+}
+
+export function buscarBloqueioById(id) {
+  return getDb().prepare('SELECT * FROM sala_bloqueios WHERE id = ?').get(id);
+}
+
+export function criarBloqueioSala({ sala, data_inicio, data_fim, motivo, bloqueado_por = null }) {
+  const r = getDb().prepare(
+    `INSERT INTO sala_bloqueios (sala, data_inicio, data_fim, motivo, bloqueado_por) VALUES (?,?,?,?,?)`
+  ).run(sala, data_inicio, data_fim, motivo, bloqueado_por);
+  return { id: r.lastInsertRowid };
+}
+
+export function removerBloqueioSala(id) {
+  const r = getDb().prepare('DELETE FROM sala_bloqueios WHERE id = ?').run(id);
+  return { ok: true, mudou: r.changes > 0 };
+}
+
+// ─── Reservas dentro de um período de bloqueio ───────
+
+export function listarReservasNoBloqueio(sala, data_inicio, data_fim) {
+  return getDb().prepare(`
+    SELECT r.id, r.sala, r.cliente, r.cliente2, r.data, r.hora_inicio, r.hora_fim,
+           r.massagista_id, r.massagista_id2, r.tipo_massagem_id, r.tipo_massagem_id2,
+           m.nome as massagista_nome, m2.nome as massagista_nome2
+    FROM reservas r
+    LEFT JOIN massagistas m  ON m.id  = r.massagista_id
+    LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
+    WHERE r.sala = ? AND r.data >= ? AND r.data <= ?
+    ORDER BY r.data, r.hora_inicio
+  `).all(sala, data_inicio, data_fim);
+}
+
+// ─── Salas disponíveis para um horário ───────────────
+
+export function listarSalasDisponiveis({ data, hora_inicio, hora_fim, excluirSalas = [] }) {
+  const db = getDb();
+  const todas = db.prepare('SELECT id, nome, tipo FROM salas WHERE ativa = 1 ORDER BY id').all();
+  const disponiveis = [];
+  for (const s of todas) {
+    if (excluirSalas.includes(s.id)) continue;
+    const conflitoRes = db.prepare(`
+      SELECT id FROM reservas
+      WHERE sala = ? AND data = ? AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      LIMIT 1
+    `).get(s.id, data, hora_inicio, hora_fim);
+    if (conflitoRes) continue;
+    const conflitoBloq = db.prepare(`
+      SELECT id FROM sala_bloqueios
+      WHERE sala = ? AND data_inicio <= ? AND data_fim >= ?
+      LIMIT 1
+    `).get(s.id, data, data);
+    if (conflitoBloq) continue;
+    disponiveis.push(s);
+  }
+  return disponiveis;
+}
+
+// ─── Alterar sala de uma reserva ─────────────────────
+
+export function atualizarSalaReserva(reservaId, novaSala) {
+  const db = getDb();
+  const reserva = db.prepare('SELECT * FROM reservas WHERE id = ?').get(reservaId);
+  if (!reserva) throw Object.assign(new Error('Reserva não encontrada'), { code: 'NOT_FOUND' });
+
+  const bloqueio = db.prepare(
+    `SELECT id, motivo FROM sala_bloqueios WHERE sala = ? AND data_inicio <= ? AND data_fim >= ? LIMIT 1`
+  ).get(novaSala, reserva.data, reserva.data);
+  if (bloqueio) throw Object.assign(new Error('SALA_BLOQUEADA'), { code: 'SALA_BLOQUEADA', motivo: bloqueio.motivo });
+
+  const conflito = db.prepare(`
+    SELECT id, cliente, hora_inicio, hora_fim FROM reservas
+    WHERE sala = ? AND data = ? AND id != ? AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+    LIMIT 1
+  `).get(novaSala, reserva.data, reservaId, reserva.hora_inicio, reserva.hora_fim);
+  if (conflito) throw Object.assign(new Error('CONFLITO_SALA'), { code: 'CONFLITO_SALA', conflito });
+
+  const r = db.prepare('UPDATE reservas SET sala = ? WHERE id = ?').run(novaSala, reservaId);
+  return { ok: true, mudou: r.changes > 0 };
 }

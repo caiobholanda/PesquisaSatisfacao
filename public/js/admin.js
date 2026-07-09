@@ -666,7 +666,7 @@ async function _popularSelectMassoterapeutas() {
 function showView(id) {
   if (document.getElementById('drawer')?.classList.contains('open')) closeDrawer();
   // Lista completa de views.
-  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor', 'view-salas'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -1295,6 +1295,8 @@ document.getElementById('btn-back-historico').addEventListener('click', () => { 
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
 document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
+
+document.getElementById('btn-open-salas')?.addEventListener('click', () => { showView('view-salas'); loadSalas(); });
 
 // Botão "Início" no header — atalho direto pra view-main, fica visível só em subpáginas
 document.getElementById('btn-header-home')?.addEventListener('click', () => { showView('view-reservas'); loadReservas(); });
@@ -8444,4 +8446,314 @@ async function _pesqDelSecao(secaoId) {
     showToast('✓ Seção removida');
     initPesquisaEditor();
   } catch (e) { showToast('Erro: ' + e.message, 5000); }
+}
+
+// ═══════════════════════════════════════════════════════
+// GESTÃO DE SALAS
+// ═══════════════════════════════════════════════════════
+
+let _salasData = [];
+let _bloqueioEmEdicao = null;
+let _reservasConflito = [];
+let _bloqueioConflito = null;
+
+async function loadSalas() {
+  try {
+    const r = await apiFetch('/api/admin/salas');
+    const d = await r.json();
+    if (!d.ok) return;
+    _salasData = d.salas || [];
+    renderSalas();
+  } catch (e) {
+    console.error('loadSalas:', e);
+  }
+}
+
+const TIPO_SALA_LABEL = {
+  individual: 'Individual',
+  conjugada: 'Conjugada',
+  beleza: 'Beleza',
+  evento: 'Evento',
+};
+
+function renderSalas() {
+  const grid = document.getElementById('salas-grid');
+  if (!grid) return;
+  const hoje = new Date().toISOString().slice(0, 10);
+  grid.innerHTML = _salasData.map(s => {
+    const bloqueiosAtivos = (s.bloqueios || []).filter(b => b.data_fim >= hoje);
+    const estaBloqueada = bloqueiosAtivos.length > 0;
+    return `
+    <div class="sala-card ${estaBloqueada ? 'sala-bloqueada' : ''}" data-sala-id="${s.id}">
+      <div class="sala-card-header" style="background:var(--sala-s${s.id})">
+        <span class="sala-card-num">Sala ${s.id === 5 ? '' : s.id}</span>
+        ${estaBloqueada ? '<span class="sala-card-badge-bloqueio">⛔ Bloqueada</span>' : ''}
+      </div>
+      <div class="sala-card-body">
+        <div class="sala-card-nome">${esc(s.nome)}</div>
+        <div class="sala-card-tipo">${TIPO_SALA_LABEL[s.tipo] || s.tipo}</div>
+        ${s.observacao ? `<div class="sala-card-obs">${esc(s.observacao)}</div>` : ''}
+        ${estaBloqueada ? `<div class="sala-card-motivo-bloqueio">⚠️ ${esc(bloqueiosAtivos[0].motivo)}<br><small>Até ${fmtDate(bloqueiosAtivos[0].data_fim)}</small></div>` : ''}
+        <div class="sala-card-actions">
+          <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">Editar</button>
+          <button class="btn btn-gold btn-sm" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
+          ${bloqueiosAtivos.length > 0 ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="abrirListaBloqueios(${s.id})">Bloqueios (${bloqueiosAtivos.length})</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ─── Editar sala ─────────────────────────────────────
+
+function abrirEditarSala(salaId) {
+  const s = _salasData.find(x => x.id === salaId);
+  if (!s) return;
+  document.getElementById('edit-sala-id').value = s.id;
+  document.getElementById('edit-sala-nome').value = s.nome;
+  document.getElementById('edit-sala-tipo').value = s.tipo;
+  document.getElementById('edit-sala-obs').value = s.observacao || '';
+  document.getElementById('modal-sala-edit').style.display = 'flex';
+}
+
+document.getElementById('modal-sala-edit')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-sala-edit') fecharModalSalaEdit();
+});
+document.getElementById('btn-fechar-sala-edit')?.addEventListener('click', fecharModalSalaEdit);
+
+function fecharModalSalaEdit() {
+  document.getElementById('modal-sala-edit').style.display = 'none';
+}
+
+document.getElementById('form-sala-edit')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = Number(document.getElementById('edit-sala-id').value);
+  const nome = document.getElementById('edit-sala-nome').value.trim();
+  const tipo = document.getElementById('edit-sala-tipo').value;
+  const observacao = document.getElementById('edit-sala-obs').value.trim();
+  if (!nome) return;
+  try {
+    const r = await apiFetch(`/api/admin/salas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, tipo, observacao: observacao || null }) });
+    const d = await r.json();
+    if (d.ok) { fecharModalSalaEdit(); loadSalas(); }
+    else alert('Erro: ' + d.error);
+  } catch (e2) { alert('Erro de rede'); }
+});
+
+// ─── Novo bloqueio ───────────────────────────────────
+
+function abrirNovoBloqueio(salaId) {
+  _bloqueioEmEdicao = { sala: salaId };
+  const s = _salasData.find(x => x.id === salaId);
+  document.getElementById('bloqueio-sala-label').textContent = s?.nome || `Sala ${salaId}`;
+  document.getElementById('bloqueio-data-inicio').value = '';
+  document.getElementById('bloqueio-data-fim').value = '';
+  document.getElementById('bloqueio-motivo').value = '';
+  document.getElementById('bloqueio-err').style.display = 'none';
+  document.getElementById('modal-sala-bloqueio').style.display = 'flex';
+}
+
+document.getElementById('modal-sala-bloqueio')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-sala-bloqueio') fecharModalBloqueio();
+});
+document.getElementById('btn-fechar-sala-bloqueio')?.addEventListener('click', fecharModalBloqueio);
+
+function fecharModalBloqueio() {
+  document.getElementById('modal-sala-bloqueio').style.display = 'none';
+  _bloqueioEmEdicao = null;
+}
+
+document.getElementById('form-sala-bloqueio')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!_bloqueioEmEdicao) return;
+  const sala = _bloqueioEmEdicao.sala;
+  const data_inicio = document.getElementById('bloqueio-data-inicio').value;
+  const data_fim = document.getElementById('bloqueio-data-fim').value;
+  const motivo = document.getElementById('bloqueio-motivo').value.trim();
+  const errEl = document.getElementById('bloqueio-err');
+  errEl.style.display = 'none';
+  if (!data_inicio || !data_fim || !motivo) { errEl.textContent = 'Preencha todos os campos'; errEl.style.display = 'block'; return; }
+  if (data_fim < data_inicio) { errEl.textContent = 'Data fim deve ser ≥ data início'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_inicio, data_fim, motivo }),
+    });
+    const d = await r.json();
+    if (r.status === 409 && d.tipo === 'reservas_no_periodo') {
+      // Há reservas — mostrar modal de conflito
+      _reservasConflito = d.reservas;
+      _bloqueioConflito = { sala, data_inicio, data_fim, motivo };
+      fecharModalBloqueio();
+      renderModalConflito(d.total);
+      document.getElementById('modal-bloqueio-conflito').style.display = 'flex';
+      return;
+    }
+    if (!d.ok) { errEl.textContent = d.error || 'Erro ao salvar'; errEl.style.display = 'block'; return; }
+    fecharModalBloqueio();
+    loadSalas();
+  } catch (e2) { errEl.textContent = 'Erro de rede'; errEl.style.display = 'block'; }
+});
+
+// ─── Modal conflito de reservas ──────────────────────
+
+function renderModalConflito(total) {
+  const s = _salasData.find(x => x.id === _bloqueioConflito?.sala);
+  document.getElementById('conflito-sala-nome').textContent = s?.nome || '';
+  document.getElementById('conflito-total').textContent = total;
+  const lista = document.getElementById('conflito-lista');
+  lista.innerHTML = _reservasConflito.map(r => `
+    <div class="conflito-item">
+      <strong>${esc(r.cliente)}</strong>
+      <span>${fmtDate(r.data)} · ${esc(r.hora_inicio)}–${esc(r.hora_fim)}</span>
+    </div>`).join('');
+}
+
+document.getElementById('modal-bloqueio-conflito')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-bloqueio-conflito') fecharModalConflito();
+});
+document.getElementById('btn-conflito-cancelar')?.addEventListener('click', fecharModalConflito);
+
+function fecharModalConflito() {
+  document.getElementById('modal-bloqueio-conflito').style.display = 'none';
+  _reservasConflito = [];
+  _bloqueioConflito = null;
+}
+
+// Botão "Transferir automaticamente"
+document.getElementById('btn-conflito-transferir')?.addEventListener('click', async () => {
+  if (!_bloqueioConflito) return;
+  const { sala, data_inicio, data_fim, motivo } = _bloqueioConflito;
+  try {
+    // 1. Criar bloqueio confirmado
+    const rb = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_inicio, data_fim, motivo, confirmar: true }),
+    });
+    const db = await rb.json();
+    if (!db.ok) { alert('Erro ao criar bloqueio: ' + db.error); return; }
+    // 2. Transferir reservas
+    const rt = await apiFetch(`/api/admin/salas/${sala}/bloqueios/${db.id}/transferir`, { method: 'POST' });
+    const dt = await rt.json();
+    fecharModalConflito();
+    if (dt.sem_disponibilidade > 0) {
+      alert(`Bloqueio criado. ${dt.transferidas} reserva(s) transferida(s).\n⚠️ ${dt.sem_disponibilidade} reserva(s) SEM sala disponível — ajuste manualmente.`);
+    } else {
+      alert(`Bloqueio criado. ${dt.transferidas} reserva(s) transferida(s) automaticamente.`);
+    }
+    loadSalas();
+  } catch (e) { alert('Erro: ' + e.message); }
+});
+
+// Botão "Editar uma por uma"
+let _indexReservaManual = 0;
+document.getElementById('btn-conflito-manual')?.addEventListener('click', async () => {
+  if (!_bloqueioConflito) return;
+  const { sala, data_inicio, data_fim, motivo } = _bloqueioConflito;
+  // 1. Criar bloqueio
+  const rb = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data_inicio, data_fim, motivo, confirmar: true }),
+  });
+  const db = await rb.json();
+  if (!db.ok) { alert('Erro: ' + db.error); return; }
+  fecharModalConflito();
+  // 2. Abrir editor para a primeira reserva
+  _indexReservaManual = 0;
+  abrirEditorReservaManual();
+});
+
+async function abrirEditorReservaManual() {
+  if (_indexReservaManual >= _reservasConflito.length) {
+    alert('Todas as reservas foram verificadas.');
+    loadSalas();
+    return;
+  }
+  const r = _reservasConflito[_indexReservaManual];
+  const s = _salasData.find(x => x.id === _bloqueioConflito?.sala);
+  // Buscar salas disponíveis
+  const rd = await apiFetch(`/api/admin/salas/disponiveis?data=${r.data}&hora_inicio=${r.hora_inicio}&hora_fim=${r.hora_fim}&excluir=${s?.id || ''}`);
+  const dd = await rd.json();
+  const disponivel = dd.salas || [];
+  document.getElementById('reserva-manual-info').innerHTML = `
+    <strong>${esc(r.cliente)}</strong> — ${fmtDate(r.data)} ${esc(r.hora_inicio)}–${esc(r.hora_fim)}
+    <br><small>Reserva #${r.id}</small>`;
+  const sel = document.getElementById('reserva-manual-sala-select');
+  sel.innerHTML = '<option value="">Escolha uma sala…</option>' +
+    disponivel.map(sv => `<option value="${sv.id}">${esc(sv.nome)} (${TIPO_SALA_LABEL[sv.tipo] || sv.tipo})</option>`).join('') +
+    (disponivel.length === 0 ? '<option disabled>Sem salas disponíveis neste horário</option>' : '');
+  document.getElementById('reserva-manual-idx').textContent = `${_indexReservaManual + 1} de ${_reservasConflito.length}`;
+  document.getElementById('modal-reserva-manual').style.display = 'flex';
+}
+
+document.getElementById('btn-reserva-manual-salvar')?.addEventListener('click', async () => {
+  const r = _reservasConflito[_indexReservaManual];
+  const novaSala = Number(document.getElementById('reserva-manual-sala-select').value);
+  if (!novaSala) { alert('Selecione uma sala'); return; }
+  try {
+    const resp = await apiFetch(`/api/admin/salas/reservas/${r.id}/sala`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sala: novaSala }),
+    });
+    const d = await resp.json();
+    if (!d.ok) { alert('Erro: ' + d.error); return; }
+    document.getElementById('modal-reserva-manual').style.display = 'none';
+    _indexReservaManual++;
+    abrirEditorReservaManual();
+  } catch (e) { alert('Erro de rede'); }
+});
+
+document.getElementById('btn-reserva-manual-pular')?.addEventListener('click', () => {
+  document.getElementById('modal-reserva-manual').style.display = 'none';
+  _indexReservaManual++;
+  abrirEditorReservaManual();
+});
+
+// ─── Lista de bloqueios de uma sala ──────────────────
+
+async function abrirListaBloqueios(salaId) {
+  const s = _salasData.find(x => x.id === salaId);
+  document.getElementById('lista-bloqueios-sala-nome').textContent = s?.nome || `Sala ${salaId}`;
+  const r = await apiFetch(`/api/admin/salas/${salaId}/bloqueios`);
+  const d = await r.json();
+  const lista = document.getElementById('lista-bloqueios-items');
+  const hoje = new Date().toISOString().slice(0, 10);
+  lista.innerHTML = (d.bloqueios || []).map(b => `
+    <div class="bloqueio-item">
+      <div>
+        <strong>${fmtDate(b.data_inicio)} → ${fmtDate(b.data_fim)}</strong>
+        <span class="${b.data_fim >= hoje ? 'bloqueio-ativo' : 'bloqueio-passado'}">${b.data_fim >= hoje ? 'Ativo' : 'Expirado'}</span>
+      </div>
+      <div class="bloqueio-motivo">${esc(b.motivo)}</div>
+      ${b.bloqueado_por ? `<div class="bloqueio-por">Por: ${esc(b.bloqueado_por)}</div>` : ''}
+      ${b.data_fim >= hoje ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="removerBloqueioUI(${b.id})">Remover bloqueio</button>` : ''}
+    </div>`).join('') || '<p style="color:var(--muted)">Sem bloqueios cadastrados</p>';
+  document.getElementById('modal-lista-bloqueios').style.display = 'flex';
+}
+
+document.getElementById('modal-lista-bloqueios')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-lista-bloqueios') document.getElementById('modal-lista-bloqueios').style.display = 'none';
+});
+document.getElementById('btn-fechar-lista-bloqueios')?.addEventListener('click', () => {
+  document.getElementById('modal-lista-bloqueios').style.display = 'none';
+});
+
+async function removerBloqueioUI(id) {
+  if (!confirm('Remover este bloqueio?')) return;
+  const r = await apiFetch(`/api/admin/salas/bloqueios/${id}`, { method: 'DELETE' });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('modal-lista-bloqueios').style.display = 'none';
+    loadSalas();
+  } else alert('Erro: ' + d.error);
 }

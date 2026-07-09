@@ -18,6 +18,7 @@ import clientesRouter from './routes/clientes.js';
 import auditoriaRouter from './routes/auditoria.js';
 import terapeutaRouter from './routes/terapeuta.js';
 import gqRouter from './routes/gq.js';
+import salasRouter from './routes/salas.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
 import { auditMiddleware } from './middleware/audit.js';
 
@@ -250,6 +251,7 @@ app.get('/terapeuta', (_req, res) => res.sendFile(path.join(__dirname, '..', 'pu
 app.use('/api/gq', gqRouter);
 app.get('/gestao-qualidade', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'gestao-qualidade.html')));
 app.use('/api/reservas', reservasRouter);
+app.use('/api/admin/salas', salasRouter);
 
 // ── Hub S2S: massoterapeutas ──────────────────────────────────────────────────
 // Deve ficar ANTES de app.use('/api', cadastrosRouter) porque esse router tem

@@ -350,6 +350,9 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       gran_class: quartoLimpo ? isGranClass(quartoLimpo) : false,
     });
   } catch (e) {
+    if (e.code === 'SALA_BLOQUEADA') {
+      return res.status(409).json({ ok: false, error: `Sala bloqueada: ${e.motivo}`, tipo: 'bloqueio', motivo: e.motivo });
+    }
     if (e.code === 'CONFLITO_SALA') {
       return res.status(409).json({ ok: false, error: 'Sala já reservada neste horário', tipo: 'sala', conflito: e.conflito });
     }
