@@ -326,7 +326,8 @@ app.get('/sso', (req, res) => {
           logAuditoria({ ator_username: email, ator_role: 'massoterapeuta', ator_ip: ip, metodo: 'GET', rota: '/sso', acao: 'login_sso', recurso: 'auth', status: 200, sucesso: true, detalhes: JSON.stringify({ via: 'hub', massagista_id: m.id }) });
         } catch {}
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>window.location.replace('/terapeuta');<\/script></head></html>`);
+        const terapeutaDest = `/terapeuta${themeOK ? `?theme=${themeOK}` : ''}`;
+        return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><script>window.location.replace('${terapeutaDest}');<\/script></head></html>`);
       }
       // Email não vinculado a nenhuma massagista ativa — trata como usuário comum
       role = 'user';

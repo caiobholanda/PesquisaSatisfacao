@@ -8,6 +8,10 @@
 <script>
 (function(){
   try {
+    var urlTheme = new URLSearchParams(window.location.search).get('theme');
+    if (urlTheme === 'dark' || urlTheme === 'light') {
+      localStorage.setItem('spa_theme', urlTheme);
+    }
     var t = localStorage.getItem('spa_theme') || 'light';
     if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
   } catch(_){}
