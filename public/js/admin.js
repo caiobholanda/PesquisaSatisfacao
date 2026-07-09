@@ -2988,6 +2988,7 @@ function calOpenModal(salaId, data, hora) {
       }
     });
   }
+  _atualizarDisponibilidadeSalas();
   _aplicarVisibilidadeSala();
   loadTratamentosModal();
   loadMassagistasModal();
@@ -3002,6 +3003,38 @@ function calOpenModal(salaId, data, hora) {
   setTimeout(()=>document.getElementById('res-inp-cpf')?.focus(),50);
 }
 window.calOpenModal=calOpenModal;
+
+async function _atualizarDisponibilidadeSalas() {
+  const dataVal = document.getElementById('res-inp-data')?.value;
+  const hiVal   = document.getElementById('res-inp-hora-inicio')?.value;
+  // Limpa estado ocupada independentemente de ter dados suficientes
+  document.querySelectorAll('.res-room-btn').forEach(btn => {
+    btn.classList.remove('ocupada');
+    btn.querySelector('.res-room-btn-ocp-badge')?.remove();
+  });
+  if (!dataVal || !hiVal) return;
+  // hora_fim mínima = hora_inicio + 30min (probe)
+  const [hh, mm] = hiVal.split(':').map(Number);
+  const totalMin = hh * 60 + mm + 30;
+  const hfVal = String(Math.floor(totalMin / 60)).padStart(2, '0') + ':' + String(totalMin % 60).padStart(2, '0');
+  try {
+    const res = await api(`/api/admin/salas/disponiveis?data=${encodeURIComponent(dataVal)}&hora_inicio=${encodeURIComponent(hiVal)}&hora_fim=${encodeURIComponent(hfVal)}`);
+    if (!res?.ok) return;
+    const livresIds = new Set((res.salas || []).map(s => s.id));
+    document.querySelectorAll('.res-room-btn').forEach(btn => {
+      const sid = +btn.dataset.sala;
+      if (btn.classList.contains('bloq')) return; // já marcada como bloqueada
+      if (livresIds.has(sid)) return;
+      btn.classList.add('ocupada');
+      if (!btn.querySelector('.res-room-btn-ocp-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'res-room-btn-ocp-badge';
+        badge.textContent = '⏱ Em uso';
+        btn.appendChild(badge);
+      }
+    });
+  } catch (_) { /* silencia erros de rede */ }
+}
 
 // Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
 // Insere chips logo abaixo do input data, atualiza o value e dispara change
@@ -3370,8 +3403,8 @@ document.getElementById('res-inp-hora-inicio').addEventListener('input', calAtua
 document.getElementById('res-inp-hora-inicio').addEventListener('change', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-fim-manual')?.addEventListener('input', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-fim-manual')?.addEventListener('change', calAtualizarHoraFim);
-document.getElementById('res-inp-hora-inicio').addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
-document.getElementById('res-inp-data')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
+document.getElementById('res-inp-hora-inicio').addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
+document.getElementById('res-inp-data')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
 document.getElementById('res-flt-bilingue')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
 document.getElementById('res-inp-massagista').addEventListener('change', _renderMassagistasModal2);
 document.getElementById('res-inp-tratamento2').addEventListener('change', calAtualizarHoraFim);

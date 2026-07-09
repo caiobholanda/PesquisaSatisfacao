@@ -2513,6 +2513,20 @@
       font-size: .55rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
       color: var(--danger); line-height: 1; margin-top: .1rem;
     }
+    /* Sala em uso (ocupada por reserva existente naquele horário) */
+    .res-room-btn.ocupada {
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: .42;
+      border-color: rgba(96,87,56,.3) !important;
+      background-color: rgba(96,87,56,.04);
+      background-image: repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(96,87,56,.06) 6px, rgba(96,87,56,.06) 7px);
+    }
+    .res-room-btn.ocupada .res-room-btn-name { color: var(--muted); }
+    .res-room-btn-ocp-badge {
+      font-size: .55rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted); line-height: 1; margin-top: .1rem;
+    }
 
     .res-tipo-grid {
       display: grid;
