@@ -1024,7 +1024,7 @@ export function listarTurnoHistorico(massagista_id, data, limit = 50) {
 }
 
 // ── Avaliação de disponibilidade por escala (mensal → semanal → sem escala) ──
-const JORNADA_MIN = 9 * 60;   // fim derivado = entrada + 9h (8h trabalho + 1h intervalo)
+const JORNADA_MIN = 8 * 60 + 20; // fim derivado = entrada + 8h20min
 const SPA_FIM_MIN = 22 * 60;  // teto 22:00
 
 function _hmEsc(s) {

@@ -292,7 +292,7 @@ body {
   position: fixed; z-index: 500;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px; display: none; flex-direction: column; gap: 2px;
-  box-shadow: 0 8px 24px var(--picker-shadow); min-width: 188px;
+  box-shadow: 0 8px 24px var(--picker-shadow); min-width: 236px;
 }
 .cp-section-label {
   font-size: 9px; text-transform: uppercase; letter-spacing: .10em; color: var(--muted);
@@ -315,7 +315,7 @@ body {
 }
 .cp-btn-salvar:hover { opacity: .85; }
 .sig-composite {
-  width: auto; min-width: 38px; max-width: 52px; padding: 0 3px;
+  width: auto; min-width: 38px; max-width: 62px; padding: 0 3px;
   font-size: 8.5px; letter-spacing: -.02em; white-space: nowrap;
 }
 .cp-opt {
@@ -480,14 +480,16 @@ body {
 /* ── PICKER TIMES GRID ─────────────────────────── */
 .cp-times { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px 6px 8px; }
 .cp-time {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: var(--surface2); border: 1.5px solid var(--border);
   border-radius: 5px; font-family: var(--mono); font-size: 12px; font-weight: 600;
-  padding: 7px 4px; cursor: pointer; text-align: center; color: var(--text);
+  padding: 6px 4px; cursor: pointer; text-align: center; color: var(--text);
   transition: border-color .1s, color .1s, background .1s;
 }
 .cp-time.tm { color: var(--success); border-color: rgba(21,112,90,.3); }
 .cp-time.tn { color: var(--warn); border-color: rgba(156,88,67,.25); }
 .cp-time:hover { border-color: var(--gold); color: var(--gold); background: var(--hover-bg); }
+.cp-time-saida { font-size: 9px; color: var(--muted); font-weight: 400; opacity: .9; }
 
 /* ── PADRÕES MODAL ─────────────────────────────── */
 .pm-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
@@ -498,7 +500,7 @@ body {
 .pm-no-hub       { display: inline-block; font-size: .65rem; color: var(--muted); background: var(--surface2); padding: 1px 5px; border-radius: 3px; margin-left: 5px; border: 1px solid var(--border-soft); vertical-align: middle; font-family: var(--font); }
 /* Table layout */
 .pm-table        { display: flex; flex-direction: column; }
-.pm-head-row, .pm-data-row { display: grid; grid-template-columns: 1fr repeat(7, 62px); align-items: center; gap: 4px; }
+.pm-head-row, .pm-data-row { display: grid; grid-template-columns: 1fr repeat(7, 84px); align-items: center; gap: 4px; }
 .pm-head-row     { padding-bottom: 7px; border-bottom: 1.5px solid var(--border); margin-bottom: 2px; }
 .pm-data-row     { padding: 5px 0; border-bottom: 1px solid var(--border-soft); }
 .pm-data-row:last-child { border-bottom: none; }
@@ -507,7 +509,7 @@ body {
 .pm-col-name     { padding-right: 8px; min-width: 0; }
 .pm-prof-name    { font-size: .92rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .01em; }
 .pm-prof-meta    { font-size: .68rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pm-day-sel      { width: 58px; font-size: 11px; padding: 5px 2px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text); font-family: var(--font); outline: none; text-align: center; cursor: pointer; transition: border-color .12s; -webkit-appearance: none; appearance: none; }
+.pm-day-sel      { width: 80px; font-size: 11px; padding: 5px 2px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text); font-family: var(--font); outline: none; text-align: center; cursor: pointer; transition: border-color .12s; -webkit-appearance: none; appearance: none; }
 .pm-day-sel:hover { border-color: var(--muted); }
 .pm-day-sel:focus { border-color: var(--gold); background: var(--surface); }
 </style>
@@ -732,6 +734,12 @@ function getDias(ano, mes) {
 
 function fmtHora(h) { return h.endsWith(':00') ? h.slice(0,2)+'h' : h; }
 
+function calcSaida(entrada) {
+  const [h, m] = entrada.split(':').map(Number);
+  const t = Math.min(h * 60 + m + 500, 22 * 60); // entrada + 8h20min, teto 22h
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+}
+
 function siglaHTML(tipo) {
   if (!tipo) return '<div class="cell-empty"></div>';
   // Composite: "09:00|22:00"
@@ -740,11 +748,10 @@ function siglaHTML(tipo) {
     const cls = TIMES_CFG[e]?.cls || 'sig-T';
     return `<div class="sigla ${cls} sig-composite">${fmtHora(e)}–${fmtHora(s)}</div>`;
   }
-  // Single time (fallback / legado)
+  // Single time — mostra entrada e saída calculada (entrada + 8h20)
   if (TIMES_CFG[tipo]) {
-    const { cls, lbl } = TIMES_CFG[tipo];
-    const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
-    return `<div class="sigla ${cls}"${fs}>${lbl}</div>`;
+    const { cls } = TIMES_CFG[tipo];
+    return `<div class="sigla ${cls} sig-composite">${fmtHora(tipo)}–${fmtHora(calcSaida(tipo))}</div>`;
   }
   // Status especial
   const cls = SIG_CLS[tipo] || 'sig-X';
@@ -932,7 +939,7 @@ function render() {
         const tip   = tipo
           ? (tipo.includes('|')
               ? `Entrada ${tipo.split('|')[0]} · Saída ${tipo.split('|')[1]}`
-              : (TIMES_CFG[tipo] ? `Entrada ${tipo}` : (SIG_TIP[tipo] || tipo)))
+              : (TIMES_CFG[tipo] ? `Entrada ${tipo} · Saída ${fmtHora(calcSaida(tipo))} · 8h20min` : (SIG_TIP[tipo] || tipo)))
           : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
         const cls = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : '',
                      di === 0 ? 'col-first' : '', di === dias.length - 1 ? 'col-last' : '',
@@ -955,6 +962,12 @@ function escH(s) {
 const picker = document.getElementById('cell-picker');
 let pickerMId = null, pickerDate = null;
 let pickerEntrada = null;
+
+// Atualiza labels dos botões de entrada com a saída calculada (8h20)
+picker.querySelectorAll('[data-entrada]').forEach(btn => {
+  const e = btn.dataset.entrada;
+  btn.innerHTML = `<span>${fmtHora(e)}</span><span class="cp-time-saida">→${fmtHora(calcSaida(e))}</span>`;
+});
 
 function _updatePickerActive() {
   picker.querySelectorAll('[data-entrada]').forEach(btn =>
@@ -1233,7 +1246,7 @@ const PM_DIAS = [
   { key: 'dom', lbl: 'Dom' },
 ];
 const PM_HORAS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30'];
-function pmFmtH(h) { return h === '17:30' ? '17:30' : h.slice(0,2) + 'h'; }
+function pmFmtH(h) { return `${fmtHora(h)}–${fmtHora(calcSaida(h))}`; }
 
 function openPadroesModal() {
   document.getElementById('padroes-overlay').style.display = 'flex';
