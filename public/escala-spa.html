@@ -1143,6 +1143,21 @@ document.getElementById('grid-outer').addEventListener('mouseout', e => {
 });
 document.getElementById('grid-outer').addEventListener('scroll', hideNameTip, { passive: true });
 
+// ─── AUTO-REFRESH AO VOLTAR PARA A ABA ───────────────────────────────────────
+// A escala pode ter sido editada por outro usuário/aba enquanto esta ficou
+// em segundo plano. Recarrega ao recuperar foco (debounce 5s).
+let _lastAutoLoad = Date.now();
+function _reloadSeVoltou() {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - _lastAutoLoad < 5000) return;
+  _lastAutoLoad = Date.now();
+  hidePicker();
+  hideHistPop();
+  loadData();
+}
+document.addEventListener('visibilitychange', _reloadSeVoltou);
+window.addEventListener('focus', _reloadSeVoltou);
+
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 document.getElementById('btn-prev').onclick = () => {
   periodo = periodo.mes === 0

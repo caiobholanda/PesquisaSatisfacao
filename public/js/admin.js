@@ -3420,6 +3420,11 @@ function calOpenModal(salaId, data, hora) {
   _aplicarVisibilidadeSala();
   loadTratamentosModal();
   loadMassagistasModal();
+  // Escala pode ter mudado desde a última abertura (outro usuário/aba):
+  // invalida o cache de disponibilidade e re-renderiza com a data corrente.
+  _escalaAvalKey = null;
+  _renderMassagistasModal();
+  _renderMassagistasModal2();
   const flt = document.getElementById('res-flt-bilingue');
   if (flt) flt.checked = false;
   // CPF é o primeiro campo: foca para que, se já cadastrado, o autofill rode.

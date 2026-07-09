@@ -1043,7 +1043,13 @@ export function listarTurnosDia(data) {
 
 export function contextoEscalaDia(data) {
   const rows = listarTurnosDia(data);
-  return { turnosDia: new Map(rows.map(r => [r.massagista_id, r.turno])), lancada: rows.length > 0 };
+  let feriasDia = new Set();
+  try {
+    feriasDia = new Set(getDb().prepare(
+      'SELECT massagista_id FROM ferias_massagista WHERE data_inicio <= ? AND data_fim >= ?'
+    ).all(data, data).map(r => r.massagista_id));
+  } catch {}
+  return { turnosDia: new Map(rows.map(r => [r.massagista_id, r.turno])), lancada: rows.length > 0, feriasDia };
 }
 
 const TURNO_STATUS_MOTIVO = {
@@ -1081,6 +1087,12 @@ export function avaliarEscalaMassagista(m, data, horaInicio, horaFim, ctx) {
     if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'mensal', faixa, turno };
     const ok = resIni >= ini && rFim <= fim;
     return { disponivel: ok, fonte: 'mensal', motivo: ok ? null : 'fora do turno', faixa, turno };
+  }
+
+  // Férias programadas (ferias_massagista) vetam quando NÃO há turno manual
+  // explícito no dia — turno digitado conscientemente vence (volta antecipada).
+  if (c.feriasDia?.has(m.id)) {
+    return { disponivel: false, fonte: 'ferias', motivo: 'férias programadas' };
   }
 
   if (c.lancada) {

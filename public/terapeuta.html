@@ -349,6 +349,7 @@ button, input { font-family: inherit; }
   const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
+  let _escalaDias = {}; // iso → {disponivel, fonte, faixa, motivo} — escala resolvida pelo servidor
   const DIAS_KEY    = ['dom','seg','ter','qua','qui','sex','sab'];
   const DIAS_LABEL  = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   function escalaDia(disponibilidade, iso) {
@@ -358,7 +359,6 @@ button, input { font-family: inherit; }
     return disponibilidade[key] || null;
   }
   function renderEscalaBanner(iso) {
-    if (!_me?.disponibilidade) { $('tx-escala-banner').style.display = 'none'; return; }
     const banner = $('tx-escala-banner');
     const txt = $('tx-escala-texto');
     const hojeStr = toLocalISO(new Date());
@@ -366,6 +366,35 @@ button, input { font-family: inherit; }
     const dowIndex = new Date(+y,+m-1,+d).getDay();
     const ehHoje = iso === hojeStr;
     const prefixo = ehHoje ? 'Hoje' : `Na ${DIAS_LABEL[dowIndex]}`;
+
+    // Fonte da verdade: escala resolvida pelo servidor (mensal → férias →
+    // semanal). Fallback: disponibilidade semanal local (comportamento antigo).
+    const av = _escalaDias[iso];
+    if (av) {
+      if (av.faixa) {
+        const [ini, fim] = av.faixa.split('-').map(s => s.trim());
+        txt.innerHTML = `${prefixo} você entra às <strong>${ini}</strong> e sai às <strong>${fim}</strong>`;
+      } else if (!av.disponivel) {
+        const MOTIVO_TXT = {
+          'folga': `${prefixo} é dia de folga`,
+          'folga semanal': `${prefixo} é dia de folga`,
+          'folga (exceção)': `${prefixo} é dia de folga`,
+          'férias programadas': `Você está de férias 🌴`,
+          'férias': `Você está de férias 🌴`,
+          'não escalada no dia': `${prefixo} você não está escalada`,
+        };
+        txt.innerHTML = `<span class="tx-escala-folga">${MOTIVO_TXT[av.motivo] || `${prefixo}: ${av.motivo || 'não escalada'}`}</span>`;
+      } else {
+        // disponível sem faixa definida (sem escala cadastrada) → sem banner
+        banner.style.display = 'none';
+        return;
+      }
+      banner.style.display = 'flex';
+      return;
+    }
+
+    // Fallback antigo (endpoint indisponível): escala semanal local
+    if (!_me?.disponibilidade) { banner.style.display = 'none'; return; }
     const faixa = escalaDia(_me.disponibilidade, iso);
     if (!faixa) {
       txt.innerHTML = `<span class="tx-escala-folga">${prefixo} é dia de folga</span>`;
@@ -481,6 +510,12 @@ button, input { font-family: inherit; }
       const d = await r.json();
       _reservas = d.items || [];
       _diaAtivo = hojeStr;
+      // Escala resolvida por dia (mensal → férias → semanal) — falha silenciosa:
+      // o banner cai no fallback semanal local se este fetch não responder.
+      try {
+        const re = await fetch(`/api/terapeuta/escala?from=${from}&to=${to}`);
+        if (re.ok) { const de = await re.json(); if (de.ok) _escalaDias = de.dias || {}; }
+      } catch {}
       renderAgenda();
     } catch {
       sub.textContent = 'Erro de rede. Toque para tentar novamente.';

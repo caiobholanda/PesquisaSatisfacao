@@ -2,7 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { requireTerapeuta } from '../middleware/auth.js';
-import { buscarMassagistaPorNome, buscarMassagistaPorId, listarReservasDaTerapeuta, buscarReservaDetalheTerapeuta, listarMassagistas } from '../db.js';
+import { buscarMassagistaPorNome, buscarMassagistaPorId, listarReservasDaTerapeuta, buscarReservaDetalheTerapeuta, listarMassagistas, buscarMassagistaById, avaliarEscalaMassagista } from '../db.js';
 
 const router = Router();
 const JWT_TTL_SECONDS = 60 * 60 * 12; // 12h
@@ -58,6 +58,35 @@ router.get('/me', requireTerapeuta, (req, res) => {
   let disponibilidade = null;
   try { disponibilidade = m.disponibilidade ? JSON.parse(m.disponibilidade) : null; } catch {}
   res.json({ ok: true, id: m.id, nome: m.nome, disponibilidade });
+});
+
+// Escala resolvida por dia (fonte da verdade: mensal → férias → semanal).
+// Escopada ao token — mesma defesa anti-IDOR da agenda. Usada pelo banner
+// "Hoje você entra às X" do app da terapeuta.
+router.get('/escala', requireTerapeuta, (req, res) => {
+  const { from, to } = req.query;
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  if (!re.test(from || '') || !re.test(to || '')) {
+    return res.status(400).json({ ok: false, error: 'from e to obrigatórios (YYYY-MM-DD)' });
+  }
+  const m = buscarMassagistaById(req.user.massagista_id);
+  if (!m || !m.ativo) return res.status(401).json({ ok: false, error: 'Sessão inválida' });
+  const dias = {};
+  const d = new Date(from + 'T12:00:00Z');
+  const fim = new Date(to + 'T12:00:00Z');
+  let guard = 0;
+  while (d <= fim && guard++ < 40) {
+    const iso = d.toISOString().slice(0, 10);
+    const av = avaliarEscalaMassagista(m, iso, null, null);
+    dias[iso] = {
+      disponivel: av.disponivel,
+      fonte: av.fonte,
+      faixa: av.faixa || null,
+      motivo: av.motivo || null,
+    };
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  res.json({ ok: true, dias });
 });
 
 // Agenda escopada — IGNORA qualquer massagista_id do query;

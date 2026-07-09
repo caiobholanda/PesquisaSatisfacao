@@ -415,9 +415,12 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
   for (const prof of profs) {
     let padrao;
     try { padrao = JSON.parse(prof.padrao_entrada); } catch { continue; }
+    const ferias = listarFeriasMassagista(prof.id);
     for (const dataIso of dias) {
       const val = padrao[DOW_KEYS[new Date(dataIso + 'T12:00:00Z').getUTCDay()]];
       if (!val) continue;
+      // Não preenche turno por cima de férias programadas
+      if (ferias.some(f => f.data_inicio <= dataIso && f.data_fim >= dataIso)) continue;
       const key = `${prof.id}-${dataIso}`;
       const atual = existentes.has(key) ? existentes.get(key) : null;
       if (existentes.has(key) && !sobrescrever) continue;

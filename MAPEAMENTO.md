@@ -534,7 +534,14 @@ GestaoQualidade não tem backend próprio
 - POST `/api/reservas` revalida escala (P1 e P2, TODAS as violações num único erro) → **409 `tipo:'escala'`** `{motivo, fonte, faixa, massagista, override_permitido}`; body `override_escala:true` pula (auditado); handler no btn-res-salvar oferece confirm() de override
 - Editar célula com reservas na data → salva e response traz `reservas_conflitantes:[{id, cliente, sala, hora_inicio, hora_fim}]` → modal `#conf-esc-overlay` no escala-spa.html (nada é cancelado)
 
+### Sincronização em tempo real (auditoria 2026-07-09)
+- `calOpenModal` invalida `_escalaAvalKey` e re-renderiza os 2 comboboxes a cada abertura (escala editada em outra aba reflete no reopen)
+- escala-spa.html recarrega a grade em visibilitychange/focus (debounce 5s)
+- **Férias** (`ferias_massagista`) entram em `contextoEscalaDia.feriasDia` → `avaliarEscalaMassagista` veta com fonte 'ferias'; **turno manual explícito vence férias** (volta antecipada); aplicar-padrao pula dias de férias
+- **App da terapeuta**: `GET /api/terapeuta/escala?from&to` (escopado ao token) devolve escala resolvida por dia; banner de terapeuta.html prioriza mensal→férias→semanal (fallback local antigo se fetch falhar)
+- view-escala do admin rotulada "Padrão semanal (template)" com link para a Escala Mensal
+
 ### Invariantes
 - Escala semanal padrão (disponibilidade/excecoes/padrao_entrada) INTACTA — segue como template do aplicar-padrao e fallback
 - Contratos de endpoints existentes inalterados (só extensões aditivas)
-- E2E: 3 passagens × 41 asserts (2026-07-09) — servidor local, DB restaurado após
+- E2E: 4 passagens (41+41+41+52 asserts, 2026-07-09) — servidor local, DB restaurado após
