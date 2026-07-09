@@ -4759,7 +4759,9 @@
 .sala-stat-lbl  { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-top:.3rem; }
 
 /* Grid */
-.salas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:1rem; }
+.salas-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+@media (max-width:900px) { .salas-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:580px) { .salas-grid { grid-template-columns:1fr; } }
 
 /* Card v2 */
 .sala-card-v2 {
@@ -4962,6 +4964,6 @@
   </div>
 </div>
 
-<script src="/js/admin.js?v=100"></script>
+<script src="/js/admin.js?v=101"></script>
 </body>
 </html>
