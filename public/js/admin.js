@@ -2144,7 +2144,7 @@ const CAL_ROOMS = [
   { id: 4, nome: 'Sala 4', tipo: 'Dupla', cap: 2, cls: 's4' },
   { id: 5, nome: 'Espaço Beleza', tipo: 'Eventos', cap: 1, cls: 's5' },
 ];
-const CAL_H_START = 8;
+const CAL_H_START = 9;
 const CAL_H_END   = 22;
 // Lê altura do slot da CSS var --cal-slot-h (definida em :root) — mantem
 // JS e CSS sincronizados. Fallback 52 se var nao disponivel.
@@ -3037,7 +3037,7 @@ function calAtualizarHoraFim() {
   if (iniMin < CAL_H_START * 60 || iniMin >= CAL_H_END * 60) {
     _resHoraInicio = inicio;
     _resHoraFim = null;
-    tempoEl.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ ${inicio} fora do horário do spa (08:00–22:00)</span>`;
+    tempoEl.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ ${inicio} fora do horário do spa (09:00–22:00)</span>`;
     stripEl.style.borderColor = 'var(--danger)';
     stripEl.style.background = 'var(--danger-dim)';
     return;

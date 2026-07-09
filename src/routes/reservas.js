@@ -59,7 +59,7 @@ router.get('/:id/detalhe', (req, res) => {
   }
 });
 
-const SPA_OPEN_MIN = 8 * 60;   // 08:00
+const SPA_OPEN_MIN = 9 * 60;   // 09:00
 const SPA_CLOSE_MIN = 22 * 60; // 22:00
 function _hhmmToMin(s) {
   if (typeof s !== 'string') return NaN;
@@ -169,7 +169,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
   if (isNaN(iniMin) || isNaN(fimMin) || fimMin <= iniMin)
     return res.status(400).json({ ok: false, error: 'Horário inválido' });
   if (iniMin < SPA_OPEN_MIN || iniMin >= SPA_CLOSE_MIN)
-    return res.status(400).json({ ok: false, error: 'Hora de início fora do expediente do spa (08:00–22:00)' });
+    return res.status(400).json({ ok: false, error: 'Hora de início fora do expediente do spa (09:00–22:00)' });
   if (fimMin > SPA_CLOSE_MIN)
     return res.status(400).json({ ok: false, error: 'O tratamento terminaria após o fechamento do spa às 22:00' });
 
