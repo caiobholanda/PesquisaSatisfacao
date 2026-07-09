@@ -137,8 +137,6 @@ app.get('/api/massagistas-ativas', (_req, res) => {
       vinculo: m.vinculo,
       bilingue: !!m.bilingue,
       especialidade_original: m.especialidade_original,
-      disponibilidade: m.disponibilidade ? (() => { try { return JSON.parse(m.disponibilidade); } catch { return null; } })() : null,
-      excecoes: m.excecoes ? (() => { try { return JSON.parse(m.excecoes); } catch { return null; } })() : null,
     })),
   });
 });

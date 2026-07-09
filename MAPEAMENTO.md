@@ -541,7 +541,17 @@ GestaoQualidade não tem backend próprio
 - **App da terapeuta**: `GET /api/terapeuta/escala?from&to` (escopado ao token) devolve escala resolvida por dia; banner de terapeuta.html prioriza mensal→férias→semanal (fallback local antigo se fetch falhar)
 - view-escala do admin rotulada "Padrão semanal (template)" com link para a Escala Mensal
 
+### ⚠️ ESCALA DE TRABALHO (semanal) EXCLUÍDA — 2026-07-09
+A tela view-escala do admin e TODO o sistema disponibilidade/excecoes foram removidos.
+A **Escala Mensal (escala-spa.html) é a única tela de escala**.
+- Cadeia de avaliação atual: **turno mensal explícito > férias > padrao_entrada (Padrões Semanais) > sem-escala (libera com aviso)**
+- Colunas `massagistas.disponibilidade`/`excecoes` ficaram MORTAS no banco (sem DROP; nenhum SELECT as lê)
+- `PUT /api/massagistas/:id` aceita e IGNORA os campos legados (retrocompat)
+- Removidos: view-escala + modal exceções + grid disp do modal massagista (admin.html), ~15 funções/listeners (admin.js), item do dropdown (shared-header.js), fallback semanal do banner (terapeuta.html), _validarDisp/_validarExcecoes (cadastros.js)
+- Modal de massagista agora: dados Hub (read-only) + Férias + PIN; botão único "Fechar"
+- Sessões antigas com `_vst.view='view-escala'` caem em view-reservas (guard no boot)
+
 ### Invariantes
-- Escala semanal padrão (disponibilidade/excecoes/padrao_entrada) INTACTA — segue como template do aplicar-padrao e fallback
-- Contratos de endpoints existentes inalterados (só extensões aditivas)
-- E2E: 4 passagens (41+41+41+52 asserts, 2026-07-09) — servidor local, DB restaurado após
+- Padrões Semanais (`padrao_entrada`, engrenagem do escala-spa) — template do aplicar-padrão E fallback de disponibilidade
+- Contratos de endpoints existentes inalterados (extensões aditivas; campos legados ignorados)
+- E2E: 6 passagens (41+41+41+52+57+61 asserts, 2026-07-09) — servidor local, DB restaurado após

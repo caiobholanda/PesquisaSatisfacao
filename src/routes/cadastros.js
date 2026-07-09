@@ -39,12 +39,8 @@ router.get('/massagistas/padroes', requireSpa, (req, res) => {
 });
 
 router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
-  const { nome, matricula, funcao, vinculo, bilingue, disponibilidade, excecoes } = req.body || {};
+  const { nome, matricula, funcao, vinculo, bilingue } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
-  if (excecoes !== undefined) {
-    const erroExc = _validarExcecoes(excecoes);
-    if (erroExc) return res.status(400).json({ ok: false, error: erroExc });
-  }
   const resolvedFuncao = funcao?.trim() || 'Massoterapeuta';
   const resolvedVinculo = vinculo?.trim() || null;
   const resolvedBilingue = bilingue ? 1 : 0;
@@ -54,78 +50,19 @@ router.post('/massagistas', ...podeEscreverSpa, (req, res) => {
     funcao: resolvedFuncao,
     vinculo: resolvedVinculo,
     bilingue: resolvedBilingue,
-    disponibilidade: disponibilidade ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade)) : null,
-    excecoes: (Array.isArray(excecoes) && excecoes.length)
-      ? JSON.stringify(excecoes)
-      : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null),
   });
   res.status(201).json({ ok: true, id });
 });
 
-function _validarExcecoes(excecoes) {
-  if (!excecoes) return null;
-  let arr;
-  try { arr = typeof excecoes === 'string' ? JSON.parse(excecoes) : excecoes; }
-  catch { return 'Exceções: JSON inválido'; }
-  if (!Array.isArray(arr)) return 'Exceções devem ser uma lista';
-  if (arr.length > 365) return 'Máximo de 365 exceções por massoterapeuta';
-  const SPA_INI = 8 * 60, SPA_FIM = 22 * 60;
-  const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-  const timeRe = /^\d{2}:\d{2}$/;
-  for (const e of arr) {
-    if (!e || typeof e !== 'object') return 'Exceção inválida';
-    if (!dateRe.test(e.data || '')) return `Exceção: data inválida (${e.data})`;
-    if (!['disponivel', 'indisponivel'].includes(e.tipo)) return `Exceção ${e.data}: tipo deve ser disponivel ou indisponivel`;
-    if (!timeRe.test(e.inicio || '') || !timeRe.test(e.fim || '')) return `Exceção ${e.data}: horário inválido`;
-    const ini = toMin(e.inicio), fim = toMin(e.fim);
-    if (Number.isNaN(ini) || Number.isNaN(fim)) return `Exceção ${e.data}: horário inválido`;
-    if (ini < SPA_INI) return `Exceção ${e.data}: início não pode ser antes das 08:00`;
-    if (fim > SPA_FIM) return `Exceção ${e.data}: fim não pode ser após 22:00`;
-    if (fim <= ini) return `Exceção ${e.data}: fim deve ser após o início`;
-  }
-  return null;
-}
-
-function _validarDisp(disponibilidade) {
-  if (!disponibilidade) return null;
-  const disp = typeof disponibilidade === 'string' ? JSON.parse(disponibilidade) : disponibilidade;
-  const SPA_INI = 8 * 60, SPA_FIM = 22 * 60;
-  const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-  for (const [day, faixa] of Object.entries(disp)) {
-    if (!faixa) continue;
-    const parts = faixa.split('-');
-    if (parts.length !== 2) return `Formato inválido para ${day}`;
-    const ini = toMin(parts[0].trim()), fim = toMin(parts[1].trim());
-    if (ini < SPA_INI) return `Horário de ${day} não pode começar antes das 08:00`;
-    if (fim > SPA_FIM) return `Horário de ${day} não pode terminar após as 22:00`;
-    if (fim <= ini) return `Horário de fim de ${day} deve ser após o início`;
-  }
-  return null;
-}
-
 router.put('/massagistas/:id', ...podeEscreverSpa, (req, res) => {
-  // nome/funcao/vinculo/bilingue são gerenciados pelo Hub — ignorados se enviados pelo frontend
-  const { nome, ativo = 1, matricula, disponibilidade, excecoes } = req.body || {};
+  // nome/funcao/vinculo/bilingue são gerenciados pelo Hub — ignorados se enviados.
+  // disponibilidade/excecoes (escala semanal removida): aceitos e IGNORADOS por
+  // retrocompatibilidade — o dia real vive em turno_massagista + padrao_entrada.
+  const { nome, ativo = 1, matricula } = req.body || {};
   const existing = buscarMassagistaById(parseInt(req.params.id));
   if (!existing) return res.status(404).json({ ok: false, error: 'Não encontrado' });
-  if (disponibilidade !== undefined) {
-    const erroDisp = _validarDisp(disponibilidade);
-    if (erroDisp) return res.status(400).json({ ok: false, error: erroDisp });
-  }
-  if (excecoes !== undefined) {
-    const erroExc = _validarExcecoes(excecoes);
-    if (erroExc) return res.status(400).json({ ok: false, error: erroExc });
-  }
   const opts = {};
   if (matricula !== undefined) opts.matricula = matricula?.trim() || null;
-  if (disponibilidade !== undefined) opts.disponibilidade = disponibilidade
-    ? (typeof disponibilidade === 'string' ? disponibilidade : JSON.stringify(disponibilidade))
-    : null;
-  if (excecoes !== undefined) opts.excecoes = (Array.isArray(excecoes) && excecoes.length)
-    ? JSON.stringify(excecoes)
-    : (typeof excecoes === 'string' && excecoes.trim() ? excecoes : null);
-
   atualizarMassagista(parseInt(req.params.id), nome || existing.nome, ativo ? 1 : 0, opts);
   res.json({ ok: true });
 });
@@ -301,7 +238,7 @@ router.get('/escala-spa', (req, res) => {
   if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11) {
     return res.status(400).json({ ok: false, error: 'ano e mes (0-11) obrigatórios' });
   }
-  const profs = listarMassagistas().filter(m => m.ativo).map(({ pin_hash, disponibilidade, excecoes, ...rest }) => rest);
+  const profs = listarMassagistas().filter(m => m.ativo).map(({ pin_hash, ...rest }) => rest);
   const turnos = listarTurnosPeriodo(ano, mes);
   res.json({ ok: true, profs, turnos });
 });

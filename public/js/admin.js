@@ -163,17 +163,15 @@ function aplicarRoleNaUI(role) {
   // sem proteção — risco alto). Endpoint /api/dev/seed-demo também removido.
 }
 
-// ── Escala de Trabalho (mensal) — declaradas aqui para evitar TDZ em showApp ──
-let _escalaAno = new Date().getFullYear();
-let _escalaMes = new Date().getMonth(); // 0-indexed
-
 function showApp() {
   document.getElementById('app-screen').style.display = 'block';
   // Aplica visibilidade conforme o role gravado no JWT atual.
   try { aplicarRoleNaUI((currentUserPayload() || {}).role); } catch {}
   loadAll(); // sempre carrega dados do painel principal em background
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
-  const view = st.view || 'view-reservas';
+  // view-escala foi removida (escala mensal em /escala-spa.html é a única) —
+  // sessões antigas com _vst apontando pra ela caem em reservas.
+  const view = (st.view === 'view-escala') ? 'view-reservas' : (st.view || 'view-reservas');
   showView(view);
   if (view === 'view-massagistas') { loadMassagistas(); }
   else if (view === 'view-tipos') { loadTipos(); }
@@ -187,7 +185,6 @@ function showApp() {
   else if (view === 'view-auditoria') { initAuditoriaView(); }
   // view-anamnese-editor e view-pesquisa-editor: ja sao carregadas
   // pelo showView(view) acima — evita fetch duplicado no boot.
-  else if (view === 'view-escala') { loadEscala(); }
   else if (view === 'view-reservas') {
     if (st.calOff != null) _calWeekOffset = st.calOff;
     if (st.calDay) { const [y,m,d]=st.calDay.split('-').map(Number); _calDiaSel=new Date(y,m-1,d); }
@@ -669,7 +666,7 @@ async function _popularSelectMassoterapeutas() {
 function showView(id) {
   if (document.getElementById('drawer')?.classList.contains('open')) closeDrawer();
   // Lista completa de views.
-  ['view-main', 'view-massagistas', 'view-escala', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -680,14 +677,6 @@ function showView(id) {
   if (id === 'view-tipos') {
     const s = document.getElementById('search-tipos');
     if (s) s.value = '';
-  }
-  if (id !== 'view-escala') {
-    const _sp = new URLSearchParams(location.search);
-    if (_sp.has('escala')) {
-      _sp.delete('escala');
-      const _q = _sp.toString();
-      history.replaceState(null, '', location.pathname + (_q ? '?' + _q : ''));
-    }
   }
   window.scrollTo(0, 0);
   const cur = JSON.parse(sessionStorage.getItem('_vst') || '{}');
@@ -700,7 +689,6 @@ function showView(id) {
   // ativa. Carrega os dados da view que acabou de ser ativada também.
   renderTabsRelatorios(id);
   if (id === 'view-historico-clientes') { _hcCarregarMassagistas(); loadHistoricoClientes(); }
-  if (id === 'view-escala') loadEscala();
   if (id === 'view-anamnese-editor') initAnamneseEditor();
   if (id === 'view-pesquisa-editor') initPesquisaEditor();
 }
@@ -1304,11 +1292,6 @@ let _editFeriaId = null;
 
 document.getElementById('btn-open-massagistas').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 document.getElementById('btn-back-historico').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
-document.getElementById('btn-open-escala').addEventListener('click', () => { showView('view-escala'); });
-
-document.getElementById('btn-back-escala').addEventListener('click', () => {
-  showView('view-reservas');
-});
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
 document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
@@ -1343,7 +1326,6 @@ async function loadMassagistas() {
   _massagistas = d.items || [];
   _massagistasLoaded = true;
   renderMassagistas();
-  if (document.getElementById('view-escala')?.style.display !== 'none') renderEscala(_massagistas);
 }
 
 function renderMassagistas() {
@@ -1393,200 +1375,6 @@ function renderMassagistas() {
 }
 
 
-const DISP_DAYS = [
-  { key: 'seg', label: 'Segunda' },
-  { key: 'ter', label: 'Terça'   },
-  { key: 'qua', label: 'Quarta'  },
-  { key: 'qui', label: 'Quinta'  },
-  { key: 'sex', label: 'Sexta'   },
-  { key: 'sab', label: 'Sábado'  },
-  { key: 'dom', label: 'Domingo' },
-];
-
-function _renderDispGrid(disp) {
-  const grid = document.getElementById('mgmt-m-disp-grid');
-  if (!grid) return;
-  grid.innerHTML = DISP_DAYS.map(({ key, label }) => {
-    const faixa = disp?.[key] || '';
-    const [ini, fim] = faixa ? faixa.split('-') : ['08:00', '17:00'];
-    const on = !!faixa;
-    return `<div class="disp-row" data-day="${key}">
-      <input type="checkbox" class="disp-chk" data-day="${key}" ${on ? 'checked' : ''}>
-      <span class="disp-row-label">${label}</span>
-      <div class="disp-row-times">
-        <input type="time" class="disp-ini" data-day="${key}" value="${ini || '08:00'}" min="08:00" max="22:00" ${on ? '' : 'disabled'}>
-        <span class="disp-row-sep">–</span>
-        <input type="time" class="disp-fim" data-day="${key}" value="${fim || '17:00'}" min="08:00" max="22:00" ${on ? '' : 'disabled'}>
-      </div>
-      ${!on ? '<span class="disp-row-off">Folga</span>' : ''}
-    </div>`;
-  }).join('');
-  grid.querySelectorAll('.disp-chk').forEach(chk => {
-    chk.addEventListener('change', function() {
-      const row = this.closest('.disp-row');
-      row.querySelectorAll('input[type=time]').forEach(t => { t.disabled = !this.checked; });
-      let off = row.querySelector('.disp-row-off');
-      if (!this.checked) {
-        if (!off) { off = document.createElement('span'); off.className = 'disp-row-off'; off.textContent = 'Folga padrão semanal'; row.appendChild(off); }
-      } else if (off) off.remove();
-    });
-  });
-}
-
-function _coletarDisp() {
-  const grid = document.getElementById('mgmt-m-disp-grid');
-  if (!grid) return null;
-  const disp = {};
-  const DAY_LABELS = { seg:'Segunda',ter:'Terça',qua:'Quarta',qui:'Quinta',sex:'Sexta',sab:'Sábado',dom:'Domingo' };
-  for (const row of grid.querySelectorAll('.disp-row')) {
-    const day = row.dataset.day;
-    if (!row.querySelector('.disp-chk').checked) continue;
-    const ini = row.querySelector('.disp-ini').value || '08:00';
-    const fim = row.querySelector('.disp-fim').value || '17:00';
-    const iniMin = _hmToMin(ini), fimMin = _hmToMin(fim);
-    if (iniMin < 8 * 60) return { erro: `${DAY_LABELS[day]}: início não pode ser antes das 08:00.` };
-    if (fimMin > 22 * 60) return { erro: `${DAY_LABELS[day]}: fim não pode ser depois das 22:00.` };
-    if (fimMin <= iniMin) return { erro: `${DAY_LABELS[day]}: horário de fim deve ser após o início.` };
-    disp[day] = `${ini}-${fim}`;
-  }
-  return disp;
-}
-
-// ── Exceções pontuais (libera/disponibiliza data+faixa específica) ──
-// Exibidas em bloco único no topo da view-escala, listando exceções ativas
-// de todas as massagistas. Persistência continua via PUT /api/massagistas/:id
-// no campo `excecoes` (JSON na coluna da própria massagista).
-function _hojeISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function _parseExcecoes(raw) {
-  if (!raw) return [];
-  try {
-    const v = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(v) ? v : [];
-  } catch { return []; }
-}
-function _fmtDataBR(iso) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-}
-function renderExcecoesGlobal() {
-  const list = document.getElementById('excecoes-global-list');
-  if (!list) return;
-  const hoje = _hojeISO();
-  const linhas = [];
-  for (const m of (_massagistas || [])) {
-    if (!m.ativo) continue;
-    for (const e of _parseExcecoes(m.excecoes)) {
-      if (!e?.data || e.data < hoje) continue;
-      linhas.push({ mid: m.id, mnome: m.nome, ...e });
-    }
-  }
-  linhas.sort((a, b) => (a.data === b.data ? a.mnome.localeCompare(b.mnome) : a.data.localeCompare(b.data)));
-  if (!linhas.length) {
-    list.innerHTML = '<div class="mgmt-empty">Nenhuma exceção ativa. Liberações são pontuais (valem só na data marcada).</div>';
-    return;
-  }
-  list.innerHTML = '<div style="display:flex;flex-direction:column;gap:.375rem">' + linhas.map(l => {
-    const tipoTxt   = l.tipo === 'disponivel' ? 'Disponibilizar' : 'Liberar (folga)';
-    const tipoClass = l.tipo === 'disponivel' ? 'exc-tipo-disp' : 'exc-tipo-indisp';
-    const horaTxt   = l.tipo === 'disponivel' ? `${l.inicio ?? ''} – ${l.fim ?? ''}` : 'dia todo';
-    return `<div class="exc-row-global">
-      <span class="exc-row-nome">${escHtml(l.mnome)}</span>
-      <span class="exc-row-data">${_fmtDataBR(l.data)}</span>
-      <span class="exc-row-tipo ${tipoClass}">${tipoTxt}</span>
-      <span class="exc-row-hora">${horaTxt}</span>
-      <button type="button" class="btn btn-outline btn-sm" data-act="del-exc-global" data-mid="${l.mid}" data-data="${l.data}" data-ini="${l.inicio ?? ''}" data-fim="${l.fim ?? ''}" title="Remover">×</button>
-    </div>`;
-  }).join('') + '</div>';
-  list.querySelectorAll('[data-act="del-exc-global"]').forEach(btn => {
-    btn.addEventListener('click', () => _excecaoGlobalDel(+btn.dataset.mid, btn.dataset.data, btn.dataset.ini, btn.dataset.fim));
-  });
-}
-async function _excecaoGlobalDel(mid, data, ini, fim) {
-  const m = (_massagistas || []).find(x => x.id === mid);
-  if (!m) { showToast('Massoterapeuta não encontrada.'); return; }
-  const descHora = ini ? ` (${ini}–${fim})` : ' (dia todo)';
-  if (!confirm(`Remover exceção de ${m.nome} em ${_fmtDataBR(data)}${descHora}?`)) return;
-  const atuais = _parseExcecoes(m.excecoes);
-  const novas = atuais.filter(e => !(e?.data === data && (e?.inicio ?? '') === ini && (e?.fim ?? '') === fim));
-  const res = await api(`/api/massagistas/${mid}`, { method: 'PUT', body: JSON.stringify({ nome: m.nome, ativo: m.ativo ? 1 : 0, excecoes: novas }) });
-  if (!res) return;
-  const d = await res.json();
-  if (!d.ok) { showToast(d.error || 'Erro ao remover.'); return; }
-  _massagistasModal = [];
-  loadEscala();
-}
-document.getElementById('btn-add-excecao-global')?.addEventListener('click', () => {
-  const sel = document.getElementById('mgmt-exc-mass');
-  const err = document.getElementById('mgmt-exc-err');
-  if (!sel) return;
-  err.textContent = '';
-  const ativas = (_massagistas || []).filter(m => m.ativo);
-  if (!ativas.length) { showToast('Nenhuma massoterapeuta ativa.'); return; }
-  sel.innerHTML = ativas.map(m => `<option value="${m.id}">${escHtml(m.nome)}</option>`).join('');
-  document.getElementById('mgmt-exc-data').value = _hojeISO();
-  document.getElementById('mgmt-exc-tipo').value = 'indisponivel';
-  document.getElementById('mgmt-exc-ini').value = '08:00';
-  document.getElementById('mgmt-exc-fim').value = '22:00';
-  _syncExcTipo();
-  _modalOpen = true;
-  document.getElementById('mgmt-exc-overlay').style.display = 'flex';
-  setTimeout(() => sel.focus(), 50);
-});
-function _closeMgmtExc() {
-  _modalOpen = false;
-  document.getElementById('mgmt-exc-overlay').style.display = 'none';
-}
-function _syncExcTipo() {
-  const tipo = document.getElementById('mgmt-exc-tipo')?.value;
-  const row  = document.getElementById('mgmt-exc-horario-row');
-  if (row) row.style.display = tipo === 'disponivel' ? 'grid' : 'none';
-}
-document.getElementById('mgmt-exc-x')?.addEventListener('click', _closeMgmtExc);
-document.getElementById('mgmt-exc-cancelar')?.addEventListener('click', _closeMgmtExc);
-document.getElementById('mgmt-exc-tipo')?.addEventListener('change', _syncExcTipo);
-document.getElementById('mgmt-exc-salvar')?.addEventListener('click', async () => {
-  const err = document.getElementById('mgmt-exc-err');
-  err.textContent = '';
-  const mid = +document.getElementById('mgmt-exc-mass').value;
-  const data = document.getElementById('mgmt-exc-data').value;
-  const tipo = document.getElementById('mgmt-exc-tipo').value;
-  const inicio = tipo === 'disponivel' ? document.getElementById('mgmt-exc-ini').value : null;
-  const fim    = tipo === 'disponivel' ? document.getElementById('mgmt-exc-fim').value  : null;
-  if (!mid) { err.textContent = 'Selecione a massoterapeuta.'; return; }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { err.textContent = 'Data inválida.'; return; }
-  if (data < _hojeISO()) { err.textContent = 'Data não pode ser no passado.'; return; }
-  if (tipo === 'disponivel') {
-    if (!inicio || !fim) { err.textContent = 'Preencha início e fim.'; return; }
-    const iniMin = _hmToMin(inicio), fimMin = _hmToMin(fim);
-    if (iniMin < 8 * 60) { err.textContent = 'Início não pode ser antes das 08:00.'; return; }
-    if (fimMin > 22 * 60) { err.textContent = 'Fim não pode ser depois das 22:00.'; return; }
-    if (fimMin <= iniMin) { err.textContent = 'Fim deve ser após o início.'; return; }
-  }
-  const m = (_massagistas || []).find(x => x.id === mid);
-  if (!m) { err.textContent = 'Massoterapeuta não encontrada.'; return; }
-  const atuais = _parseExcecoes(m.excecoes);
-  if (atuais.some(e => e?.data === data && (e?.inicio ?? '') === (inicio ?? '') && (e?.fim ?? '') === (fim ?? ''))) {
-    err.textContent = 'Já existe exceção igual para essa massoterapeuta.'; return;
-  }
-  if (atuais.length >= 365) { err.textContent = 'Máximo de 365 exceções por massoterapeuta.'; return; }
-  const novas = [...atuais, { data, tipo, inicio, fim }];
-  const btn = document.getElementById('mgmt-exc-salvar');
-  btn.disabled = true;
-  try {
-    const res = await api(`/api/massagistas/${mid}`, { method: 'PUT', body: JSON.stringify({ nome: m.nome, ativo: m.ativo ? 1 : 0, excecoes: novas }) });
-    if (!res) return;
-    const d = await res.json();
-    if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
-    _massagistasModal = [];
-    _closeMgmtExc();
-    loadEscala();
-  } finally { btn.disabled = false; }
-});
-
 window.openEditMassagista = (id, nome) => {
   _editMId = id;
   document.getElementById('mgmt-m-sub').textContent = nome;
@@ -1601,8 +1389,6 @@ window.openEditMassagista = (id, nome) => {
   } else {
     biEl.innerHTML = '<span class="hub-bilingue-none">—</span>';
   }
-  const disp = m?.disponibilidade ? (typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade) : null;
-  _renderDispGrid(disp);
   // Reset e carrega férias
   _editFeriaId = null;
   document.getElementById('mgmt-m-ferias-form').style.display = 'none';
@@ -1719,26 +1505,6 @@ document.getElementById('mgmt-m-ferias-form-save').addEventListener('click', asy
 function closeMgmtM() { _modalOpen = false; document.getElementById('mgmt-m-overlay').style.display = 'none'; _editMId = null; }
 document.getElementById('mgmt-m-x').addEventListener('click', closeMgmtM);
 document.getElementById('mgmt-m-cancelar').addEventListener('click', closeMgmtM);
-document.getElementById('mgmt-m-salvar').addEventListener('click', async () => {
-  const err = document.getElementById('mgmt-m-err');
-  err.textContent = '';
-  const btn = document.getElementById('mgmt-m-salvar');
-  btn.disabled = true;
-  try {
-    const disponibilidade = _coletarDisp();
-    if (disponibilidade?.erro) { err.textContent = disponibilidade.erro; btn.disabled = false; return; }
-    const m = _massagistas.find(x => x.id === _editMId);
-    const res = await api(`/api/massagistas/${_editMId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ nome: m?.nome || '', disponibilidade })
-    });
-    if (!res) return;
-    const d = await res.json();
-    if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
-    _massagistasModal = [];
-    closeMgmtM(); loadMassagistas();
-  } finally { btn.disabled = false; }
-});
 
 // ── PIN de acesso mobile ──
 let _pinMId = null;
@@ -1773,174 +1539,6 @@ document.getElementById('mgmt-pin-salvar').addEventListener('click', async () =>
     showToast('PIN definido com sucesso.');
   } finally { btn.disabled = false; }
 });
-
-async function loadEscala() {
-  let res, d;
-  try {
-    res = await api('/api/massagistas');
-    if (!res) return;
-    d = await res.json();
-  } catch {
-    document.getElementById('escala-table-wrap').innerHTML = '<div class="mgmt-empty">Erro ao carregar escala.</div>';
-    return;
-  }
-  _massagistas = d.items || [];
-  _massagistasLoaded = true;
-  renderEscala(_massagistas);
-  renderExcecoesGlobal();
-}
-
-function _escalaGetDias(ano, mes) {
-  const ultimoDia = new Date(ano, mes + 1, 0).getDate();
-  const DOW_KEYS   = ['dom','seg','ter','qua','qui','sex','sab'];
-  const DOW_ABREV  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const hoje = new Date();
-  const dias = [];
-  for (let d = 1; d <= ultimoDia; d++) {
-    const date = new Date(ano, mes, d);
-    const dowIdx = date.getDay();
-    const iso = `${ano}-${String(mes + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    dias.push({
-      num: d, iso,
-      dowKey: DOW_KEYS[dowIdx],
-      dowAbrev: DOW_ABREV[dowIdx],
-      isHoje: d === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear(),
-      isFds: dowIdx === 0 || dowIdx === 6,
-    });
-  }
-  return dias;
-}
-
-function _escalaGetCellInfo(m, dia) {
-  let disp = null;
-  if (m.disponibilidade) {
-    try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
-    catch { disp = null; }
-  }
-  let excArr = [];
-  if (m.excecoes) {
-    try {
-      const v = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes;
-      excArr = Array.isArray(v) ? v : [];
-    } catch { excArr = []; }
-  }
-
-  const excsDoDia   = excArr.filter(e => e?.data === dia.iso);
-  const indispExcs  = excsDoDia.filter(e => e.tipo === 'indisponivel');
-  const dispExcs    = excsDoDia.filter(e => e.tipo === 'disponivel');
-  const faixaSemanal = disp?.[dia.dowKey] || null;
-
-  // Sem cadastro algum: compat (sempre disponível)
-  if (!disp && !excArr.length) return { tipo: 'compat', texto: '✓', title: 'Sem escala configurada' };
-
-  // Exceção disponivel em dia fora da escala semanal
-  if (!faixaSemanal && dispExcs.length) {
-    const e = dispExcs[0];
-    const _fmtH2 = s => (s && s.endsWith(':00')) ? s.slice(0, -3) : (s || '');
-    return { tipo: 'extra', texto: `${_fmtH2(e.inicio)}–${_fmtH2(e.fim)}`, title: `Exceção: disponível ${e.inicio}–${e.fim}` };
-  }
-
-  // Não trabalha neste dia da semana
-  if (!faixaSemanal) return { tipo: 'off', texto: null, title: null };
-
-  const [escIniStr, escFimStr] = faixaSemanal.split('-');
-  const escIniMin = _hmToMin(escIniStr), escFimMin = _hmToMin(escFimStr);
-  const _fmtH = s => (s && s.endsWith(':00')) ? s.slice(0, -3) : (s || '');
-  const textoNormal = `${_fmtH(escIniStr)}–${_fmtH(escFimStr)}`;
-  const titleNormal = `${escIniStr}–${escFimStr}`;
-
-  // Exceção que cobre totalmente a escala = folga
-  const fullBlock = indispExcs.some(e => {
-    if (!e.inicio || !e.fim) return true;
-    const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
-    return !Number.isNaN(eIni) && !Number.isNaN(eFim) && eIni <= escIniMin && eFim >= escFimMin;
-  });
-  if (fullBlock) return { tipo: 'folga', texto: 'folga', title: 'Folga (exceção)' };
-
-  // Tem exceção parcial no dia (✦ adicionado via CSS ::after)
-  if (excsDoDia.length) return { tipo: 'exc', texto: textoNormal, title: `${titleNormal} — há exceção neste dia` };
-
-  return { tipo: 'on', texto: textoNormal, title: titleNormal };
-}
-
-function renderEscala(massagistas) {
-  const wrap = document.getElementById('escala-table-wrap');
-  if (!wrap) return;
-  const ativas = massagistas.filter(m => m.ativo);
-  if (!ativas.length) { wrap.innerHTML = '<div class="mgmt-empty">Nenhuma massoterapeuta ativa.</div>'; return; }
-
-  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const dias = _escalaGetDias(_escalaAno, _escalaMes);
-
-  const _cellHtml = (m, dia) => {
-    const info = _escalaGetCellInfo(m, dia);
-    const ta = info.title ? ` title="${escHtml(info.title)}"` : '';
-    if (info.tipo === 'off')    return `<span class="escala-td-off"${ta}>—</span>`;
-    if (info.tipo === 'folga')  return `<span class="escala-td-folga"${ta}>folga</span>`;
-    if (info.tipo === 'compat') return `<span class="escala-td-on"${ta}><span class="et-ini">✓</span></span>`;
-    // on / exc / extra: duas linhas (início e fim)
-    const parts = (info.texto || '').split('–');
-    const ini = parts[0] || '', fim = parts[1] || '';
-    const cls = info.tipo === 'extra' ? 'escala-td-extra' : info.tipo === 'exc' ? 'escala-td-exc' : 'escala-td-on';
-    return `<span class="${cls}"${ta}><span class="et-ini">${ini}</span>${fim ? `<span class="et-fim">${fim}</span>` : ''}</span>`;
-  };
-
-  const navWrap = document.getElementById('escala-nav-wrap');
-  if (navWrap) navWrap.innerHTML = `
-    <div class="escala-nav">
-      <button class="btn btn-outline btn-sm" id="escala-prev">◀</button>
-      <span class="escala-nav-label">${MESES[_escalaMes]} ${_escalaAno}</span>
-      <button class="btn btn-outline btn-sm" id="escala-next">▶</button>
-    </div>`;
-
-  wrap.innerHTML = `
-    <table class="escala-table">
-      <thead>
-        <tr>
-          <th>Profissional</th>
-          ${dias.map(d => `<th class="${d.isHoje ? 'escala-th-hoje' : ''}${d.isFds ? ' escala-th-fds' : ''}" title="${d.dowAbrev} ${String(d.num).padStart(2,'0')}"><span class="et-dia-num">${String(d.num).padStart(2,'0')}</span><span class="et-dia-dow">${d.dowAbrev}</span></th>`).join('')}
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${ativas.map(m => `
-          <tr>
-            <td title="${escHtml(m.nome)}">${escHtml(m.nome)}</td>
-            ${dias.map(dia => {
-              const cls = [(dia.isHoje ? 'escala-td-hoje' : ''), (dia.isFds ? 'escala-td-fds' : '')].filter(Boolean).join(' ');
-              return `<td${cls ? ` class="${cls}"` : ''}>${_cellHtml(m, dia)}</td>`;
-            }).join('')}
-            <td><button class="btn btn-outline btn-sm" style="white-space:nowrap" data-action="edit-mass-escala" data-id="${m.id}">Editar</button></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-    <div class="escala-legenda">
-      <span class="escala-legenda-item"><span class="escala-td-on">08–17</span> escala normal</span>
-      <span class="escala-legenda-item"><span class="escala-td-exc">08–17</span> tem exceção</span>
-      <span class="escala-legenda-item"><span class="escala-td-extra">09–13</span> disponível extra</span>
-      <span class="escala-legenda-item"><span class="escala-td-folga">folga</span> bloqueio</span>
-      <span class="escala-legenda-item"><span class="escala-td-off">—</span> não trabalha</span>
-    </div>`;
-
-  wrap.querySelectorAll('[data-action="edit-mass-escala"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const m = _massagistas.find(x => x.id === +btn.dataset.id);
-      if (m) openEditMassagista(m.id, m.nome);
-    });
-  });
-
-  document.getElementById('escala-prev')?.addEventListener('click', () => {
-    _escalaMes--;
-    if (_escalaMes < 0) { _escalaMes = 11; _escalaAno--; }
-    renderEscala(_massagistas);
-  });
-  document.getElementById('escala-next')?.addEventListener('click', () => {
-    _escalaMes++;
-    if (_escalaMes > 11) { _escalaMes = 0; _escalaAno++; }
-    renderEscala(_massagistas);
-  });
-
-}
 
 // ── Tipos de Tratamento ──
 let _tabTipos = 'ativos';
@@ -2725,16 +2323,10 @@ async function loadMassagistasModal() {
   _renderMassagistasModal();
 }
 
-function _hmToMin(s) {
-  if (!s) return NaN;
-  const [h, m] = s.split(':').map(Number);
-  return h * 60 + m;
-}
-
 // ── Disponibilidade por escala MENSAL (fonte da verdade do dia real) ─────────
 // Consulta /api/escala-spa/disponibilidade e cacheia por (data, horas). Enquanto
-// a resposta não chega (ou se falhar), o filtro semanal local continua valendo
-// (fail-open) — a operação nunca fica travada e o backend revalida no POST.
+// a resposta não chega (ou se falhar), todas aparecem (fail-open) — a operação
+// nunca fica travada e o backend revalida no POST.
 let _escalaAvalKey = null;
 let _escalaAvalMap = null;
 let _escalaAvalLancada = null;
@@ -2766,69 +2358,13 @@ function _escalaFiltra(m, data, horaInicio, horaFim) {
     const av = _escalaAvalMap.get(m.id);
     if (av) return av.disponivel;
   }
-  return _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim);
+  return true; // fail-open: sem aval carregada, backend valida no POST
 }
 
 function _escalaAvisoHtml(data, horaInicio, horaFim) {
   if (!data || _escalaAvalLancada !== false) return '';
   if (_escalaAvalKey !== `${data}|${horaInicio || ''}|${horaFim || ''}`) return '';
   return '<div class="res-cb-opt cb-empty">⚠ Escala mensal não lançada para esta data — usando padrão semanal</div>';
-}
-
-function _massagistaTrabalhaNoHorario(m, data, horaInicio, horaFim) {
-  // Sem escala definida: sempre disponível (compat preservada)
-  if (!m.disponibilidade && !m.excecoes) return true;
-  if (!data) return true;
-
-  // Exceções têm prioridade sobre a escala semanal naquela data específica.
-  // Regras:
-  //   - "indisponivel" que sobrepõe a faixa pedida -> bloqueia (safety first)
-  //   - "disponivel" que CONTÉM totalmente a faixa pedida -> libera (override aditivo)
-  let excArr = [];
-  if (m.excecoes) {
-    try { excArr = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excArr = []; }
-    if (!Array.isArray(excArr)) excArr = [];
-  }
-  const resIni = horaInicio ? _hmToMin(horaInicio) : null;
-  const resFim = horaFim ? _hmToMin(horaFim) : null;
-  const excsDoDia = excArr.filter(e => e?.data === data);
-  if (excsDoDia.length) {
-    for (const e of excsDoDia) {
-      if (e.tipo !== 'indisponivel') continue;
-      if (!e.inicio || !e.fim) return false;
-      const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
-      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
-      if (resIni === null) return false;
-      const rFim = resFim ?? resIni;
-      // Bloqueia se há qualquer overlap entre [resIni, rFim] e [eIni, eFim]
-      if (resIni < eFim && rFim > eIni) return false;
-    }
-    for (const e of excsDoDia) {
-      if (e.tipo !== 'disponivel') continue;
-      const eIni = _hmToMin(e.inicio), eFim = _hmToMin(e.fim);
-      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
-      if (resIni === null) return true;
-      const rFim = resFim ?? resIni;
-      if (resIni >= eIni && rFim <= eFim) return true;
-    }
-  }
-
-  // Fallback: escala semanal. Sem disponibilidade = sempre disponível (compat).
-  if (!m.disponibilidade) return true;
-  let disp;
-  try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
-  catch { return true; }
-  if (!disp) return true;
-  const DOW_KEYS = ['dom','seg','ter','qua','qui','sex','sab'];
-  const dow = DOW_KEYS[new Date(data + 'T12:00:00').getDay()];
-  const faixa = disp[dow];
-  if (!faixa) return false;
-  if (!horaInicio) return true;
-  const parts = faixa.split('-');
-  if (parts.length !== 2) return true;
-  const escIni = _hmToMin(parts[0].trim());
-  const escFim = _hmToMin(parts[1].trim());
-  return resIni >= escIni && (resFim === null || resFim <= escFim);
 }
 
 function _renderMassagistasModal() {

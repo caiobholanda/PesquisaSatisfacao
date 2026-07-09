@@ -850,7 +850,6 @@ function seedMassoterapeutasGranSpa() {
   // Apaga as antigas (sem matrícula) — apagamento permanente conforme decisão do admin
   db.prepare('DELETE FROM massagistas').run();
 
-  const DISP_DEFAULT = JSON.stringify({ seg: '08:00-22:00', ter: '08:00-22:00', qua: '08:00-22:00', qui: '08:00-22:00', sex: '08:00-22:00', sab: '08:00-22:00', dom: '08:00-22:00' });
   const profs = [
     { mat: '0010001573', nome: 'GERMANA LIMA DA SILVA',                     esp: 'MASSOTERAPEUTA BILINGUE PL',   vinc: 'Pleno',     bil: 1 },
     { mat: '0010002052', nome: 'ISADORA MARIA SOUSA BEZERRA DE MENEZES',    esp: 'MASSOTERAPEUTA PART TIME',     vinc: 'Part Time', bil: 0 },
@@ -860,10 +859,10 @@ function seedMassoterapeutasGranSpa() {
     { mat: '0010001881', nome: 'MAYARA DOS SANTOS DIAS',                    esp: 'MASSOTERAPEUTA PL',            vinc: 'Pleno',     bil: 0 },
   ];
   const stmt = db.prepare(
-    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade, ativo)
-     VALUES (?, ?, ?, 'Massoterapeuta', ?, ?, ?, 1)`
+    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, ativo)
+     VALUES (?, ?, ?, 'Massoterapeuta', ?, ?, 1)`
   );
-  for (const p of profs) stmt.run(p.nome, p.mat, p.esp, p.vinc, p.bil, DISP_DEFAULT);
+  for (const p of profs) stmt.run(p.nome, p.mat, p.esp, p.vinc, p.bil);
 }
 
 // ── Massagistas ──
@@ -872,7 +871,7 @@ function seedMassoterapeutasGranSpa() {
 export function listarMassagistas() {
   return getDb().prepare(`
     SELECT id, nome, ativo, created_at, matricula, especialidade_original,
-           funcao, vinculo, bilingue, disponibilidade, excecoes, padrao_entrada
+           funcao, vinculo, bilingue, padrao_entrada
     FROM massagistas
     ORDER BY nome ASC
   `).all();
@@ -929,7 +928,7 @@ export function listarMassagistasComStats() {
   return getDb().prepare(`
     SELECT
       m.id, m.nome, m.ativo, m.created_at,
-      m.matricula, m.especialidade_original, m.funcao, m.vinculo, m.bilingue, m.disponibilidade, m.excecoes,
+      m.matricula, m.especialidade_original, m.funcao, m.vinculo, m.bilingue,
       COUNT(f.id) AS total_avaliacoes,
       SUM(CASE WHEN f.recomenda = 'sim' THEN 1 ELSE 0 END) AS rec_sim,
       SUM(CASE WHEN f.recomenda = 'nao' THEN 1 ELSE 0 END) AS rec_nao
@@ -940,16 +939,16 @@ export function listarMassagistasComStats() {
   `).all();
 }
 export function inserirMassagista(nome, opts = {}) {
-  const { matricula = null, especialidade_original = null, funcao = 'Massoterapeuta', vinculo = null, bilingue = 0, disponibilidade = null, excecoes = null } = opts;
+  const { matricula = null, especialidade_original = null, funcao = 'Massoterapeuta', vinculo = null, bilingue = 0 } = opts;
   return getDb().prepare(
-    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue, disponibilidade, excecoes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(nome.trim(), matricula, especialidade_original, funcao, vinculo, bilingue ? 1 : 0, disponibilidade, excecoes).lastInsertRowid;
+    `INSERT INTO massagistas (nome, matricula, especialidade_original, funcao, vinculo, bilingue)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(nome.trim(), matricula, especialidade_original, funcao, vinculo, bilingue ? 1 : 0).lastInsertRowid;
 }
 export function atualizarMassagista(id, nome, ativo, opts = {}) {
   const sets = ['nome=?', 'ativo=?'];
   const vals = [nome.trim(), ativo];
-  for (const k of ['matricula', 'especialidade_original', 'funcao', 'vinculo', 'disponibilidade', 'excecoes']) {
+  for (const k of ['matricula', 'especialidade_original', 'funcao', 'vinculo']) {
     if (opts[k] !== undefined) { sets.push(`${k}=?`); vals.push(opts[k]); }
   }
   if (opts.bilingue !== undefined) { sets.push('bilingue=?'); vals.push(opts.bilingue ? 1 : 0); }
@@ -1059,9 +1058,9 @@ const TURNO_STATUS_MOTIVO = {
 };
 
 // Fonte da verdade do dia real: escala mensal (turno_massagista). Fallback:
-// escala semanal (disponibilidade+excecoes — mesma regra do modal de reservas)
-// quando a data não tem NENHUM turno lançado. Sem nada cadastrado → liberada
-// com aviso, para a operação nunca ficar travada por falta de escala digitada.
+// padrão semanal (padrao_entrada — a engrenagem "Padrões semanais" da escala
+// mensal) quando a data não tem NENHUM turno lançado. Sem padrão cadastrado →
+// liberada com aviso, para a operação nunca ficar travada por falta de escala.
 export function avaliarEscalaMassagista(m, data, horaInicio, horaFim, ctx) {
   const c = ctx || contextoEscalaDia(data);
   const resIni = _hmEsc(horaInicio);
@@ -1099,48 +1098,25 @@ export function avaliarEscalaMassagista(m, data, horaInicio, horaFim, ctx) {
     return { disponivel: false, fonte: 'mensal', motivo: 'não escalada no dia' };
   }
 
-  // Fallback semanal — espelho de _massagistaTrabalhaNoHorario (public/js/admin.js)
-  if (!m.disponibilidade && !m.excecoes) {
-    return { disponivel: true, fonte: 'sem-escala', aviso: 'escala não lançada para esta data' };
-  }
-  let excArr = [];
-  if (m.excecoes) {
-    try { excArr = typeof m.excecoes === 'string' ? JSON.parse(m.excecoes) : m.excecoes; } catch { excArr = []; }
-    if (!Array.isArray(excArr)) excArr = [];
-  }
-  const excsDoDia = excArr.filter(e => e?.data === data);
-  if (excsDoDia.length) {
-    for (const e of excsDoDia) {
-      if (e.tipo !== 'indisponivel') continue;
-      if (!e.inicio || !e.fim) return { disponivel: false, fonte: 'semanal', motivo: 'folga (exceção)' };
-      const eIni = _hmEsc(e.inicio), eFim = _hmEsc(e.fim);
-      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
-      if (Number.isNaN(resIni)) return { disponivel: false, fonte: 'semanal', motivo: 'indisponível (exceção)' };
-      if (resIni < eFim && rFim > eIni) return { disponivel: false, fonte: 'semanal', motivo: 'indisponível (exceção)' };
-    }
-    for (const e of excsDoDia) {
-      if (e.tipo !== 'disponivel') continue;
-      const eIni = _hmEsc(e.inicio), eFim = _hmEsc(e.fim);
-      if (Number.isNaN(eIni) || Number.isNaN(eFim)) continue;
-      if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'semanal' };
-      if (resIni >= eIni && rFim <= eFim) return { disponivel: true, fonte: 'semanal' };
-    }
-  }
-  if (!m.disponibilidade) return { disponivel: true, fonte: 'semanal' };
-  let disp;
-  try { disp = typeof m.disponibilidade === 'string' ? JSON.parse(m.disponibilidade) : m.disponibilidade; }
-  catch { return { disponivel: true, fonte: 'semanal' }; }
-  if (!disp) return { disponivel: true, fonte: 'semanal' };
+  // Fallback: padrão semanal (padrao_entrada da engrenagem "Padrões semanais").
+  // Entrada "HH:MM" → janela [entrada, min(entrada+9h, 22:00)]; "FOLGA" →
+  // indisponível; sem padrão/dia nulo → liberada com aviso (nunca travar).
+  const semEscala = { disponivel: true, fonte: 'sem-escala', aviso: 'escala não lançada para esta data' };
+  let padrao = null;
+  try {
+    padrao = typeof m.padrao_entrada === 'string' ? JSON.parse(m.padrao_entrada) : m.padrao_entrada;
+  } catch { padrao = null; }
+  if (!padrao || typeof padrao !== 'object' || Array.isArray(padrao)) return semEscala;
   const dowKey = ['dom','seg','ter','qua','qui','sex','sab'][new Date(data + 'T12:00:00Z').getUTCDay()];
-  const faixaSem = disp[dowKey];
-  if (!faixaSem) return { disponivel: false, fonte: 'semanal', motivo: 'folga semanal' };
-  if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
-  const parts = String(faixaSem).split('-');
-  if (parts.length !== 2) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
-  const eIni = _hmEsc(parts[0].trim()), eFim = _hmEsc(parts[1].trim());
-  if (Number.isNaN(eIni) || Number.isNaN(eFim)) return { disponivel: true, fonte: 'semanal', faixa: faixaSem };
-  const ok = resIni >= eIni && rFim <= eFim;
-  return { disponivel: ok, fonte: 'semanal', motivo: ok ? null : 'fora do horário semanal', faixa: faixaSem };
+  const val = padrao[dowKey];
+  if (val === 'FOLGA') return { disponivel: false, fonte: 'padrao', motivo: 'folga (padrão semanal)' };
+  const pIni = _hmEsc(val);
+  if (Number.isNaN(pIni)) return semEscala;
+  const pFim = Math.min(pIni + JORNADA_MIN, SPA_FIM_MIN);
+  const faixa = `${_minToHm(pIni)}-${_minToHm(pFim)}`;
+  if (Number.isNaN(resIni)) return { disponivel: true, fonte: 'padrao', faixa };
+  const ok = resIni >= pIni && rFim <= pFim;
+  return { disponivel: ok, fonte: 'padrao', motivo: ok ? null : 'fora do padrão semanal', faixa };
 }
 
 export function listarReservasMassagistaData(massagista_id, data) {
@@ -2879,11 +2855,11 @@ export function buscarMassagistaPorNome(nome) {
   return getDb().prepare("SELECT id, nome, pin_hash, ativo FROM massagistas WHERE LOWER(nome) = LOWER(?) LIMIT 1").get(nome) || null;
 }
 export function buscarMassagistaPorId(id) {
-  return getDb().prepare("SELECT id, nome, ativo, disponibilidade FROM massagistas WHERE id = ?").get(id) || null;
+  return getDb().prepare("SELECT id, nome, ativo FROM massagistas WHERE id = ?").get(id) || null;
 }
 export function buscarMassagistaPorEmail(email) {
   if (!email) return null;
-  return getDb().prepare("SELECT id, nome, ativo, disponibilidade FROM massagistas WHERE LOWER(email) = LOWER(?) LIMIT 1").get(email) || null;
+  return getDb().prepare("SELECT id, nome, ativo FROM massagistas WHERE LOWER(email) = LOWER(?) LIMIT 1").get(email) || null;
 }
 export function setMassagistaPinHash(id, pinHash) {
   getDb().prepare("UPDATE massagistas SET pin_hash = ? WHERE id = ?").run(pinHash, id);

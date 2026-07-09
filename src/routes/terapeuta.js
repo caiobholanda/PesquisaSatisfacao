@@ -55,12 +55,10 @@ router.post('/logout', (_req, res) => {
 router.get('/me', requireTerapeuta, (req, res) => {
   const m = buscarMassagistaPorId(req.user.massagista_id);
   if (!m || !m.ativo) return res.status(401).json({ ok: false, error: 'Sessão inválida' });
-  let disponibilidade = null;
-  try { disponibilidade = m.disponibilidade ? JSON.parse(m.disponibilidade) : null; } catch {}
-  res.json({ ok: true, id: m.id, nome: m.nome, disponibilidade });
+  res.json({ ok: true, id: m.id, nome: m.nome });
 });
 
-// Escala resolvida por dia (fonte da verdade: mensal → férias → semanal).
+// Escala resolvida por dia (fonte da verdade: mensal → férias → padrão semanal).
 // Escopada ao token — mesma defesa anti-IDOR da agenda. Usada pelo banner
 // "Hoje você entra às X" do app da terapeuta.
 router.get('/escala', requireTerapeuta, (req, res) => {

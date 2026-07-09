@@ -350,14 +350,7 @@ button, input { font-family: inherit; }
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
   let _escalaDias = {}; // iso → {disponivel, fonte, faixa, motivo} — escala resolvida pelo servidor
-  const DIAS_KEY    = ['dom','seg','ter','qua','qui','sex','sab'];
   const DIAS_LABEL  = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-  function escalaDia(disponibilidade, iso) {
-    if (!disponibilidade) return null;
-    const [y,m,d] = iso.split('-');
-    const key = DIAS_KEY[new Date(+y,+m-1,+d).getDay()];
-    return disponibilidade[key] || null;
-  }
   function renderEscalaBanner(iso) {
     const banner = $('tx-escala-banner');
     const txt = $('tx-escala-texto');
@@ -368,7 +361,7 @@ button, input { font-family: inherit; }
     const prefixo = ehHoje ? 'Hoje' : `Na ${DIAS_LABEL[dowIndex]}`;
 
     // Fonte da verdade: escala resolvida pelo servidor (mensal → férias →
-    // semanal). Fallback: disponibilidade semanal local (comportamento antigo).
+    // padrão semanal). Sem resposta do servidor → banner oculto.
     const av = _escalaDias[iso];
     if (av) {
       if (av.faixa) {
@@ -393,16 +386,8 @@ button, input { font-family: inherit; }
       return;
     }
 
-    // Fallback antigo (endpoint indisponível): escala semanal local
-    if (!_me?.disponibilidade) { banner.style.display = 'none'; return; }
-    const faixa = escalaDia(_me.disponibilidade, iso);
-    if (!faixa) {
-      txt.innerHTML = `<span class="tx-escala-folga">${prefixo} é dia de folga</span>`;
-    } else {
-      const [ini, fim] = faixa.split('-').map(s => s.trim());
-      txt.innerHTML = `${prefixo} você entra às <strong>${ini}</strong> e sai às <strong>${fim}</strong>`;
-    }
-    banner.style.display = 'flex';
+    // Sem dados do servidor (fetch da escala falhou): oculta o banner
+    banner.style.display = 'none';
   }
 
   // ───── LOGIN ─────
@@ -423,7 +408,7 @@ button, input { font-family: inherit; }
       const r = await fetch('/api/terapeuta/me');
       if (r.ok) {
         _me = await r.json();
-        if (_me?.ok) { _me = { id: _me.id, nome: _me.nome, disponibilidade: _me.disponibilidade }; return entrarApp(); }
+        if (_me?.ok) { _me = { id: _me.id, nome: _me.nome }; return entrarApp(); }
       }
     } catch {}
     mostrarLogin();
@@ -457,7 +442,7 @@ button, input { font-family: inherit; }
       try {
         const m = await fetch('/api/terapeuta/me');
         const md = await m.json();
-        if (md?.ok) _me = { id: md.id, nome: md.nome, disponibilidade: md.disponibilidade };
+        if (md?.ok) _me = { id: md.id, nome: md.nome };
         else _me = { nome: d.nome };
       } catch { _me = { nome: d.nome }; }
       $('tx-pin').value = '';

@@ -105,7 +105,6 @@
           "<div class=\"admin-dropdown-menu\" id=\"spa-dropdown-menu\">" +
             item("btn-open-massagistas", "Profissionais") +
             item("btn-open-tipos", "Tratamentos") +
-            item("btn-open-escala", "Escala de Trabalho") +
             escalaItem +
           "</div>" +
         "</div>" +
