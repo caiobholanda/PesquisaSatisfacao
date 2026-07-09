@@ -1453,7 +1453,7 @@ function _renderFeriasList() {
   el.querySelectorAll('.ferias-del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const fid = parseInt(btn.dataset.fid);
-      if (!confirm('Excluir este período de férias?')) return;
+      if (!await confirmarAcao({ titulo: 'Excluir período de férias?', mensagem: 'Este período será removido permanentemente.', btnConfirmar: 'Excluir', perigoso: true })) return;
       const res = await api(`/api/massagistas/${_editMId}/ferias/${fid}`, { method: 'DELETE' });
       if (!res) return;
       const d = await res.json();
@@ -4191,7 +4191,7 @@ async function handleQpAction(act, id) {
     return loadPesquisasAdmin();
   }
   if (act === 'despub') {
-    if (!confirm('Despublicar esta pesquisa? Apps que a consomem deixarão de recebê-la.')) return;
+    if (!await confirmarAcao({ titulo: 'Despublicar pesquisa?', mensagem: 'Apps que a consomem deixarão de recebê-la imediatamente.', btnConfirmar: 'Despublicar', perigoso: true })) return;
     await apiSend('POST', `/api/qualidade/admin/pesquisas/${id}/despublicar`);
     return loadPesquisasAdmin();
   }
@@ -4593,7 +4593,7 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
 });
 
 window.deletarUsuario = async (id, nome) => {
-  if (!confirm(`Remover usuário "${nome}"?`)) return;
+  if (!await confirmarAcao({ titulo: `Remover "${nome}"?`, mensagem: 'O usuário perderá acesso ao sistema. Esta ação não pode ser desfeita.', btnConfirmar: 'Remover', perigoso: true })) return;
   const r = await api(`/api/auth/usuarios/${id}`, { method:'DELETE' });
   if (!r) return;
   const d = await r.json();
@@ -8786,7 +8786,7 @@ document.getElementById('btn-fechar-lista-bloqueios')?.addEventListener('click',
 });
 
 async function removerBloqueioUI(id) {
-  if (!confirm('Remover este bloqueio?')) return;
+  if (!await confirmarAcao({ titulo: 'Remover bloqueio?', mensagem: 'O período de bloqueio será cancelado e a sala ficará disponível.', btnConfirmar: 'Remover', perigoso: true })) return;
   const r = await api(`/api/admin/salas/bloqueios/${id}`, { method: 'DELETE' });
   const d = await r.json();
   if (d.ok) {
@@ -8798,7 +8798,7 @@ async function removerBloqueioUI(id) {
 async function desbloquearSala(bloqueioId, salaId) {
   const s = _salasData.find(x => x.id === salaId);
   const nome = s?.nome || `Sala ${salaId}`;
-  if (!confirm(`Desbloquear "${nome}"? O bloqueio atual será removido.`)) return;
+  if (!await confirmarAcao({ titulo: `Desbloquear "${nome}"?`, mensagem: 'O bloqueio atual será removido e a sala ficará disponível para novas reservas.', btnConfirmar: '🔓 Desbloquear' })) return;
   try {
     const r = await api(`/api/admin/salas/bloqueios/${bloqueioId}`, { method: 'DELETE' });
     if (!r) return;
