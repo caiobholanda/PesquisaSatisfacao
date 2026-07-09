@@ -4744,99 +4744,104 @@
   <div id="salas-grid" class="salas-grid"></div>
 </div>
 
-<!-- CSS: cards de sala v2 -->
+<!-- CSS: cards de sala v3 -->
 <style>
-/* Padding fora do main — herda mesma geometria das outras views */
-#view-salas { padding: 1.5rem 1.5rem 2.5rem; max-width: 1920px; margin: 0 auto; }
+#view-salas { padding:1.5rem 1.5rem 2.5rem; max-width:1920px; margin:0 auto; }
+
 /* Stats bar */
-.salas-stats { display:flex; gap:.75rem; margin-bottom:1.5rem; flex-wrap:wrap; }
-.sala-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.85rem 1.25rem; flex:1; min-width:110px; }
-.sala-stat--ok  { border-left:3px solid var(--success); }
-.sala-stat--danger { border-left:3px solid var(--danger); }
-.sala-stat-val  { font-size:2rem; font-weight:800; color:var(--text); line-height:1; font-variant-numeric:tabular-nums; }
+.salas-stats { display:flex; gap:.6rem; margin-bottom:1.75rem; flex-wrap:wrap; }
+.sala-stat {
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:1rem 1.4rem; flex:1; min-width:110px;
+  position:relative; overflow:hidden;
+}
+.sala-stat::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+  background:var(--border);
+}
+.sala-stat--ok::after  { background:var(--success); }
+.sala-stat--danger::after { background:var(--danger); }
+.sala-stat-val  { font-size:2.1rem; font-weight:800; color:var(--text); line-height:1; font-variant-numeric:tabular-nums; }
 .sala-stat--ok  .sala-stat-val { color:var(--success); }
 .sala-stat--danger .sala-stat-val { color:var(--danger); }
-.sala-stat-lbl  { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-top:.3rem; }
+.sala-stat-lbl  { font-size:.63rem; text-transform:uppercase; letter-spacing:.11em; color:var(--muted); margin-top:.3rem; }
 
 /* Grid */
-.salas-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+.salas-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.1rem; }
 @media (max-width:900px) { .salas-grid { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:580px) { .salas-grid { grid-template-columns:1fr; } }
 
-/* Card v2 */
-.sala-card-v2 {
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:10px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  position:relative;
+/* Card v3 */
+.sc3-card {
+  position:relative; background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; overflow:hidden; display:flex; flex-direction:column;
+  padding:1.1rem 1.25rem 1rem 1.6rem;
   transition:box-shadow .18s, transform .18s;
 }
-.sala-card-v2:hover { box-shadow:0 6px 20px rgba(0,0,0,.09); transform:translateY(-2px); }
-.sala-card-v2.is-bloqueada { border-color:var(--danger); }
-.sala-card-v2.is-bloqueada::after {
-  content:'';
-  position:absolute;
-  inset:0;
-  background-image:repeating-linear-gradient(-45deg,transparent,transparent 9px,rgba(184,84,80,.045) 9px,rgba(184,84,80,.045) 10px);
-  pointer-events:none;
-  border-radius:inherit;
+.sc3-card::before {
+  content:''; position:absolute; left:0; top:10px; bottom:10px;
+  width:4px; border-radius:0 3px 3px 0;
+  background:var(--sc3-c, var(--gold));
+  transition:top .2s, bottom .2s;
 }
-.sala-card-accent { height:5px; width:100%; flex-shrink:0; }
-.sala-card-v2-inner { padding:1.1rem 1.2rem 1rem; display:flex; flex-direction:column; flex:1; }
-.sala-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:.6rem; }
-.sala-num-circle {
-  width:52px; height:52px;
-  border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:1.45rem; font-weight:800;
-  font-variant-numeric:tabular-nums;
-  flex-shrink:0;
-}
-.sala-card-badges { display:flex; flex-direction:column; align-items:flex-end; gap:.35rem; }
-.sala-tipo-badge {
-  font-size:.6rem; font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; padding:.2rem .6rem;
-  border-radius:999px; border:1.5px solid;
-}
-.sala-status-ok {
-  font-size:.65rem; font-weight:600;
-  color:var(--success); background:var(--success-dim);
-  padding:.18rem .5rem; border-radius:4px;
-}
-.sala-status-bloq {
-  font-size:.65rem; font-weight:700;
-  color:var(--danger); background:var(--danger-dim);
-  padding:.18rem .5rem; border-radius:4px;
-}
-.sala-card-nome-v2 { font-size:1rem; font-weight:600; color:var(--text); margin-bottom:.1rem; }
-.sala-card-obs-v2 { font-size:.78rem; color:var(--muted); margin-bottom:.55rem; line-height:1.45; }
-/* Características da sala */
-.sala-card-chars { display:flex; gap:.75rem; margin:.5rem 0 .4rem; flex-wrap:wrap; }
-.sala-char { display:flex; flex-direction:column; }
-.sala-char-lbl { font-size:.6rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
-.sala-char-val { font-size:.82rem; font-weight:600; color:var(--text); }
+.sc3-card:hover { box-shadow:0 8px 28px rgba(0,0,0,.10); transform:translateY(-2px); }
+.sc3-card:hover::before { top:4px; bottom:4px; }
 
-.sala-bloqueio-banner {
-  background:var(--danger-dim); border:1px solid var(--danger);
-  border-radius:5px; padding:.55rem .75rem; margin:.55rem 0 .2rem;
+.sc3-card.s1 { --sc3-c:var(--sala-s1); }
+.sc3-card.s2 { --sc3-c:var(--sala-s2); }
+.sc3-card.s3 { --sc3-c:var(--sala-s3); }
+.sc3-card.s4 { --sc3-c:var(--sala-s4); }
+.sc3-card.s5 { --sc3-c:var(--sala-s5); }
+.sc3-card.sc3-bloq { --sc3-c:var(--danger); border-color:rgba(184,84,80,.2); }
+.sc3-card.sc3-bloq::after {
+  content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  background-image:repeating-linear-gradient(-45deg,transparent,transparent 10px,rgba(184,84,80,.03) 10px,rgba(184,84,80,.03) 11px);
 }
-.sala-bloqueio-banner-lbl {
-  font-size:.6rem; font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--danger); margin-bottom:.25rem;
+
+/* Watermark number */
+.sc3-wm {
+  position:absolute; right:.3rem; bottom:-.9rem;
+  font-size:5.8rem; font-weight:900; line-height:1;
+  color:var(--sc3-c, var(--gold)); opacity:.055;
+  pointer-events:none; user-select:none;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em;
 }
-.sala-bloqueio-banner-motivo { font-size:.82rem; color:var(--text); line-height:1.4; }
-.sala-bloqueio-banner-date { font-size:.72rem; color:var(--muted); margin-top:.2rem; }
-.sala-card-actions-v2 { display:flex; gap:.4rem; margin-top:auto; padding-top:.8rem; flex-wrap:wrap; }
-/* Bloqueios histórico */
+
+/* Head row */
+.sc3-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.55rem; }
+.sc3-lbl { font-size:.62rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--sc3-c, var(--gold)); }
+.sc3-pill { font-size:.6rem; font-weight:700; padding:.22rem .6rem; border-radius:999px; letter-spacing:.05em; line-height:1.4; }
+.sc3-pill-ok    { background:var(--success-dim); color:var(--success); }
+.sc3-pill-danger { background:var(--danger-dim); color:var(--danger); }
+
+/* Content */
+.sc3-nome { font-size:1.05rem; font-weight:700; color:var(--text); line-height:1.2; margin-bottom:.45rem; }
+.sc3-chips { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.5rem; }
+.sc3-chip {
+  font-size:.6rem; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+  background:var(--border-soft); color:var(--muted);
+  padding:.18rem .5rem; border-radius:4px; border:1px solid var(--border);
+}
+.sc3-obs { font-size:.78rem; color:var(--muted); line-height:1.45; margin-bottom:.3rem; }
+
+/* Bloqueio banner */
+.sc3-bloq-banner { background:var(--danger-dim); border-radius:6px; padding:.5rem .7rem; margin:.4rem 0; border-left:3px solid var(--danger); }
+.sc3-bloq-banner-lbl { font-size:.58rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--danger); margin-bottom:.18rem; }
+.sc3-bloq-banner-motivo { font-size:.8rem; color:var(--text); line-height:1.4; }
+.sc3-bloq-banner-date { font-size:.68rem; color:var(--muted); margin-top:.1rem; }
+
+/* Divider + actions */
+.sc3-div { height:1px; background:var(--border); margin:.75rem 0 .6rem; }
+.sc3-actions { display:flex; gap:.4rem; flex-wrap:wrap; }
+
+/* Bloqueios list */
 .bloqueio-item { border-bottom:1px solid var(--border); padding:.75rem 0; }
 .bloqueio-item:last-child { border-bottom:0; }
 .bloqueio-ativo { font-size:.65rem; font-weight:700; background:var(--danger-dim); color:var(--danger); padding:.15rem .4rem; border-radius:3px; margin-left:.5rem; }
 .bloqueio-passado { font-size:.65rem; color:var(--muted); margin-left:.5rem; }
 .bloqueio-motivo { color:var(--muted2); font-size:.83rem; margin-top:.2rem; }
 .bloqueio-por { color:var(--muted); font-size:.72rem; margin-top:.12rem; }
+
 /* Conflito modal */
 .conflito-item { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--border-soft); font-size:.85rem; }
 .conflito-item:last-child { border-bottom:0; }
@@ -4958,7 +4963,7 @@
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.75rem;width:100%;max-width:440px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
       <h2 style="font-size:1.05rem;font-weight:600;margin:0">Bloqueios — <span id="lista-bloqueios-sala-nome"></span></h2>
-      <button id="btn-fechar-lista-bloqueios" class="btn btn-outline btn-sm">✕</button>
+      <button id="btn-fechar-lista-bloqueios" type="button" class="btn btn-outline btn-sm">✕</button>
     </div>
     <div id="lista-bloqueios-items"></div>
   </div>

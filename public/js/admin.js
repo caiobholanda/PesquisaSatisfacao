@@ -8512,46 +8512,41 @@ function renderSalas() {
     const bloqueiosAtivos = (s.bloqueios || []).filter(b => b.data_fim >= hoje);
     const estaBloqueada = bloqueiosAtivos.length > 0;
     const bloqAtual = estaBloqueada ? bloqueiosAtivos[0] : null;
-    const corOrig = `var(--sala-s${s.id})`;
-    const cor = estaBloqueada ? 'var(--danger)' : corOrig;
     const tipoLabel = TIPO_SALA_LABEL[s.tipo] || s.tipo;
     const capLabel  = TIPO_SALA_CAP[s.tipo]   || '—';
     return `
-    <div class="sala-card-v2${estaBloqueada ? ' is-bloqueada' : ''}" data-sala-id="${s.id}">
-      <div class="sala-card-accent" style="background:${cor}"></div>
-      <div class="sala-card-v2-inner">
-        <div class="sala-card-top">
-          <div class="sala-num-circle" style="background:${cor}18;color:${cor}">${s.id}</div>
-          <div class="sala-card-badges">
-            <span class="sala-tipo-badge" style="color:${corOrig};border-color:${corOrig};background:${corOrig}12">${tipoLabel}</span>
-            ${estaBloqueada
-              ? `<span class="sala-status-bloq">⛔ Bloqueada</span>`
-              : `<span class="sala-status-ok">✓ Disponível</span>`
-            }
-          </div>
+    <div class="sc3-card s${s.id}${estaBloqueada ? ' sc3-bloq' : ''}">
+      <div class="sc3-wm">${s.id}</div>
+      <div class="sc3-head">
+        <span class="sc3-lbl">Sala ${s.id}</span>
+        ${estaBloqueada
+          ? `<span class="sc3-pill sc3-pill-danger">⛔ Bloqueada</span>`
+          : `<span class="sc3-pill sc3-pill-ok">● Disponível</span>`
+        }
+      </div>
+      <div class="sc3-nome">${escHtml(s.nome)}</div>
+      <div class="sc3-chips">
+        <span class="sc3-chip">${tipoLabel}</span>
+        <span class="sc3-chip">${capLabel}</span>
+      </div>
+      ${s.observacao ? `<div class="sc3-obs">${escHtml(s.observacao)}</div>` : ''}
+      ${estaBloqueada && bloqAtual ? `
+        <div class="sc3-bloq-banner">
+          <div class="sc3-bloq-banner-lbl">⚠ Motivo</div>
+          <div class="sc3-bloq-banner-motivo">${escHtml(bloqAtual.motivo)}</div>
+          <div class="sc3-bloq-banner-date">${fmtDate(bloqAtual.data_inicio)} → ${fmtDate(bloqAtual.data_fim)}${bloqAtual.bloqueado_por ? ` · ${escHtml(bloqAtual.bloqueado_por)}` : ''}</div>
         </div>
-        <div class="sala-card-nome-v2">${escHtml(s.nome)}</div>
-        <div class="sala-card-chars">
-          <div class="sala-char"><span class="sala-char-lbl">Tipo</span><span class="sala-char-val">${tipoLabel}</span></div>
-          <div class="sala-char"><span class="sala-char-lbl">Capacidade</span><span class="sala-char-val">${capLabel}</span></div>
-        </div>
-        ${s.observacao ? `<div class="sala-card-obs-v2">${escHtml(s.observacao)}</div>` : ''}
+      ` : ''}
+      <div class="sc3-div"></div>
+      <div class="sc3-actions">
         ${estaBloqueada && bloqAtual ? `
-          <div class="sala-bloqueio-banner">
-            <div class="sala-bloqueio-banner-lbl">⚠️ Motivo do bloqueio</div>
-            <div class="sala-bloqueio-banner-motivo">${escHtml(bloqAtual.motivo)}</div>
-            <div class="sala-bloqueio-banner-date">De ${fmtDate(bloqAtual.data_inicio)} até ${fmtDate(bloqAtual.data_fim)}${bloqAtual.bloqueado_por ? ` · Por: ${escHtml(bloqAtual.bloqueado_por)}` : ''}</div>
-          </div>
-          <div class="sala-card-actions-v2">
-            <button type="button" class="btn btn-gold btn-sm" style="flex:1" data-action="desbloquear-sala" data-bloqueio-id="${bloqAtual.id}" data-sala-id="${s.id}">🔓 Desbloquear</button>
-            <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
-            ${bloqueiosAtivos.length > 1 ? `<button type="button" class="btn btn-outline btn-sm" style="width:100%" data-action="lista-bloqueios" data-sala-id="${s.id}">Outros bloqueios (${bloqueiosAtivos.length - 1})</button>` : ''}
-          </div>
+          <button type="button" class="btn btn-gold btn-sm" style="flex:1" data-action="desbloquear-sala" data-bloqueio-id="${bloqAtual.id}" data-sala-id="${s.id}">🔓 Desbloquear</button>
+          <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
+          ${bloqueiosAtivos.length > 1 ? `<button type="button" class="btn btn-outline btn-sm" style="width:100%" data-action="lista-bloqueios" data-sala-id="${s.id}">Outros bloqueios (${bloqueiosAtivos.length - 1})</button>` : ''}
         ` : `
-          <div class="sala-card-actions-v2">
-            <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
-            <button type="button" class="btn btn-outline btn-sm btn-danger-outline" style="flex:1" data-action="bloquear-sala" data-sala-id="${s.id}">⛔ Bloquear</button>
-          </div>
+          <button type="button" class="btn btn-outline btn-sm" data-action="lista-bloqueios" data-sala-id="${s.id}">📋 Bloqueios</button>
+          <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
+          <button type="button" class="btn btn-outline btn-sm btn-danger-outline" style="flex:1" data-action="bloquear-sala" data-sala-id="${s.id}">⛔ Bloquear</button>
         `}
       </div>
     </div>`;
@@ -8576,9 +8571,6 @@ function abrirEditarSala(salaId) {
   document.getElementById('modal-sala-edit').style.display = 'flex';
 }
 
-document.getElementById('modal-sala-edit')?.addEventListener('click', e => {
-  if (e.target.id === 'modal-sala-edit') fecharModalSalaEdit();
-});
 document.getElementById('btn-fechar-sala-edit')?.addEventListener('click', fecharModalSalaEdit);
 
 function fecharModalSalaEdit() {
@@ -8613,9 +8605,6 @@ function abrirNovoBloqueio(salaId) {
   document.getElementById('modal-sala-bloqueio').style.display = 'flex';
 }
 
-document.getElementById('modal-sala-bloqueio')?.addEventListener('click', e => {
-  if (e.target.id === 'modal-sala-bloqueio') fecharModalBloqueio();
-});
 document.getElementById('btn-fechar-sala-bloqueio')?.addEventListener('click', fecharModalBloqueio);
 
 function fecharModalBloqueio() {
@@ -8670,9 +8659,6 @@ function renderModalConflito(total) {
     </div>`).join('');
 }
 
-document.getElementById('modal-bloqueio-conflito')?.addEventListener('click', e => {
-  if (e.target.id === 'modal-bloqueio-conflito') fecharModalConflito();
-});
 document.getElementById('btn-conflito-cancelar')?.addEventListener('click', fecharModalConflito);
 
 function fecharModalConflito() {
@@ -8795,9 +8781,6 @@ async function abrirListaBloqueios(salaId) {
   document.getElementById('modal-lista-bloqueios').style.display = 'flex';
 }
 
-document.getElementById('modal-lista-bloqueios')?.addEventListener('click', e => {
-  if (e.target.id === 'modal-lista-bloqueios') document.getElementById('modal-lista-bloqueios').style.display = 'none';
-});
 document.getElementById('btn-fechar-lista-bloqueios')?.addEventListener('click', () => {
   document.getElementById('modal-lista-bloqueios').style.display = 'none';
 });
