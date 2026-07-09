@@ -196,7 +196,7 @@ body{background:radial-gradient(1100px 560px at 12% -4%,var(--grad1),transparent
   <div class="hdr-right">
     <span class="hdr-ts" id="ts"></span>
     <button class="btn-theme" id="btnTheme" title="Alternar tema">☀</button>
-    <button class="btn-sair" onclick="location.href='/admin.html'">← Voltar</button>
+    <button type="button" class="btn-sair" data-action="voltar-admin">← Voltar</button>
   </div>
 </header>
 
@@ -437,7 +437,7 @@ function renderTable(rows, total){
       <div class="tbl-tipo"><span>${esc(r.tipo)}</span></div>
       <div class="tbl-origem">${r.origem==='colaborador'?'Colaborador':'Hóspede'}</div>
       <div><span class="score-pill ${sc}">${esc(r.media)}</span></div>
-      <div class="tbl-ver"><span onclick="verResposta(${r.id})">Ver</span></div>
+      <div class="tbl-ver"><span data-action="ver-resposta" data-id="${r.id}">Ver</span></div>
     </div>`;
   }).join('');
 
@@ -568,6 +568,14 @@ function wireEvents(){
 }
 
 window.verResposta = function(id){ window.open('/admin.html#resposta-'+id,'_blank'); };
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  if (action === 'voltar-admin') location.href = '/admin.html';
+  else if (action === 'ver-resposta') window.verResposta(Number(el.dataset.id));
+});
 
 render();
 })();

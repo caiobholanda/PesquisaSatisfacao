@@ -4722,7 +4722,7 @@
       <h1 class="page-title">Gestão de Salas</h1>
       <p class="page-sub">Configuração, tipos e controle de bloqueios das salas do SPA</p>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="loadSalas()">↻ Atualizar</button>
+    <button type="button" class="btn btn-outline btn-sm" data-action="reload-salas">↻ Atualizar</button>
   </div>
 
   <!-- Estatísticas -->
@@ -4871,7 +4871,7 @@
         <textarea id="edit-sala-obs" class="form-input" rows="2" style="width:100%;box-sizing:border-box;resize:vertical"></textarea>
       </div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button type="button" class="btn btn-outline btn-sm" onclick="fecharModalSalaEdit()">Cancelar</button>
+        <button type="button" class="btn btn-outline btn-sm" data-action="fechar-sala-edit">Cancelar</button>
         <button type="submit" class="btn btn-gold btn-sm">Salvar</button>
       </div>
     </form>
@@ -4905,7 +4905,7 @@
       </div>
       <div id="bloqueio-err" style="display:none;background:var(--danger-dim);border:1px solid var(--danger);color:var(--danger);padding:.6rem .9rem;border-radius:4px;font-size:.83rem;margin-bottom:.85rem"></div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button type="button" class="btn btn-outline btn-sm" onclick="fecharModalBloqueio()">Cancelar</button>
+        <button type="button" class="btn btn-outline btn-sm" data-action="fechar-sala-bloqueio">Cancelar</button>
         <button type="submit" class="btn btn-gold btn-sm">⛔ Criar Bloqueio</button>
       </div>
     </form>

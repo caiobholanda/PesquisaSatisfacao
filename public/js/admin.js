@@ -8543,14 +8543,14 @@ function renderSalas() {
             <div class="sala-bloqueio-banner-date">De ${fmtDate(bloqAtual.data_inicio)} até ${fmtDate(bloqAtual.data_fim)}${bloqAtual.bloqueado_por ? ` · Por: ${escHtml(bloqAtual.bloqueado_por)}` : ''}</div>
           </div>
           <div class="sala-card-actions-v2">
-            <button class="btn btn-gold btn-sm" style="flex:1" onclick="desbloquearSala(${bloqAtual.id},${s.id})">🔓 Desbloquear</button>
-            <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
-            ${bloqueiosAtivos.length > 1 ? `<button class="btn btn-outline btn-sm" style="width:100%" onclick="abrirListaBloqueios(${s.id})">Outros bloqueios (${bloqueiosAtivos.length - 1})</button>` : ''}
+            <button type="button" class="btn btn-gold btn-sm" style="flex:1" data-action="desbloquear-sala" data-bloqueio-id="${bloqAtual.id}" data-sala-id="${s.id}">🔓 Desbloquear</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
+            ${bloqueiosAtivos.length > 1 ? `<button type="button" class="btn btn-outline btn-sm" style="width:100%" data-action="lista-bloqueios" data-sala-id="${s.id}">Outros bloqueios (${bloqueiosAtivos.length - 1})</button>` : ''}
           </div>
         ` : `
           <div class="sala-card-actions-v2">
-            <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
-            <button class="btn btn-outline btn-sm btn-danger-outline" style="flex:1" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="editar-sala" data-sala-id="${s.id}">✎ Editar</button>
+            <button type="button" class="btn btn-outline btn-sm btn-danger-outline" style="flex:1" data-action="bloquear-sala" data-sala-id="${s.id}">⛔ Bloquear</button>
           </div>
         `}
       </div>
@@ -8790,7 +8790,7 @@ async function abrirListaBloqueios(salaId) {
       </div>
       <div class="bloqueio-motivo">${escHtml(b.motivo)}</div>
       ${b.bloqueado_por ? `<div class="bloqueio-por">Por: ${escHtml(b.bloqueado_por)}</div>` : ''}
-      ${b.data_fim >= hoje ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="removerBloqueioUI(${b.id})">Remover bloqueio</button>` : ''}
+      ${b.data_fim >= hoje ? `<button type="button" class="btn btn-outline btn-sm btn-danger-outline" data-action="remover-bloqueio" data-bloqueio-id="${b.id}">Remover bloqueio</button>` : ''}
     </div>`).join('') || '<p style="color:var(--muted)">Sem bloqueios cadastrados</p>';
   document.getElementById('modal-lista-bloqueios').style.display = 'flex';
 }
@@ -8830,3 +8830,24 @@ async function desbloquearSala(bloqueioId, salaId) {
     showToast('Erro: ' + e.message, 5000);
   }
 }
+
+// ── Delegação de eventos — Gestão de Salas ────────────────────────────────
+// Cobre botões estáticos (admin.html) e dinâmicos (renderSalas / abrirListaBloqueios).
+// CSP script-src-attr 'none' bloqueia onclick inline; data-action contorna isso.
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const salaId = btn.dataset.salaId ? Number(btn.dataset.salaId) : null;
+  const bloqueioId = btn.dataset.bloqueioId ? Number(btn.dataset.bloqueioId) : null;
+  switch (action) {
+    case 'reload-salas':      loadSalas(); break;
+    case 'editar-sala':       abrirEditarSala(salaId); break;
+    case 'bloquear-sala':     abrirNovoBloqueio(salaId); break;
+    case 'desbloquear-sala':  desbloquearSala(bloqueioId, salaId); break;
+    case 'lista-bloqueios':   abrirListaBloqueios(salaId); break;
+    case 'remover-bloqueio':  removerBloqueioUI(bloqueioId); break;
+    case 'fechar-sala-edit':  fecharModalSalaEdit(); break;
+    case 'fechar-sala-bloqueio': fecharModalBloqueio(); break;
+  }
+});
