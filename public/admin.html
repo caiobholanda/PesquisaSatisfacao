@@ -2499,6 +2499,20 @@
       font-size: 0.6875rem;
       color: var(--muted);
     }
+    /* Sala bloqueada no modal de nova reserva */
+    .res-room-btn.bloq {
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: .5;
+      border-color: rgba(184,84,80,.35) !important;
+      background-color: rgba(184,84,80,.05);
+      background-image: repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(184,84,80,.07) 6px, rgba(184,84,80,.07) 7px);
+    }
+    .res-room-btn.bloq .res-room-btn-name { color: var(--danger); }
+    .res-room-btn-bloq-badge {
+      font-size: .55rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--danger); line-height: 1; margin-top: .1rem;
+    }
 
     .res-tipo-grid {
       display: grid;

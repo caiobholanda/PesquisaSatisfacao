@@ -2970,6 +2970,24 @@ function calOpenModal(salaId, data, hora) {
   // Wire atalhos rapidos "Hoje / Amanha / +7 dias" (idempotente)
   _wireAtalhosData(_hojeFt);
   document.querySelectorAll('.res-room-btn').forEach(b=>b.classList.toggle('active',+b.dataset.sala===_resSala));
+  // Marcar salas bloqueadas para a data selecionada
+  if (data && _salasData.length > 0) {
+    document.querySelectorAll('.res-room-btn').forEach(btn => {
+      const sid = +btn.dataset.sala;
+      const sData = _salasData.find(s => s.id === sid);
+      const isBloq = !!sData && (sData.bloqueios || []).some(b => b.data_inicio <= data && b.data_fim >= data);
+      btn.classList.toggle('bloq', isBloq);
+      let badge = btn.querySelector('.res-room-btn-bloq-badge');
+      if (isBloq && !badge) {
+        badge = document.createElement('span');
+        badge.className = 'res-room-btn-bloq-badge';
+        badge.textContent = '⛔ BLOQUEADA';
+        btn.appendChild(badge);
+      } else if (!isBloq && badge) {
+        badge.remove();
+      }
+    });
+  }
   _aplicarVisibilidadeSala();
   loadTratamentosModal();
   loadMassagistasModal();
