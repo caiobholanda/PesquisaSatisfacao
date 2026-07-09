@@ -8480,24 +8480,48 @@ function renderSalas() {
   const grid = document.getElementById('salas-grid');
   if (!grid) return;
   const hoje = new Date().toISOString().slice(0, 10);
+
+  const bloqueadasCount = _salasData.filter(s => (s.bloqueios || []).some(b => b.data_fim >= hoje)).length;
+  const el = id => document.getElementById(id);
+  if (el('sala-stat-total'))      el('sala-stat-total').textContent      = _salasData.length;
+  if (el('sala-stat-disponiveis')) el('sala-stat-disponiveis').textContent = _salasData.length - bloqueadasCount;
+  if (el('sala-stat-bloqueadas')) el('sala-stat-bloqueadas').textContent  = bloqueadasCount;
+
   grid.innerHTML = _salasData.map(s => {
     const bloqueiosAtivos = (s.bloqueios || []).filter(b => b.data_fim >= hoje);
     const estaBloqueada = bloqueiosAtivos.length > 0;
+    const cor = `var(--sala-s${s.id})`;
+    const tipoLabel = TIPO_SALA_LABEL[s.tipo] || s.tipo;
     return `
-    <div class="sala-card ${estaBloqueada ? 'sala-bloqueada' : ''}" data-sala-id="${s.id}">
-      <div class="sala-card-header" style="background:var(--sala-s${s.id})">
-        <span class="sala-card-num">Sala ${s.id === 5 ? '' : s.id}</span>
-        ${estaBloqueada ? '<span class="sala-card-badge-bloqueio">⛔ Bloqueada</span>' : ''}
-      </div>
-      <div class="sala-card-body">
-        <div class="sala-card-nome">${esc(s.nome)}</div>
-        <div class="sala-card-tipo">${TIPO_SALA_LABEL[s.tipo] || s.tipo}</div>
-        ${s.observacao ? `<div class="sala-card-obs">${esc(s.observacao)}</div>` : ''}
-        ${estaBloqueada ? `<div class="sala-card-motivo-bloqueio">⚠️ ${esc(bloqueiosAtivos[0].motivo)}<br><small>Até ${fmtDate(bloqueiosAtivos[0].data_fim)}</small></div>` : ''}
-        <div class="sala-card-actions">
-          <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">Editar</button>
-          <button class="btn btn-gold btn-sm" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
-          ${bloqueiosAtivos.length > 0 ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="abrirListaBloqueios(${s.id})">Bloqueios (${bloqueiosAtivos.length})</button>` : ''}
+    <div class="sala-card-v2${estaBloqueada ? ' is-bloqueada' : ''}" data-sala-id="${s.id}">
+      <div class="sala-card-accent" style="background:${cor}"></div>
+      <div class="sala-card-v2-inner">
+        <div class="sala-card-top">
+          <div class="sala-num-circle" style="background:${cor}18;color:${cor}">
+            ${s.id}
+          </div>
+          <div class="sala-card-badges">
+            <span class="sala-tipo-badge" style="color:${cor};border-color:${cor};background:${cor}12">${tipoLabel}</span>
+            ${estaBloqueada
+              ? `<span class="sala-status-bloq">⛔ Bloqueada</span>`
+              : `<span class="sala-status-ok">✓ Disponível</span>`
+            }
+          </div>
+        </div>
+        <div class="sala-card-nome-v2">${esc(s.nome)}</div>
+        ${s.observacao ? `<div class="sala-card-obs-v2">${esc(s.observacao)}</div>` : ''}
+        ${estaBloqueada ? `
+          <div class="sala-bloqueio-banner">
+            <div class="sala-bloqueio-banner-lbl">⚠️ Motivo do bloqueio</div>
+            <div class="sala-bloqueio-banner-motivo">${esc(bloqueiosAtivos[0].motivo)}</div>
+            <div class="sala-bloqueio-banner-date">Até ${fmtDate(bloqueiosAtivos[0].data_fim)}</div>
+          </div>` : ''}
+        <div class="sala-card-actions-v2">
+          <button class="btn btn-outline btn-sm" onclick="abrirEditarSala(${s.id})">✎ Editar</button>
+          <button class="btn btn-outline btn-sm btn-danger-outline" onclick="abrirNovoBloqueio(${s.id})">⛔ Bloquear</button>
+          ${bloqueiosAtivos.length > 0
+            ? `<button class="btn btn-outline btn-sm" onclick="abrirListaBloqueios(${s.id})" style="width:100%">Histórico (${bloqueiosAtivos.length} bloqueio${bloqueiosAtivos.length > 1 ? 's' : ''})</button>`
+            : ''}
         </div>
       </div>
     </div>`;
