@@ -1,298 +1,567 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#202C28">
+<meta name="theme-color" content="#ECE4D2">
 <title>Gran SPA · Terapeuta</title>
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('spa_theme') || 'light';
+    if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  } catch(_){}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #202C28;
-  --surface: #293630;
-  --surface2: #2F3D38;
-  --border: rgba(138, 126, 100, 0.18);
-  --text: #ECE4D2;
-  --muted: #8A7E64;
-  --muted2: #C8B89A;
-  --gold: #996442;
-  --gold-dim: rgba(156,88,67,.16);
-  --gold-dark: #7A4334;
-  --success: #3E8497;
-  --success-dim: rgba(62,132,151,.18);
-  --danger: #D86862;
-  --danger-dim: rgba(216,104,98,.18);
-  --font: 'Inter', system-ui, sans-serif;
-  --serif: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+/* ── Paleta Gran Marquise — dual theme ── */
+:root, :root[data-theme="light"] {
+  --bg:          #ECE4D2;
+  --surface:     #F5EFE2;
+  --surface2:    #EDE5D0;
+  --border:      rgba(96,87,56,0.14);
+  --border-soft: rgba(96,87,56,0.07);
+  --text:        #202C28;
+  --muted:       #605738;
+  --muted2:      #44402F;
+  --gold:        #9C5843;
+  --gold-dark:   #7A4334;
+  --gold-dim:    rgba(156,88,67,.12);
+  --success:     #15705A;
+  --success-dim: rgba(21,112,90,.10);
+  --danger:      #B85450;
+  --danger-dim:  rgba(184,84,80,.10);
+  --header-bg:   rgba(244,238,225,0.90);
+  --logo-filter: none;
+  --bg-grad-1:   rgba(156,88,67,.06);
+  --bg-grad-2:   rgba(156,88,67,.03);
+  --shadow:      0 2px 10px rgba(96,87,56,.10);
+  --shadow-lg:   0 20px 60px rgba(96,87,56,.16);
 }
-* { box-sizing: border-box; }
+:root[data-theme="dark"] {
+  --bg:          #202C28;
+  --surface:     #293630;
+  --surface2:    #2F3D38;
+  --border:      rgba(138,126,100,0.16);
+  --border-soft: rgba(138,126,100,0.08);
+  --text:        #ECE4D2;
+  --muted:       #8A7E64;
+  --muted2:      #C8B89A;
+  --gold:        #996442;
+  --gold-dark:   #7A4334;
+  --gold-dim:    rgba(156,88,67,.18);
+  --success:     #3E8497;
+  --success-dim: rgba(62,132,151,.18);
+  --danger:      #D86862;
+  --danger-dim:  rgba(216,104,98,.18);
+  --header-bg:   rgba(10,14,26,0.82);
+  --logo-filter: brightness(0) invert(1);
+  --bg-grad-1:   rgba(156,88,67,.08);
+  --bg-grad-2:   rgba(156,88,67,.04);
+  --shadow:      0 2px 10px rgba(0,0,0,.28);
+  --shadow-lg:   0 20px 60px rgba(0,0,0,.48);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body, header, .tx-login-card, .tx-card, .tx-sheet, .tx-field select,
+.tx-field input, .tx-tag, .tx-escala-banner, .tx-view-tab, .tx-day-tab,
+.tx-bloco, .tx-btn-outline, .tx-btn-icon, .tx-submit, .tx-close {
+  transition: background-color .28s ease, color .28s ease, border-color .28s ease;
+}
+
 html, body { margin: 0; padding: 0; }
 body {
-  background: var(--bg);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 55%, var(--bg-grad-1) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 8%,  var(--bg-grad-2) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--text);
-  font-family: var(--font);
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
   font-size: 16px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
-button, input { font-family: inherit; }
+button, input, select { font-family: inherit; }
 .app { max-width: 560px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ── Header ── */
 .tx-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.1rem 1.2rem .9rem;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; background: var(--bg); z-index: 10;
+  padding: 0 1.25rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
 }
-.tx-brand {
-  font-family: var(--serif); font-size: 1.05rem; font-weight: 500;
-  letter-spacing: .04em; color: var(--text);
+.tx-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 1.25rem;
+  width: 36px;
+  height: 2px;
+  background: var(--gold);
 }
-.tx-brand small {
-  display: block; font-family: var(--font); font-size: .62rem;
-  letter-spacing: .25em; color: var(--gold); text-transform: uppercase;
-  margin-bottom: .15rem; font-weight: 600;
+.tx-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
 }
-.tx-logout {
-  background: none; border: 1px solid var(--border); color: var(--muted2);
-  padding: .45rem .8rem; border-radius: 999px; font-size: .78rem; cursor: pointer;
+.tx-header-brand img {
+  height: 26px;
+  width: auto;
+  filter: var(--logo-filter);
+  transition: filter .28s ease;
 }
-.tx-logout:hover { border-color: var(--gold); color: var(--gold); }
+.tx-header-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.tx-header-label {
+  font-size: .71rem;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tx-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.tx-nome-label {
+  font-size: .78rem;
+  color: var(--muted2);
+  font-weight: 500;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.tx-btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tx-btn-icon:hover { border-color: var(--gold); color: var(--gold); }
+.tx-btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  padding: .3rem .75rem;
+  border-radius: 5px;
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  flex-shrink: 0;
+}
+.tx-btn-outline:hover { border-color: var(--gold); color: var(--gold); }
 
 /* ── Login ── */
 .tx-login {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 2rem 1.4rem; gap: 1.4rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
 }
 .tx-login-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; padding: 2rem 1.5rem;
-  width: 100%; max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2.25rem 2rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
 }
-.tx-login h1 {
-  font-family: var(--serif); font-size: 2rem; font-weight: 500;
-  margin: 0 0 .35rem; color: var(--text); line-height: 1.1;
+.tx-login-eyebrow {
+  display: block;
+  font-size: .64rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: .75rem;
 }
-.tx-login p { margin: 0 0 1.5rem; color: var(--muted2); font-size: .9rem; }
+.tx-login-card h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.35rem;
+  font-weight: 400;
+  margin: 0 0 .3rem;
+  color: var(--text);
+  line-height: 1.08;
+  letter-spacing: -.01em;
+}
+.tx-login-rule {
+  width: 32px;
+  height: 2px;
+  background: var(--gold);
+  margin: .9rem 0 1rem;
+}
+.tx-login-card p { margin: 0 0 1.6rem; color: var(--muted2); font-size: .87rem; }
 .tx-field { margin-bottom: 1rem; }
 .tx-field label {
-  display: block; font-size: .68rem; color: var(--muted); margin-bottom: .4rem;
-  text-transform: uppercase; letter-spacing: .15em; font-weight: 700;
+  display: block;
+  font-size: .63rem;
+  color: var(--muted);
+  margin-bottom: .4rem;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  font-weight: 600;
 }
 .tx-field select, .tx-field input {
-  width: 100%; padding: .9rem 1rem;
-  background: var(--bg); border: 1px solid var(--border);
-  color: var(--text); border-radius: 10px; font-size: 1rem;
-  -webkit-appearance: none; appearance: none;
-  outline: none; transition: border-color .15s;
+  width: 100%;
+  padding: .85rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 3px;
+  font-size: .95rem;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
 }
-.tx-field select:focus, .tx-field input:focus { border-color: var(--gold); }
-.tx-field input[type="password"] { letter-spacing: .35em; }
+.tx-field select:focus, .tx-field input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+.tx-field input[type="password"] { letter-spacing: .3em; }
+:root[data-theme="dark"] .tx-field select option { background: var(--surface); color: var(--text); }
 .tx-submit {
-  width: 100%; padding: 1rem; margin-top: .5rem;
-  background: var(--gold); color: var(--bg); border: 0;
-  border-radius: 10px; font-size: 1rem; font-weight: 600;
-  letter-spacing: .04em; cursor: pointer; transition: background .15s, transform .12s;
+  width: 100%;
+  padding: .95rem;
+  margin-top: .75rem;
+  background: var(--gold);
+  color: #fff;
+  border: 0;
+  border-radius: 3px;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 .tx-submit:hover { background: var(--gold-dark); }
-.tx-submit:active { transform: scale(.98); }
-.tx-submit:disabled { opacity: .5; cursor: wait; }
+.tx-submit:active { opacity: .9; }
+.tx-submit:disabled { opacity: .45; cursor: wait; }
 .tx-err {
-  background: var(--danger-dim); border: 1px solid var(--danger);
-  color: var(--danger); padding: .7rem 1rem; border-radius: 8px;
-  font-size: .85rem; margin-bottom: 1rem; display: none;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: .7rem 1rem;
+  border-radius: 3px;
+  font-size: .84rem;
+  margin-bottom: 1rem;
+  display: none;
 }
 .tx-err.show { display: block; }
 
 /* ── Agenda ── */
-.tx-agenda { flex: 1; padding: 1.2rem 1.2rem 4rem; }
+.tx-agenda { flex: 1; padding: 1.25rem 1.25rem 4rem; }
 .tx-greet {
-  font-family: var(--serif); font-size: 1.6rem; font-weight: 500;
-  margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  margin: 0 0 .2rem;
+  color: var(--text);
+  line-height: 1.12;
+  letter-spacing: -.01em;
 }
-.tx-greet-sub { color: var(--muted2); font-size: .85rem; margin: 0 0 1rem; }
+.tx-greet-sub { color: var(--muted2); font-size: .83rem; margin: 0 0 1.1rem; }
 
-/* Banner escala do dia */
+/* Banner escala */
 .tx-escala-banner {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: .75rem 1rem;
-  margin-bottom: 1rem; display: flex; align-items: center; gap: .75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: 3px;
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  font-size: .85rem;
+  line-height: 1.4;
 }
-.tx-escala-icon {
-  font-size: 1.15rem; flex-shrink: 0; opacity: .8;
-}
-.tx-escala-texto {
-  font-size: .88rem; color: var(--text); line-height: 1.35;
-}
+.tx-escala-icon { font-size: 1rem; flex-shrink: 0; opacity: .8; }
+.tx-escala-texto { color: var(--text); }
 .tx-escala-texto strong { color: var(--gold); font-weight: 700; }
 .tx-escala-folga { color: var(--muted2); font-style: italic; }
 
-/* Hoje / Semana toggle */
+/* View tabs */
 .tx-view-tabs {
-  display: flex; gap: .35rem; margin-bottom: 1rem;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: .3rem;
+  display: flex;
+  gap: .3rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: .28rem;
 }
 .tx-view-tab {
-  flex: 1; padding: .55rem .5rem; border: none; border-radius: 8px;
-  background: transparent; color: var(--muted2); font-family: var(--font);
-  font-size: .88rem; font-weight: 500; cursor: pointer;
-  transition: background .15s, color .15s;
+  flex: 1;
+  padding: .52rem .5rem;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted2);
+  font-family: inherit;
+  font-size: .84rem;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: .01em;
 }
-.tx-view-tab.active {
-  background: var(--gold); color: var(--bg); font-weight: 700;
-}
+.tx-view-tab.active { background: var(--gold); color: #fff; font-weight: 600; }
 
-/* Semana: dia tabs scrolláveis */
+/* Day tabs */
 .tx-day-tabs {
-  display: flex; gap: .35rem; margin-bottom: 1.1rem; overflow-x: auto;
-  scroll-snap-type: x mandatory; padding-bottom: .25rem;
+  display: flex;
+  gap: .35rem;
+  margin-bottom: 1.1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: .25rem;
   scrollbar-width: none;
 }
 .tx-day-tabs::-webkit-scrollbar { display: none; }
 .tx-day-tab {
-  flex-shrink: 0; padding: .5rem .85rem; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 999px;
-  color: var(--muted2); cursor: pointer; font-size: .8rem;
-  scroll-snap-align: start; line-height: 1.2; text-align: center;
+  flex-shrink: 0;
+  padding: .48rem .82rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted2);
+  cursor: pointer;
+  font-size: .78rem;
+  font-family: inherit;
+  scroll-snap-align: start;
+  line-height: 1.2;
+  text-align: center;
 }
 .tx-day-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--text); font-weight: 600; }
 .tx-day-tab.hoje-tab { border-color: var(--gold); }
-.tx-day-tab .tx-tab-dia { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; display: block; opacity: .7; }
-.tx-day-tab .tx-tab-num { font-weight: 700; font-size: .95rem; display: block; }
+.tx-day-tab .tx-tab-dia { font-size: .6rem; text-transform: uppercase; letter-spacing: .12em; display: block; opacity: .7; }
+.tx-day-tab .tx-tab-num { font-weight: 700; font-size: .92rem; display: block; }
 
-/* Cabeçalho de dia no modo semana */
-.tx-dia-header {
-  display: flex; align-items: center; gap: .7rem;
-  margin: 1.2rem 0 .6rem;
-}
+/* Dia header */
+.tx-dia-header { display: flex; align-items: center; gap: .7rem; margin: 1.25rem 0 .6rem; }
 .tx-dia-header:first-child { margin-top: 0; }
 .tx-dia-label {
-  font-family: var(--serif); font-size: 1.05rem; font-weight: 500; color: var(--text);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: .01em;
 }
 .tx-dia-label.hoje { color: var(--gold); }
 .tx-dia-line { flex: 1; height: 1px; background: var(--border); }
 .tx-dia-count {
-  font-size: .68rem; color: var(--muted); letter-spacing: .08em;
-  font-weight: 600; background: var(--surface); border: 1px solid var(--border);
-  padding: .15rem .5rem; border-radius: 999px;
+  font-size: .63rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: .15rem .5rem;
+  border-radius: 999px;
 }
 
-.tx-list { display: flex; flex-direction: column; gap: .65rem; }
+/* Cards */
+.tx-list { display: flex; flex-direction: column; gap: .6rem; }
 .tx-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 1rem 1.1rem;
-  display: flex; flex-direction: column; gap: .35rem;
-  cursor: pointer; transition: transform .12s, border-color .15s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .32rem;
+  cursor: pointer;
 }
-.tx-card:active { transform: scale(.99); }
-.tx-card:hover { border-color: var(--gold); }
-.tx-card-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: .8rem;
-}
+.tx-card:hover { border-color: var(--gold); box-shadow: var(--shadow); }
+.tx-card:active { opacity: .95; }
+.tx-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; }
 .tx-card-hora {
-  font-family: 'Inter', monospace; font-size: 1.1rem; font-weight: 600;
-  color: var(--gold); letter-spacing: -.01em;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
 }
 .tx-card-sala {
-  font-size: .68rem; color: var(--muted); text-transform: uppercase;
-  letter-spacing: .12em; font-weight: 700;
+  font-size: .62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .15em;
+  font-weight: 600;
 }
-.tx-card-cli { font-size: 1rem; color: var(--text); font-weight: 500; }
-.tx-card-trat { font-size: .82rem; color: var(--muted2); font-style: italic; }
-.tx-card-tags { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .4rem; }
+.tx-card-cli { font-size: .97rem; color: var(--text); font-weight: 500; }
+.tx-card-trat {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: .98rem;
+  color: var(--muted2);
+  font-style: italic;
+}
+.tx-card-tags { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .35rem; }
 .tx-tag {
-  display: inline-flex; align-items: center; gap: .25rem;
-  background: var(--bg); border: 1px solid var(--border);
-  color: var(--muted2); padding: .25rem .6rem; border-radius: 999px;
-  font-size: .68rem; letter-spacing: .04em; font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .63rem;
+  letter-spacing: .05em;
+  font-weight: 500;
 }
 .tx-tag.quarto { color: var(--text); font-weight: 600; }
 .tx-tag.granclass {
-  background: var(--gold-dim); border-color: var(--gold);
-  color: var(--gold); font-weight: 700; letter-spacing: .08em;
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: .1em;
 }
 .tx-tag.respondida {
-  background: var(--success-dim); border-color: var(--success); color: var(--success);
+  background: var(--success-dim);
+  border-color: var(--success);
+  color: var(--success);
 }
-.tx-empty {
-  text-align: center; padding: 3rem 1rem; color: var(--muted2);
-}
+.tx-empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted2); }
 .tx-empty h3 {
-  font-family: var(--serif); font-size: 1.3rem; font-weight: 500;
-  margin: 0 0 .5rem; color: var(--text);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  margin: 0 0 .5rem;
+  color: var(--text);
 }
-.tx-empty p { margin: 0; font-size: .9rem; }
+.tx-empty p { margin: 0; font-size: .87rem; }
 
-/* ── Detalhe modal ── */
+/* ── Modal ── */
 .tx-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.7);
-  z-index: 100; display: none; align-items: flex-end;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.58);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
   backdrop-filter: blur(4px);
 }
 .tx-overlay.show { display: flex; }
 .tx-sheet {
-  background: var(--surface); width: 100%; max-width: 560px; margin: 0 auto;
-  border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem 2rem;
+  background: var(--surface);
+  width: 100%; max-width: 560px; margin: 0 auto;
+  border-radius: 10px 10px 0 0;
+  padding: 1.25rem 1.25rem 2.5rem;
   max-height: 92vh; overflow-y: auto;
-  animation: tx-up .25s ease;
+  animation: tx-up .22s ease;
 }
-@keyframes tx-up { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes tx-up { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .tx-sheet-head {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: .8rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+  gap: .8rem; padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border); margin-bottom: 1rem;
 }
 .tx-close {
   background: var(--bg); border: 1px solid var(--border); color: var(--muted2);
-  width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
-  font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+  font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
+.tx-close:hover { border-color: var(--gold); color: var(--gold); }
 .tx-detail-titulo {
-  font-family: var(--serif); font-size: 1.45rem; font-weight: 500;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem; font-weight: 400;
   margin: 0 0 .25rem; color: var(--text); line-height: 1.15;
 }
-.tx-detail-meta { color: var(--muted2); font-size: .85rem; margin: 0; }
+.tx-detail-meta { color: var(--muted2); font-size: .83rem; margin: 0; }
 .tx-bloco {
   background: var(--bg); border: 1px solid var(--border);
-  border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: .9rem;
+  border-radius: 3px; padding: 1rem 1.1rem; margin-bottom: .85rem;
 }
 .tx-bloco-titulo {
-  font-size: .68rem; color: var(--gold); text-transform: uppercase;
-  letter-spacing: .15em; font-weight: 700; margin-bottom: .6rem;
+  font-size: .63rem; color: var(--gold); text-transform: uppercase;
+  letter-spacing: .18em; font-weight: 700; margin-bottom: .65rem;
 }
 .tx-bloco-row {
   display: flex; justify-content: space-between; gap: 1rem;
-  padding: .3rem 0; border-bottom: 1px solid var(--border);
-  font-size: .88rem;
+  padding: .3rem 0; border-bottom: 1px solid var(--border-soft); font-size: .86rem;
 }
 .tx-bloco-row:last-child { border-bottom: 0; }
 .tx-bloco-row span:first-child { color: var(--muted2); flex-shrink: 0; }
 .tx-bloco-row span:last-child { color: var(--text); text-align: right; word-break: break-word; }
-.tx-bloco-anam {
-  background: var(--gold-dim); border-color: var(--gold);
-}
-.tx-bloco-anam .tx-bloco-titulo { color: var(--gold); }
-.tx-bloco-sep {
-  height: 1px; background: var(--border); margin: .5rem -.1rem;
-}
+.tx-bloco-anam { background: var(--gold-dim); border-color: var(--gold); }
+.tx-bloco-anam .tx-bloco-titulo { color: var(--gold-dark); }
+.tx-bloco-sep { height: 1px; background: var(--border); margin: .5rem -.1rem; }
 .tx-bloco-row-anam span:first-child { color: var(--muted); }
-.tx-anam-vazia {
-  color: var(--danger); font-size: .85rem; font-weight: 600;
-}
+.tx-anam-vazia { color: var(--danger); font-size: .84rem; font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- LOGIN -->
+
+  <!-- ── HEADER ── -->
+  <header class="tx-header">
+    <a class="tx-header-brand" href="https://hub-granmarquise.fly.dev" target="_blank" rel="noopener noreferrer">
+      <img src="https://letsimage.s3.amazonaws.com/editor/granmarquise/imgs/1760033174793-hotelgranmarquise_pos_footer.png" alt="Gran Marquise">
+      <span class="tx-header-sep"></span>
+      <span class="tx-header-label">Gran SPA · Terapeuta</span>
+    </a>
+    <div class="tx-header-actions">
+      <span id="tx-nome-header" class="tx-nome-label" style="display:none"></span>
+      <button class="tx-btn-icon" id="tx-btn-theme" title="Alternar modo claro/escuro" aria-label="Alternar tema">
+        <svg id="tx-ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="tx-ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="tx-btn-outline" id="tx-btn-logout" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sair
+      </button>
+    </div>
+  </header>
+
+  <!-- ── LOGIN ── -->
   <div id="tx-login" class="tx-login">
     <div class="tx-login-card">
-      <h1>Acesso<br>terapeuta</h1>
-      <p>Selecione seu nome e digite seu PIN.</p>
+      <span class="tx-login-eyebrow">Gran SPA · Hotel Gran Marquise</span>
+      <h1>Minha<br>agenda</h1>
+      <div class="tx-login-rule"></div>
+      <p>Selecione seu nome e digite seu PIN de acesso.</p>
       <div id="tx-login-err" class="tx-err"></div>
       <form id="tx-login-form">
         <div class="tx-field">
@@ -310,15 +579,8 @@ button, input { font-family: inherit; }
     </div>
   </div>
 
-  <!-- APP -->
+  <!-- ── APP ── -->
   <div id="tx-app" style="display:none;flex:1;flex-direction:column">
-    <header class="tx-header">
-      <div class="tx-brand">
-        <small>Gran SPA</small>
-        <span id="tx-nome-header">Terapeuta</span>
-      </div>
-      <button class="tx-logout" id="tx-btn-logout">Sair</button>
-    </header>
     <main class="tx-agenda">
       <h2 class="tx-greet" id="tx-greet">Sua agenda</h2>
       <p class="tx-greet-sub" id="tx-greet-sub">Carregando atendimentos…</p>
@@ -335,7 +597,7 @@ button, input { font-family: inherit; }
     </main>
   </div>
 
-  <!-- DETALHE -->
+  <!-- ── DETALHE ── -->
   <div id="tx-overlay" class="tx-overlay">
     <div class="tx-sheet" id="tx-sheet"></div>
   </div>
@@ -349,8 +611,34 @@ button, input { font-family: inherit; }
   const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
-  let _escalaDias = {}; // iso → {disponivel, fonte, faixa, motivo} — escala resolvida pelo servidor
-  const DIAS_LABEL  = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  let _escalaDias = {};
+  const DIAS_LABEL = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+
+  // ── Tema ──
+  (function() {
+    const btn   = $('tx-btn-theme');
+    const icSun = $('tx-ic-sun');
+    const icMoon = $('tx-ic-moon');
+    function aplicar() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (icSun)  icSun.style.display  = dark ? '' : 'none';
+      if (icMoon) icMoon.style.display = dark ? 'none' : '';
+      try {
+        document.querySelector('meta[name="theme-color"]')
+          .setAttribute('content', dark ? '#202C28' : '#ECE4D2');
+      } catch(_){}
+    }
+    aplicar();
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (dark) document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', 'dark');
+      try { localStorage.setItem('spa_theme', dark ? 'light' : 'dark'); } catch(_){}
+      aplicar();
+    });
+  })();
+
   function renderEscalaBanner(iso) {
     const banner = $('tx-escala-banner');
     const txt = $('tx-escala-texto');
@@ -359,9 +647,6 @@ button, input { font-family: inherit; }
     const dowIndex = new Date(+y,+m-1,+d).getDay();
     const ehHoje = iso === hojeStr;
     const prefixo = ehHoje ? 'Hoje' : `Na ${DIAS_LABEL[dowIndex]}`;
-
-    // Fonte da verdade: escala resolvida pelo servidor (mensal → férias →
-    // padrão semanal). Sem resposta do servidor → banner oculto.
     const av = _escalaDias[iso];
     if (av) {
       if (av.faixa) {
@@ -378,19 +663,14 @@ button, input { font-family: inherit; }
         };
         txt.innerHTML = `<span class="tx-escala-folga">${MOTIVO_TXT[av.motivo] || `${prefixo}: ${av.motivo || 'não escalada'}`}</span>`;
       } else {
-        // disponível sem faixa definida (sem escala cadastrada) → sem banner
-        banner.style.display = 'none';
-        return;
+        banner.style.display = 'none'; return;
       }
-      banner.style.display = 'flex';
-      return;
+      banner.style.display = 'flex'; return;
     }
-
-    // Sem dados do servidor (fetch da escala falhou): oculta o banner
     banner.style.display = 'none';
   }
 
-  // ───── LOGIN ─────
+  // ── Login ──
   async function carregarNomes() {
     try {
       const r = await fetch('/api/terapeuta/nomes-ativos');
@@ -403,6 +683,7 @@ button, input { font-family: inherit; }
       $('tx-nome').innerHTML = '<option value="">Erro ao carregar</option>';
     }
   }
+
   async function checarSessao() {
     try {
       const r = await fetch('/api/terapeuta/me');
@@ -413,16 +694,25 @@ button, input { font-family: inherit; }
     } catch {}
     mostrarLogin();
   }
+
   function mostrarLogin() {
-    $('tx-login').style.display = 'flex'; $('tx-app').style.display = 'none';
+    $('tx-login').style.display = 'flex';
+    $('tx-app').style.display = 'none';
+    $('tx-nome-header').style.display = 'none';
+    $('tx-btn-logout').style.display = 'none';
     carregarNomes();
   }
+
   function entrarApp() {
     $('tx-login').style.display = 'none';
     $('tx-app').style.display = 'flex';
-    $('tx-nome-header').textContent = _me?.nome || 'Terapeuta';
+    const nomeEl = $('tx-nome-header');
+    nomeEl.textContent = _me?.nome || 'Terapeuta';
+    nomeEl.style.display = '';
+    $('tx-btn-logout').style.display = '';
     carregarAgenda();
   }
+
   $('tx-login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('tx-submit'); const err = $('tx-login-err');
@@ -447,40 +737,34 @@ button, input { font-family: inherit; }
       } catch { _me = { nome: d.nome }; }
       $('tx-pin').value = '';
       entrarApp();
-    } catch (e) {
+    } catch {
       err.textContent = 'Erro de rede. Tente novamente.';
       err.classList.add('show');
       btn.disabled = false; btn.textContent = 'Entrar';
     }
   });
+
   $('tx-btn-logout').addEventListener('click', async () => {
     await fetch('/api/terapeuta/logout', { method: 'POST' });
     _me = null; _reservas = [];
     mostrarLogin();
   });
 
-  // ───── UTILS ─────
+  // ── Utils ──
   function toLocalISO(d) {
     const p = n => String(n).padStart(2,'0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
   }
   function getWeekDates(hoje) {
     const d = new Date(hoje);
-    const day = d.getDay(); // 0=Dom
+    const day = d.getDay();
     const toMon = day === 0 ? -6 : 1 - day;
     return Array.from({length: 7}, (_, i) => {
       const nd = new Date(d); nd.setDate(d.getDate() + toMon + i); return toLocalISO(nd);
     });
   }
-  function labelDiaSemana(iso, hojeStr) {
-    const [y,m,dd] = iso.split('-');
-    const dt = new Date(+y, +m-1, +dd);
-    const abrev = dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
-    if (iso === hojeStr) return { short: 'Hoje', full: `Hoje, ${dd}/${m}` };
-    return { short: abrev, full: `${abrev}, ${dd}/${m}` };
-  }
 
-  // ───── AGENDA ─────
+  // ── Agenda ──
   async function carregarAgenda() {
     const sub = $('tx-greet-sub');
     sub.textContent = 'Carregando atendimentos…';
@@ -488,15 +772,12 @@ button, input { font-family: inherit; }
       const hoje = new Date();
       const hojeStr = toLocalISO(hoje);
       const semana = getWeekDates(hoje);
-      const from = semana[0];
-      const to   = semana[6];
+      const from = semana[0], to = semana[6];
       const r = await fetch(`/api/terapeuta/agenda?from=${from}&to=${to}`);
       if (r.status === 401) return mostrarLogin();
       const d = await r.json();
       _reservas = d.items || [];
       _diaAtivo = hojeStr;
-      // Escala resolvida por dia (mensal → férias → semanal) — falha silenciosa:
-      // o banner cai no fallback semanal local se este fetch não responder.
       try {
         const re = await fetch(`/api/terapeuta/escala?from=${from}&to=${to}`);
         if (re.ok) { const de = await re.json(); if (de.ok) _escalaDias = de.dias || {}; }
@@ -509,7 +790,6 @@ button, input { font-family: inherit; }
     }
   }
 
-  // Toggle Hoje / Semana
   $('btn-view-hoje').addEventListener('click', () => {
     _modoVista = 'hoje';
     $('btn-view-hoje').classList.add('active');
@@ -527,8 +807,8 @@ button, input { font-family: inherit; }
   function renderAgenda() {
     const hojeStr = toLocalISO(new Date());
     const semana = getWeekDates(new Date());
-    const total = _reservas.length;
     const hoje_count = _reservas.filter(r => r.data === hojeStr).length;
+    const total = _reservas.length;
     $('tx-greet-sub').textContent = `${hoje_count} hoje · ${total} esta semana`;
     const diaParaBanner = _modoVista === 'hoje' ? hojeStr : _diaAtivo;
     renderEscalaBanner(diaParaBanner);
@@ -554,14 +834,13 @@ button, input { font-family: inherit; }
       return `<button class="tx-day-tab${isAtivo?' active':''}${isHoje?' hoje-tab':''}" data-dia="${iso}">
         <span class="tx-tab-dia">${isHoje?'hoje':abrev}</span>
         <span class="tx-tab-num">${dd}/${m}</span>
-        ${cnt ? `<span style="font-size:.6rem;color:var(--gold);font-weight:700">${cnt}</span>` : ''}
+        ${cnt ? `<span style="font-size:.58rem;color:var(--gold);font-weight:700">${cnt}</span>` : ''}
       </button>`;
     }).join('');
     tabs.querySelectorAll('.tx-day-tab').forEach(b => b.addEventListener('click', () => {
       _diaAtivo = b.dataset.dia;
       renderAgenda();
     }));
-    // scroll to active
     const active = tabs.querySelector('.active');
     if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }
@@ -601,7 +880,7 @@ button, input { font-family: inherit; }
     }).join('')}</div>`;
   }
 
-  // ───── DETALHE ─────
+  // ── Detalhe ──
   async function abrirDetalhe(id) {
     const ov = $('tx-overlay'), sheet = $('tx-sheet');
     sheet.innerHTML = `<div class="tx-sheet-head"><h2 class="tx-detail-titulo">Carregando…</h2><button class="tx-close" data-close>✕</button></div>`;
@@ -613,10 +892,11 @@ button, input { font-family: inherit; }
       if (!r.ok) { sheet.innerHTML = '<p style="padding:1rem;color:var(--danger)">Erro ao carregar.</p>'; return; }
       const d = await r.json();
       renderDetalhe(d, ov);
-    } catch (e) {
+    } catch {
       sheet.innerHTML = '<p style="padding:1rem;color:var(--danger)">Erro de rede.</p>';
     }
   }
+
   function renderDetalhe(d, ov) {
     const sheet = $('tx-sheet');
     const { reserva, pessoa1, pessoa2 } = d;
@@ -627,7 +907,6 @@ button, input { font-family: inherit; }
     const trat = isP1 ? (reserva.tipo_massagem_nome || reserva.tratamento) : (reserva.tipo_massagem_nome2 || reserva.tratamento2 || reserva.tipo_massagem_nome);
     const sala = SALA_NOME[reserva.sala] || `Sala ${reserva.sala}`;
     const anam = p?.anamnese;
-
     const camposAnam = anam ? [
       ['Documento', anam.documento ? `${(anam.tipo_documento||'CPF').toUpperCase()} ${anam.documento}` : null],
       ['Nascimento', anam.data_nascimento],
@@ -638,13 +917,11 @@ button, input { font-family: inherit; }
       ['Informações médicas', anam.info_medica],
       ['Contato', anam.telefone || anam.email],
     ].filter(([,v]) => v && String(v).trim()) : [];
-
     const anamHtml = anam
       ? (camposAnam.length
           ? camposAnam.map(([k,v]) => `<div class="tx-bloco-row tx-bloco-row-anam"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
           : `<div class="tx-bloco-row"><span style="color:var(--muted2);font-style:italic">Anamnese preenchida (sem campos adicionais)</span></div>`)
       : `<div class="tx-bloco-row"><span class="tx-anam-vazia">⚠ Anamnese não preenchida</span></div>`;
-
     sheet.innerHTML = `
       <div class="tx-sheet-head">
         <div style="flex:1;min-width:0">
@@ -660,12 +937,10 @@ button, input { font-family: inherit; }
         <div class="tx-bloco-row"><span>Pesquisa</span><span>${p?.pesquisa_respondida_em ? '✓ Respondida' : 'Pendente'}</span></div>
         <div class="tx-bloco-sep"></div>
         ${anamHtml}
-      </div>
-    `;
+      </div>`;
     sheet.querySelector('[data-close]').addEventListener('click', () => ov.classList.remove('show'));
   }
 
-  // Init
   checarSessao();
 })();
 </script>
