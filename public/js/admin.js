@@ -8459,7 +8459,7 @@ let _bloqueioConflito = null;
 
 async function loadSalas() {
   try {
-    const r = await apiFetch('/api/admin/salas');
+    const r = await api('/api/admin/salas');
     const d = await r.json();
     if (!d.ok) return;
     _salasData = d.salas || [];
@@ -8563,7 +8563,7 @@ document.getElementById('form-sala-edit')?.addEventListener('submit', async e =>
   const observacao = document.getElementById('edit-sala-obs').value.trim();
   if (!nome) return;
   try {
-    const r = await apiFetch(`/api/admin/salas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, tipo, observacao: observacao || null }) });
+    const r = await api(`/api/admin/salas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, tipo, observacao: observacao || null }) });
     const d = await r.json();
     if (d.ok) { fecharModalSalaEdit(); loadSalas(); }
     else alert('Erro: ' + d.error);
@@ -8605,7 +8605,7 @@ document.getElementById('form-sala-bloqueio')?.addEventListener('submit', async 
   if (!data_inicio || !data_fim || !motivo) { errEl.textContent = 'Preencha todos os campos'; errEl.style.display = 'block'; return; }
   if (data_fim < data_inicio) { errEl.textContent = 'Data fim deve ser ≥ data início'; errEl.style.display = 'block'; return; }
   try {
-    const r = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+    const r = await api(`/api/admin/salas/${sala}/bloqueios`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data_inicio, data_fim, motivo }),
@@ -8657,7 +8657,7 @@ document.getElementById('btn-conflito-transferir')?.addEventListener('click', as
   const { sala, data_inicio, data_fim, motivo } = _bloqueioConflito;
   try {
     // 1. Criar bloqueio confirmado
-    const rb = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+    const rb = await api(`/api/admin/salas/${sala}/bloqueios`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data_inicio, data_fim, motivo, confirmar: true }),
@@ -8665,7 +8665,7 @@ document.getElementById('btn-conflito-transferir')?.addEventListener('click', as
     const db = await rb.json();
     if (!db.ok) { alert('Erro ao criar bloqueio: ' + db.error); return; }
     // 2. Transferir reservas
-    const rt = await apiFetch(`/api/admin/salas/${sala}/bloqueios/${db.id}/transferir`, { method: 'POST' });
+    const rt = await api(`/api/admin/salas/${sala}/bloqueios/${db.id}/transferir`, { method: 'POST' });
     const dt = await rt.json();
     fecharModalConflito();
     if (dt.sem_disponibilidade > 0) {
@@ -8683,7 +8683,7 @@ document.getElementById('btn-conflito-manual')?.addEventListener('click', async 
   if (!_bloqueioConflito) return;
   const { sala, data_inicio, data_fim, motivo } = _bloqueioConflito;
   // 1. Criar bloqueio
-  const rb = await apiFetch(`/api/admin/salas/${sala}/bloqueios`, {
+  const rb = await api(`/api/admin/salas/${sala}/bloqueios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ data_inicio, data_fim, motivo, confirmar: true }),
@@ -8705,7 +8705,7 @@ async function abrirEditorReservaManual() {
   const r = _reservasConflito[_indexReservaManual];
   const s = _salasData.find(x => x.id === _bloqueioConflito?.sala);
   // Buscar salas disponíveis
-  const rd = await apiFetch(`/api/admin/salas/disponiveis?data=${r.data}&hora_inicio=${r.hora_inicio}&hora_fim=${r.hora_fim}&excluir=${s?.id || ''}`);
+  const rd = await api(`/api/admin/salas/disponiveis?data=${r.data}&hora_inicio=${r.hora_inicio}&hora_fim=${r.hora_fim}&excluir=${s?.id || ''}`);
   const dd = await rd.json();
   const disponivel = dd.salas || [];
   document.getElementById('reserva-manual-info').innerHTML = `
@@ -8724,7 +8724,7 @@ document.getElementById('btn-reserva-manual-salvar')?.addEventListener('click', 
   const novaSala = Number(document.getElementById('reserva-manual-sala-select').value);
   if (!novaSala) { alert('Selecione uma sala'); return; }
   try {
-    const resp = await apiFetch(`/api/admin/salas/reservas/${r.id}/sala`, {
+    const resp = await api(`/api/admin/salas/reservas/${r.id}/sala`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sala: novaSala }),
@@ -8748,7 +8748,7 @@ document.getElementById('btn-reserva-manual-pular')?.addEventListener('click', (
 async function abrirListaBloqueios(salaId) {
   const s = _salasData.find(x => x.id === salaId);
   document.getElementById('lista-bloqueios-sala-nome').textContent = s?.nome || `Sala ${salaId}`;
-  const r = await apiFetch(`/api/admin/salas/${salaId}/bloqueios`);
+  const r = await api(`/api/admin/salas/${salaId}/bloqueios`);
   const d = await r.json();
   const lista = document.getElementById('lista-bloqueios-items');
   const hoje = new Date().toISOString().slice(0, 10);
@@ -8774,7 +8774,7 @@ document.getElementById('btn-fechar-lista-bloqueios')?.addEventListener('click',
 
 async function removerBloqueioUI(id) {
   if (!confirm('Remover este bloqueio?')) return;
-  const r = await apiFetch(`/api/admin/salas/bloqueios/${id}`, { method: 'DELETE' });
+  const r = await api(`/api/admin/salas/bloqueios/${id}`, { method: 'DELETE' });
   const d = await r.json();
   if (d.ok) {
     document.getElementById('modal-lista-bloqueios').style.display = 'none';
