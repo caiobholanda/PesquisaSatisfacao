@@ -6667,6 +6667,26 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
   _wNac('res2-inp-nacionalidade', 'res2-nac-list');
 })();
 
+// Auto-preenche Nacionalidade ao trocar Idioma (só se o campo estiver vazio)
+(function() {
+  const _NAC_FROM_LANG = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
+  function _wire(idiomaId, nacId) {
+    const idiomaEl = document.getElementById(idiomaId);
+    const nacEl    = document.getElementById(nacId);
+    if (!idiomaEl || !nacEl) return;
+    idiomaEl.addEventListener('change', function () {
+      if (nacEl.value.trim()) return;
+      const nac = _NAC_FROM_LANG[this.value];
+      if (!nac) return;
+      nacEl.value = nac;
+      const clr = nacEl.parentElement?.querySelector('.res-cb-clr');
+      if (clr) clr.style.display = '';
+    });
+  }
+  _wire('res-inp-idioma',  'res-inp-nacionalidade');
+  _wire('res2-inp-idioma', 'res2-inp-nacionalidade');
+})();
+
 // ────────────────────────────────────────────────────────────────────────────
 // Máscara automática do TELEFONE na Nova Reserva.
 // BR: (DD) 9 NNNN-NNNN (celular) ou (DD) NNNN-NNNN (fixo).
