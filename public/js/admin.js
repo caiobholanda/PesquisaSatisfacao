@@ -3274,10 +3274,31 @@ function _fecharModalSalasLotadas() {
   setTimeout(() => { ov.style.display = 'none'; }, 180);
 }
 window._fecharModalSalasLotadas = _fecharModalSalasLotadas;
-// Fechar ao clicar no backdrop (mesmo padrão dos outros overlays do admin)
-document.getElementById('modal-salas-lotadas')?.addEventListener('click', (e) => {
-  if (e.target.id === 'modal-salas-lotadas') _fecharModalSalasLotadas();
-});
+
+// Bind único (modal é estático no DOM) para os controles do popup de salas
+// lotadas. Não usar onclick inline: helmet CSP inclui `script-src-attr 'none'`
+// por padrão, o que bloqueia handlers inline mesmo com script-src 'unsafe-inline'.
+(function _bindSalasLotadasControles(){
+  const ov = document.getElementById('modal-salas-lotadas');
+  if (!ov) return;
+  // Backdrop (clique fora do card)
+  ov.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-salas-lotadas') _fecharModalSalasLotadas();
+  });
+  // Botão Fechar
+  document.getElementById('sl-btn-fechar')?.addEventListener('click', _fecharModalSalasLotadas);
+  // Botão Alterar horário — fecha e devolve foco ao trigger da hora
+  document.getElementById('sl-btn-alterar')?.addEventListener('click', () => {
+    _fecharModalSalasLotadas();
+    (document.getElementById('res-hora-trigger') || document.getElementById('res-inp-hora-inicio'))?.focus();
+  });
+  // Escape fecha o popup quando aberto
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!ov.classList.contains('aberto')) return;
+    _fecharModalSalasLotadas();
+  });
+})();
 
 // Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
 // Insere chips logo abaixo do input data, atualiza o value e dispara change
@@ -7342,6 +7363,7 @@ async function _abrirModalHistorico({ slug, titulo }) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.76);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   ov.innerHTML = `
+    <style>.hist-row:hover{background:var(--bg)}</style>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
@@ -7377,7 +7399,7 @@ async function _abrirModalHistorico({ slug, titulo }) {
       const ent  = ENTIDADE_LABEL[it.entidade] || it.entidade;
       const who  = it.usuario || 'sistema';
       return `
-        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.85rem 1.4rem;border-bottom:1px solid var(--border-lt,#eee);transition:background .12s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div class="hist-row" style="display:flex;gap:.8rem;align-items:flex-start;padding:.85rem 1.4rem;border-bottom:1px solid var(--border-lt,#eee);transition:background .12s">
           <div style="flex-shrink:0;width:135px;font-size:.72rem;color:var(--muted);padding-top:.15rem">${dtFmt}</div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
