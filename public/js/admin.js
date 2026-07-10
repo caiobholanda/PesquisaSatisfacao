@@ -2910,6 +2910,7 @@ function calOpenModal(salaId, data, hora) {
   document.getElementById('res-modal-overlay').style.display='flex';
   document.getElementById('res-modal-err').textContent='';
   document.querySelectorAll('.res-tipo-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-tipo-res]').forEach(b=>b.classList.remove('active'));
   document.getElementById('res-fg-apto').style.display='none';
   const _nomeFg = document.getElementById('res-fg-nome');
   if (_nomeFg) _nomeFg.style.gridColumn = '1 / -1';
@@ -3034,6 +3035,33 @@ async function _atualizarDisponibilidadeSalas() {
       }
     });
   } catch (_) { /* silencia erros de rede */ }
+}
+
+function _selecionarSalaAutomatica(tipo) {
+  if (tipo === 'dupla') {
+    for (const sid of [3, 4]) {
+      const btn = document.querySelector(`.res-room-btn[data-sala="${sid}"]`);
+      if (btn && !btn.classList.contains('bloq') && !btn.classList.contains('ocupada')) {
+        btn.click();
+        const casalChk = document.getElementById('res-chk-casal');
+        if (casalChk && !casalChk.checked) {
+          casalChk.checked = true;
+          casalChk.dispatchEvent(new Event('change'));
+        }
+        return;
+      }
+    }
+    showToast('⚠️ Salas 3 e 4 indisponíveis para este horário');
+  } else {
+    for (const sid of [1, 2, 3, 4]) {
+      const btn = document.querySelector(`.res-room-btn[data-sala="${sid}"]`);
+      if (btn && !btn.classList.contains('bloq') && !btn.classList.contains('ocupada')) {
+        btn.click();
+        return;
+      }
+    }
+    showToast('⚠️ Nenhuma sala individual disponível para este horário');
+  }
 }
 
 // Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
@@ -3785,6 +3813,12 @@ function _syncCasalUI() {
   if (sep1)  sep1.style.display  = casal ? '' : 'none';
   if (wrap1) wrap1.classList.toggle('casal-ativo', casal);
 }
+
+document.querySelectorAll('[data-tipo-res]').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('[data-tipo-res]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _selecionarSalaAutomatica(btn.dataset.tipoRes);
+}));
 
 document.querySelectorAll('.res-room-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
