@@ -5465,6 +5465,7 @@ function _renderBlocoAnamnese(anam) {
     ['E-mail', anam.email],
     ['Telefone', anam.telefone],
     ['Data nascimento', anam.data_nascimento],
+    ['Nacionalidade', anam.nacionalidade],
     ['Rotina facial', anam.rotina_facial],
     ['Rotina corporal', anam.rotina_corporal],
     ['Produto específico', anam.produto_especifico],
@@ -5805,6 +5806,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${linhaCampo('E-mail', a.email)}
         ${linhaCampo('Telefone', a.telefone)}
         ${linhaCampo('Data de nascimento', fmtData(a.data_nascimento))}
+        ${linhaCampo('Nacionalidade', a.nacionalidade)}
         ${linhaCampo('Quarto', a.quarto || 'Passante')}
         ${_renderGrupo(_grupoExtras.dados_pessoais)}
 
