@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista } from '../db.js';
+import { listarReservasSemana, inserirReserva, atualizarReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -379,6 +379,151 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       code: e?.code,
       stack: e?.stack,
     });
+    if (res.headersSent) return;
+    return res.status(500).json({ ok: false, error: 'Erro interno' });
+  }
+});
+
+router.put('/:id', ...podeEscreverSpa, (req, res) => {
+  try {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: 'id inválido' });
+
+  const {
+    sala, tipo_cliente, cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim,
+    linha, tipo_massagem_id, massagista_id,
+    cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
+    tipo_doc, doc, quarto,
+    tipo_doc2, doc2, quarto2,
+    idioma, nacionalidade,
+    idioma2, nacionalidade2,
+    cpf: _cpfLegacy, cpf2: _cpf2Legacy,
+  } = req.body || {};
+
+  if (!sala || !tipo_cliente || !cliente?.trim() || !email?.trim() || !data || !hora_inicio || !hora_fim)
+    return res.status(400).json({ ok: false, error: 'Campos obrigatórios ausentes' });
+  if (+sala !== 5 && !massagista_id)
+    return res.status(400).json({ ok: false, error: 'Selecione uma massoterapeuta para o atendimento' });
+  if (!['hospede', 'passante'].includes(tipo_cliente))
+    return res.status(400).json({ ok: false, error: 'Tipo de cliente inválido' });
+
+  const quartoLimpo = quarto ? String(quarto).trim().replace(/\D/g, '').padStart(4,'0').slice(-4) : '';
+  if (tipo_cliente === 'hospede') {
+    if (!quartoLimpo) return res.status(400).json({ ok: false, error: 'Quarto obrigatório para hóspedes' });
+    if (!quartoValido(quartoLimpo)) return res.status(400).json({ ok: false, error: 'Quarto inexistente.' });
+  } else if (quartoLimpo && !quartoValido(quartoLimpo)) {
+    return res.status(400).json({ ok: false, error: 'Quarto inexistente.' });
+  }
+  if (telefone && !telefoneValido(telefone))
+    return res.status(400).json({ ok: false, error: 'Telefone inválido.' });
+
+  const iniMin = (s => { const m = (s||'').match(/^(\d{2}):(\d{2})$/); return m ? +m[1]*60 + +m[2] : NaN; })(hora_inicio);
+  const fimMin = (s => { const m = (s||'').match(/^(\d{2}):(\d{2})$/); return m ? +m[1]*60 + +m[2] : NaN; })(hora_fim);
+  if (isNaN(iniMin) || isNaN(fimMin) || fimMin <= iniMin)
+    return res.status(400).json({ ok: false, error: 'Horário inválido' });
+  if (iniMin < 9*60 || iniMin >= 22*60)
+    return res.status(400).json({ ok: false, error: 'Hora de início fora do expediente (09:00–22:00)' });
+  if (fimMin > 22*60)
+    return res.status(400).json({ ok: false, error: 'O tratamento terminaria após o fechamento do spa às 22:00' });
+
+  const tipoDoc1 = tipo_doc === 'passaporte' ? 'passaporte' : 'cpf';
+  const docNorm1 = tipoDoc1 === 'cpf'
+    ? (doc || _cpfLegacy || '').toString().replace(/\D/g, '')
+    : (doc || '').toString().trim().toUpperCase();
+
+  const _p2Presente = (+sala === 3 || +sala === 4) && !!(cliente2?.trim() || doc2 || _cpf2Legacy || tratamento2?.trim() || massagista_id2);
+  const tipoDoc2 = tipo_doc2 === 'passaporte' ? 'passaporte' : 'cpf';
+  const docNorm2 = tipoDoc2 === 'cpf'
+    ? (doc2 || _cpf2Legacy || '').toString().replace(/\D/g, '')
+    : (doc2 || '').toString().trim().toUpperCase();
+
+  if (_p2Presente) {
+    if (!cliente2?.trim()) return res.status(400).json({ ok: false, error: 'Pessoa 2: informe o nome' });
+    if (!massagista_id2)   return res.status(400).json({ ok: false, error: 'Pessoa 2: selecione a massoterapeuta' });
+    if (+massagista_id2 === +massagista_id) return res.status(400).json({ ok: false, error: 'As duas pessoas não podem ter a mesma massoterapeuta' });
+    if (telefone2 && !telefoneValido(telefone2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: telefone inválido' });
+  }
+
+  try {
+    const overrideEscala = !!(req.body?.override_escala);
+    if (!overrideEscala && massagista_id) {
+      const ctxEscala = contextoEscalaDia(data);
+      const mm = buscarMassagistaById(+massagista_id);
+      if (mm) {
+        const av = avaliarEscalaMassagista(mm, data, hora_inicio, hora_fim, ctxEscala);
+        if (!av.disponivel) {
+          return res.status(409).json({
+            ok: false, tipo: 'escala',
+            error: `${mm.nome} — ${av.motivo || 'fora da escala'} nesta data/horário`,
+            motivo: av.motivo, fonte: av.fonte, faixa: av.faixa || null,
+            massagista: mm.nome, massagista_id: mm.id, override_permitido: true,
+          });
+        }
+      }
+    }
+    if (!overrideEscala && massagista_id2 && _p2Presente) {
+      const ctxEscala = contextoEscalaDia(data);
+      const mm2 = buscarMassagistaById(+massagista_id2);
+      if (mm2) {
+        const av2 = avaliarEscalaMassagista(mm2, data, hora_inicio, hora_fim, ctxEscala);
+        if (!av2.disponivel) {
+          return res.status(409).json({
+            ok: false, tipo: 'escala',
+            error: `Pessoa 2: ${mm2.nome} — ${av2.motivo || 'fora da escala'} nesta data/horário`,
+            motivo: av2.motivo, fonte: av2.fonte, faixa: av2.faixa || null,
+            massagista: mm2.nome, massagista_id: mm2.id, override_permitido: true,
+          });
+        }
+      }
+    }
+
+    const _locale1 = idioma?.trim() || null;
+    const _locale2 = _p2Presente ? (idioma2?.trim() || null) : null;
+    if (docNorm1) {
+      try {
+        const upd = {};
+        if (_locale1) upd.locale_pref = _locale1;
+        if (nacionalidade?.trim()) upd.nacionalidade = nacionalidade.trim();
+        const exCli = tipoDoc1 === 'cpf' ? buscarClientePorCpf(docNorm1) : buscarClientePorPassaporte(docNorm1);
+        if (exCli && Object.keys(upd).length) atualizarCliente(exCli.id, upd);
+      } catch {}
+    }
+
+    atualizarReserva(
+      id, +sala, cliente.trim(), tipo_cliente, quartoLimpo || apto?.trim() || null,
+      email.trim(), telefone?.trim() || null, tratamento?.trim() || null,
+      data, hora_inicio, hora_fim,
+      {
+        linha: linha?.trim() || null,
+        tipo_massagem_id: tipo_massagem_id ? +tipo_massagem_id : null,
+        massagista_id: massagista_id ? +massagista_id : null,
+        cliente2: _p2Presente ? (cliente2?.trim() || null) : null,
+        tipo_cliente2: _p2Presente ? (tipo_cliente2 || null) : null,
+        apto2: _p2Presente ? (quarto2 || apto2?.trim() || null) : null,
+        email2: _p2Presente ? (email2?.trim() || null) : null,
+        telefone2: _p2Presente ? (telefone2?.trim() || null) : null,
+        tratamento2: _p2Presente ? (tratamento2?.trim() || null) : null,
+        tipo_massagem_id2: _p2Presente && tipo_massagem_id2 ? +tipo_massagem_id2 : null,
+        massagista_id2: _p2Presente && massagista_id2 ? +massagista_id2 : null,
+        idioma: _locale1,
+        idioma2: _locale2,
+      }
+    );
+
+    try {
+      if (quartoLimpo) getDb().prepare('UPDATE reservas SET quarto=? WHERE id=?').run(quartoLimpo, id);
+    } catch {}
+
+    res.json({ ok: true, id });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND')    return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
+    if (e.code === 'SALA_BLOQUEADA') return res.status(409).json({ ok: false, error: `Sala bloqueada: ${e.motivo}`, tipo: 'bloqueio', motivo: e.motivo });
+    if (e.code === 'CONFLITO_SALA')  return res.status(409).json({ ok: false, error: 'Sala já reservada neste horário', tipo: 'sala', conflito: e.conflito });
+    if (e.code === 'CONFLITO_PROF')  return res.status(409).json({ ok: false, error: 'Massoterapeuta já tem atendimento neste horário', tipo: 'massagista', conflito: e.conflito });
+    throw e;
+  }
+  } catch (e) {
+    console.error('[PUT /api/reservas/:id] FALHA', { id: req.params.id, msg: e?.message, code: e?.code });
     if (res.headersSent) return;
     return res.status(500).json({ ok: false, error: 'Erro interno' });
   }

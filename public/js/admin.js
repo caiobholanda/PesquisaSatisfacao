@@ -2165,6 +2165,7 @@ let _resSala       = null;
 let _resTipo       = null;
 let _resHoraInicio = null;
 let _resHoraFim    = null;
+let _resEditandoId = null; // id da reserva sendo editada; null = nova reserva
 let _tratamentos = []; // [{nome, duracao_min, ...}]
 let _massagistasModal = []; // cache p/ modal de reserva — [{id, nome, bilingue, vinculo, ...}]
 
@@ -3869,10 +3870,134 @@ async function calVerDetalhes(id) {
   btnCancel.onclick = cancelBloqueado ? null : () => {
     calCancelar(r.id, document.getElementById('resdet-overlay'));
   };
+  const btnEditar = document.getElementById('resdet-editar-res');
+  if (btnEditar) btnEditar.onclick = () => calAbrirEdicao(r);
   _modalOpen = true;
   document.getElementById('resdet-overlay').style.display = 'flex';
 }
 window.calVerDetalhes = calVerDetalhes;
+
+async function calAbrirEdicao(r) {
+  _modalOpen = false;
+  document.getElementById('resdet-overlay').style.display = 'none';
+
+  calOpenModal(r.sala, r.data, r.hora_inicio);
+  _resEditandoId = r.id;
+
+  const titleEl = document.getElementById('res-modal-title-txt');
+  const subEl   = document.getElementById('res-modal-sub-txt');
+  const btnSalvar = document.getElementById('btn-res-salvar');
+  if (titleEl)   titleEl.textContent  = 'Editar Reserva';
+  if (subEl)     subEl.textContent    = `Reserva #${r.id} — altere os campos desejados`;
+  if (btnSalvar) btnSalvar.textContent = 'Salvar Alterações';
+
+  // Editing allows past dates — remove the min restriction set by calOpenModal
+  const dataInp = document.getElementById('res-inp-data');
+  if (dataInp) { dataInp.min = ''; dataInp.value = r.data; }
+
+  await Promise.all([loadTratamentosModal(), loadMassagistasModal()]);
+
+  // tipo_cliente
+  if (r.tipo_cliente) calSetTipo(r.tipo_cliente);
+
+  // documento (CPF ou passaporte)
+  const tipoDocSel = document.getElementById('res-sel-tipo-doc');
+  if (tipoDocSel) {
+    const td = r.passaporte ? 'passaporte' : 'cpf';
+    tipoDocSel.value = td;
+    tipoDocSel.dispatchEvent(new Event('change'));
+    const cpfInp = document.getElementById('res-inp-cpf');
+    if (cpfInp) {
+      if (td === 'cpf' && r.cpf) {
+        const c = r.cpf;
+        cpfInp.value = c.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') || c;
+      } else {
+        cpfInp.value = r.passaporte || '';
+      }
+    }
+  }
+
+  const _setV = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+  _setV('res-inp-nome',          r.cliente   || '');
+  _setV('res-inp-apto',          r.quarto    || r.apto || '');
+  _setV('res-inp-email',         r.email     || '');
+  _setV('res-inp-tel',           r.telefone  || '');
+  _setV('res-inp-idioma',        r.idioma    || 'pt-BR');
+
+  // hora_inicio já definida por calOpenModal; hora_fim: para Espaço Beleza definir manual
+  if (+r.sala === 5 && r.hora_fim) {
+    _setV('res-inp-hora-fim-manual', r.hora_fim);
+    document.getElementById('res-inp-hora-fim-manual')?.dispatchEvent(new Event('change'));
+  }
+
+  // tratamento (combobox: set hidden + text + clear btn, dispatch change para calcular hora_fim)
+  if (r.tratamento) {
+    const hidTrat = document.getElementById('res-inp-tratamento');
+    const txtTrat = document.getElementById('res-cb-trat-inp');
+    const clrTrat = document.getElementById('res-cb-trat-clr');
+    if (hidTrat) { hidTrat.value = r.tratamento; }
+    if (txtTrat) { txtTrat.value = r.tratamento; }
+    if (clrTrat) { clrTrat.style.display = ''; }
+    if (hidTrat) hidTrat.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // linha (facial)
+  if (r.linha) {
+    const linhaEl = document.getElementById('res-inp-linha');
+    if (linhaEl) linhaEl.value = r.linha;
+  }
+
+  // massagista (combobox)
+  if (r.massagista_id) {
+    const mass = _massagistasModal.find(m => m.id === r.massagista_id);
+    if (mass) {
+      const hidMass = document.getElementById('res-inp-massagista');
+      const txtMass = document.getElementById('res-cb-mass-inp');
+      const clrMass = document.getElementById('res-cb-mass-clr');
+      if (hidMass) { hidMass.value = mass.id; }
+      if (txtMass) { txtMass.value = mass.nome; }
+      if (clrMass) { clrMass.style.display = ''; }
+      if (hidMass) hidMass.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  // casal
+  if (r.cliente2?.trim()) {
+    const casalWrap = document.getElementById('res-casal-chk-wrap');
+    const casalChk  = document.getElementById('res-chk-casal');
+    if (casalWrap) casalWrap.style.display = '';
+    if (casalChk) { casalChk.checked = true; casalChk.dispatchEvent(new Event('change')); }
+
+    if (r.tipo_cliente2) calSetTipo2(r.tipo_cliente2);
+    _setV('res2-inp-nome',   r.cliente2  || '');
+    _setV('res2-inp-quarto', r.apto2     || '');
+    _setV('res2-inp-email',  r.email2    || '');
+    _setV('res2-inp-tel',    r.telefone2 || '');
+    _setV('res2-inp-idioma', r.idioma2   || 'pt-BR');
+
+    if (r.tratamento2) {
+      const hidTrat2 = document.getElementById('res-inp-tratamento2');
+      const txtTrat2 = document.getElementById('res-cb-trat2-inp');
+      const clrTrat2 = document.getElementById('res-cb-trat2-clr');
+      if (hidTrat2) hidTrat2.value = r.tratamento2;
+      if (txtTrat2) txtTrat2.value = r.tratamento2;
+      if (clrTrat2) clrTrat2.style.display = '';
+      if (hidTrat2) hidTrat2.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (r.massagista_id2) {
+      const mass2 = _massagistasModal.find(m => m.id === r.massagista_id2);
+      if (mass2) {
+        const hidMass2 = document.getElementById('res-inp-massagista2');
+        const txtMass2 = document.getElementById('res-cb-mass2-inp');
+        const clrMass2 = document.getElementById('res-cb-mass2-clr');
+        if (hidMass2) hidMass2.value = mass2.id;
+        if (txtMass2) txtMass2.value = mass2.nome;
+        if (clrMass2) clrMass2.style.display = '';
+        if (hidMass2) hidMass2.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+  }
+}
 
 document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
@@ -4060,6 +4185,20 @@ function calCloseModal(){
   _modalOpen = false;
   document.getElementById('res-modal-overlay').style.display='none';
   _resSala=null;
+  if (_resEditandoId !== null) {
+    _resEditandoId = null;
+    const titleEl = document.getElementById('res-modal-title-txt');
+    const subEl   = document.getElementById('res-modal-sub-txt');
+    const btnSalvar = document.getElementById('btn-res-salvar');
+    if (titleEl)   titleEl.textContent  = 'Nova Reserva';
+    if (subEl)     subEl.textContent    = 'Preencha os dados para confirmar a reserva';
+    if (btnSalvar) btnSalvar.textContent = 'Confirmar Reserva';
+    const dataInp = document.getElementById('res-inp-data');
+    if (dataInp) {
+      const _ft = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+      dataInp.min = _ft.getFullYear() + '-' + String(_ft.getMonth()+1).padStart(2,'0') + '-' + String(_ft.getDate()).padStart(2,'0');
+    }
+  }
 }
 
 document.getElementById('btn-nova-reserva').addEventListener('click',()=>calOpenModal(1,_calDiaSel?calDateStr(_calDiaSel):null,'09:00'));
@@ -4186,20 +4325,22 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     }
   }
   if(!data){err.textContent='Informe a data.';return;}
-  // Bloqueia agendamento no passado. Comparação em hora de Fortaleza.
-  const _agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
-  const _hojeYMD = _agora.getFullYear() + '-' + String(_agora.getMonth()+1).padStart(2,'0') + '-' + String(_agora.getDate()).padStart(2,'0');
-  if (data < _hojeYMD) {
-    err.textContent = 'Não é possível agendar em data passada.';
-    document.getElementById('res-inp-data')?.focus();
-    return;
-  }
-  if (data === _hojeYMD) {
-    const agoraHHMM = String(_agora.getHours()).padStart(2,'0') + ':' + String(_agora.getMinutes()).padStart(2,'0');
-    if (horaInicio < agoraHHMM) {
-      err.textContent = `Horário no passado. Agora são ${agoraHHMM} (Fortaleza) — agende a partir desse horário.`;
-      document.getElementById('res-inp-hora-inicio')?.focus();
+  // Bloqueia agendamento no passado (só para novas reservas — edição permite datas passadas).
+  if (!_resEditandoId) {
+    const _agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+    const _hojeYMD = _agora.getFullYear() + '-' + String(_agora.getMonth()+1).padStart(2,'0') + '-' + String(_agora.getDate()).padStart(2,'0');
+    if (data < _hojeYMD) {
+      err.textContent = 'Não é possível agendar em data passada.';
+      document.getElementById('res-inp-data')?.focus();
       return;
+    }
+    if (data === _hojeYMD) {
+      const agoraHHMM = String(_agora.getHours()).padStart(2,'0') + ':' + String(_agora.getMinutes()).padStart(2,'0');
+      if (horaInicio < agoraHHMM) {
+        err.textContent = `Horário no passado. Agora são ${agoraHHMM} (Fortaleza) — agende a partir desse horário.`;
+        document.getElementById('res-inp-hora-inicio')?.focus();
+        return;
+      }
     }
   }
   const iniMinSub = calTimeMin(horaInicio);
@@ -4276,10 +4417,10 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
 
   // Verificação local de conflito antes de bater no servidor
   const _novaCasal = _isCasal() && _p2Preenchida;
-  const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, undefined, _novaCasal);
+  const conflitoLocal = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, _resEditandoId || undefined, _novaCasal);
   if (conflitoLocal) { calMostrarConflito(conflitoLocal); return; }
   if (_p2Preenchida && massagistaId2) {
-    const c2 = calDetectarConflito(sala, massagistaId2, data, horaInicio, _resHoraFim, null, _novaCasal);
+    const c2 = calDetectarConflito(sala, massagistaId2, data, horaInicio, _resHoraFim, _resEditandoId || null, _novaCasal);
     if (c2 && c2.tipo === 'massagista') { calMostrarConflito(c2); return; }
   }
 
@@ -4304,7 +4445,9 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
         nacionalidade2: resolverNacionalidade(document.getElementById('res2-inp-nacionalidade')?.value?.trim() || '', NACIONALIDADES) || null,
       });
     }
-    const res=await api('/api/reservas',{method:'POST',body:JSON.stringify(body)});
+    const _apiUrl    = _resEditandoId ? `/api/reservas/${_resEditandoId}` : '/api/reservas';
+    const _apiMethod = _resEditandoId ? 'PUT' : 'POST';
+    const res=await api(_apiUrl,{method:_apiMethod,body:JSON.stringify(body)});
     if(!res)return;
     const d=await res.json();
     if(!d.ok){
@@ -4314,7 +4457,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
         const msg = (d.error || 'Massoterapeuta fora da escala nesta data/horário') +
           (d.faixa ? ` (turno: ${d.faixa})` : '') + '.\n\nAgendar mesmo assim?';
         if (confirm(msg)) {
-          const res2 = await api('/api/reservas', { method: 'POST', body: JSON.stringify({ ...body, override_escala: true }) });
+          const res2 = await api(_apiUrl, { method: _apiMethod, body: JSON.stringify({ ...body, override_escala: true }) });
           if (!res2) return;
           const d2 = await res2.json();
           if (!d2.ok) {
@@ -4330,7 +4473,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
           loadReservas();
           return;
         }
-        err.textContent = 'Reserva não criada — massoterapeuta fora da escala neste horário.';
+        err.textContent = _resEditandoId ? 'Reserva não editada — massoterapeuta fora da escala neste horário.' : 'Reserva não criada — massoterapeuta fora da escala neste horário.';
         return;
       }
       // Conflito detectado pelo servidor
@@ -4341,7 +4484,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       }
       if (res.status === 409) {
         await loadReservas();
-        const c = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, undefined, _novaCasal);
+        const c = calDetectarConflito(sala, massagistaId, data, horaInicio, _resHoraFim, _resEditandoId || undefined, _novaCasal);
         if (c) { calMostrarConflito(c); return; }
       }
       err.textContent = d.error || 'Erro ao salvar.';

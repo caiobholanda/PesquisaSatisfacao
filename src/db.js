@@ -1778,6 +1778,72 @@ export function cancelarReserva(id) {
   return getDb().prepare(`DELETE FROM reservas WHERE id = ?`).run(id).changes;
 }
 
+export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, opts = {}) {
+  const {
+    linha = null, tipo_massagem_id = null, massagista_id = null,
+    cliente2 = null, tipo_cliente2 = null, apto2 = null, email2 = null, telefone2 = null,
+    tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
+    idioma = null, idioma2 = null,
+  } = opts;
+  const db = getDb();
+
+  const existing = db.prepare('SELECT id FROM reservas WHERE id = ?').get(id);
+  if (!existing) throw Object.assign(new Error('Reserva não encontrada'), { code: 'NOT_FOUND' });
+
+  const _bloqueioAtivo = db.prepare(
+    `SELECT id, motivo FROM sala_bloqueios WHERE sala = ? AND data_inicio <= ? AND data_fim >= ? LIMIT 1`
+  ).get(sala, data, data);
+  if (_bloqueioAtivo) throw Object.assign(new Error('SALA_BLOQUEADA'), { code: 'SALA_BLOQUEADA', motivo: _bloqueioAtivo.motivo });
+
+  const novaCasal = !!(cliente2 && String(cliente2).trim());
+  const isSala34 = (sala === 3 || sala === 4);
+  const conflitoSala = db.prepare(`
+    SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+    WHERE data = ? AND id != ?
+      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      AND (
+        sala = ?
+        OR (? = 1 AND sala IN (3, 4) AND (? = 1 OR (cliente2 IS NOT NULL AND TRIM(cliente2) != '')))
+      )
+    LIMIT 1
+  `).get(data, id, horaInicio, horaFim, sala, isSala34 ? 1 : 0, novaCasal ? 1 : 0);
+  if (conflitoSala) throw Object.assign(new Error('CONFLITO_SALA'), { code: 'CONFLITO_SALA', conflito: conflitoSala });
+
+  if (massagista_id) {
+    const conflitoProf = db.prepare(`
+      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ? AND id != ?
+        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+    `).get(massagista_id, massagista_id, data, id, horaInicio, horaFim);
+    if (conflitoProf) throw Object.assign(new Error('CONFLITO_PROF'), { code: 'CONFLITO_PROF', conflito: conflitoProf });
+  }
+
+  if (massagista_id2) {
+    const conflitoProf2 = db.prepare(`
+      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ? AND id != ?
+        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+    `).get(massagista_id2, massagista_id2, data, id, horaInicio, horaFim);
+    if (conflitoProf2) throw Object.assign(new Error('CONFLITO_PROF'), { code: 'CONFLITO_PROF', conflito: conflitoProf2 });
+  }
+
+  db.prepare(`
+    UPDATE reservas SET
+      sala=?, cliente=?, tipo_cliente=?, apto=?, email=?, telefone=?, tratamento=?,
+      data=?, hora_inicio=?, hora_fim=?, linha=?, tipo_massagem_id=?, massagista_id=?,
+      cliente2=?, tipo_cliente2=?, apto2=?, email2=?, telefone2=?, tratamento2=?,
+      tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?
+    WHERE id=?
+  `).run(
+    sala, cliente, tipo_cliente, apto, email, telefone, tratamento,
+    data, horaInicio, horaFim, linha, tipo_massagem_id, massagista_id,
+    cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2,
+    tipo_massagem_id2, massagista_id2, idioma, idioma2,
+    id
+  );
+  return { ok: true };
+}
+
 export function buscarReservaById(id) {
   return getDb().prepare(`
     SELECT r.*, m.nome AS massagista_nome, m2.nome AS massagista_nome2
