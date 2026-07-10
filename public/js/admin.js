@@ -3006,38 +3006,96 @@ function calOpenModal(salaId, data, hora) {
 }
 window.calOpenModal=calOpenModal;
 
-// Ajusta bounds do input de hora_inicio conforme data escolhida:
-// - Hoje (Fortaleza): min = próxima slot de 15min a partir de agora
-// - Outros dias: min = 09:00
-// Máximo sempre 21:30 (última partida útil antes do fechamento 22:00).
+// Popula os dois selects de Hora de início (hora + minuto) conforme a data:
+// - Hoje (Fortaleza): hora começa na hora atual (ou próxima cheia se
+//   passou algum minuto) e vai até 21. Minuto: 00,15,30,45 sempre.
+// - Outros dias: hora 09..21, minuto 00,15,30,45.
+// Também mantém o input hidden #res-inp-hora-inicio sincronizado (source
+// de verdade lida pelo restante do código) e dispara change para acionar
+// calAtualizarHoraFim + disponibilidade de salas.
 function _ajustarHoraInicioBounds() {
-  const inp = document.getElementById('res-inp-hora-inicio');
-  if (!inp) return;
+  const hid  = document.getElementById('res-inp-hora-inicio');
+  const selH = document.getElementById('res-inp-hora-inicio-h');
+  const selM = document.getElementById('res-inp-hora-inicio-m');
+  if (!hid || !selH || !selM) return;
   const dataVal = document.getElementById('res-inp-data')?.value || '';
   const agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
   const hojeFt = agoraFt.getFullYear() + '-' + String(agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(agoraFt.getDate()).padStart(2,'0');
-  let minStr = '09:00';
+  let startHour = CAL_H_START; // 9
   if (dataVal === hojeFt) {
-    // Arredonda para cima o próximo múltiplo de 15min. Se antes das 09:00,
-    // clampa em 09:00; se depois de 21:30, clampa em 21:30 (impede reserva
-    // no mesmo dia após 21:30).
-    let mins = agoraFt.getHours() * 60 + agoraFt.getMinutes();
-    mins = Math.ceil(mins / 15) * 15;
-    if (mins < CAL_H_START * 60) mins = CAL_H_START * 60;
-    if (mins > 21 * 60 + 30) mins = 21 * 60 + 30;
-    minStr = String(Math.floor(mins / 60)).padStart(2,'0') + ':' + String(mins % 60).padStart(2,'0');
+    startHour = agoraFt.getHours();
+    if (agoraFt.getMinutes() > 0) startHour += 1; // se já passou dos :00, começa na próxima cheia
+    if (startHour < CAL_H_START) startHour = CAL_H_START;
+    if (startHour > 21) startHour = 21;
   }
-  inp.min = minStr;
-  inp.max = '21:30';
-  // Se o valor atual está fora do novo range, empurra para o mínimo válido.
-  const cur = inp.value;
-  const toMin = s => { const [h,m] = String(s).split(':').map(Number); return (h||0)*60 + (m||0); };
-  if (!cur || toMin(cur) < toMin(minStr) || toMin(cur) > toMin('21:30')) {
-    inp.value = minStr;
-    _resHoraInicio = minStr;
-    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  const endHour = 21;
+
+  // Fonte de verdade = hidden. Extrai hora/minuto atuais.
+  const parts = String(hid.value || '').split(':');
+  const wantH = parts[0] || '';
+  const wantM = parts[1] || '00';
+
+  // Reconstrói options de hora e escolhe a hora desejada se ainda válida.
+  selH.innerHTML = '';
+  for (let h = startHour; h <= endHour; h++) {
+    const v = String(h).padStart(2,'0');
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    selH.appendChild(opt);
+  }
+  selH.value = (wantH && [...selH.options].some(o => o.value === wantH))
+    ? wantH
+    : String(startHour).padStart(2,'0');
+
+  // Minutos SEMPRE 00,15,30,45 — só popular na primeira vez.
+  if (!selM.options.length) {
+    ['00','15','30','45'].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      selM.appendChild(opt);
+    });
+  }
+  selM.value = (['00','15','30','45'].includes(wantM)) ? wantM : '00';
+
+  // Também mantém min/max no hidden para defesa em profundidade no submit.
+  hid.min = String(startHour).padStart(2,'0') + ':00';
+  hid.max = '21:30';
+
+  // Sincroniza hidden com os selects visíveis, disparando cadeia só se mudou.
+  const novo = selH.value + ':' + selM.value;
+  if (hid.value !== novo) {
+    hid.value = novo;
+    _resHoraInicio = novo;
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
+
+// Ao mudar qualquer um dos selects visíveis, sincroniza o hidden e dispara
+// change → cascata (calAtualizarHoraFim + massagistas + disponibilidade).
+function _onSelectHoraInicioChange() {
+  const hid  = document.getElementById('res-inp-hora-inicio');
+  const selH = document.getElementById('res-inp-hora-inicio-h');
+  const selM = document.getElementById('res-inp-hora-inicio-m');
+  if (!hid || !selH || !selM) return;
+  hid.value = selH.value + ':' + selM.value;
+  _resHoraInicio = hid.value;
+  hid.dispatchEvent(new Event('change', { bubbles: true }));
+}
+document.getElementById('res-inp-hora-inicio-h')?.addEventListener('change', _onSelectHoraInicioChange);
+document.getElementById('res-inp-hora-inicio-m')?.addEventListener('change', _onSelectHoraInicioChange);
+
+// Quando o hidden muda por atribuição direta em outro fluxo (ex: calOpenModal
+// setando 09:00), sincroniza os selects.
+function _syncSelectsDeHiddenHora() {
+  const hid  = document.getElementById('res-inp-hora-inicio');
+  const selH = document.getElementById('res-inp-hora-inicio-h');
+  const selM = document.getElementById('res-inp-hora-inicio-m');
+  if (!hid || !selH || !selM) return;
+  const [h, m] = String(hid.value || '').split(':');
+  if (h && [...selH.options].some(o => o.value === h) && selH.value !== h) selH.value = h;
+  if (m && [...selM.options].some(o => o.value === m) && selM.value !== m) selM.value = m;
+}
+document.getElementById('res-inp-hora-inicio')?.addEventListener('change', _syncSelectsDeHiddenHora);
 
 async function _atualizarDisponibilidadeSalas() {
   const dataVal = document.getElementById('res-inp-data')?.value;

@@ -4329,7 +4329,12 @@
           </div>
           <div class="res-fg">
             <label>Hora de início <span style="color:var(--danger)">*</span></label>
-            <input type="time" id="res-inp-hora-inicio" min="09:00" max="21:30" step="900">
+            <div class="res-hora-picker" style="display:flex;align-items:stretch;gap:.4rem">
+              <select id="res-inp-hora-inicio-h" aria-label="Hora" style="flex:1;padding:.55rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text);cursor:pointer"></select>
+              <span style="font-weight:600;color:var(--muted);display:flex;align-items:center">:</span>
+              <select id="res-inp-hora-inicio-m" aria-label="Minutos" style="flex:1;padding:.55rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text);cursor:pointer"></select>
+            </div>
+            <input type="hidden" id="res-inp-hora-inicio" value="" min="09:00" max="21:30">
           </div>
           <div class="res-fg" id="res-fg-hora-fim-manual" style="display:none">
             <label>Hora final <span style="color:var(--danger)">*</span></label>
