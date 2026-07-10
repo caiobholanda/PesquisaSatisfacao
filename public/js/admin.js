@@ -2989,6 +2989,7 @@ function calOpenModal(salaId, data, hora) {
       }
     });
   }
+  _ajustarHoraInicioBounds();
   _atualizarDisponibilidadeSalas();
   _aplicarVisibilidadeSala();
   loadTratamentosModal();
@@ -3004,6 +3005,39 @@ function calOpenModal(salaId, data, hora) {
   setTimeout(()=>document.getElementById('res-inp-cpf')?.focus(),50);
 }
 window.calOpenModal=calOpenModal;
+
+// Ajusta bounds do input de hora_inicio conforme data escolhida:
+// - Hoje (Fortaleza): min = próxima slot de 15min a partir de agora
+// - Outros dias: min = 09:00
+// Máximo sempre 21:30 (última partida útil antes do fechamento 22:00).
+function _ajustarHoraInicioBounds() {
+  const inp = document.getElementById('res-inp-hora-inicio');
+  if (!inp) return;
+  const dataVal = document.getElementById('res-inp-data')?.value || '';
+  const agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+  const hojeFt = agoraFt.getFullYear() + '-' + String(agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(agoraFt.getDate()).padStart(2,'0');
+  let minStr = '09:00';
+  if (dataVal === hojeFt) {
+    // Arredonda para cima o próximo múltiplo de 15min. Se antes das 09:00,
+    // clampa em 09:00; se depois de 21:30, clampa em 21:30 (impede reserva
+    // no mesmo dia após 21:30).
+    let mins = agoraFt.getHours() * 60 + agoraFt.getMinutes();
+    mins = Math.ceil(mins / 15) * 15;
+    if (mins < CAL_H_START * 60) mins = CAL_H_START * 60;
+    if (mins > 21 * 60 + 30) mins = 21 * 60 + 30;
+    minStr = String(Math.floor(mins / 60)).padStart(2,'0') + ':' + String(mins % 60).padStart(2,'0');
+  }
+  inp.min = minStr;
+  inp.max = '21:30';
+  // Se o valor atual está fora do novo range, empurra para o mínimo válido.
+  const cur = inp.value;
+  const toMin = s => { const [h,m] = String(s).split(':').map(Number); return (h||0)*60 + (m||0); };
+  if (!cur || toMin(cur) < toMin(minStr) || toMin(cur) > toMin('21:30')) {
+    inp.value = minStr;
+    _resHoraInicio = minStr;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
 
 async function _atualizarDisponibilidadeSalas() {
   const dataVal = document.getElementById('res-inp-data')?.value;
@@ -3475,7 +3509,7 @@ document.getElementById('res-inp-hora-inicio').addEventListener('change', calAtu
 document.getElementById('res-inp-hora-fim-manual')?.addEventListener('input', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-fim-manual')?.addEventListener('change', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-inicio').addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
-document.getElementById('res-inp-data')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
+document.getElementById('res-inp-data')?.addEventListener('change', () => { _ajustarHoraInicioBounds(); _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
 document.getElementById('res-flt-bilingue')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
 document.getElementById('res-inp-massagista').addEventListener('change', _renderMassagistasModal2);
 document.getElementById('res-inp-tratamento2').addEventListener('change', calAtualizarHoraFim);
