@@ -806,9 +806,10 @@ function init() {
               const el = document.getElementById(id);
               if (el && !el.value && v) el.value = v;
             };
-            setIfEmpty('f-email',    d.hospede_email);
-            setIfEmpty('f-telefone', d.hospede_telefone);
-            setIfEmpty('f-quarto',   d.hospede_quarto);
+            setIfEmpty('f-email',         d.hospede_email);
+            setIfEmpty('f-telefone',      d.hospede_telefone);
+            setIfEmpty('f-quarto',        d.hospede_quarto);
+            setIfEmpty('f-nacionalidade', d.hospede_nacionalidade);
             // iOS Safari aceita SOMENTE YYYY-MM-DD em <input type="date">.
             // Normaliza qualquer formato comum (DD/MM/YYYY, ISO com hora, etc).
             const _normDataISO = (v) => {
@@ -1234,6 +1235,7 @@ function _aplicarPerfilNoForm(p) {
   setIfEmpty('f-nascimento', p.data_nascimento);
   setIfEmpty('f-outro-produto', p.produto_especifico);
   setIfEmpty('f-quarto', p.quarto);
+  setIfEmpty('f-nacionalidade', p.nacionalidade);
 
   // Tipo de documento (sincroniza select + _docType)
   if (p.tipo_documento) {

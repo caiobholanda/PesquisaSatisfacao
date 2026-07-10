@@ -247,7 +247,8 @@ router.get('/documento', (req, res) => {
     hospede_email:    row.hospede_email    || '',
     hospede_telefone: row.hospede_telefone || '',
     hospede_cpf:      row.hospede_cpf      || '',
-    hospede_quarto:   row.hospede_quarto   || '',
+    hospede_quarto:        row.hospede_quarto        || '',
+    hospede_nacionalidade: row.hospede_nacionalidade || '',
     hospede_data_nascimento: row.hospede_data_nascimento || '',
     servico:          row.servico          || '',
     locale:           localeSeguro,
@@ -328,6 +329,7 @@ router.get('/historico', (req, res) => {
       rotina_corporal:     parseArr(ult.rotina_corporal),
       produto_especifico:  ult.produto_especifico || '',
       pressao_massagem:    ult.pressao_massagem || '',
+      nacionalidade:       ult.nacionalidade || '',
       // info_medica NAO retornada por seguranca: cliente precisa
       // reconfirmar a cada visita (pode ter mudado).
       consentimento_marketing: !!ult.consentimento_marketing,
