@@ -4329,12 +4329,38 @@
           </div>
           <div class="res-fg">
             <label>Hora de início <span style="color:var(--danger)">*</span></label>
-            <div class="res-hora-picker" style="display:flex;align-items:stretch;gap:.4rem">
-              <select id="res-inp-hora-inicio-h" aria-label="Hora" style="flex:1;padding:.55rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text);cursor:pointer"></select>
-              <span style="font-weight:600;color:var(--muted);display:flex;align-items:center">:</span>
-              <select id="res-inp-hora-inicio-m" aria-label="Minutos" style="flex:1;padding:.55rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text);cursor:pointer"></select>
+            <style>
+              .rhp-wrap{position:relative}
+              .rhp-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:.55rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;font-family:'JetBrains Mono','SFMono-Regular',Consolas,monospace;font-size:1rem;letter-spacing:.05em;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+              .rhp-trigger:hover{border-color:var(--gold)}
+              .rhp-trigger.aberto{border-color:var(--gold);box-shadow:0 0 0 3px rgba(156,88,67,.12)}
+              .rhp-trigger .rhp-caret{color:var(--muted);font-size:.7rem;transition:transform .18s}
+              .rhp-trigger.aberto .rhp-caret{transform:rotate(180deg)}
+              .rhp-pop{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:100;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(24,18,12,.16),0 2px 6px rgba(24,18,12,.06);overflow:hidden;opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity .16s ease,transform .16s ease}
+              .rhp-pop.aberto{opacity:1;transform:translateY(0);pointer-events:auto}
+              .rhp-pop-cols{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;position:relative}
+              .rhp-pop-cols::before{content:'';position:absolute;left:8px;right:8px;top:50%;height:44px;transform:translateY(-50%);background:rgba(156,88,67,.06);border-top:1px solid rgba(156,88,67,.14);border-bottom:1px solid rgba(156,88,67,.14);border-radius:6px;pointer-events:none;z-index:0}
+              .rhp-col{height:220px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:88px 0;position:relative;z-index:1;mask-image:linear-gradient(180deg,transparent 0%,#000 22%,#000 78%,transparent 100%);-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 22%,#000 78%,transparent 100%)}
+              .rhp-col::-webkit-scrollbar{display:none}
+              .rhp-sep{display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono','SFMono-Regular',Consolas,monospace;font-size:1.4rem;font-weight:600;color:var(--gold);padding:0 .35rem;position:relative;z-index:2}
+              .rhp-item{display:flex;align-items:center;justify-content:center;height:44px;scroll-snap-align:center;font-family:'JetBrains Mono','SFMono-Regular',Consolas,monospace;font-size:1.05rem;color:var(--muted);background:transparent;border:0;cursor:pointer;font-weight:400;letter-spacing:.06em;transition:color .12s,background .12s;user-select:none}
+              .rhp-item:hover{color:var(--text);background:rgba(0,0,0,.03)}
+              .rhp-item.selected{color:var(--gold);font-weight:700;background:transparent}
+            </style>
+            <div class="rhp-wrap">
+              <button type="button" id="res-hora-trigger" class="rhp-trigger" aria-haspopup="listbox" aria-expanded="false">
+                <span id="res-hora-display">--:--</span>
+                <span class="rhp-caret" aria-hidden="true">▾</span>
+              </button>
+              <div id="res-hora-pop" class="rhp-pop" role="dialog" aria-label="Selecionar hora de início">
+                <div class="rhp-pop-cols">
+                  <div class="rhp-col rhp-col-h" data-col="h" role="listbox" aria-label="Hora"></div>
+                  <div class="rhp-sep">:</div>
+                  <div class="rhp-col rhp-col-m" data-col="m" role="listbox" aria-label="Minuto"></div>
+                </div>
+              </div>
             </div>
-            <input type="hidden" id="res-inp-hora-inicio" value="" min="09:00" max="21:30">
+            <input type="hidden" id="res-inp-hora-inicio" value="" min="09:00" max="21:59">
           </div>
           <div class="res-fg" id="res-fg-hora-fim-manual" style="display:none">
             <label>Hora final <span style="color:var(--danger)">*</span></label>

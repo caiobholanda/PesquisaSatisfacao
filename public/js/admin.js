@@ -3006,96 +3006,166 @@ function calOpenModal(salaId, data, hora) {
 }
 window.calOpenModal=calOpenModal;
 
-// Popula os dois selects de Hora de início (hora + minuto) conforme a data:
-// - Hoje (Fortaleza): hora começa na hora atual (ou próxima cheia se
-//   passou algum minuto) e vai até 21. Minuto: 00,15,30,45 sempre.
-// - Outros dias: hora 09..21, minuto 00,15,30,45.
-// Também mantém o input hidden #res-inp-hora-inicio sincronizado (source
-// de verdade lida pelo restante do código) e dispara change para acionar
-// calAtualizarHoraFim + disponibilidade de salas.
-function _ajustarHoraInicioBounds() {
-  const hid  = document.getElementById('res-inp-hora-inicio');
-  const selH = document.getElementById('res-inp-hora-inicio-h');
-  const selM = document.getElementById('res-inp-hora-inicio-m');
-  if (!hid || !selH || !selM) return;
+// === Wheel picker de Hora de início (scroll wheel + click) =============
+//
+// UI: dois "wheels" verticais (hora + minuto) com scroll-snap.
+// Regras:
+//   - Hoje (Fortaleza): hora começa na hora atual, ou na próxima cheia se
+//     já passou dos :00. Vai até 21.
+//   - Outros dias: 09..21.
+//   - Minutos: sempre 00..59 (todos os inteiros).
+// Fonte de verdade = input hidden #res-inp-hora-inicio.
+// _ajustarHoraInicioBounds() é chamada por calOpenModal (abertura) e pelo
+// handler `change` de #res-inp-data. Ela repopula os wheels e sincroniza
+// o hidden, disparando `change` só se o valor mudou.
+
+function _rhpStartHourParaData() {
   const dataVal = document.getElementById('res-inp-data')?.value || '';
   const agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
   const hojeFt = agoraFt.getFullYear() + '-' + String(agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(agoraFt.getDate()).padStart(2,'0');
   let startHour = CAL_H_START; // 9
   if (dataVal === hojeFt) {
     startHour = agoraFt.getHours();
-    if (agoraFt.getMinutes() > 0) startHour += 1; // se já passou dos :00, começa na próxima cheia
+    if (agoraFt.getMinutes() > 0) startHour += 1;
     if (startHour < CAL_H_START) startHour = CAL_H_START;
     if (startHour > 21) startHour = 21;
   }
-  const endHour = 21;
+  return { startHour, endHour: 21 };
+}
 
-  // Fonte de verdade = hidden. Extrai hora/minuto atuais.
-  const parts = String(hid.value || '').split(':');
-  const wantH = parts[0] || '';
-  const wantM = parts[1] || '00';
+function _rhpAtualizarDisplay() {
+  const hid = document.getElementById('res-inp-hora-inicio');
+  const disp = document.getElementById('res-hora-display');
+  if (!hid || !disp) return;
+  const v = String(hid.value || '').trim();
+  disp.textContent = v || '--:--';
+}
 
-  // Reconstrói options de hora e escolhe a hora desejada se ainda válida.
-  selH.innerHTML = '';
-  for (let h = startHour; h <= endHour; h++) {
-    const v = String(h).padStart(2,'0');
-    const opt = document.createElement('option');
-    opt.value = v; opt.textContent = v;
-    selH.appendChild(opt);
-  }
-  selH.value = (wantH && [...selH.options].some(o => o.value === wantH))
-    ? wantH
-    : String(startHour).padStart(2,'0');
+function _rhpMarcarSelecionado(colEl, val) {
+  if (!colEl) return;
+  [...colEl.children].forEach(el => el.classList.toggle('selected', el.dataset.val === val));
+}
 
-  // Minutos SEMPRE 00,15,30,45 — só popular na primeira vez.
-  if (!selM.options.length) {
-    ['00','15','30','45'].forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m; opt.textContent = m;
-      selM.appendChild(opt);
-    });
-  }
-  selM.value = (['00','15','30','45'].includes(wantM)) ? wantM : '00';
+function _rhpCentralizar(colEl, behavior = 'instant') {
+  if (!colEl) return;
+  const sel = colEl.querySelector('.rhp-item.selected');
+  if (!sel) return;
+  const target = sel.offsetTop - (colEl.clientHeight / 2) + (sel.offsetHeight / 2);
+  colEl.scrollTo({ top: target, behavior });
+}
 
-  // Também mantém min/max no hidden para defesa em profundidade no submit.
-  hid.min = String(startHour).padStart(2,'0') + ':00';
-  hid.max = '21:30';
-
-  // Sincroniza hidden com os selects visíveis, disparando cadeia só se mudou.
-  const novo = selH.value + ':' + selM.value;
+function _rhpSelecionar(col, val) {
+  const hid = document.getElementById('res-inp-hora-inicio');
+  const [h, m] = String(hid.value || '09:00').split(':');
+  const novoH = col === 'h' ? val : (h || '09');
+  const novoM = col === 'm' ? val : (m || '00');
+  const novo = novoH + ':' + novoM;
+  const colEl = document.querySelector(`#res-hora-pop .rhp-col-${col}`);
+  _rhpMarcarSelecionado(colEl, val);
+  _rhpCentralizar(colEl, 'smooth');
   if (hid.value !== novo) {
     hid.value = novo;
     _resHoraInicio = novo;
+    _rhpAtualizarDisplay();
     hid.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
 
-// Ao mudar qualquer um dos selects visíveis, sincroniza o hidden e dispara
-// change → cascata (calAtualizarHoraFim + massagistas + disponibilidade).
-function _onSelectHoraInicioChange() {
-  const hid  = document.getElementById('res-inp-hora-inicio');
-  const selH = document.getElementById('res-inp-hora-inicio-h');
-  const selM = document.getElementById('res-inp-hora-inicio-m');
-  if (!hid || !selH || !selM) return;
-  hid.value = selH.value + ':' + selM.value;
-  _resHoraInicio = hid.value;
-  hid.dispatchEvent(new Event('change', { bubbles: true }));
-}
-document.getElementById('res-inp-hora-inicio-h')?.addEventListener('change', _onSelectHoraInicioChange);
-document.getElementById('res-inp-hora-inicio-m')?.addEventListener('change', _onSelectHoraInicioChange);
+function _ajustarHoraInicioBounds() {
+  const hid   = document.getElementById('res-inp-hora-inicio');
+  const colH  = document.querySelector('#res-hora-pop .rhp-col-h');
+  const colM  = document.querySelector('#res-hora-pop .rhp-col-m');
+  if (!hid || !colH || !colM) return;
+  const { startHour, endHour } = _rhpStartHourParaData();
 
-// Quando o hidden muda por atribuição direta em outro fluxo (ex: calOpenModal
-// setando 09:00), sincroniza os selects.
-function _syncSelectsDeHiddenHora() {
-  const hid  = document.getElementById('res-inp-hora-inicio');
-  const selH = document.getElementById('res-inp-hora-inicio-h');
-  const selM = document.getElementById('res-inp-hora-inicio-m');
-  if (!hid || !selH || !selM) return;
-  const [h, m] = String(hid.value || '').split(':');
-  if (h && [...selH.options].some(o => o.value === h) && selH.value !== h) selH.value = h;
-  if (m && [...selM.options].some(o => o.value === m) && selM.value !== m) selM.value = m;
+  // Fonte de verdade = hidden.
+  const parts = String(hid.value || '').split(':');
+  const wantH = parts[0] || '';
+  const wantM = parts[1] || '00';
+
+  // Rebuild hora wheel
+  colH.innerHTML = '';
+  for (let h = startHour; h <= endHour; h++) {
+    const v = String(h).padStart(2,'0');
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'rhp-item';
+    item.dataset.val = v;
+    item.textContent = v;
+    item.setAttribute('role', 'option');
+    item.addEventListener('click', () => _rhpSelecionar('h', v));
+    colH.appendChild(item);
+  }
+
+  // Rebuild minuto wheel só na primeira vez
+  if (!colM.children.length) {
+    for (let m = 0; m <= 59; m++) {
+      const v = String(m).padStart(2,'0');
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'rhp-item';
+      item.dataset.val = v;
+      item.textContent = v;
+      item.setAttribute('role', 'option');
+      item.addEventListener('click', () => _rhpSelecionar('m', v));
+      colM.appendChild(item);
+    }
+  }
+
+  // Escolhe hora efetiva: preserva `wantH` se ainda no range, senão
+  // usa startHour. Minuto: preserva se 00-59.
+  const validaH = [...colH.children].some(el => el.dataset.val === wantH);
+  const escolhaH = validaH ? wantH : String(startHour).padStart(2,'0');
+  const escolhaM = (/^\d{2}$/.test(wantM) && +wantM >= 0 && +wantM <= 59) ? wantM : '00';
+  _rhpMarcarSelecionado(colH, escolhaH);
+  _rhpMarcarSelecionado(colM, escolhaM);
+
+  // Defesa em profundidade no submit (validação HTML/backend).
+  hid.min = String(startHour).padStart(2,'0') + ':00';
+  hid.max = '21:59';
+
+  const novo = escolhaH + ':' + escolhaM;
+  if (hid.value !== novo) {
+    hid.value = novo;
+    _resHoraInicio = novo;
+    _rhpAtualizarDisplay();
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    _rhpAtualizarDisplay();
+  }
 }
-document.getElementById('res-inp-hora-inicio')?.addEventListener('change', _syncSelectsDeHiddenHora);
+
+// Abre/fecha popover ao clicar no trigger. Fecha ao clicar fora.
+(function _rhpBindTrigger(){
+  const trig = document.getElementById('res-hora-trigger');
+  const pop  = document.getElementById('res-hora-pop');
+  if (!trig || !pop) return;
+  trig.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const aberto = pop.classList.toggle('aberto');
+    trig.classList.toggle('aberto', aberto);
+    trig.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+    if (aberto) {
+      const colH = pop.querySelector('.rhp-col-h');
+      const colM = pop.querySelector('.rhp-col-m');
+      requestAnimationFrame(() => {
+        _rhpCentralizar(colH, 'instant');
+        _rhpCentralizar(colM, 'instant');
+      });
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!pop.classList.contains('aberto')) return;
+    if (pop.contains(e.target) || trig.contains(e.target)) return;
+    pop.classList.remove('aberto');
+    trig.classList.remove('aberto');
+    trig.setAttribute('aria-expanded', 'false');
+  });
+})();
+
+// Mantém o display sincronizado sempre que o hidden muda (calOpenModal,
+// snap defensivo, etc.).
+document.getElementById('res-inp-hora-inicio')?.addEventListener('change', _rhpAtualizarDisplay);
 
 async function _atualizarDisponibilidadeSalas() {
   const dataVal = document.getElementById('res-inp-data')?.value;
