@@ -2971,21 +2971,23 @@
        DETALHES DA RESERVA
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     /* ── Modal Detalhes Reserva — premium ── */
-    #resdet-overlay .res-modal { max-width: 740px; }
+    #resdet-overlay .res-modal { max-width: 800px; }
 
     .resdet-ft {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: .9rem 1.75rem 1.25rem; gap: .75rem;
+      display: flex; align-items: center;
+      padding: .85rem 1.25rem 1.1rem; gap: .45rem;
       border-top: 1px solid var(--border-soft);
-      flex-wrap: wrap;
     }
-    .resdet-ft-left { display: flex; align-items: center; }
-    .resdet-ft-right { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
-    @media (max-width: 560px) {
-      .resdet-ft { flex-direction: column; align-items: stretch; gap: .5rem; }
-      .resdet-ft-left .btn,
-      .resdet-ft-right .btn { width: 100%; justify-content: center; }
-      .resdet-ft-right { flex-direction: column-reverse; }
+    .resdet-ft-left { display: flex; align-items: center; margin-right: auto; padding-right: .6rem; }
+    .resdet-ft-right { display: flex; align-items: center; gap: .45rem; }
+    .resdet-ft .btn { white-space: nowrap; }
+    #resdet-liberar { padding-left: .65rem; padding-right: .65rem; font-size: .7rem; }
+    @media (max-width: 580px) {
+      .resdet-ft { flex-wrap: wrap; gap: .4rem; }
+      .resdet-ft-left { margin-right: 0; padding-right: 0; width: 100%; }
+      .resdet-ft-right { width: 100%; flex-wrap: wrap; }
+      .resdet-ft .btn { width: 100%; justify-content: center; }
+      #resdet-liberar { font-size: .75rem; padding-left: 1.125rem; padding-right: 1.125rem; }
     }
     .resdet-btn-danger { color: var(--danger) !important; border-color: var(--danger) !important; }
     .resdet-btn-danger:hover:not(:disabled) { background: var(--danger-dim) !important; }
