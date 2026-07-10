@@ -565,6 +565,47 @@ function applyLocale(L) {
   validateAll();
 }
 
+/* ─── Nationality select helpers ─── */
+
+const _NAC_AUTO = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
+
+const _NAC_TOP_PER_LANG = {
+  'pt-BR': ['Brasileira', 'Portuguesa', 'Americana', 'Argentina'],
+  'pt-PT': ['Portuguesa', 'Brasileira', 'Espanhola', 'Francesa'],
+  en:      ['Americana', 'Britânica', 'Canadense', 'Australiana'],
+  es:      ['Argentina', 'Uruguaia', 'Espanhola', 'Chilena', 'Colombiana'],
+  fr:      ['Francesa', 'Belga', 'Canadense'],
+  it:      ['Italiana', 'Francesa', 'Espanhola', 'Alemã'],
+  de:      ['Alemã', 'Austríaca', 'Suíça', 'Holandesa'],
+};
+
+let _ALL_NAC = null;
+
+function _initNacList() {
+  const sel = document.getElementById('f-nacionalidade');
+  if (!sel) return;
+  const seen = new Set();
+  _ALL_NAC = [];
+  sel.querySelectorAll('option').forEach(o => {
+    if (o.value && !seen.has(o.value)) { seen.add(o.value); _ALL_NAC.push(o.value); }
+  });
+  _ALL_NAC.sort((a, b) => a.localeCompare(b, 'pt'));
+}
+
+function _rebuildNacSelect(lang) {
+  const topGroup   = document.getElementById('nac-top-group');
+  const otherGroup = document.getElementById('nac-other-group');
+  const sel        = document.getElementById('f-nacionalidade');
+  if (!topGroup || !otherGroup || !_ALL_NAC) return;
+  const prev   = sel?.value || '';
+  const tops   = _NAC_TOP_PER_LANG[lang] || [];
+  const topSet = new Set(tops);
+  topGroup.innerHTML   = tops.map(n => `<option value="${n}">${n}</option>`).join('');
+  otherGroup.innerHTML = _ALL_NAC.filter(n => !topSet.has(n)).map(n => `<option value="${n}">${n}</option>`).join('');
+  if (prev) sel.value = prev;
+  if (!sel.value && _NAC_AUTO[lang]) sel.value = _NAC_AUTO[lang];
+}
+
 /* ─── Load locale file ─── */
 
 async function loadLocale(lang, _retry = 0) {
@@ -583,11 +624,7 @@ async function loadLocale(lang, _retry = 0) {
     try { localStorage.setItem('spa_lang', lang); } catch {}
 
     applyLocale(L);
-
-    // Auto-sugere nacionalidade quando campo ainda está vazio
-    const _nacMap = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', es: 'Espanhola', it: 'Italiana', de: 'Alemã' };
-    const _nacSel = document.getElementById('f-nacionalidade');
-    if (_nacSel && !_nacSel.value && _nacMap[lang]) _nacSel.value = _nacMap[lang];
+    _rebuildNacSelect(lang);
 
     // BUG-O fix: re-aplicar config dinamica no novo idioma. Antes, ao
     // trocar de idioma, as perguntas extras ficavam congeladas em pt-BR
@@ -620,6 +657,8 @@ let _ultimoCriadoEm = null;
 /* ─── Init ─── */
 
 function init() {
+  _initNacList();
+
   // Lang buttons
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', () => loadLocale(btn.dataset.lang));
