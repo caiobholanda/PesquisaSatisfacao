@@ -4002,7 +4002,6 @@ async function calAbrirEdicao(r) {
 }
 
 document.getElementById('resdet-x').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
-document.getElementById('resdet-fechar').addEventListener('click', () => { _modalOpen = false; document.getElementById('resdet-overlay').style.display = 'none'; });
 
 // Modal idioma pré-massagem
 async function _executarEnvioAnamnese() {
