@@ -2165,7 +2165,8 @@ let _resSala       = null;
 let _resTipo       = null;
 let _resHoraInicio = null;
 let _resHoraFim    = null;
-let _resEditandoId = null; // id da reserva sendo editada; null = nova reserva
+let _resEditandoId  = null; // id da reserva sendo editada; null = nova reserva
+let _resEditandoObj = null; // objeto r completo salvo por calAbrirEdicao para voltar ao detalhe
 let _tratamentos = []; // [{nome, duracao_min, ...}]
 let _massagistasModal = []; // cache p/ modal de reserva — [{id, nome, bilingue, vinculo, ...}]
 
@@ -3882,7 +3883,8 @@ async function calAbrirEdicao(r) {
   document.getElementById('resdet-overlay').style.display = 'none';
 
   calOpenModal(r.sala, r.data, r.hora_inicio);
-  _resEditandoId = r.id;
+  _resEditandoId  = r.id;
+  _resEditandoObj = r;
 
   const titleEl = document.getElementById('res-modal-title-txt');
   const subEl   = document.getElementById('res-modal-sub-txt');
@@ -4187,7 +4189,9 @@ function calCloseModal(){
   document.getElementById('res-modal-overlay').style.display='none';
   _resSala=null;
   if (_resEditandoId !== null) {
-    _resEditandoId = null;
+    const _objDetalhe = _resEditandoObj;
+    _resEditandoId  = null;
+    _resEditandoObj = null;
     const titleEl = document.getElementById('res-modal-title-txt');
     const subEl   = document.getElementById('res-modal-sub-txt');
     const btnSalvar = document.getElementById('btn-res-salvar');
@@ -4199,6 +4203,9 @@ function calCloseModal(){
       const _ft = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
       dataInp.min = _ft.getFullYear() + '-' + String(_ft.getMonth()+1).padStart(2,'0') + '-' + String(_ft.getDate()).padStart(2,'0');
     }
+    // Volta ao modal de detalhes em vez de fechar para o painel
+    if (_objDetalhe) calVerDetalhes(_objDetalhe);
+    return;
   }
 }
 
