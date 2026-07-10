@@ -2974,12 +2974,19 @@
     #resdet-overlay .res-modal { max-width: 740px; }
 
     .resdet-ft {
-      display: flex; flex-direction: column;
-      padding: .9rem 1.75rem 1.4rem; gap: .55rem;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 1.75rem 1.25rem; gap: .75rem;
       border-top: 1px solid var(--border-soft);
+      flex-wrap: wrap;
     }
-    .resdet-ft-left { display: flex; order: 1; }
-    .resdet-ft-right { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; order: 0; }
+    .resdet-ft-left { display: flex; align-items: center; }
+    .resdet-ft-right { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+    @media (max-width: 560px) {
+      .resdet-ft { flex-direction: column; align-items: stretch; gap: .5rem; }
+      .resdet-ft-left .btn,
+      .resdet-ft-right .btn { width: 100%; justify-content: center; }
+      .resdet-ft-right { flex-direction: column-reverse; }
+    }
     .resdet-btn-danger { color: var(--danger) !important; border-color: var(--danger) !important; }
     .resdet-btn-danger:hover:not(:disabled) { background: var(--danger-dim) !important; }
     .resdet-btn-gold { border-color: var(--gold) !important; color: var(--gold) !important; }
@@ -4581,10 +4588,10 @@
         <button class="btn btn-outline resdet-btn-danger" id="resdet-cancelar-res">Cancelar Reserva</button>
       </div>
       <div class="resdet-ft-right">
-        <button class="btn btn-forest" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
+        <button class="btn btn-outline" id="resdet-fechar">Fechar</button>
         <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
         <button class="btn btn-outline" id="resdet-editar-res">Editar Reserva</button>
-        <button class="btn btn-outline" id="resdet-fechar">Fechar</button>
+        <button class="btn btn-forest" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
       </div>
     </div>
   </div>
