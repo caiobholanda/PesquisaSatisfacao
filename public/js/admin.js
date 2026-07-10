@@ -844,7 +844,7 @@ function _aplicarEstadoLiberada(btn, estado) {
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
   } else if (estado === 'antes_fim') {
-    btn.textContent = 'Disponível ao fim do tratamento';
+    btn.textContent = 'Aguardar fim';
   } else {
     btn.textContent = 'Liberar Pesquisa';
   }
