@@ -488,6 +488,15 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
         if (exCli && Object.keys(upd).length) atualizarCliente(exCli.id, upd);
       } catch {}
     }
+    if (_p2Presente && docNorm2) {
+      try {
+        const upd2 = {};
+        if (_locale2) upd2.locale_pref = _locale2;
+        if (nacionalidade2?.trim()) upd2.nacionalidade = nacionalidade2.trim();
+        const exCli2 = tipoDoc2 === 'cpf' ? buscarClientePorCpf(docNorm2) : buscarClientePorPassaporte(docNorm2);
+        if (exCli2 && Object.keys(upd2).length) atualizarCliente(exCli2.id, upd2);
+      } catch {}
+    }
 
     atualizarReserva(
       id, +sala, cliente.trim(), tipo_cliente, quartoLimpo || apto?.trim() || null,

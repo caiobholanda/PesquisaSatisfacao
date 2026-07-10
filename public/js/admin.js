@@ -3923,6 +3923,7 @@ async function calAbrirEdicao(r) {
   _setV('res-inp-email',         r.email     || '');
   _setV('res-inp-tel',           r.telefone  || '');
   _setV('res-inp-idioma',        r.idioma    || 'pt-BR');
+  if (r.nacionalidade) _setV('res-inp-nacionalidade', resolverNacionalidade(r.nacionalidade, NACIONALIDADES));
 
   // hora_inicio já definida por calOpenModal; hora_fim: para Espaço Beleza definir manual
   if (+r.sala === 5 && r.hora_fim) {
@@ -3974,6 +3975,7 @@ async function calAbrirEdicao(r) {
     _setV('res2-inp-email',  r.email2    || '');
     _setV('res2-inp-tel',    r.telefone2 || '');
     _setV('res2-inp-idioma', r.idioma2   || 'pt-BR');
+    if (r.nacionalidade2) _setV('res2-inp-nacionalidade', resolverNacionalidade(r.nacionalidade2, NACIONALIDADES));
 
     if (r.tratamento2) {
       const hidTrat2 = document.getElementById('res-inp-tratamento2');
