@@ -3076,11 +3076,25 @@ async function _atualizarDisponibilidadeSalas() {
 
 function _selecionarSalaAutomatica(tipo) {
   // Se ainda não há tratamento + horário definidos, a disponibilidade real das
-  // salas não foi consultada — avisa o admin para preencher antes.
+  // salas não foi consultada — avisa listando SÓ o que está faltando (para
+  // não pedir dados que o admin já preencheu).
   const dataVal = document.getElementById('res-inp-data')?.value;
   const hiVal   = document.getElementById('res-inp-hora-inicio')?.value;
-  if (!dataVal || !hiVal || !_resHoraFim) {
-    showToast('Escolha data, horário e tratamento antes de definir a sala.');
+  const tratVal = document.getElementById('res-inp-tratamento')?.value;
+  const faltando = [];
+  if (!dataVal) faltando.push('data');
+  if (!hiVal)   faltando.push('horário');
+  if (!tratVal) faltando.push('tratamento');
+  // hora_fim pode ficar nulo mesmo com tratamento (ex: extrapola fechamento);
+  // nesse caso pede pra revisar o horário.
+  if (!faltando.length && !_resHoraFim) faltando.push('horário válido');
+  if (faltando.length) {
+    const lista = faltando.length === 1
+      ? faltando[0]
+      : faltando.length === 2
+        ? faltando.join(' e ')
+        : faltando.slice(0, -1).join(', ') + ' e ' + faltando[faltando.length - 1];
+    showToast(`Escolha ${lista} antes de definir a sala.`);
     return;
   }
   if (tipo === 'dupla') {
