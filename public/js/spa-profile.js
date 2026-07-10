@@ -567,7 +567,8 @@ function applyLocale(L) {
 
 /* ─── Nationality select helpers ─── */
 
-const _NAC_AUTO = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
+const _NAC_AUTO     = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
+const _LANG_FROM_NAC = { Brasileira: 'pt-BR', Portuguesa: 'pt-PT', Francesa: 'fr', Italiana: 'it', Alemã: 'de' };
 
 const _NAC_TOP_PER_LANG = {
   'pt-BR': ['Brasileira', 'Portuguesa', 'Americana', 'Argentina'],
@@ -658,6 +659,12 @@ let _ultimoCriadoEm = null;
 
 function init() {
   _initNacList();
+
+  // Nationality → language auto-switch
+  document.getElementById('f-nacionalidade')?.addEventListener('change', function () {
+    const mapped = _LANG_FROM_NAC[this.value];
+    if (mapped && mapped !== _currentLang) loadLocale(mapped);
+  });
 
   // Lang buttons
   document.querySelectorAll('.lang-btn').forEach(btn => {
