@@ -3186,7 +3186,10 @@ async function _atualizarDisponibilidadeSalas() {
   try {
     const res = await api(`/api/admin/salas/disponiveis?data=${encodeURIComponent(dataVal)}&hora_inicio=${encodeURIComponent(hiVal)}&hora_fim=${encodeURIComponent(hfVal)}`);
     if (!res?.ok) return;
-    const livresIds = new Set((res.salas || []).map(s => s.id));
+    let payload;
+    try { payload = await res.json(); } catch { return; }
+    if (!payload?.ok) return;
+    const livresIds = new Set((payload.salas || []).map(s => s.id));
     document.querySelectorAll('.res-room-btn').forEach(btn => {
       const sid = +btn.dataset.sala;
       if (btn.classList.contains('bloq')) return; // já marcada como bloqueada
