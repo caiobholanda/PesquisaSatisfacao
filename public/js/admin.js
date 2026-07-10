@@ -6532,8 +6532,8 @@ function criarAutocompleteNacionalidade(inp, listEl) {
     if (item) { e.preventDefault(); _selecionar(item.dataset.val); }
   });
 
-  inp.addEventListener('input', () => { _renderizar(_filtrar(inp.value)); _atualizarClr(); });
-  inp.addEventListener('focus', () => { _renderizar(_filtrar(inp.value)); });
+  inp.addEventListener('input', () => { if (inp.value.trim()) { _renderizar(_filtrar(inp.value)); } else { _fechar(); } _atualizarClr(); });
+  inp.addEventListener('focus', () => { if (inp.value.trim()) _renderizar(_filtrar(inp.value)); });
 
   inp.addEventListener('blur', () => {
     setTimeout(() => {
