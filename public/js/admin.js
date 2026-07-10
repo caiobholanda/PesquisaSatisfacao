@@ -3008,16 +3008,19 @@ window.calOpenModal=calOpenModal;
 async function _atualizarDisponibilidadeSalas() {
   const dataVal = document.getElementById('res-inp-data')?.value;
   const hiVal   = document.getElementById('res-inp-hora-inicio')?.value;
-  // Limpa estado ocupada independentemente de ter dados suficientes
+  // Limpa estado ocupada independentemente de ter dados suficientes:
+  // sem tratamento escolhido, não temos hora_fim real, então nenhuma sala fica
+  // marcada como "Em uso" (evita falso positivo quando probe de +30min caía em
+  // reserva alheia). Volta a marcar assim que hora_fim real for definida.
   document.querySelectorAll('.res-room-btn').forEach(btn => {
     btn.classList.remove('ocupada');
     btn.querySelector('.res-room-btn-ocp-badge')?.remove();
   });
   if (!dataVal || !hiVal) return;
-  // hora_fim mínima = hora_inicio + 30min (probe)
-  const [hh, mm] = hiVal.split(':').map(Number);
-  const totalMin = hh * 60 + mm + 30;
-  const hfVal = String(Math.floor(totalMin / 60) % 24).padStart(2, '0') + ':' + String(totalMin % 60).padStart(2, '0');
+  // Só consulta disponibilidade quando temos hora_fim REAL (derivada do
+  // tratamento em calAtualizarHoraFim, ou informada manual no Espaço Beleza).
+  const hfVal = _resHoraFim;
+  if (!hfVal) return;
   try {
     const res = await api(`/api/admin/salas/disponiveis?data=${encodeURIComponent(dataVal)}&hora_inicio=${encodeURIComponent(hiVal)}&hora_fim=${encodeURIComponent(hfVal)}`);
     if (!res?.ok) return;
@@ -3038,6 +3041,14 @@ async function _atualizarDisponibilidadeSalas() {
 }
 
 function _selecionarSalaAutomatica(tipo) {
+  // Se ainda não há tratamento + horário definidos, a disponibilidade real das
+  // salas não foi consultada — avisa o admin para preencher antes.
+  const dataVal = document.getElementById('res-inp-data')?.value;
+  const hiVal   = document.getElementById('res-inp-hora-inicio')?.value;
+  if (!dataVal || !hiVal || !_resHoraFim) {
+    showToast('Escolha data, horário e tratamento antes de definir a sala.');
+    return;
+  }
   if (tipo === 'dupla') {
     for (const sid of [3, 4]) {
       const btn = document.querySelector(`.res-room-btn[data-sala="${sid}"]`);
@@ -3051,7 +3062,7 @@ function _selecionarSalaAutomatica(tipo) {
         return;
       }
     }
-    showToast('⚠️ Salas 3 e 4 indisponíveis para este horário');
+    _abrirModalSalasLotadas('dupla');
   } else {
     for (const sid of [1, 2, 3, 4]) {
       const btn = document.querySelector(`.res-room-btn[data-sala="${sid}"]`);
@@ -3060,9 +3071,30 @@ function _selecionarSalaAutomatica(tipo) {
         return;
       }
     }
-    showToast('⚠️ Nenhuma sala individual disponível para este horário');
+    _abrirModalSalasLotadas('individual');
   }
 }
+
+function _abrirModalSalasLotadas(tipo) {
+  const ov = document.getElementById('modal-salas-lotadas');
+  if (!ov) return;
+  const subtitleEl = ov.querySelector('[data-slot="subtitle"]');
+  if (subtitleEl) {
+    subtitleEl.textContent = (tipo === 'dupla')
+      ? 'Não há Sala 3 nem Sala 4 disponíveis para o horário e duração escolhidos.'
+      : 'Nenhuma das quatro salas de massagem está livre no horário e duração escolhidos.';
+  }
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => ov.classList.add('aberto'));
+}
+
+function _fecharModalSalasLotadas() {
+  const ov = document.getElementById('modal-salas-lotadas');
+  if (!ov) return;
+  ov.classList.remove('aberto');
+  setTimeout(() => { ov.style.display = 'none'; }, 180);
+}
+window._fecharModalSalasLotadas = _fecharModalSalasLotadas;
 
 // Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
 // Insere chips logo abaixo do input data, atualiza o value e dispara change
@@ -3162,12 +3194,14 @@ function calAtualizarHoraFim() {
     _resHoraFim = hfManual;
     const durMin = fimMinM - iniMin;
     tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· ${durMin} min</span>`;
+    _atualizarDisponibilidadeSalas();
     return;
   }
 
   if (!trat.value || !dur) {
     _resHoraFim = null;
     tempoEl.textContent = trat.value ? `${inicio} (tratamento sem duração)` : `início ${inicio} · selecione um tratamento`;
+    _atualizarDisponibilidadeSalas();
     return;
   }
 
@@ -3179,11 +3213,13 @@ function calAtualizarHoraFim() {
     tempoEl.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ Terminaria às ${horaFimExced} — spa fecha às ${String(CAL_H_END).padStart(2,'0')}:00</span>`;
     stripEl.style.borderColor = 'var(--danger)';
     stripEl.style.background = 'var(--danger-dim)';
+    _atualizarDisponibilidadeSalas();
     return;
   }
 
   _resHoraFim = calMinTime(fimMin);
   tempoEl.innerHTML = `${inicio} – ${_resHoraFim} <span style="color:var(--muted);font-weight:400;margin-left:.4rem">· tratamento ${dur} min</span>`;
+  _atualizarDisponibilidadeSalas();
 }
 
 // Atualiza UI auxiliar: combo (componentes), linha facial, preview de preço
