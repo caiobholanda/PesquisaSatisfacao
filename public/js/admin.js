@@ -6675,7 +6675,6 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
     const nacEl    = document.getElementById(nacId);
     if (!idiomaEl || !nacEl) return;
     idiomaEl.addEventListener('change', function () {
-      if (nacEl.value.trim()) return;
       const nac = _NAC_FROM_LANG[this.value];
       if (!nac) return;
       nacEl.value = nac;
