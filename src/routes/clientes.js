@@ -260,6 +260,7 @@ router.get('/anamnese/:perfilId', (req, res) => {
     cliente_id: perfil.cliente_id,
     pessoa: perfil.pessoa,
     quarto: perfil.quarto,
+    nacionalidade: perfil.nacionalidade || null,
     criado_em: perfil.criado_em,
     reserva_cliente: perfil.reserva_cliente,
     reserva_cliente2: perfil.reserva_cliente2,
