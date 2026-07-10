@@ -3177,8 +3177,9 @@ async function _atualizarDisponibilidadeSalas() {
   // marcada como "Em uso" (evita falso positivo quando probe de +30min caía em
   // reserva alheia). Volta a marcar assim que hora_fim real for definida.
   document.querySelectorAll('.res-room-btn').forEach(btn => {
-    btn.classList.remove('ocupada');
+    btn.classList.remove('ocupada', 'propria');
     btn.querySelector('.res-room-btn-ocp-badge')?.remove();
+    btn.querySelector('.res-room-btn-propria-badge')?.remove();
   });
   if (!dataVal || !hiVal) return;
   // Só consulta disponibilidade quando temos hora_fim REAL (derivada do
@@ -3192,10 +3193,22 @@ async function _atualizarDisponibilidadeSalas() {
     try { payload = await res.json(); } catch { return; }
     if (!payload?.ok) return;
     const livresIds = new Set((payload.salas || []).map(s => s.id));
+    const _salaOriginal = _resEditandoObj ? +_resEditandoObj.sala : null;
     document.querySelectorAll('.res-room-btn').forEach(btn => {
       const sid = +btn.dataset.sala;
-      if (btn.classList.contains('bloq')) return; // já marcada como bloqueada
+      if (btn.classList.contains('bloq')) return;
       if (livresIds.has(sid)) return;
+      // Em edição: sala original da reserva recebe badge próprio e mantém clicabilidade
+      if (_salaOriginal !== null && sid === _salaOriginal) {
+        btn.classList.add('propria');
+        if (!btn.querySelector('.res-room-btn-propria-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'res-room-btn-propria-badge';
+          badge.textContent = '📌 Sala da reserva';
+          btn.appendChild(badge);
+        }
+        return;
+      }
       btn.classList.add('ocupada');
       if (!btn.querySelector('.res-room-btn-ocp-badge')) {
         const badge = document.createElement('span');
