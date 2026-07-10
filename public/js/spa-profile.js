@@ -347,6 +347,7 @@ function collectData() {
     email:                   (document.getElementById('f-email')?.value || '').trim(),
     telefone:                (document.getElementById('f-telefone')?.value || '').trim(),
     data_nascimento:         document.getElementById('f-nascimento')?.value || null,
+    nacionalidade:           document.getElementById('f-nacionalidade')?.value || null,
     rotina_facial:           facial,
     rotina_corporal:         corpo,
     produto_especifico:      (document.getElementById('f-outro-produto')?.value || '').trim() || null,
@@ -508,6 +509,11 @@ function applyLocale(L) {
   setText('lbl-email',       L.fields.email);
   setText('lbl-telefone',    L.fields.phone);
   setText('lbl-nascimento',  L.fields.dob);
+  setText('lbl-nacionalidade', L.fields.nationality || 'Nacionalidade');
+  const _nacTop   = document.getElementById('nac-top-group');
+  const _nacOther = document.getElementById('nac-other-group');
+  if (_nacTop)   _nacTop.label   = L.fields.nationality_top   || 'Mais frequentes';
+  if (_nacOther) _nacOther.label = L.fields.nationality_other || 'Outras';
   setText('lbl-outro',       L.fields.other_product);
   setText('lbl-quarto',      L.fields.room || 'Quarto');
   setText('lbl-quarto-hint', L.fields.room_hint || '');

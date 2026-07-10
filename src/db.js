@@ -267,6 +267,8 @@ export function initDb() {
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
   // Migration: nacionalidade do cliente
   try { db.exec(`ALTER TABLE clientes ADD COLUMN nacionalidade TEXT`); } catch {}
+  // Migration: nacionalidade na anamnese (spa_perfis)
+  try { db.exec(`ALTER TABLE spa_perfis ADD COLUMN nacionalidade TEXT`); } catch {}
 
   // ── Modulo Receita & Comissao (planilha SPA 2026) ────────────────────────
   // Tabela de lancamentos manuais de receita por (massagista, terapia, faixa
@@ -2287,7 +2289,7 @@ export function inserirSpaPerfil(dados) {
   const { nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
           rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
-          idioma, reserva_id, pessoa,
+          idioma, reserva_id, pessoa, nacionalidade,
           consentimento_saude_texto, consentimento_saude_hash,
           consentimento_saude_versao, consentimento_saude_em,
           consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
@@ -2321,7 +2323,7 @@ export function inserirSpaPerfil(dados) {
     db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
       data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
       info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
-      assinatura_data_url=?, idioma=?, pessoa=?,
+      assinatura_data_url=?, idioma=?, pessoa=?, nacionalidade=?,
       consentimento_saude_texto=?, consentimento_saude_hash=?,
       consentimento_saude_versao=?,
       consentimento_saude_canonico_divergente=?, consentimento_saude_canonico_comparado=?,
@@ -2337,6 +2339,7 @@ export function inserirSpaPerfil(dados) {
           produto_especifico || null, pressao_massagem || null, info_medica || '',
           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
+          nacionalidade || null,
           consentimento_saude_texto || null, consentimento_saude_hash || null,
           consentimento_saude_versao || null,
           _safeDivergente,
@@ -2350,16 +2353,18 @@ export function inserirSpaPerfil(dados) {
       INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
         consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
+        nacionalidade,
         consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
         consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
         consentimento_saude_hash_canonico, consentimento_saude_key_id,
         consentimento_saude_alg, consentimento_saude_assinatura_hash)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
            consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
            canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
+           nacionalidade || null,
            consentimento_saude_texto || null, consentimento_saude_hash || null,
            consentimento_saude_versao || null, consentimento_saude_em || null,
            _safeDivergente,
@@ -2432,7 +2437,7 @@ function _inserirSpaPerfilCore(dados) {
   const { nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
           rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
           consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url,
-          idioma, reserva_id, pessoa,
+          idioma, reserva_id, pessoa, nacionalidade,
           consentimento_saude_texto, consentimento_saude_hash,
           consentimento_saude_versao, consentimento_saude_em,
           consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
@@ -2452,7 +2457,7 @@ function _inserirSpaPerfilCore(dados) {
     db.prepare(`UPDATE spa_perfis SET nome=?, sobrenome=?, tipo_documento=?, documento=?, email=?, telefone=?,
       data_nascimento=?, rotina_facial=?, rotina_corporal=?, produto_especifico=?, pressao_massagem=?,
       info_medica=?, consentimento_saude=?, consentimento_marketing=?, canais_marketing=?,
-      assinatura_data_url=?, idioma=?, pessoa=?,
+      assinatura_data_url=?, idioma=?, pessoa=?, nacionalidade=?,
       consentimento_saude_texto=?, consentimento_saude_hash=?,
       consentimento_saude_versao=?,
       consentimento_saude_canonico_divergente=?, consentimento_saude_canonico_comparado=?,
@@ -2468,6 +2473,7 @@ function _inserirSpaPerfilCore(dados) {
           produto_especifico || null, pressao_massagem || null, info_medica || '',
           consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
           canais_marketing || null, assinatura_data_url || null, resolvedIdioma, resolvedPessoa,
+          nacionalidade || null,
           consentimento_saude_texto || null, consentimento_saude_hash || null,
           consentimento_saude_versao || null,
           _safeDivergente,
@@ -2481,16 +2487,18 @@ function _inserirSpaPerfilCore(dados) {
       INSERT INTO spa_perfis (nome, sobrenome, tipo_documento, documento, email, telefone, data_nascimento,
         rotina_facial, rotina_corporal, produto_especifico, pressao_massagem, info_medica,
         consentimento_saude, consentimento_marketing, canais_marketing, assinatura_data_url, idioma, reserva_id, pessoa,
+        nacionalidade,
         consentimento_saude_texto, consentimento_saude_hash, consentimento_saude_versao, consentimento_saude_em,
         consentimento_saude_canonico_divergente, consentimento_saude_canonico_comparado,
         consentimento_saude_hash_canonico, consentimento_saude_key_id,
         consentimento_saude_alg, consentimento_saude_assinatura_hash)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(nome, sobrenome, tipo_documento || 'cpf', documento || '', email, telefone,
            data_nascimento || null, rotina_facial || null, rotina_corporal || null,
            produto_especifico || null, pressao_massagem || null, info_medica || '',
            consentimento_saude ? 1 : 0, consentimento_marketing ? 1 : 0,
            canais_marketing || null, assinatura_data_url || null, resolvedIdioma, reserva_id || null, resolvedPessoa,
+           nacionalidade || null,
            consentimento_saude_texto || null, consentimento_saude_hash || null,
            consentimento_saude_versao || null, consentimento_saude_em || null,
            _safeDivergente,

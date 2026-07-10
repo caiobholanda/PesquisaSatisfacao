@@ -392,6 +392,7 @@ router.post('/perfil', (req, res) => {
       email:                  san(b.email),
       telefone:               san(b.telefone),
       data_nascimento:        san(b.data_nascimento) || null,
+      nacionalidade:          san(b.nacionalidade) || null,
       rotina_facial:          b.rotina_facial ? JSON.stringify(b.rotina_facial) : null,
       rotina_corporal:        b.rotina_corporal ? JSON.stringify(b.rotina_corporal) : null,
       produto_especifico:     san(b.produto_especifico) || null,
