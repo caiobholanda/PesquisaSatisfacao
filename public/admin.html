@@ -2978,16 +2978,11 @@
       padding: .85rem 1.25rem 1.1rem; gap: .45rem;
       border-top: 1px solid var(--border-soft);
     }
-    .resdet-ft-left { display: flex; align-items: center; margin-right: auto; padding-right: .6rem; }
-    .resdet-ft-right { display: flex; align-items: center; gap: .45rem; }
-    .resdet-ft .btn { white-space: nowrap; }
-    #resdet-liberar { padding-left: .65rem; padding-right: .65rem; font-size: .7rem; }
+    .resdet-ft .btn { flex: 1; white-space: nowrap; justify-content: center; }
+    #resdet-liberar { font-size: .7rem; }
     @media (max-width: 720px) {
       .resdet-ft { flex-wrap: wrap; gap: .4rem; }
-      .resdet-ft-left { margin-right: 0; padding-right: 0; width: 100%; }
-      .resdet-ft-right { width: 100%; flex-wrap: wrap; }
-      .resdet-ft .btn { width: 100%; justify-content: center; }
-      #resdet-liberar { font-size: .75rem; padding-left: 1.125rem; padding-right: 1.125rem; }
+      .resdet-ft .btn { flex: 1 1 45%; }
     }
     .resdet-btn-danger { color: var(--danger) !important; border-color: var(--danger) !important; }
     .resdet-btn-danger:hover:not(:disabled) { background: var(--danger-dim) !important; }
@@ -4586,14 +4581,10 @@
       <!-- preenchido por JS -->
     </div>
     <div class="resdet-ft">
-      <div class="resdet-ft-left">
-        <button class="btn btn-outline resdet-btn-danger" id="resdet-cancelar-res">Cancelar Reserva</button>
-      </div>
-      <div class="resdet-ft-right">
-        <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
-        <button class="btn btn-outline" id="resdet-editar-res">Editar Reserva</button>
-        <button class="btn btn-forest" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
-      </div>
+      <button class="btn btn-outline resdet-btn-danger" id="resdet-cancelar-res">Cancelar Reserva</button>
+      <button class="btn btn-outline" id="resdet-liberar" data-action="liberar-pesquisa" data-id="">Liberar Pesquisa</button>
+      <button class="btn btn-outline" id="resdet-editar-res">Editar Reserva</button>
+      <button class="btn btn-forest" id="resdet-ficha" data-action="enviar-pre-massagem" data-id="">Enviar anamnese</button>
     </div>
   </div>
 </div>
