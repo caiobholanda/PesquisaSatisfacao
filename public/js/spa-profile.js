@@ -583,6 +583,12 @@ async function loadLocale(lang, _retry = 0) {
     try { localStorage.setItem('spa_lang', lang); } catch {}
 
     applyLocale(L);
+
+    // Auto-sugere nacionalidade quando campo ainda está vazio
+    const _nacMap = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', es: 'Espanhola', it: 'Italiana', de: 'Alemã' };
+    const _nacSel = document.getElementById('f-nacionalidade');
+    if (_nacSel && !_nacSel.value && _nacMap[lang]) _nacSel.value = _nacMap[lang];
+
     // BUG-O fix: re-aplicar config dinamica no novo idioma. Antes, ao
     // trocar de idioma, as perguntas extras ficavam congeladas em pt-BR
     // (titulo da secao, rotulo da pergunta e pills) porque so o IIFE
