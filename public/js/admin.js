@@ -3504,6 +3504,25 @@ document.getElementById('conflito-overlay').addEventListener('click', e => {
   if (e.target.id === 'conflito-overlay') { _modalOpen = false; e.target.classList.remove('aberto'); }
 });
 
+// Snap defensivo: alguns browsers deixam o picker escolher valores fora do
+// min/max declarado. Corrige o valor antes de qualquer outro handler.
+function _snapHoraInicioAoRange(e) {
+  const inp = e.target;
+  if (!inp.value) return;
+  const minStr = inp.min || '09:00';
+  const maxStr = inp.max || '21:30';
+  const toMin = s => { const [h,m] = String(s).split(':').map(Number); return (h||0)*60 + (m||0); };
+  const v = toMin(inp.value);
+  if (v < toMin(minStr)) {
+    inp.value = minStr;
+    if (typeof showToast === 'function') showToast(`Horário mínimo para essa data é ${minStr}.`);
+  } else if (v > toMin(maxStr)) {
+    inp.value = maxStr;
+    if (typeof showToast === 'function') showToast(`Horário máximo é ${maxStr}.`);
+  }
+}
+document.getElementById('res-inp-hora-inicio').addEventListener('input', _snapHoraInicioAoRange);
+document.getElementById('res-inp-hora-inicio').addEventListener('change', _snapHoraInicioAoRange);
 document.getElementById('res-inp-hora-inicio').addEventListener('input', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-inicio').addEventListener('change', calAtualizarHoraFim);
 document.getElementById('res-inp-hora-fim-manual')?.addEventListener('input', calAtualizarHoraFim);
