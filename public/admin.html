@@ -2974,16 +2974,13 @@
     #resdet-overlay .res-modal { max-width: 800px; }
 
     .resdet-ft {
-      display: flex; align-items: center;
-      padding: .85rem 1.25rem 1.1rem; gap: .45rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .45rem;
+      padding: .85rem 1.25rem 1.1rem;
       border-top: 1px solid var(--border-soft);
     }
-    .resdet-ft .btn { flex: 1; white-space: nowrap; justify-content: center; }
-    #resdet-liberar { font-size: .7rem; }
-    @media (max-width: 720px) {
-      .resdet-ft { flex-wrap: wrap; gap: .4rem; }
-      .resdet-ft .btn { flex: 1 1 45%; }
-    }
+    .resdet-ft .btn { white-space: nowrap; justify-content: center; width: 100%; }
     .resdet-btn-danger { color: var(--danger) !important; border-color: var(--danger) !important; }
     .resdet-btn-danger:hover:not(:disabled) { background: var(--danger-dim) !important; }
     .resdet-btn-gold { border-color: var(--gold) !important; color: var(--gold) !important; }
