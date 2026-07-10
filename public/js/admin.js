@@ -3085,7 +3085,10 @@ function _abrirModalSalasLotadas(tipo) {
       : 'Nenhuma das quatro salas de massagem está livre no horário e duração escolhidos.';
   }
   ov.style.display = 'flex';
-  requestAnimationFrame(() => ov.classList.add('aberto'));
+  requestAnimationFrame(() => {
+    ov.classList.add('aberto');
+    ov.querySelector('.sl-btn-primary')?.focus();
+  });
 }
 
 function _fecharModalSalasLotadas() {
@@ -3095,6 +3098,10 @@ function _fecharModalSalasLotadas() {
   setTimeout(() => { ov.style.display = 'none'; }, 180);
 }
 window._fecharModalSalasLotadas = _fecharModalSalasLotadas;
+// Fechar ao clicar no backdrop (mesmo padrão dos outros overlays do admin)
+document.getElementById('modal-salas-lotadas')?.addEventListener('click', (e) => {
+  if (e.target.id === 'modal-salas-lotadas') _fecharModalSalasLotadas();
+});
 
 // Atalhos rapidos pra escolher dia da nova reserva (Hoje / Amanha / +7).
 // Insere chips logo abaixo do input data, atualiza o value e dispara change

@@ -983,6 +983,25 @@ sala_bloqueios (idx composto sala+data_inicio+data_fim)
 
 ---
 
+## Changelog
+
+**2026-07-10 · Fix Nova Reserva — auto-seleção de sala + popup lotadas**
+
+Arquivos: `public/js/admin.js`, `public/admin.html`.
+
+- `_atualizarDisponibilidadeSalas` (admin.js:3008): parou de usar probe fixo de `+30min`; agora consulta `/api/admin/salas/disponiveis` apenas quando `_resHoraFim` real (derivado do tratamento em `calAtualizarHoraFim`) está definido. Sem tratamento escolhido → nenhuma sala é marcada `.ocupada`. Corrige bug em que todas as salas mostravam "⏱ Em uso" à toa.
+- `calAtualizarHoraFim` (admin.js:3112): dispara `_atualizarDisponibilidadeSalas()` em cada saída, garantindo re-check quando tratamento/hora-fim manual muda.
+- `_selecionarSalaAutomatica` (admin.js:3040): pré-check exige data+hora+tratamento; troca `showToast` por `_abrirModalSalasLotadas(tipo)` quando lotado. Ordem de busca preservada: 1→2→3→4 (individual), 3→4 (dupla).
+- Novo modal `#modal-salas-lotadas` (admin.html após `#confirm-modal-overlay`) com design coerente com tokens `--gold`/`--danger`, backdrop-blur, animação de entrada, foco automático no botão primário e backdrop-click fecha.
+- Micro-texto no label "Sala" indicando que a seleção é automática mas trocável manualmente.
+
+Bugs pré-existentes achados (não corrigidos a pedido):
+- `fmtDate` declarado 2× em admin.js:361 e 8678 (sloppy mode: 2º vence sem erro, mas é code smell).
+- Fluxo Casal: ao auto-marcar `#res-chk-casal`, `_cbTrat2` fica vazio até o admin preencher tratamento 2 (comportamento antigo).
+- Handler duplicado em admin.js:3430-3434 (chama `calAtualizarHoraFim` e `_atualizarDisponibilidadeSalas` separadamente no `change` de hora-inicio → 1 request extra por mudança). Sem impacto funcional.
+
+---
+
 ## Notas Operacionais
 
 - **Deploy:** Fly.io — sempre `flyctl deploy --remote-only` (não Railway, memory feedback_deploy_fly)
