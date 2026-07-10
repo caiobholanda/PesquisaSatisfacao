@@ -6667,13 +6667,17 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
   _wNac('res2-inp-nacionalidade', 'res2-nac-list');
 })();
 
-// Auto-preenche Nacionalidade ao trocar Idioma (só se o campo estiver vazio)
+// Associação bidirecional Idioma ↔ Nacionalidade no modal de reserva
 (function() {
   const _NAC_FROM_LANG = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
+  const _LANG_FROM_NAC = { Brasileira: 'pt-BR', Portuguesa: 'pt-PT', Francesa: 'fr', Italiana: 'it', Alemã: 'de' };
+
   function _wire(idiomaId, nacId) {
     const idiomaEl = document.getElementById(idiomaId);
     const nacEl    = document.getElementById(nacId);
     if (!idiomaEl || !nacEl) return;
+
+    // Idioma → Nacionalidade (sobrescreve sempre que há mapeamento)
     idiomaEl.addEventListener('change', function () {
       const nac = _NAC_FROM_LANG[this.value];
       if (!nac) return;
@@ -6681,7 +6685,14 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
       const clr = nacEl.parentElement?.querySelector('.res-cb-clr');
       if (clr) clr.style.display = '';
     });
+
+    // Nacionalidade → Idioma (ao selecionar do autocomplete via Enter ou clique)
+    nacEl.addEventListener('change', function () {
+      const lang = _LANG_FROM_NAC[this.value];
+      if (lang) idiomaEl.value = lang;
+    });
   }
+
   _wire('res-inp-idioma',  'res-inp-nacionalidade');
   _wire('res2-inp-idioma', 'res2-inp-nacionalidade');
 })();
