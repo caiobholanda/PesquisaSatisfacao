@@ -2280,6 +2280,7 @@ export function buscarDocumentoToken(token) {
     hospede_email: pessoa === 2 ? (row.email2    || '') : (row.email    || ''),
     hospede_telefone: pessoa === 2 ? (row.telefone2 || '') : (row.telefone || ''),
     hospede_cpf:           pessoa === 2 ? '' : (row.cpf || ''),
+    hospede_passaporte:    pessoa === 2 ? '' : (row.passaporte || ''),
     hospede_quarto:        pessoa === 2 ? (row.quarto2 || '') : (row.quarto || ''),
     hospede_nacionalidade: pessoa === 2 ? (row.nacionalidade2 || '') : (row.nacionalidade || ''),
     hospede_data_nascimento: pessoa === 2 ? '' : (row.cli_nascimento || ''),
