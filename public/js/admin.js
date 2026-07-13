@@ -3765,6 +3765,7 @@ async function calVerDetalhes(id) {
   const btnFicha = document.getElementById('resdet-ficha');
   if (btnFicha) {
     btnFicha.style.display = ehEspBeleza ? 'none' : '';
+    if (ehEspBeleza) _setFichaStatus('');
     if (!ehEspBeleza) {
       btnFicha.dataset.id = r.id;
       if (r.cliente2) {
