@@ -632,9 +632,6 @@ async function loadLocale(lang, _retry = 0) {
       _mostrarBannerHistorico(_ultimoCriadoEm);
     }
 
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.lang === lang);
-    });
   } catch (err) {
     console.warn('[loadLocale] falhou', lang, err?.message);
     if (lang !== 'pt-BR') return loadLocale('pt-BR');
