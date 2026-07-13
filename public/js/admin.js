@@ -4313,7 +4313,7 @@ document.getElementById('res-chk-casal')?.addEventListener('change', () => {
   _syncCasalUI();
 });
 
-document.querySelectorAll('.res-tipo-btn').forEach(btn=>{
+document.querySelectorAll('.res-tipo-btn[data-tipo]').forEach(btn=>{
   btn.addEventListener('click',()=>calSetTipo(btn.dataset.tipo));
 });
 
