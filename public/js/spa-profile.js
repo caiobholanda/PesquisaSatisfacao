@@ -720,7 +720,7 @@ function init() {
         const norm = _normQuarto(onlyDigits);
         const cat = _QUARTOS_CACHE ? _QUARTOS_CACHE[norm] : null;
         if (cat === 'gran_class' && gcBadge) {
-          gcBadge.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">★ Gran Class</span>';
+          gcBadge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">★ Gran Class</span>`;
           gcBadge.style.display = '';
         }
       }
