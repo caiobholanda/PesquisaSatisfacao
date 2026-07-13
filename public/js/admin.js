@@ -3767,11 +3767,17 @@ async function calVerDetalhes(id) {
       if (r.cliente2) {
         // Casal: botao unico abre popup distribuidor (estado por pessoa la dentro).
         btnFicha.disabled = false;
-        btnFicha.textContent = 'Anamnese (hóspedes)';
+        btnFicha.textContent = 'ANAMNESE';
         btnFicha.dataset.action = 'abrir-anamnese-casal';
         btnFicha.dataset.estadoFicha = 'casal';
         delete btnFicha.dataset.pessoa;
         btnFicha.onclick = null;
+        const _e1 = _estadoAnamnese(r, 1), _e2 = _estadoAnamnese(r, 2);
+        const _nResp = [_e1, _e2].filter(e => e === 'respondida').length;
+        if (_nResp === 2)      _setFichaStatus('Anamnese respondida', 'ok');
+        else if (_nResp === 1) _setFichaStatus('Anamnese respondida (1/2)', 'ok');
+        else if (_e1 === 'enviada' || _e2 === 'enviada') _setFichaStatus('Link gerado');
+        else _setFichaStatus('');
       } else {
         _aplicarEstadoBtnFicha(btnFicha, _estadoFinalBtnFicha(r, 1));
       }
