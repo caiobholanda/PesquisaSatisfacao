@@ -66,7 +66,7 @@ function isGranClassCli(num) {
 }
 // HTML do badge — sutil, dourado, padronizado.
 function badgeGranClassHtml(label = 'GRAN CLASS') {
-  return `<button type="button" class="gc-badge" data-action="gc-info" title="Ver benefícios Gran Class" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">★ ${label}</button>`;
+  return `<button type="button" class="gc-badge" data-action="gc-info" title="Ver benefícios Gran Class" style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border:1px solid #9C5843;border-radius:9999px;background:linear-gradient(180deg,#F5EFE2,#B8705A);color:#202C28;font-family:var(--serif);font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">★ ${label}</button>`;
 }
 window.isGranClassCli = isGranClassCli;
 window.badgeGranClassHtml = badgeGranClassHtml;
@@ -718,7 +718,7 @@ function renderTabsRelatorios(viewAtual) {
       padding:.7rem 1.3rem;background:none;border:none;cursor:pointer;
       border-bottom:2px solid ${ativo ? 'var(--gold,#9C5843)' : 'transparent'};
       color:${ativo ? 'var(--text)' : 'var(--muted)'};
-      font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.08rem;
+      font-family:var(--serif);font-size:1.08rem;
       font-weight:${ativo ? '600' : '500'};letter-spacing:.015em;
       transition:color .15s, border-color .15s;
     ">${t.label}</button>`;
@@ -977,7 +977,7 @@ function _modalLiberarPesquisaCasal({ reservaId, h1, h2 }) {
   };
   ov.innerHTML = `
     <div role="dialog" aria-modal="true" aria-labelledby="modal-casal-title" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:520px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-      <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
+      <h3 id="modal-casal-title" style="margin:0 0 .8rem 0;font-family:var(--serif);font-size:1.4rem">Pesquisa do casal — libere por hóspede</h3>
       <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.1rem;line-height:1.5">A pesquisa será respondida ao vivo no tablet do SPA. Clique em <strong>Liberar pesquisa</strong> do hóspede que vai responder agora. Quando ele terminar, clique no outro hóspede.</p>
       <div data-cards-host>
         ${card({ idx: 1, h: estado[1] })}
@@ -2843,7 +2843,7 @@ function confirmarAcao({ titulo = 'Confirmar?', mensagem = '', btnConfirmar = 'C
     const cor = perigoso ? 'var(--danger,#b85a4a)' : 'var(--gold,#9C5843)';
     overlay.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:440px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .5rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .5rem 0;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:${cor}">${escHtml(titulo)}</h3>
         <p style="margin:0 0 1.4rem 0;color:var(--text);font-size:.92rem;line-height:1.5">${escHtml(mensagem)}</p>
         <div style="display:flex;gap:.6rem;justify-content:flex-end">
           <button class="btn btn-outline" data-act="cancel">${escHtml(btnCancelar)}</button>
@@ -3653,7 +3653,7 @@ function _abrirModalGranClass() {
       <button data-act="close" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
       <div style="text-align:center;margin-bottom:1.2rem">
         <div style="font-size:2rem;color:#9C5843;margin-bottom:.2rem">★</div>
-        <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
+        <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
         <p style="margin:.3rem 0 0 0;color:var(--muted);font-size:.8rem;letter-spacing:.04em;text-transform:uppercase">Cortesia exclusiva para hóspedes Gran Class</p>
       </div>
       <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem">
@@ -5594,7 +5594,7 @@ function renderClienteDetail({ cliente: c, reservas, anamneses, pesquisas, produ
   det.innerHTML = `
     <div style="margin-bottom:1rem">
       <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.3rem">
-        <h2 style="margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.6rem">${escHtml(c.nome)}</h2>
+        <h2 style="margin:0;font-family:var(--serif);font-size:1.6rem">${escHtml(c.nome)}</h2>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)">
         ${c.cpf ? `<span>CPF: <strong>${escHtml(fmtCpfMask(c.cpf))}</strong></span>` : ''}
@@ -5749,7 +5749,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
       <div style="${_LBL}">${escHtml(label)}</div>
       <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
     </div>`;
-  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.15rem;font-weight:500;color:#C8B89A;border-bottom:1px solid rgba(156,88,67,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:var(--serif);font-size:1.15rem;font-weight:500;color:#C8B89A;border-bottom:1px solid rgba(156,88,67,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
   // Render de um item extra (pergunta dinamica). Mesma logica anterior da
   // antiga "Secao 8" — agora invocado dentro de cada secao alvo.
   const renderExtra = (it) => {
@@ -5802,7 +5802,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
+          <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml([a.nome, a.sobrenome].filter(Boolean).join(' ') || '—')} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -5891,7 +5891,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(156,88,67,.08);overflow:hidden;animation:srm-in .2s ease-out}
     @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
     .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
-    .srm-head h2{margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+    .srm-head h2{margin:0;font-family:var(--serif);font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
     .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
     .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
     .srm-sec{display:flex;flex-direction:column;gap:1rem}
@@ -6137,7 +6137,7 @@ async function _abrirModalFeedbackRaw(feedbackId) {
       .srm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(156,88,67,.08);overflow:hidden;animation:srm-in .2s ease-out}
       @keyframes srm-in{from{opacity:0;transform:translateY(7px) scale(.982)}to{opacity:1;transform:none}}
       .srm-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.6rem 1.15rem;border-bottom:1px solid var(--border);gap:1rem}
-      .srm-head h2{margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
+      .srm-head h2{margin:0;font-family:var(--serif);font-weight:500;font-size:1.65rem;color:var(--text);letter-spacing:-.01em;line-height:1.2}
       .srm-head p{margin:.3rem 0 0;color:var(--muted);font-size:.74rem;letter-spacing:.02em;line-height:1.5}
       .srm-body{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.6rem}
       .srm-sec{display:flex;flex-direction:column;gap:1rem}
@@ -7586,7 +7586,7 @@ async function _abrirModalHistorico({ slug, titulo }) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${itens.length} alterações registradas — mais recente primeiro</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -7727,7 +7727,7 @@ async function _abrirModalPerguntas({ slug, titulo, onChange }) {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:85vh;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
       <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
         <div>
-          <h2 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
+          <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.55rem;color:var(--text)">${escHtml(titulo)}</h2>
           <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${ativas.length} ativas · ${inativas.length} inativas</p>
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
@@ -7883,7 +7883,7 @@ function _renderAnamEstrutura() {
   wrap.innerHTML = secoesAtivas.map(s => `
     <section class="anam-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
-        <h3 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <h3 style="margin:0;font-family:var(--serif);font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
         <div style="display:flex;gap:.4rem">
           <button class="btn btn-outline btn-sm" data-anam-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
           <button class="btn btn-outline btn-sm" data-anam-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
@@ -8540,7 +8540,7 @@ function pedirTexto({ titulo = 'Digite', mensagem = '', valorInicial = '', place
       : `<input id="_pedir-inp" value="${escHtml(valorInicial)}" placeholder="${escHtml(placeholder)}" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">`;
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:var(--serif);font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         ${inputHtml}
         <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem">
@@ -8573,7 +8573,7 @@ function pedirOpcao({ titulo, mensagem, opcoes = [], valorInicial = '' } = {}) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:460px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:var(--serif);font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         <select id="_pedir-sel" style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px">
           ${opcoes.map(o => `<option value="${escHtml(o.value)}"${o.value === valorInicial ? ' selected' : ''}>${escHtml(o.label)}</option>`).join('')}
@@ -8610,7 +8610,7 @@ function pedirPergunta({ titulo = 'Pergunta', mensagem = '', valorRotulo = '', v
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
     ov.innerHTML = `
       <div role="dialog" aria-modal="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-        <h3 style="margin:0 0 .4rem 0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,Georgia,serif;font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
+        <h3 style="margin:0 0 .4rem 0;font-family:var(--serif);font-size:1.4rem;font-weight:500">${escHtml(titulo)}</h3>
         ${mensagem ? `<p style="margin:0 0 1rem 0;color:var(--muted);font-size:.86rem;line-height:1.5">${escHtml(mensagem)}</p>` : ''}
         <label style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Texto da pergunta (português)</label>
         <input id="_pq-rot" value="${escHtml(valorRotulo)}" placeholder="Escreva a pergunta..." style="width:100%;padding:.7rem;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem;border-radius:4px;margin-bottom:1rem">
@@ -8708,7 +8708,7 @@ function _renderPesqEstrutura() {
   wrap.innerHTML = secoesAtivas.map(s => `
     <section class="pesq-secao" data-secao-id="${s.id}" style="border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1.4rem;background:var(--surface)">
       <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;gap:.6rem">
-        <h3 style="margin:0;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif,serif;font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
+        <h3 style="margin:0;font-family:var(--serif);font-size:1.35rem;color:var(--text)">${escHtml(s.titulo)}</h3>
         <div style="display:flex;gap:.4rem">
           <button class="btn btn-outline btn-sm" data-pesq-act="edit-secao" data-secao-id="${s.id}">Renomear seção</button>
           <button class="btn btn-outline btn-sm" data-pesq-act="del-secao"  data-secao-id="${s.id}" style="color:var(--danger);border-color:var(--danger)">Remover seção</button>
