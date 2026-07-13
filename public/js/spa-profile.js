@@ -835,9 +835,11 @@ function init() {
               }
             } else if (d.hospede_passaporte) {
               const docSel = document.getElementById('f-doc-tipo');
-              if (docSel && Array.from(docSel.options).some(o => o.value === 'passport')) {
-                docSel.value = 'passport';
-                _docType = 'passport';
+              if (docSel) {
+                // HTML estatico usa 'passport'; config dinamica reescreve para 'passaporte'.
+                const alvo = ['passaporte', 'passport']
+                  .find(v => Array.from(docSel.options).some(o => o.value === v));
+                if (alvo) { docSel.value = alvo; _docType = alvo; }
               }
               const docInp = document.getElementById('f-doc-num');
               if (docInp && !docInp.value) docInp.value = d.hospede_passaporte;
