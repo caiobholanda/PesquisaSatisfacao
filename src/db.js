@@ -2285,6 +2285,7 @@ export function buscarDocumentoToken(token) {
     hospede_quarto:        pessoa === 2 ? (row.quarto2 || '') : (row.quarto || ''),
     hospede_nacionalidade: pessoa === 2 ? (row.nacionalidade2 || '') : (row.nacionalidade || ''),
     hospede_data_nascimento: pessoa === 2 ? '' : (row.cli_nascimento || ''),
+    tipo_cliente: pessoa === 2 ? (row.tipo_cliente2 || '') : (row.tipo_cliente || ''),
     servico:       row.servico,
     locale:        row.locale,
     pessoa,
