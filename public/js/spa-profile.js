@@ -5,6 +5,8 @@ let _sig = null;
 let _docType = 'cpf';
 let _currentLang = 'pt-BR';
 let _docToken = null;
+// Cliente passante nao tem UH: campo quarto fica oculto e nunca e' enviado.
+let _ehPassante = false;
 
 /* ─── Helpers ─── */
 
