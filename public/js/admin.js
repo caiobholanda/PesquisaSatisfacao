@@ -2331,6 +2331,15 @@ function _renderMassagistasModal2() {
     if (inp) inp.value = '';
     if (clr) clr.style.display = 'none';
   }
+  // Auto-seleciona quando só uma disponível e nada selecionado
+  if (lista.length === 1 && !hid?.value) {
+    const m = lista[0];
+    const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
+    if (hid) hid.value = m.id;
+    if (inp) inp.value = m.nome + suffix;
+    if (clr) clr.style.display = '';
+    hid?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 async function loadMassagistasModal() {
@@ -2424,6 +2433,15 @@ function _renderMassagistasModal() {
     if (inp) { inp.value = ''; }
     if (clr) clr.style.display = 'none';
   }
+  // Auto-seleciona quando só uma disponível e nada selecionado
+  if (lista.length === 1 && !hid?.value) {
+    const m = lista[0];
+    const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
+    if (hid) hid.value = m.id;
+    if (inp) inp.value = m.nome + suffix;
+    if (clr) clr.style.display = '';
+    hid?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 async function loadTratamentosModal() {
@@ -2470,7 +2488,8 @@ function _blocoMinutos(durTratamento) {
   return durTratamento || 0;
 }
 
-const TAXA_SERVICO = 0.15;
+const TAXA_SERVICO = 0.10;
+const TAXA_ISS     = 0.05;
 
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -2924,6 +2943,7 @@ function calSetTipo(tipo) {
   // O quarto só é obrigatório para hóspedes
   const req = document.getElementById('res-quarto-req');
   if (req) req.style.display = isHospede ? '' : 'none';
+  _atualizarComboLinhaPreco();
 }
 
 function calOpenModal(salaId, data, hora) {
@@ -3497,15 +3517,22 @@ function _atualizarComboLinhaPreco() {
     </div>`;
   }
 
-  // Preço: subtotal + taxa 15% + total
+  // Preço: subtotal + desconto GC + taxa serviço 10% + ISS 5% + total
   if (t.preco) {
     const sub = Number(t.preco);
-    const taxa = sub * TAXA_SERVICO;
-    const total = sub + taxa;
+    const aptoVal = document.getElementById('res-inp-apto')?.value?.replace(/\D/g,'') || '';
+    const ehGC = _resTipo === 'hospede' && aptoVal.length === 4 && quartoCategoria(aptoVal) === 'gran_class';
+    const desconto = ehGC ? sub * 0.10 : 0;
+    const subDesc = sub - desconto;
+    const taxaServ = subDesc * TAXA_SERVICO;
+    const taxaIss  = subDesc * TAXA_ISS;
+    const total = subDesc + taxaServ + taxaIss;
     const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     html += `<div class="res-preco-box">
       <div class="res-preco-row"><span>Subtotal</span><span>R$ ${fmt(sub)}</span></div>
-      <div class="res-preco-row"><span>Taxa de serviço (15%)</span><span>R$ ${fmt(taxa)}</span></div>
+      ${ehGC ? `<div class="res-preco-row" style="color:#9C5843"><span>★ Gran Class (−10%)</span><span>−R$ ${fmt(desconto)}</span></div>` : ''}
+      <div class="res-preco-row"><span>Taxa de serviço (10%)</span><span>R$ ${fmt(taxaServ)}</span></div>
+      <div class="res-preco-row"><span>ISS (5%)</span><span>R$ ${fmt(taxaIss)}</span></div>
       <div class="res-preco-row total"><span>Total</span><span>R$ ${fmt(total)}</span></div>
     </div>`;
   }
@@ -3604,22 +3631,24 @@ function _massagistaDetHtml2(r) {
   return `<span class="resdet-kv-val">${escHtml(m.nome)}${badges.join('')}</span>`;
 }
 
-// Helper: bloco de preco com taxa 15% e, se r.quarto_categoria='gran_class',
-// aplica 10% de desconto antes da taxa. Compartilhado pessoa 1 e pessoa 2.
+// Helper: bloco de preco com taxa serviço 10% + ISS 5% e, se gran_class,
+// aplica 10% de desconto antes das taxas. Compartilhado pessoa 1 e pessoa 2.
 function _precoBloco(tm, ehGC) {
   if (!tm?.preco) return '';
   const sub = Number(tm.preco);
   const desconto = ehGC ? sub * 0.10 : 0;
   const subDescontado = sub - desconto;
-  const taxa = subDescontado * 0.15;
-  const total = subDescontado + taxa;
+  const taxaServ = subDescontado * TAXA_SERVICO;
+  const taxaIss  = subDescontado * TAXA_ISS;
+  const total = subDescontado + taxaServ + taxaIss;
   const fmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   let h = `<div style="border-top:1px dashed var(--border);margin-top:.5rem;padding-top:.6rem">`;
   h += `<div class="resdet-kv"><div class="resdet-kv-label">Subtotal</div><div class="resdet-kv-val mono">R$ ${fmt(sub)}</div></div>`;
   if (ehGC) {
     h += `<div class="resdet-kv"><div class="resdet-kv-label" style="color:#9C5843">★ Gran Class (−10%)</div><div class="resdet-kv-val mono" style="color:#9C5843">−R$ ${fmt(desconto)}</div></div>`;
   }
-  h += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa serviço 15%</div><div class="resdet-kv-val mono">R$ ${fmt(taxa)}</div></div>`;
+  h += `<div class="resdet-kv"><div class="resdet-kv-label">Taxa de serviço (10%)</div><div class="resdet-kv-val mono">R$ ${fmt(taxaServ)}</div></div>`;
+  h += `<div class="resdet-kv"><div class="resdet-kv-label">ISS (5%)</div><div class="resdet-kv-val mono">R$ ${fmt(taxaIss)}</div></div>`;
   h += `<div class="resdet-kv" style="border-bottom:none"><div class="resdet-kv-label" style="font-weight:700;color:var(--text)">Total</div><div class="resdet-kv-val mono gold" style="font-size:1rem">R$ ${fmt(total)}</div></div>`;
   h += `</div>`;
   return h;
@@ -4237,8 +4266,8 @@ function calCloseModal(){
     const subEl   = document.getElementById('res-modal-sub-txt');
     const btnSalvar = document.getElementById('btn-res-salvar');
     if (titleEl)   titleEl.textContent  = 'Nova Reserva';
-    if (subEl)     subEl.textContent    = 'Preencha os dados para confirmar a reserva';
-    if (btnSalvar) btnSalvar.textContent = 'Confirmar Reserva';
+    if (subEl)     subEl.textContent    = 'Preencha os dados para confirmar o atendimento';
+    if (btnSalvar) btnSalvar.textContent = 'Confirmar Atendimento';
     const dataInp = document.getElementById('res-inp-data');
     if (dataInp) {
       const _ft = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
@@ -6374,6 +6403,7 @@ function _confirmar(msg) {
       info.textContent = '✓ Quarto válido';
       info.style.display = '';
     }
+    _atualizarComboLinhaPreco();
   });
 })();
 
