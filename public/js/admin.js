@@ -5754,31 +5754,33 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
 
   const a = dados;
   const dt = fmtBRT(a.criado_em, { br: true });
-  const _ROW = 'display:flex;gap:.7rem;padding:.52rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem';
-  const _LBL = 'flex:0 0 200px;color:#9a8f82;font-size:.71rem;text-transform:uppercase;letter-spacing:.06em;padding-top:.1rem';
-  const _VAL = 'flex:1;color:#d4c9b8;line-height:1.5';
+  const _ROW = 'display:grid;grid-template-columns:170px 1fr;gap:.4rem 1rem;padding:.52rem 0;border-bottom:1px solid rgba(184,147,90,.14);align-items:baseline';
+  const _LBL = 'font-family:\'Raleway\',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#7A6B5A;padding-top:.1rem;line-height:1.4';
+  const _VAL = 'font-family:\'Raleway\',sans-serif;font-size:.875rem;color:#3A2010;line-height:1.5';
   const TIPO_DOC = { cpf:'CPF', passport:'Passaporte', passaporte:'Passaporte', rg:'RG', rne:'RNE' };
   const PRESSAO   = { low:'Leve', light:'Leve', soft:'Suave', medium:'Média', normal:'Normal', high:'Forte', firm:'Firme', strong:'Forte', hard:'Forte' };
   const fmtData   = v => v && /^\d{4}-\d{2}-\d{2}/.test(v) ? fmtDataBR(v.slice(0,10)) : (v || null);
+  const _vazio = '<em style="color:#A99080;font-style:italic;font-size:.82rem;font-family:\'Raleway\',sans-serif">— vazio —</em>';
   const linhaCampo = (label, valor) => `
     <div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
-      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : '<em style="color:#7A6B5A">— vazio —</em>'}</div>
+      <div style="${_VAL}">${valor != null && valor !== '' ? escHtml(String(valor)) : _vazio}</div>
     </div>`;
   const linhaLista = (label, arr) => {
     const items = (arr || []).filter(Boolean);
-    const v = items.length ? items.map(i => `<span style="background:rgba(156,88,67,.14);color:#9C5843;border:1px solid rgba(156,88,67,.3);font-size:.76rem;padding:.18rem .6rem;border-radius:9999px;font-weight:500">${escHtml(i)}</span>`).join(' ') : '<em style="color:#7A6B5A">— vazio —</em>';
+    const v = items.length ? items.map(i => `<span style="background:rgba(184,147,90,.12);color:#9C5843;border:1px solid rgba(156,88,67,.28);font-size:.74rem;padding:.18rem .58rem;border-radius:9999px;font-weight:600;font-family:'Raleway',sans-serif">${escHtml(i)}</span>`).join(' ') : _vazio;
     return `<div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
-      <div style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap;align-items:center">${v}</div>
+      <div style="display:flex;gap:.3rem;flex-wrap:wrap;align-items:center;padding:.08rem 0">${v}</div>
     </div>`;
   };
   const linhaBool = (label, b) => `
     <div style="${_ROW}">
       <div style="${_LBL}">${escHtml(label)}</div>
-      <div style="${_VAL}">${b ? '<span style="color:#4db382;font-weight:600">✓ Sim</span>' : '<span style="color:#e05555;font-weight:600">✗ Não</span>'}</div>
+      <div style="${_VAL}">${b ? '<span style="color:#2E7D56;font-weight:700;font-family:\'Raleway\',sans-serif">✓ Sim</span>' : '<span style="color:#B83232;font-weight:700;font-family:\'Raleway\',sans-serif">✗ Não</span>'}</div>
     </div>`;
-  const secaoTitulo = t => `<h3 style="margin:1.3rem 0 .5rem 0;font-family:var(--serif);font-size:1.15rem;font-weight:500;color:#C8B89A;border-bottom:1px solid rgba(156,88,67,.4);padding-bottom:.3rem">${escHtml(t)}</h3>`;
+  const _secBar = '<span style="display:inline-block;width:3px;height:1.05rem;background:linear-gradient(180deg,#B8935A,#9C5843);border-radius:9999px;flex-shrink:0;margin-right:.6rem;vertical-align:middle"></span>';
+  const secaoTitulo = t => `<div style="display:flex;align-items:center;margin:1.4rem 0 .65rem">${_secBar}<h3 style="margin:0;font-family:'Raleway',sans-serif;font-weight:600;font-style:italic;font-size:1rem;color:#3A2010;letter-spacing:.01em">${escHtml(t)}</h3></div>`;
   // Render de um item extra (pergunta dinamica). Mesma logica anterior da
   // antiga "Secao 8" — agora invocado dentro de cada secao alvo.
   const renderExtra = (it) => {
@@ -5822,21 +5824,34 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
   // Valor truncado em 1000 chars pelo bug antigo do san() — rejeitar: nunca é imagem válida
   const _sigUrl = typeof a.assinatura_data_url === 'string' && a.assinatura_data_url.startsWith('data:image') && a.assinatura_data_url.length > 1000 ? a.assinatura_data_url : null;
   const assinaturaHtml = _sigUrl
-    ? `<img src="${_sigUrl}" alt="Assinatura do cliente" style="max-width:300px;max-height:130px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:#fff;padding:.4rem;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4)">`
-    : '<em style="color:#9a8f82;font-size:.85rem">— sem assinatura registrada —</em>';
+    ? `<img src="${_sigUrl}" alt="Assinatura do cliente" style="max-width:280px;max-height:120px;border:1px solid #D9CFC4;border-radius:8px;background:#fff;padding:.5rem;display:block;box-shadow:0 2px 10px rgba(36,21,8,.1)">`
+    : _vazio;
+
+  if (!document.getElementById('_am-style')) {
+    const s = document.createElement('style');
+    s.id = '_am-style';
+    s.textContent = '@keyframes am-in{from{opacity:0;transform:translateY(10px) scale(.984)}to{opacity:1;transform:none}}';
+    document.head.appendChild(s);
+  }
 
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(36,21,8,.52);backdrop-filter:blur(5px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  const _clienteNome = escHtml([a.nome, a.sobrenome].filter(Boolean).join(' ') || '—');
   ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:760px;height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
-      <header style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)">
+    <div style="background:#F7F3EC;border:1px solid #D9CFC4;border-radius:16px;width:100%;max-width:740px;height:88vh;display:flex;flex-direction:column;box-shadow:0 28px 70px rgba(36,21,8,.28),0 0 0 1px rgba(184,147,90,.12);overflow:hidden;animation:am-in .22s ease-out;font-family:'Raleway',sans-serif">
+
+      <header style="display:flex;align-items:flex-start;justify-content:space-between;padding:1.4rem 1.65rem 1.2rem;border-bottom:1px solid #D9CFC4;background:linear-gradient(135deg,#F7F3EC 55%,#EDE7DA);gap:1rem;flex-shrink:0">
         <div>
-          <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.55rem;color:var(--text)">Anamnese preenchida</h2>
-          <p style="margin:.25rem 0 0 0;color:var(--muted);font-size:.78rem">${escHtml([a.nome, a.sobrenome].filter(Boolean).join(' ') || '—')} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
+          <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem">
+            <span style="display:inline-block;width:3px;height:1.5rem;background:linear-gradient(180deg,#B8935A,#9C5843);border-radius:9999px;flex-shrink:0"></span>
+            <h2 style="margin:0;font-family:'Raleway',sans-serif;font-weight:700;font-size:1.3rem;color:#3A2010;letter-spacing:.01em">Anamnese preenchida</h2>
+          </div>
+          <p style="margin:0 0 0 1rem;color:#7A6B5A;font-size:.73rem;font-family:'Raleway',sans-serif;letter-spacing:.02em;line-height:1.5">${_clienteNome} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
         </div>
-        <button class="btn btn-outline btn-sm" data-act="close" style="font-size:1rem">✕</button>
+        <button data-act="close" title="Fechar" style="flex-shrink:0;background:none;border:1px solid #D9CFC4;border-radius:8px;width:2.1rem;height:2.1rem;font-size:.9rem;cursor:pointer;color:#7A6B5A;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;margin-top:.1rem" onmouseover="this.style.background='rgba(156,88,67,.1)';this.style.borderColor='#B8935A'" onmouseout="this.style.background='none';this.style.borderColor='#D9CFC4'">✕</button>
       </header>
-      <div style="flex:1;overflow-y:auto;padding:1rem 1.4rem">
+
+      <div style="flex:1;overflow-y:auto;padding:1rem 1.65rem 1.75rem;scroll-behavior:smooth">
         ${secaoTitulo('1. Dados pessoais')}
         ${linhaCampo('Nome', a.nome)}
         ${linhaCampo('Sobrenome', a.sobrenome)}
@@ -5875,15 +5890,14 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
         ${secaoTitulo('7. Assinatura')}
         <div style="padding:.6rem 0">${assinaturaHtml}</div>
       </div>
-      <footer style="padding:.7rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-        <button class="btn btn-outline" data-act="close">Fechar</button>
+
+      <footer style="padding:.9rem 1.65rem;border-top:1px solid #D9CFC4;background:linear-gradient(135deg,#F7F3EC,#EDE7DA);display:flex;justify-content:flex-end;flex-shrink:0">
+        <button data-act="close" style="font-family:'Raleway',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.55rem 1.5rem;border-radius:8px;border:1px solid #C4A882;background:#fff;color:#4A2E1A;cursor:pointer;transition:all .15s;box-shadow:0 1px 4px rgba(36,21,8,.07)" onmouseover="this.style.background='#F7F3EC';this.style.borderColor='#9C5843'" onmouseout="this.style.background='#fff';this.style.borderColor='#C4A882'">Fechar</button>
       </footer>
     </div>
   `;
-  function onKey(e) { if (e.key === 'Escape') close(); }
-  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close' || e.target === ov) close(); });
-  document.addEventListener('keydown', onKey);
+  function close() { ov.remove(); }
+  ov.addEventListener('click', e => { if (e.target.closest('[data-act="close"]')) close(); });
   document.body.appendChild(ov);
 }
 
