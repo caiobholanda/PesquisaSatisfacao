@@ -1236,7 +1236,7 @@ function _aplicarPerfilNoForm(p) {
   setIfEmpty('f-telefone', p.telefone);
   setIfEmpty('f-nascimento', p.data_nascimento);
   setIfEmpty('f-outro-produto', p.produto_especifico);
-  setIfEmpty('f-quarto', p.quarto);
+  if (!_ehPassante) setIfEmpty('f-quarto', p.quarto);
   setIfEmpty('f-nacionalidade', p.nacionalidade);
 
   // Tipo de documento (sincroniza select + _docType)
