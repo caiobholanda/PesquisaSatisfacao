@@ -830,7 +830,9 @@ function _aplicarEstadoBtnFicha(btn, estado) {
     btn.dataset.pessoa = '1';
     _setFichaStatus('Anamnese respondida', 'ok');
   } else if (estado === 'enviada') {
-    btn.disabled = false;
+    // Reenvio permitido enquanto a janela de envio estiver aberta; depois
+    // dela o backend recusa (409 tempo_expirado), entao desabilita aqui.
+    btn.disabled = _resDetAtual ? _estadoBtnFicha(_resDetAtual) !== 'ok' : false;
     btn.dataset.action = 'enviar-pre-massagem';
     delete btn.dataset.pessoa;
     _setFichaStatus('Link gerado');
