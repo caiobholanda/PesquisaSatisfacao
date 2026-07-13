@@ -946,8 +946,11 @@ async function applyAnamneseConfig(idioma) {
       sel.innerHTML = docCfg.opcoes.map(o =>
         `<option value="${o.chave}">${(o.rotulo || o.chave).replace(/[<>"']/g, '')}</option>`
       ).join('');
-      // Mantem selecao anterior se ainda existir; senao escolhe a primeira
+      // Mantem selecao anterior se ainda existir; senao tenta o alias
+      // (estatico 'passport' ↔ config 'passaporte') antes de cair na primeira.
+      const _aliasDoc = prev === 'passport' ? 'passaporte' : (prev === 'passaporte' ? 'passport' : null);
       if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+      else if (_aliasDoc && Array.from(sel.options).some(o => o.value === _aliasDoc)) { sel.value = _aliasDoc; _docType = _aliasDoc; }
       else { sel.value = sel.options[0].value; _docType = sel.value; }
     }
   }
