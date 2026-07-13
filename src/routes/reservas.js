@@ -518,6 +518,8 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
         massagista_id2: _p2Presente && massagista_id2 ? +massagista_id2 : null,
         idioma: _locale1,
         idioma2: _locale2,
+        nacionalidade: nacionalidade?.trim() || null,
+        nacionalidade2: _p2Presente ? (nacionalidade2?.trim() || null) : null,
       }
     );
 
