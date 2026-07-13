@@ -362,7 +362,7 @@ function collectData() {
     assinatura_data_url:     _sig ? _sig.getDataURL() : null,
     idioma:                  _currentLang,
     documento_token:         _docToken,
-    quarto:                  (() => { const q = (document.getElementById('f-quarto')?.value || '').trim(); return q ? _normQuarto(q) : null; })(),
+    quarto:                  (() => { if (_ehPassante) return null; const q = (document.getElementById('f-quarto')?.value || '').trim(); return q ? _normQuarto(q) : null; })(),
     respostas_extras:        (typeof _coletarRespostasExtras === 'function') ? _coletarRespostasExtras() : {},
   };
 }
