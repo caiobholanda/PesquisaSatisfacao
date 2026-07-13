@@ -570,15 +570,7 @@ function applyLocale(L) {
 const _NAC_AUTO     = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
 const _LANG_FROM_NAC = { Brasileira: 'pt-BR', Portuguesa: 'pt-PT', Francesa: 'fr', Italiana: 'it', Alemã: 'de' };
 
-const _NAC_TOP_PER_LANG = {
-  'pt-BR': ['Brasileira', 'Portuguesa', 'Americana', 'Argentina'],
-  'pt-PT': ['Portuguesa', 'Brasileira', 'Espanhola', 'Francesa'],
-  en:      ['Americana', 'Britânica', 'Canadense', 'Australiana'],
-  es:      ['Argentina', 'Uruguaia', 'Espanhola', 'Chilena', 'Colombiana'],
-  fr:      ['Francesa', 'Belga', 'Canadense'],
-  it:      ['Italiana', 'Francesa', 'Espanhola', 'Alemã'],
-  de:      ['Alemã', 'Austríaca', 'Suíça', 'Holandesa'],
-};
+const _NAC_TOP = ['Brasileira','Francesa','Italiana','Portuguesa','Espanhola','Argentina','Americana','Alemã','Suíça','Belga','Holandesa'];
 
 let _ALL_NAC = null;
 
@@ -599,7 +591,7 @@ function _rebuildNacSelect(lang) {
   const sel        = document.getElementById('f-nacionalidade');
   if (!topGroup || !otherGroup || !_ALL_NAC) return;
   const prev   = sel?.value || '';
-  const tops   = _NAC_TOP_PER_LANG[lang] || [];
+  const tops   = _NAC_TOP;
   const topSet = new Set(tops);
   topGroup.innerHTML   = tops.map(n => `<option value="${n}">${n}</option>`).join('');
   otherGroup.innerHTML = _ALL_NAC.filter(n => !topSet.has(n)).map(n => `<option value="${n}">${n}</option>`).join('');

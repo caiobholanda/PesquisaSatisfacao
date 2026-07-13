@@ -6375,7 +6375,7 @@ function _confirmar(msg) {
 
 // ── Autocomplete de Nacionalidade ─────────────────────────────────────────
 const NACIONALIDADES = [
-  'Afegã','Albanesa','Alemã','Andorrana','Angolana','Antiguense',
+  'Afegã','Albanesa','Alemã','Americana','Andorrana','Angolana','Antiguense',
   'Argelina','Argentina','Armênia','Australiana','Austríaca','Azerbaijanesa',
   'Bahamense','Bangladenha','Barbadense','Bareinita','Belga','Belizenha',
   'Bielorrussa','Boliviana','Bósnia-herzegovínea','Botsuanesa','Brasileira',
@@ -6416,6 +6416,8 @@ const NACIONALIDADES = [
   'Vanuatuana','Venezuelana','Vietnamita',
   'Zambiana','Zimbabuense'
 ];
+
+const _NAC_TOP_LIST = ['Brasileira','Francesa','Italiana','Portuguesa','Espanhola','Argentina','Americana','Alemã','Suíça','Belga','Holandesa'];
 
 const _NAC_PAIS_MAP = {
   'brasil':'Brasileira','portugal':'Portuguesa',
@@ -6499,21 +6501,29 @@ function resolverNacionalidade(val, opcoes) {
 function criarAutocompleteNacionalidade(inp, listEl) {
   let _ativo = -1;
 
+  const _topSet = new Set(_NAC_TOP_LIST);
+
   function _filtrar(q) {
     const n = _normAcento(q);
-    return n ? NACIONALIDADES.filter(nac => _normAcento(nac).includes(n)) : NACIONALIDADES;
+    const lista = n ? NACIONALIDADES.filter(nac => _normAcento(nac).includes(n)) : NACIONALIDADES;
+    const tops  = lista.filter(nac => _topSet.has(nac)).sort((a, b) => _NAC_TOP_LIST.indexOf(a) - _NAC_TOP_LIST.indexOf(b));
+    const outros = lista.filter(nac => !_topSet.has(nac));
+    return { tops, outros };
   }
 
-  function _renderizar(filtrados) {
+  function _renderizar({ tops, outros }) {
     _ativo = -1;
-    if (!filtrados.length) {
+    if (!tops.length && !outros.length) {
       listEl.innerHTML = '<div class="res-cb-opt cb-empty">Nenhuma opção encontrada</div>';
       listEl.style.display = '';
       return;
     }
-    listEl.innerHTML = filtrados.map(n =>
-      `<div class="res-cb-opt" role="option" data-val="${escHtml(n)}">${escHtml(n)}</div>`
-    ).join('');
+    let html = tops.map(n => `<div class="res-cb-opt" role="option" data-val="${escHtml(n)}">${escHtml(n)}</div>`).join('');
+    if (tops.length && outros.length) {
+      html += '<div aria-hidden="true" style="border-top:1px solid rgba(128,128,128,.25);margin:3px 8px;pointer-events:none"></div>';
+    }
+    html += outros.map(n => `<div class="res-cb-opt" role="option" data-val="${escHtml(n)}">${escHtml(n)}</div>`).join('');
+    listEl.innerHTML = html;
     listEl.style.display = '';
   }
 
