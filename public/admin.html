@@ -1973,9 +1973,9 @@
 
     .cal-nav-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px;
+      width: 39px; height: 39px;
       background: none; border: 1.5px solid var(--border);
-      border-radius: 8px; cursor: pointer; color: var(--muted);
+      border-radius: 10px; cursor: pointer; color: var(--muted);
       flex-shrink: 0; transition: border-color .15s, color .15s, background .15s;
     }
     .cal-nav-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
@@ -2033,7 +2033,7 @@
     .cal-month-wrap { position: relative; display: flex; align-items: center; gap: .4rem; }
     .cal-dp-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 28px; height: 28px; border-radius: 7px;
+      width: 34px; height: 34px; border-radius: 8px;
       border: 1.5px solid var(--border); background: none;
       color: var(--muted); cursor: pointer; transition: all .15s; flex-shrink: 0;
     }
@@ -2218,9 +2218,9 @@
        na tela inicial sem sacrificar legibilidade. */
     :root { --cal-slot-h: 52px; }
     .cal-time-cell {
-      padding: 0 .65rem; display: flex; align-items: flex-start;
-      justify-content: flex-end; padding-top: 5px;
-      font-size: .58rem; font-family: var(--mono); color: var(--muted);
+      padding: 0 .3rem; display: flex; align-items: center;
+      justify-content: center;
+      font-size: .7rem; font-family: var(--mono); color: var(--muted);
       height: var(--cal-slot-h); border-bottom: 1px solid var(--border-soft);
       border-right: 1px solid var(--border);
       background: var(--surface); position: sticky; left: 0;
@@ -3429,7 +3429,7 @@
 
 <!-- APP -->
 <div id="app-screen">
-  <script src="/js/shared-header.js"></script>
+  <script src="/js/shared-header.js?v=2"></script>
   <script>if (window.initSharedHeader) initSharedHeader({ context: 'admin' });</script>
 
   <main>
@@ -3680,7 +3680,7 @@
         <div class="cal-month-wrap">
           <div class="cal-month-label" id="cal-month-label">—</div>
           <button class="cal-dp-btn" id="btn-dp-open" aria-label="Selecionar data">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </button>
           <div class="cal-datepicker" id="cal-datepicker" style="display:none" role="dialog" aria-label="Seletor de data">
             <div class="dp-hd">
@@ -3702,11 +3702,11 @@
         </div>
         <div class="cal-toolbar-sep"></div>
         <button class="cal-nav-btn" id="btn-week-prev" aria-label="Semana anterior">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div class="cal-week-days" id="cal-week-days"></div>
         <button class="cal-nav-btn" id="btn-week-next" aria-label="Próxima semana">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <button class="cal-btn-hoje" id="btn-week-hoje">Hoje</button>
         <div class="cal-legend">

@@ -124,8 +124,9 @@
         "<button class=\"btn btn-outline btn-sm\" id=\"btn-theme\" title=\"Alternar modo claro/escuro\" aria-label=\"Alternar modo claro/escuro\" style=\"margin-left:.25rem;padding:.3rem .5rem;display:inline-flex;align-items:center;justify-content:center;line-height:1\">" +
           sunSvg + moonSvg +
         "</button>" +
+        (isAdmin ? "<span id=\"sh-user-name\" style=\"margin-left:.5rem;font-size:.73rem;color:var(--muted);letter-spacing:.02em;white-space:nowrap;opacity:.85\"></span>" : "") +
         "<button class=\"btn btn-outline btn-sm\" id=\"btn-sair-hub\" title=\"Sair e voltar ao Hub\" style=\"margin-left:.5rem;display:inline-flex;align-items:center;gap:6px\">" +
-          sairSvg + "Sair" +
+          sairSvg + "Voltar ao HUB" +
         "</button>" +
       "</div>"
     );
@@ -186,6 +187,23 @@
     setInterval(tick, 30000);
   }
 
+  function setupUserName() {
+    var el = document.getElementById("sh-user-name");
+    if (!el) return;
+    try {
+      var t = sessionStorage.getItem("granspa_token");
+      if (t) {
+        var p = JSON.parse(atob(t.split(".")[1]));
+        var u = p.username || "";
+        el.textContent = u.includes("@") ? u.split("@")[0] : u;
+      }
+    } catch (_) {}
+    fetch("/api/auth/me", { credentials: "include" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.ok && d.nome) el.textContent = d.nome; })
+      .catch(function () {});
+  }
+
   function setupDropdownToggles() {
     var allMenuIds = ["spa-dropdown-menu", "admin-dropdown-menu"];
     function closeAll() {
@@ -237,6 +255,7 @@
     setupLogoLink();
     setupClock();
     setupDropdownToggles();
+    if (isAdmin) setupUserName();
 
     if (!isAdmin) {
       var homeBtn = document.getElementById("btn-header-home");

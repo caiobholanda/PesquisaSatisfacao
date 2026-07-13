@@ -39,6 +39,19 @@ router.post('/login', async (req, res) => {
   return res.json({ ok: true, token });
 });
 
+// GET /api/auth/me
+router.get('/me', requireAuth, (req, res) => {
+  const { sub, username } = req.user;
+  let displayName = username;
+  if (sub > 0) {
+    const u = buscarAdminById(sub);
+    if (u) displayName = u.nome || u.username;
+  } else if (username && username.includes('@')) {
+    displayName = username.split('@')[0];
+  }
+  res.json({ ok: true, nome: displayName, username });
+});
+
 // GET /api/auth/usuarios
 // Fonte de verdade: Hub (data.site_permissions com papel='admin' para o
 // sistema 'pesquisa-satisfacao'). Retorna apenas admins ATIVOS — quem
