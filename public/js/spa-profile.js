@@ -485,7 +485,6 @@ function applyLocale(L) {
   document.getElementById('html-root').lang  = L.meta.code;
   document.getElementById('page-title').textContent = L.page_title;
 
-  setText('lang-label-txt',  L.lang_label);
   setText('spa-title',       L.header.title);
   setText('spa-req-notice',  L.header.required_notice);
   setText('spa-intro',       L.header.intro);
