@@ -823,12 +823,12 @@ function _aplicarEstadoBtnFicha(btn, estado) {
   if (!btn) return;
   btn.dataset.estadoFicha = estado;
   btn.onclick = null;
-  btn.textContent = 'ANAMNESE';
+  btn.textContent = estado === 'respondida' ? 'Anamnese respondida' : 'ANAMNESE';
   if (estado === 'respondida') {
     btn.disabled = false;
     btn.dataset.action = 'ver-anamnese-pessoa';
     btn.dataset.pessoa = '1';
-    _setFichaStatus('Anamnese respondida', 'ok');
+    _setFichaStatus('');
   } else if (estado === 'enviada') {
     // Reenvio permitido enquanto a janela de envio estiver aberta; depois
     // dela o backend recusa (409 tempo_expirado), entao desabilita aqui.
@@ -862,7 +862,7 @@ function _aplicarEstadoLiberada(btn, estado) {
   } else if (estado === 'fora_prazo') {
     btn.textContent = 'Prazo encerrado';
   } else if (estado === 'antes_fim') {
-    btn.textContent = 'Disponível ao fim do tratamento';
+    btn.textContent = 'Pesquisa de satisfação ficará disponível ao fim do tratamento';
   } else {
     btn.textContent = 'Liberar Pesquisa';
   }
@@ -3386,9 +3386,7 @@ function _wireAtalhosData(hojeStr) {
     { label: 'Depois de amanhã', val: ymd(dep) },
     { label: '+7 dias', val: ymd(semana) },
   ];
-  host.innerHTML = opts.map(o => `
-    <button type="button" class="btn btn-outline btn-sm" data-atalho-data="${o.val}" style="font-size:.72rem;padding:.25rem .6rem">${escHtml(o.label)}</button>
-  `).join('') + `<span style="font-size:.72rem;color:var(--muted);padding:.3rem 0 0 .3rem">ou clique no campo acima para escolher outra data</span>`;
+  host.innerHTML = '';
   // Listener (idempotente via flag)
   if (!_atalhosDataWired) {
     document.addEventListener('click', e => {
@@ -3807,10 +3805,10 @@ async function calVerDetalhes(id) {
         btnFicha.onclick = null;
         const _e1 = _estadoAnamnese(r, 1), _e2 = _estadoAnamnese(r, 2);
         const _nResp = [_e1, _e2].filter(e => e === 'respondida').length;
-        if (_nResp === 2)      _setFichaStatus('Anamnese respondida', 'ok');
-        else if (_nResp === 1) _setFichaStatus('Anamnese respondida (1/2)', 'ok');
-        else if (_e1 === 'enviada' || _e2 === 'enviada') _setFichaStatus('Link gerado');
-        else _setFichaStatus('');
+        if (_nResp === 2)      { btnFicha.textContent = 'Anamnese respondida'; _setFichaStatus(''); }
+        else if (_nResp === 1) { btnFicha.textContent = 'Anamnese respondida (1/2)'; _setFichaStatus(''); }
+        else if (_e1 === 'enviada' || _e2 === 'enviada') { btnFicha.textContent = 'ANAMNESE'; _setFichaStatus('Link gerado'); }
+        else { btnFicha.textContent = 'ANAMNESE'; _setFichaStatus(''); }
       } else {
         _aplicarEstadoBtnFicha(btnFicha, _estadoFinalBtnFicha(r, 1));
       }
