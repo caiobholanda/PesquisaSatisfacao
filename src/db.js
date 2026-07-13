@@ -1837,13 +1837,13 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
       sala=?, cliente=?, tipo_cliente=?, apto=?, email=?, telefone=?, tratamento=?,
       data=?, hora_inicio=?, hora_fim=?, linha=?, tipo_massagem_id=?, massagista_id=?,
       cliente2=?, tipo_cliente2=?, apto2=?, email2=?, telefone2=?, tratamento2=?,
-      tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?
+      tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?, nacionalidade=?, nacionalidade2=?
     WHERE id=?
   `).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento,
     data, horaInicio, horaFim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2,
-    tipo_massagem_id2, massagista_id2, idioma, idioma2,
+    tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2,
     id
   );
   return { ok: true };
