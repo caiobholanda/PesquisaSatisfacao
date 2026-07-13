@@ -328,6 +328,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         massagista_id2: massagista_id2 ? +massagista_id2 : null,
         idioma: _locale1 || null,
         idioma2: _locale2 || null,
+        nacionalidade: _nac1,
+        nacionalidade2: _nac2,
       }
     );
 
