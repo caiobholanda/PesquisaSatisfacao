@@ -1852,7 +1852,7 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
 export function buscarReservaById(id) {
   return getDb().prepare(`
     SELECT r.*, m.nome AS massagista_nome, m2.nome AS massagista_nome2,
-           c.nacionalidade AS nacionalidade
+           COALESCE(NULLIF(r.nacionalidade,''), c.nacionalidade) AS nacionalidade
     FROM reservas r
     LEFT JOIN massagistas m  ON m.id  = r.massagista_id
     LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
