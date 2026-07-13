@@ -1045,6 +1045,16 @@ export function deletarTurno(massagista_id, data) {
     'DELETE FROM turno_massagista WHERE massagista_id=? AND data=?'
   ).run(massagista_id, data).changes;
 }
+export function limparTurnosPeriodo(ano, mes) {
+  const p2 = n => String(n).padStart(2, '0');
+  const a2 = mes === 11 ? ano + 1 : ano;
+  const m2 = mes === 11 ? 0 : mes + 1;
+  const dataIni = `${ano}-${p2(mes + 1)}-21`;
+  const dataFim  = `${a2}-${p2(m2 + 1)}-20`;
+  return getDb().prepare(
+    'DELETE FROM turno_massagista WHERE data >= ? AND data <= ?'
+  ).run(dataIni, dataFim).changes;
+}
 export function buscarTurno(massagista_id, data) {
   const r = getDb().prepare('SELECT turno FROM turno_massagista WHERE massagista_id=? AND data=?').get(massagista_id, data);
   return r ? r.turno : null;

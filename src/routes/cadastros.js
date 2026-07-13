@@ -5,7 +5,7 @@ import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
   listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
-  listarTurnosPeriodo, upsertTurno, deletarTurno, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
+  listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
@@ -374,6 +374,16 @@ router.post('/escala-spa/aplicar-padrao', ...podeEscreverSpa, (req, res) => {
     try { registrarTurnoHistorico(massagista_id, data, antes, turno, usuario, 'aplicar-padrao'); } catch {}
   }
   res.json({ ok: true, total: alteracoes.length });
+});
+
+// DELETE /api/escala-spa/periodo — apaga todos os turnos do período 21→20
+router.delete('/escala-spa/periodo', ...podeEscreverSpa, (req, res) => {
+  const ano = parseInt(req.body?.ano);
+  const mes = parseInt(req.body?.mes);
+  if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11)
+    return res.status(400).json({ ok: false, error: 'ano e mes (0-11) obrigatórios' });
+  const total = limparTurnosPeriodo(ano, mes);
+  res.json({ ok: true, total });
 });
 
 // Saldo CF: ganhos (feriados trabalhados) − usados (turno='CF')
