@@ -2253,6 +2253,7 @@ export function buscarDocumentoToken(token) {
   const row = getDb().prepare(`
     SELECT r.id AS reserva_id, r.cliente, r.email, r.telefone, r.tratamento AS servico,
            r.idioma_documento AS locale, r.cpf, r.passaporte, r.quarto, r.cliente_id,
+           r.tipo_cliente, r.tipo_cliente2,
            r.cliente2, r.email2, r.telefone2, r.apto2 AS quarto2,
            COALESCE(NULLIF(r.nacionalidade,''), c.nacionalidade) AS nacionalidade, r.nacionalidade2,
            c.data_nascimento AS cli_nascimento,
