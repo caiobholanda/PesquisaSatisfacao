@@ -247,6 +247,7 @@ router.get('/documento', (req, res) => {
     hospede_email:    row.hospede_email    || '',
     hospede_telefone: row.hospede_telefone || '',
     hospede_cpf:      row.hospede_cpf      || '',
+    hospede_passaporte:    row.hospede_passaporte    || '',
     hospede_quarto:        row.hospede_quarto        || '',
     hospede_nacionalidade: row.hospede_nacionalidade || '',
     hospede_data_nascimento: row.hospede_data_nascimento || '',
