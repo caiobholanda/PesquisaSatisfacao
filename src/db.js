@@ -1788,7 +1788,7 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
     linha = null, tipo_massagem_id = null, massagista_id = null,
     cliente2 = null, tipo_cliente2 = null, apto2 = null, email2 = null, telefone2 = null,
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
-    idioma = null, idioma2 = null,
+    idioma = null, idioma2 = null, nacionalidade = null, nacionalidade2 = null,
   } = opts;
   const db = getDb();
 
