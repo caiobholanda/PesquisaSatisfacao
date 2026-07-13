@@ -1769,13 +1769,13 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
 
   return db.prepare(
     `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id, criado_por,
-       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim,
     linha, tipo_massagem_id, massagista_id, criado_por,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
-    idioma, idioma2
+    idioma, idioma2, nacionalidade, nacionalidade2
   ).lastInsertRowid;
 }
 
