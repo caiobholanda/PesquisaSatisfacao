@@ -868,7 +868,9 @@ function _aplicarEstadoLiberada(btn, estado) {
   }
   btn.style.opacity = '';
   btn.style.cursor = '';
-  btn.style.fontSize = '';
+  btn.style.fontSize   = estado === 'antes_fim' ? '.68rem' : '';
+  btn.style.whiteSpace = estado === 'antes_fim' ? 'normal'  : '';
+  btn.style.lineHeight = estado === 'antes_fim' ? '1.25'    : '';
 }
 
 function _estadoBtnLiberar(r) {
