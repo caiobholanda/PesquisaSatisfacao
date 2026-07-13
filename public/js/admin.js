@@ -5846,7 +5846,7 @@ async function _abrirModalAnamnesePreenchida(perfilId) {
             <span style="display:inline-block;width:3px;height:1.5rem;background:linear-gradient(180deg,#B8935A,#9C5843);border-radius:9999px;flex-shrink:0"></span>
             <h2 style="margin:0;font-family:'Raleway',sans-serif;font-weight:700;font-size:1.3rem;color:#3A2010;letter-spacing:.01em">Anamnese preenchida</h2>
           </div>
-          <p style="margin:0 0 0 1rem;color:#7A6B5A;font-size:.73rem;font-family:'Raleway',sans-serif;letter-spacing:.02em;line-height:1.5">${_clienteNome} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
+          <p style="margin:.25rem 0 0 .85rem;color:#7A6B5A;font-size:.73rem;font-family:'Raleway',sans-serif;letter-spacing:.02em;line-height:1.5">${_clienteNome} · ${escHtml(dt)} · idioma ${escHtml(a.idioma || 'pt-BR')}${a.reserva_id ? ' · reserva #' + a.reserva_id : ''}</p>
         </div>
         <button data-act="close" title="Fechar" style="flex-shrink:0;background:none;border:1px solid #D9CFC4;border-radius:8px;width:2.1rem;height:2.1rem;font-size:.9rem;cursor:pointer;color:#7A6B5A;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;margin-top:.1rem" onmouseover="this.style.background='rgba(156,88,67,.1)';this.style.borderColor='#B8935A'" onmouseout="this.style.background='none';this.style.borderColor='#D9CFC4'">✕</button>
       </header>
