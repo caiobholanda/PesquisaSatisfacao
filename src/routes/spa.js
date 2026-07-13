@@ -251,6 +251,7 @@ router.get('/documento', (req, res) => {
     hospede_quarto:        row.hospede_quarto        || '',
     hospede_nacionalidade: row.hospede_nacionalidade || '',
     hospede_data_nascimento: row.hospede_data_nascimento || '',
+    tipo_cliente:     row.tipo_cliente     || '',
     servico:          row.servico          || '',
     locale:           localeSeguro,
   });
