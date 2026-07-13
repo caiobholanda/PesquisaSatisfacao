@@ -4503,26 +4503,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       // Fora da escala — override explícito do admin (exceções operacionais:
       // troca informal, cobertura). A flag fica registrada na auditoria.
       if (res.status === 409 && d.tipo === 'escala') {
-        const msg = (d.error || 'Massoterapeuta fora da escala nesta data/horário') +
-          (d.faixa ? ` (turno: ${d.faixa})` : '') + '.\n\nAgendar mesmo assim?';
-        if (confirm(msg)) {
-          const res2 = await api(_apiUrl, { method: _apiMethod, body: JSON.stringify({ ...body, override_escala: true }) });
-          if (!res2) return;
-          const d2 = await res2.json();
-          if (!d2.ok) {
-            if (res2.status === 409 && d2.conflito) {
-              calMostrarConflito({ tipo: d2.tipo, reserva: { ...d2.conflito, data, sala, massagista_id: massagistaId } });
-              await loadReservas();
-              return;
-            }
-            err.textContent = d2.error || 'Erro ao salvar.';
-            return;
-          }
-          calCloseModal();
-          loadReservas();
-          return;
-        }
-        err.textContent = _resEditandoId ? 'Reserva não editada — massoterapeuta fora da escala neste horário.' : 'Reserva não criada — massoterapeuta fora da escala neste horário.';
+        const faixa = d.faixa ? ` (turno: ${d.faixa})` : '';
+        err.textContent = (d.error || 'Massoterapeuta fora da escala nesta data/horário') + faixa + '. Escolha outro horário ou outra massoterapeuta.';
         return;
       }
       // Conflito detectado pelo servidor
