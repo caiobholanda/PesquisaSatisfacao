@@ -239,6 +239,9 @@ export function initDb() {
   // Migration: idioma escolhido no cadastro da sessão (pessoa 1 e 2)
   try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma TEXT`); } catch {}
   try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma2 TEXT`); } catch {}
+  // Migration: nacionalidade por pessoa na reserva (pré-preenchimento da anamnese)
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN nacionalidade TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN nacionalidade2 TEXT`); } catch {}
   // Migration: suporte a passaporte como alternativa ao CPF
   try { db.exec(`ALTER TABLE clientes ADD COLUMN passaporte TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_passaporte ON clientes(passaporte) WHERE passaporte IS NOT NULL AND passaporte <> ''`); } catch {}
