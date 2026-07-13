@@ -4265,7 +4265,7 @@ function calCloseModal(){
     const titleEl = document.getElementById('res-modal-title-txt');
     const subEl   = document.getElementById('res-modal-sub-txt');
     const btnSalvar = document.getElementById('btn-res-salvar');
-    if (titleEl)   titleEl.textContent  = 'Nova Reserva';
+    if (titleEl)   titleEl.textContent  = 'Novo Atendimento';
     if (subEl)     subEl.textContent    = 'Preencha os dados para confirmar o atendimento';
     if (btnSalvar) btnSalvar.textContent = 'Confirmar Atendimento';
     const dataInp = document.getElementById('res-inp-data');
@@ -6691,7 +6691,8 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
           if (idiomaId) overwrite(idiomaId, c.locale_pref, 'pt-BR');
           if (nacionalidadeId) overwrite(nacionalidadeId, resolverNacionalidade(c.nacionalidade, NACIONALIDADES), '');
-          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
+          const _dtAtual = c.atualizado_em ? '. Última atualização: ' + fmtBRT(c.atualizado_em, { br: true }).slice(0, 10) : '';
+          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)' + _dtAtual; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'CPF válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
         }
@@ -6712,7 +6713,8 @@ function _wireCpfAutofill({ inpId, infoId, nomeId, emailId, telId, tipoDocSelId,
           set(nomeId, c.nome); set(emailId, c.email); set(telId, c.telefone);
           if (idiomaId) overwrite(idiomaId, c.locale_pref, 'pt-BR');
           if (nacionalidadeId) overwrite(nacionalidadeId, resolverNacionalidade(c.nacionalidade, NACIONALIDADES), '');
-          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)'; info.style.display = ''; }
+          const _dtAtualPass = c.atualizado_em ? '. Última atualização: ' + fmtBRT(c.atualizado_em, { br: true }).slice(0, 10) : '';
+          if (info) { info.style.color = 'var(--success)'; info.textContent = '✓ Cliente já cadastrado — dados preenchidos (editáveis)' + _dtAtualPass; info.style.display = ''; }
         } else {
           if (info) { info.style.color = 'var(--muted)'; info.textContent = 'Passaporte válido. Cliente novo será criado ao salvar.'; info.style.display = ''; }
         }
