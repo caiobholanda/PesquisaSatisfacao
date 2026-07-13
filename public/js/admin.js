@@ -804,31 +804,47 @@ function _estadoAnamnese(r, pessoa = 1) {
   return 'nao_enviada';
 }
 
+// Subtexto de status exibido abaixo do botao ANAMNESE no rodape do modal.
+function _setFichaStatus(texto, tom) {
+  const el = document.getElementById('resdet-ficha-status');
+  if (!el) return;
+  if (!texto) { el.style.display = 'none'; el.textContent = ''; el.style.color = ''; return; }
+  el.style.display = '';
+  el.textContent = texto;
+  el.style.color = tom === 'ok' ? 'var(--forest, #2e7d32)' : '';
+}
+
+// O botao mantem SEMPRE o rotulo padrao "ANAMNESE" (pedido do cliente).
+// O status vive no subtexto: "Link gerado" apos gerar, "Anamnese respondida"
+// quando preenchida. Com link ja gerado o botao PERMANECE habilitado para
+// reenvio (regenera o token dentro da janela). Respondida: clique abre a
+// anamnese preenchida (readonly).
 function _aplicarEstadoBtnFicha(btn, estado) {
   if (!btn) return;
   btn.dataset.estadoFicha = estado;
   btn.onclick = null;
+  btn.textContent = 'ANAMNESE';
   if (estado === 'respondida') {
     btn.disabled = false;
-    btn.textContent = 'Ver anamnese';
     btn.dataset.action = 'ver-anamnese-pessoa';
     btn.dataset.pessoa = '1';
+    _setFichaStatus('Anamnese respondida', 'ok');
   } else if (estado === 'enviada') {
-    btn.disabled = true;
-    btn.textContent = 'Anamnese enviada';
+    btn.disabled = false;
     btn.dataset.action = 'enviar-pre-massagem';
     delete btn.dataset.pessoa;
+    _setFichaStatus('Link gerado');
   } else if (estado === 'fora_prazo') {
     btn.disabled = true;
-    btn.textContent = 'Tempo para enviar anamnese expirado';
     btn.dataset.action = 'enviar-pre-massagem';
     delete btn.dataset.pessoa;
+    _setFichaStatus('Tempo para enviar anamnese expirado');
   } else {
     // nao_enviada, expirada, ok (legado modo-temp): permite envio.
     btn.disabled = false;
-    btn.textContent = 'Enviar anamnese';
     btn.dataset.action = 'enviar-pre-massagem';
     delete btn.dataset.pessoa;
+    _setFichaStatus('');
   }
 }
 
