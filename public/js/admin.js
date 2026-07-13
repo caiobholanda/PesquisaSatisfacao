@@ -1191,15 +1191,18 @@ function abrirAnamneseCasalPopup() {
     // hora_inicio). Casal compartilha a janela porque tem uma sessao so'.
     const estado = _estadoFinalBtnFicha(r, pessoa);
     let chipCls = 'none', chipTxt = 'Não enviada';
-    if (estado === 'respondida') { chipCls = 'ok';   chipTxt = 'Preenchida'; }
-    else if (estado === 'enviada')  { chipCls = 'pend'; chipTxt = 'Aguardando preenchimento'; }
+    if (estado === 'respondida') { chipCls = 'ok';   chipTxt = 'Anamnese respondida'; }
+    else if (estado === 'enviada')  { chipCls = 'pend'; chipTxt = 'Link gerado'; }
     else if (estado === 'expirada') { chipCls = 'exp';  chipTxt = 'Token expirado'; }
     else if (estado === 'fora_prazo') { chipCls = 'exp'; chipTxt = 'Tempo expirado'; }
     let btn;
     if (estado === 'respondida') {
       btn = `<button class="btn btn-outline btn-sm" data-anam-cas-ver="${pessoa}">Ver anamnese</button>`;
     } else if (estado === 'enviada') {
-      btn = `<button class="btn btn-outline btn-sm" disabled>Anamnese enviada</button>`;
+      // Reenvio habilitado enquanto a janela de envio estiver aberta.
+      btn = _estadoBtnFicha(r) === 'ok'
+        ? `<button class="btn btn-forest btn-sm" data-anam-cas-enviar="${pessoa}">Reenviar link</button>`
+        : `<button class="btn btn-outline btn-sm" disabled>Link gerado</button>`;
     } else if (estado === 'fora_prazo') {
       btn = `<button class="btn btn-outline btn-sm" disabled>Tempo para enviar anamnese expirado</button>`;
     } else {
