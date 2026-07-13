@@ -835,9 +835,9 @@ function init() {
               }
             } else if (d.hospede_passaporte) {
               const docSel = document.getElementById('f-doc-tipo');
-              if (docSel && Array.from(docSel.options).some(o => o.value === 'passaporte')) {
-                docSel.value = 'passaporte';
-                _docType = 'passaporte';
+              if (docSel && Array.from(docSel.options).some(o => o.value === 'passport')) {
+                docSel.value = 'passport';
+                _docType = 'passport';
               }
               const docInp = document.getElementById('f-doc-num');
               if (docInp && !docInp.value) docInp.value = d.hospede_passaporte;
