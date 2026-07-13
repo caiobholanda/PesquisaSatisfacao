@@ -654,11 +654,6 @@ function init() {
     if (mapped && mapped !== _currentLang) loadLocale(mapped);
   });
 
-  // Lang buttons
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => loadLocale(btn.dataset.lang));
-  });
-
   // Doc type switch
   document.getElementById('f-doc-tipo')?.addEventListener('change', function () {
     _docType = this.value;
