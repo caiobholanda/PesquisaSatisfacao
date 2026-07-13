@@ -822,6 +822,14 @@ function init() {
                   ? digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
                   : d.hospede_cpf;
               }
+            } else if (d.hospede_passaporte) {
+              const docSel = document.getElementById('f-doc-tipo');
+              if (docSel && Array.from(docSel.options).some(o => o.value === 'passaporte')) {
+                docSel.value = 'passaporte';
+                _docType = 'passaporte';
+              }
+              const docInp = document.getElementById('f-doc-num');
+              if (docInp && !docInp.value) docInp.value = d.hospede_passaporte;
             }
           }
           // AWAIT loadLocale ANTES de buscar historico — assim renderPills ja
