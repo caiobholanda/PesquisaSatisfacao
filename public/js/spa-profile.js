@@ -795,6 +795,15 @@ function init() {
             setIfEmpty('f-telefone',      d.hospede_telefone);
             setIfEmpty('f-quarto',        d.hospede_quarto);
             setIfEmpty('f-nacionalidade', d.hospede_nacionalidade);
+            if (d.tipo_cliente === 'passante') {
+              _ehPassante = true;
+              const qEl = document.getElementById('f-quarto');
+              if (qEl) {
+                qEl.value = '';
+                const wrap = qEl.closest('.spa-field');
+                if (wrap) wrap.style.display = 'none';
+              }
+            }
             // iOS Safari aceita SOMENTE YYYY-MM-DD em <input type="date">.
             // Normaliza qualquer formato comum (DD/MM/YYYY, ISO com hora, etc).
             const _normDataISO = (v) => {
