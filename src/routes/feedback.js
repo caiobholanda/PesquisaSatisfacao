@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcarSurveyTokenRespondido, atualizarIdiomaFeedback, buscarSurveyToken, getDb } from '../db.js';
+import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcarSurveyTokenRespondido, atualizarIdiomaFeedback, buscarSurveyToken, getDb, telefoneValido } from '../db.js';
 import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { inserirRespostaPesquisa, aplicarMetasEmStats } from '../qualidade.js';
@@ -41,6 +41,7 @@ router.post('/', rateLimit, (req, res) => {
   const b = req.body || {};
 
   if (b.email?.trim() && !validarEmail(b.email)) return res.status(400).json({ ok: false, error: 'E-mail inválido' });
+  if (b.telefone?.trim() && !telefoneValido(b.telefone)) return res.status(400).json({ ok: false, error: 'Telefone inválido' });
   if (!['hospede', 'colaborador'].includes(b.origem))
     return res.status(400).json({ ok: false, error: 'Origem inválida' });
 
