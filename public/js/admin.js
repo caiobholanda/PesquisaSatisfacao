@@ -6740,6 +6740,69 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
   const _NAC_FROM_LANG = { 'pt-BR': 'Brasileira', 'pt-PT': 'Portuguesa', fr: 'Francesa', it: 'Italiana', de: 'Alemã' };
   const _LANG_FROM_NAC = { Brasileira: 'pt-BR', Portuguesa: 'pt-PT', Francesa: 'fr', Italiana: 'it', Alemã: 'de' };
 
+  // Mapa completo: cobre todas as 180 entradas de NACIONALIDADES
+  const NAC_IDIOMA = {
+    'Brasileira':'pt-BR',
+    // pt-PT — lusófonos fora do Brasil
+    'Angolana':'pt-PT','Cabo-verdiana':'pt-PT','Guinéu-bissauense':'pt-PT',
+    'Moçambicana':'pt-PT','Portuguesa':'pt-PT','São-tomense':'pt-PT','Timorense':'pt-PT',
+    // es — hispanófonos
+    'Argentina':'es','Boliviana':'es','Chilena':'es','Colombiana':'es',
+    'Costarriquenha':'es','Cubana':'es','Dominicana':'es','Equatoguineense':'es',
+    'Equatoriana':'es','Espanhola':'es','Guatemalteca':'es','Hondurenha':'es',
+    'Mexicana':'es','Nicaraguense':'es','Panamenha':'es','Paraguaia':'es',
+    'Peruana':'es','Uruguaia':'es','Venezuelana':'es',
+    // it — italiano oficial
+    'Italiana':'it','São-marinhense':'it',
+    // de — germanófonos
+    'Alemã':'de','Austríaca':'de','Liechtensteinense':'de',
+    // fr — francófonos (inclui Bélgica, Suíça e países africanos francófonos)
+    'Belga':'fr','Burkinabe':'fr','Burundesa':'fr','Camaronesa':'fr',
+    'Chadiana':'fr','Comorense':'fr','Congolesa':'fr','Djiboutiana':'fr',
+    'Francesa':'fr','Gabonesa':'fr','Guineense':'fr','Haitiana':'fr',
+    'Luxemburguesa':'fr','Madagascarense':'fr','Malinesa':'fr','Monegasca':'fr',
+    'Nigerina':'fr','Senegalesa':'fr','Seichelense':'fr','Suíça':'fr',
+    'Togolesa':'fr','Tunisiana':'fr',
+    // en — idioma nativo não suportado; inglês como padrão internacional
+    'Afegã':'en','Albanesa':'en','Americana':'en','Andorrana':'en',
+    'Antiguense':'en','Argelina':'en','Armênia':'en','Australiana':'en',
+    'Azerbaijanesa':'en','Bahamense':'en','Bangladenha':'en','Barbadense':'en',
+    'Bareinita':'en','Belizenha':'en','Bielorrussa':'en',
+    'Bósnia-herzegovínea':'en','Botsuanesa':'en','Bruneiana':'en',
+    'Búlgara':'en','Butanesa':'en','Cambojana':'en','Canadense':'en',
+    'Catariana':'en','Cazaquistanesa':'en','Chinesa':'en','Cipriota':'en',
+    'Croata':'en','Dinamarquesa':'en','Egípcia':'en','Emiradense':'en',
+    'Eritreia':'en','Eslovaca':'en','Eslovena':'en','Estoniana':'en',
+    'Eswatiniana':'en','Etíope':'en','Fijiana':'en','Filipina':'en',
+    'Finlandesa':'en','Gambiana':'en','Ganense':'en','Georgiana':'en',
+    'Granadina':'en','Grega':'en','Guianense':'en','Holandesa':'en',
+    'Húngara':'en','Iemenita':'en','Indiana':'en','Indonésia':'en',
+    'Iraniana':'en','Iraquiana':'en','Irlandesa':'en','Islandesa':'en',
+    'Israelense':'en','Jamaicana':'en','Japonesa':'en','Jordaniana':'en',
+    'Kirguiz':'en','Kiribatiana':'en','Kuwaitiana':'en','Laosiana':'en',
+    'Lesotiana':'en','Letã':'en','Libanesa':'en','Liberiana':'en',
+    'Líbia':'en','Lituana':'en','Macedônia':'en','Malauiana':'en',
+    'Maldiviana':'en','Maltesa':'en','Marroquina':'en','Mauriciana':'en',
+    'Mauritana':'en','Micronésia':'en','Moldava':'en','Mongol':'en',
+    'Montenegrina':'en','Namibiana':'en','Nauruense':'en','Nepalesa':'en',
+    'Neozelandesa':'en','Nigeriana':'en','Norte-coreana':'en','Norueguesa':'en',
+    'Omaniense':'en','Palauense':'en','Palestina':'en',
+    'Papua-nova-guineense':'en','Paquistanesa':'en','Polonesa':'en',
+    'Queniana':'en','Quirguiz':'en','Romena':'en','Ruandesa':'en',
+    'Russa':'en','Samoana':'en','São-cristovense':'en','Saudita':'en',
+    'Sérvia':'en','Serra-leonesa':'en','Singapuriana':'en','Síria':'en',
+    'Somaliana':'en','Srilanquesa':'en','Sudanesa':'en','Sudanesa do Sul':'en',
+    'Sueca':'en','Sul-africana':'en','Sul-coreana':'en','Surinamesa':'en',
+    'Tailandesa':'en','Tanzaniana':'en','Tonganesa':'en','Trindadense':'en',
+    'Turca':'en','Turcomena':'en','Tuvaluense':'en','Ucraniana':'en',
+    'Ugandesa':'en','Uzbeque':'en','Vanuatuana':'en','Vietnamita':'en',
+    'Zambiana':'en','Zimbabuense':'en',
+  };
+
+  function nacionalidadeParaIdioma(nac) {
+    return NAC_IDIOMA[nac] || 'en';
+  }
+
   function _wire(idiomaId, nacId) {
     const idiomaEl = document.getElementById(idiomaId);
     const nacEl    = document.getElementById(nacId);
@@ -6754,10 +6817,9 @@ _wireCpfAutofill({ inpId: 'res2-inp-cpf', infoId: 'res2-cpf-info', nomeId: 'res2
       if (clr) clr.style.display = '';
     });
 
-    // Nacionalidade → Idioma (ao selecionar do autocomplete via Enter ou clique)
+    // Nacionalidade → Idioma (cobre todas as 180 nacionalidades, fallback 'en')
     nacEl.addEventListener('change', function () {
-      const lang = _LANG_FROM_NAC[this.value];
-      if (lang) idiomaEl.value = lang;
+      idiomaEl.value = nacionalidadeParaIdioma(this.value);
     });
   }
 
