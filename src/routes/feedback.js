@@ -75,6 +75,7 @@ router.post('/', rateLimit, (req, res) => {
     ip_address: req.ip,
     user_agent: req.headers['user-agent'] || null,
     submitted_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    controle_interno: b.controle_interno?.trim() || null,
   });
 
   // BUG-U fix: usa o token especifico do hospede (vindo do body) ao inves

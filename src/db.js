@@ -624,6 +624,7 @@ export function initDb() {
   try { db.exec(`UPDATE spa_perfis SET consentimento_saude_versao='desconhecida', consentimento_saude_em=criado_em WHERE consentimento_saude=1 AND consentimento_saude_versao IS NULL`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN cliente_id INTEGER`); } catch {}
   try { db.exec(`ALTER TABLE feedback    ADD COLUMN reserva_id INTEGER`); } catch {}
+  try { db.exec(`ALTER TABLE feedback    ADD COLUMN controle_interno TEXT`); } catch {}
   // PIN hash da terapeuta (login mobile). Aditivo + idempotente.
   try { db.exec(`ALTER TABLE massagistas ADD COLUMN pin_hash TEXT`); } catch {}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_cliente   ON reservas(cliente_id)`); } catch {}
@@ -764,14 +765,14 @@ export function inserirFeedback(dados) {
       servicos_atitude, servicos_tecnica, servicos_comentario,
       instalacoes_conforto, instalacoes_organizacao, instalacoes_conveniencia,
       instalacoes_comentario, recomenda, recomenda_qual, recomenda_porque,
-      tipo_cliente, origem, ip_address, user_agent, submitted_at
+      tipo_cliente, origem, ip_address, user_agent, submitted_at, controle_interno
     ) VALUES (
       @nome, @apto, @email, @telefone, @data_tratamento, @tratamento_realizado,
       @nome_massoterapeuta, @servicos_expectativa, @servicos_explicacao,
       @servicos_atitude, @servicos_tecnica, @servicos_comentario,
       @instalacoes_conforto, @instalacoes_organizacao, @instalacoes_conveniencia,
       @instalacoes_comentario, @recomenda, @recomenda_qual, @recomenda_porque,
-      @tipo_cliente, @origem, @ip_address, @user_agent, @submitted_at
+      @tipo_cliente, @origem, @ip_address, @user_agent, @submitted_at, @controle_interno
     )
   `);
   return stmt.run(dados).lastInsertRowid;
