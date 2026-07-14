@@ -42,6 +42,10 @@ router.post('/', rateLimit, (req, res) => {
 
   if (b.email?.trim() && !validarEmail(b.email)) return res.status(400).json({ ok: false, error: 'E-mail inválido' });
   if (b.telefone?.trim() && !telefoneValido(b.telefone)) return res.status(400).json({ ok: false, error: 'Telefone inválido' });
+  if (b.data_tratamento) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (b.data_tratamento > today) return res.status(400).json({ ok: false, error: 'Data do tratamento não pode ser futura' });
+  }
   if (!['hospede', 'colaborador'].includes(b.origem))
     return res.status(400).json({ ok: false, error: 'Origem inválida' });
 
@@ -76,6 +80,7 @@ router.post('/', rateLimit, (req, res) => {
     user_agent: req.headers['user-agent'] || null,
     submitted_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
     controle_interno: b.controle_interno?.trim() || null,
+    inserido_por: b.inserido_por?.trim() || null,
   });
 
   // BUG-U fix: usa o token especifico do hospede (vindo do body) ao inves
