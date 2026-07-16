@@ -1002,6 +1002,19 @@ export function deletarMassagista(id) {
 export function listarFeriasMassagista(massagista_id) {
   return getDb().prepare('SELECT * FROM ferias_massagista WHERE massagista_id=? ORDER BY data_inicio ASC').all(massagista_id);
 }
+export function listarFeriasPeriodo(ano, mes) {
+  const m1s = String(mes + 1).padStart(2, '0');
+  const a2  = mes === 11 ? ano + 1 : ano;
+  const m2  = mes === 11 ? 0 : mes + 1;
+  const m2s = String(m2 + 1).padStart(2, '0');
+  const dini = `${ano}-${m1s}-21`;
+  const dfim = `${a2}-${m2s}-20`;
+  return getDb().prepare(
+    `SELECT massagista_id, data_inicio, data_fim FROM ferias_massagista
+     WHERE data_fim >= ? AND data_inicio <= ?
+     ORDER BY massagista_id, data_inicio`
+  ).all(dini, dfim);
+}
 export function criarFeriasMassagista(massagista_id, data_inicio, data_fim, observacao) {
   return getDb().prepare(
     'INSERT INTO ferias_massagista (massagista_id, data_inicio, data_fim, observacao) VALUES (?,?,?,?)'

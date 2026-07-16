@@ -742,6 +742,7 @@ function initPeriodo() {
 let periodo = initPeriodo();
 let profs   = [];
 let turnos  = {}; // key: `${massagista_id}-${data}` → turno string
+let feriasMapa = {}; // key: `${massagista_id}-${data}` → true (férias programadas)
 let cfAcumulado = {}; // massagista_id → total de CFs ganhos em feriados
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -819,6 +820,15 @@ async function loadData() {
   profs  = d.profs || [];
   turnos = {};
   for (const t of (d.turnos || [])) turnos[`${t.massagista_id}-${t.data}`] = t.turno;
+  feriasMapa = {};
+  for (const f of (d.ferias || [])) {
+    let cur = new Date(f.data_inicio + 'T12:00:00');
+    const end = new Date(f.data_fim + 'T12:00:00');
+    while (cur <= end) {
+      feriasMapa[`${f.massagista_id}-${cur.toISOString().slice(0, 10)}`] = true;
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
   // busca CF acumulado (feriados históricos em que trabalhou)
   try {
     const allFeriados = Object.keys(FERIADOS);
@@ -846,6 +856,7 @@ async function saveTurno(mId, data, turno, anterior) {
   try {
     let r;
     if (!turno) {
+      if (!anterior) { setSaveInd('saved', '✓ salvo'); return; }
       r = await apiFetch(`/api/escala-spa/${mId}/${data}`, { method: 'DELETE' });
     } else {
       r = await apiFetch(`/api/escala-spa/${mId}/${data}`, {
@@ -963,7 +974,7 @@ function render() {
         const w     = dow(d.ano, d.mes, d.dia);
         const isWk  = w === 0 || w === 6;
         const isFer = !!FERIADOS[d.i];
-        const tipo  = turnos[`${prof.id}-${d.i}`] || null;
+        const tipo  = turnos[`${prof.id}-${d.i}`] || (feriasMapa[`${prof.id}-${d.i}`] ? 'FE' : null);
         const tip   = tipo
           ? (tipo.includes('|')
               ? `Entrada ${tipo.split('|')[0]} · Saída ${tipo.split('|')[1]}`

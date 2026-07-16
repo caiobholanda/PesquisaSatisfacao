@@ -4,7 +4,7 @@ import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
-  listarFeriasMassagista, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
+  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
   listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
@@ -238,9 +238,10 @@ router.get('/escala-spa', (req, res) => {
   if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11) {
     return res.status(400).json({ ok: false, error: 'ano e mes (0-11) obrigatórios' });
   }
-  const profs = listarMassagistas().filter(m => m.ativo).map(({ pin_hash, ...rest }) => rest);
+  const profs  = listarMassagistas().filter(m => m.ativo).map(({ pin_hash, ...rest }) => rest);
   const turnos = listarTurnosPeriodo(ano, mes);
-  res.json({ ok: true, profs, turnos });
+  const ferias = listarFeriasPeriodo(ano, mes);
+  res.json({ ok: true, profs, turnos, ferias });
 });
 
 router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
