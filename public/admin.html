@@ -1661,24 +1661,54 @@
       background: var(--surface);
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.9375rem 1.25rem;
+      gap: 1rem;
+      padding: 0.9375rem 1.5rem 0.9375rem calc(1.5rem - 3px);
+      border-left: 3px solid transparent;
+      transition: background .12s, border-left-color .15s;
     }
 
-    .mgmt-item:hover { background: var(--surface2); }
+    .mgmt-item:hover {
+      background: var(--surface2);
+      border-left-color: var(--gold);
+    }
 
     .mgmt-item-info {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 0.25rem;
       min-width: 0;
     }
 
     .mgmt-item-nome {
       font-size: 0.9375rem;
+      font-weight: 600;
       color: var(--text);
+      line-height: 1.3;
     }
+
+    .mgmt-item-foot {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .mgmt-item-foot-sep { color: var(--border); font-size: 0.7rem; }
+
+    .mgmt-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .mgmt-item-btns-sec {
+      display: flex;
+      gap: 0.25rem;
+      padding-right: 0.5rem;
+      border-right: 1px solid var(--border-soft);
+    }
+    .mgmt-btn-edit { border-color: var(--gold) !important; color: var(--gold-dark) !important; }
+    .mgmt-btn-edit:hover { background: var(--gold-dim) !important; opacity: 1 !important; }
 
     .mgmt-item-stat {
       font-size: 0.8rem;
@@ -2742,8 +2772,7 @@
     .mgmt-item-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-top: 0.35rem;
+      gap: 0.3rem;
     }
     .mgmt-badge {
       display: inline-flex;
@@ -2829,10 +2858,8 @@
       margin-top: .1rem;
     }
     .mgmt-item-esp {
-      display: block;
       font-size: 0.74rem;
       color: var(--muted);
-      margin-top: 0.3rem;
       font-style: italic;
     }
 

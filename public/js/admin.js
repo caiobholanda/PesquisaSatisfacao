@@ -1391,18 +1391,24 @@ function renderMassagistas() {
     if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${escHtml(m.matricula)}</span>`);
     if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
     if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">Bilíngue</span>`);
+    const footParts = [];
+    if (m.especialidade_original) footParts.push(`<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>`);
+    footParts.push(statHtml);
     return `
       <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
         <div class="mgmt-item-info">
           <span class="mgmt-item-nome">${escHtml(m.nome)}</span>
           ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
-          ${m.especialidade_original ? `<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>` : ''}
-          ${statHtml}
+          <div class="mgmt-item-foot">${footParts.join('<span class="mgmt-item-foot-sep">·</span>')}</div>
         </div>
-        <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
-        <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
-        <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
-        <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
+        <div class="mgmt-item-actions">
+          <div class="mgmt-item-btns-sec">
+            <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
+            <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
+            <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
+          </div>
+          <button class="btn btn-outline btn-sm mgmt-btn-edit" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
+        </div>
       </div>`;
   }
 
