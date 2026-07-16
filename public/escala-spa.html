@@ -269,6 +269,7 @@ body {
 .sig-X  { background: transparent; color: var(--dot-empty); border: 1.5px solid var(--border); font-size: 13px; }
 
 .cell-empty { width: 6px; height: 6px; border-radius: 50%; background: var(--dot-empty); pointer-events: none; }
+.sigla.sig-padrao { opacity: 0.35; border-style: dashed !important; }
 
 /* Tooltip */
 [data-tip] { position: relative; }
@@ -751,6 +752,7 @@ let cfAcumulado = {}; // massagista_id → total de CFs ganhos em feriados
 const p2  = n => String(n).padStart(2, '0');
 const iso = (a, m, d) => `${a}-${p2(m + 1)}-${p2(d)}`;
 const dow = (a, m, d) => new Date(a, m, d).getDay();
+const DOW_CHAVE = ['dom','seg','ter','qua','qui','sex','sab'];
 
 function getDias(ano, mes) {
   const dias = [];
@@ -770,24 +772,25 @@ function calcSaida(entrada) {
   return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
 }
 
-function siglaHTML(tipo) {
+function siglaHTML(tipo, isPadrao) {
   if (!tipo) return '<div class="cell-empty"></div>';
+  const padCls = isPadrao ? ' sig-padrao' : '';
   // Composite: "09:00|22:00"
   if (tipo.includes('|')) {
     const [e, s] = tipo.split('|');
     const cls = TIMES_CFG[e]?.cls || 'sig-T';
-    return `<div class="sigla ${cls} sig-composite">${fmtHora(e)}–${fmtHora(s)}</div>`;
+    return `<div class="sigla ${cls} sig-composite${padCls}">${fmtHora(e)}–${fmtHora(s)}</div>`;
   }
   // Single time — mostra só a entrada na grade
   if (TIMES_CFG[tipo]) {
     const { cls, lbl } = TIMES_CFG[tipo];
     const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
-    return `<div class="sigla ${cls}"${fs}>${lbl}</div>`;
+    return `<div class="sigla ${cls}${padCls}"${fs}>${lbl}</div>`;
   }
   // Status especial
   const cls = SIG_CLS[tipo] || 'sig-X';
   const lbl = SIG_LABEL[tipo] || tipo;
-  return `<div class="sigla ${cls}">${lbl}</div>`;
+  return `<div class="sigla ${cls}${padCls}">${lbl}</div>`;
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
@@ -976,16 +979,24 @@ function render() {
         const w     = dow(d.ano, d.mes, d.dia);
         const isWk  = w === 0 || w === 6;
         const isFer = !!FERIADOS[d.i];
-        const tipo  = turnos[`${prof.id}-${d.i}`] || (feriasMapa[`${prof.id}-${d.i}`] ? 'FE' : null);
-        const tip   = tipo
-          ? (tipo.includes('|')
+        let tipo = turnos[`${prof.id}-${d.i}`] || (feriasMapa[`${prof.id}-${d.i}`] ? 'FE' : null);
+        let isFromPadrao = false;
+        if (!tipo) {
+          try {
+            const padrao = JSON.parse(prof.padrao_entrada || '{}');
+            const p = padrao[DOW_CHAVE[w]];
+            if (p && typeof p === 'string') { tipo = (p === 'FOLGA' ? 'X' : p); isFromPadrao = true; }
+          } catch {}
+        }
+        const tip = tipo
+          ? ((isFromPadrao ? 'Padrão: ' : '') + (tipo.includes('|')
               ? `Entrada ${tipo.split('|')[0]} · Saída ${tipo.split('|')[1]}`
-              : (TIMES_CFG[tipo] ? `Entrada ${tipo} · Saída ${fmtHora(calcSaida(tipo))} · 8h20min` : (SIG_TIP[tipo] || tipo)))
+              : (TIMES_CFG[tipo] ? `Entrada ${tipo} · Saída ${fmtHora(calcSaida(tipo))} · 8h20min` : (SIG_TIP[tipo] || tipo))))
           : (isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w]);
         const cls = ['cell-d', isWk ? 'wk' : '', isFer ? 'fer' : '',
                      di === 0 ? 'col-first' : '', di === dias.length - 1 ? 'col-last' : '',
                      isFirstRow ? 'row-first' : ''].filter(Boolean).join(' ');
-        html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo)}</div>`;
+        html += `<div class="${cls}" data-mid="${prof.id}" data-date="${d.i}" data-tip="${escH(tip)}">${siglaHTML(tipo, isFromPadrao)}</div>`;
       }
       html += '</div>';
     }
