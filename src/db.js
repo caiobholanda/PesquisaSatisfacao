@@ -1039,6 +1039,12 @@ export function feriasConflito(massagista_id, data_inicio, data_fim, excludeId) 
   ).get(massagista_id, data_fim, data_inicio);
 }
 
+export function limparTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
+  return getDb().prepare(
+    'DELETE FROM turno_massagista WHERE massagista_id = ? AND data >= ? AND data <= ?'
+  ).run(massagista_id, data_inicio, data_fim).changes;
+}
+
 // ── Turnos (escala mensal) ──
 export function listarTurnosPeriodo(ano, mes) {
   const p2 = n => String(n).padStart(2, '0');

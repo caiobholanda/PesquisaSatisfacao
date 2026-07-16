@@ -4,7 +4,7 @@ import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
-  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito,
+  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo,
   listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
@@ -134,6 +134,7 @@ router.post('/massagistas/:id/ferias', ...podeEscreverSpa, (req, res) => {
   if (data_inicio > data_fim) return res.status(400).json({ ok: false, error: 'Início deve ser anterior ao fim' });
   if (feriasConflito(m.id, data_inicio, data_fim, null))
     return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  limparTurnosNoPeriodo(m.id, data_inicio, data_fim);
   const id = criarFeriasMassagista(m.id, data_inicio, data_fim, observacao?.trim() || null);
   res.json({ ok: true, id });
 });
@@ -149,6 +150,7 @@ router.put('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
   const fId = parseInt(req.params.fId);
   if (feriasConflito(m.id, data_inicio, data_fim, fId))
     return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  limparTurnosNoPeriodo(m.id, data_inicio, data_fim);
   const changes = atualizarFeriasMassagista(fId, data_inicio, data_fim, observacao?.trim() || null);
   if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
   res.json({ ok: true });
