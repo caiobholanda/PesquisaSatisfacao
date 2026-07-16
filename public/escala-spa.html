@@ -979,7 +979,7 @@ function render() {
         const w     = dow(d.ano, d.mes, d.dia);
         const isWk  = w === 0 || w === 6;
         const isFer = !!FERIADOS[d.i];
-        let tipo = turnos[`${prof.id}-${d.i}`] || (feriasMapa[`${prof.id}-${d.i}`] ? 'FE' : null);
+        let tipo = feriasMapa[`${prof.id}-${d.i}`] ? 'FE' : (turnos[`${prof.id}-${d.i}`] || null);
         let isFromPadrao = false;
         if (!tipo) {
           try {

@@ -1039,6 +1039,18 @@ export function feriasConflito(massagista_id, data_inicio, data_fim, excludeId) 
   ).get(massagista_id, data_fim, data_inicio);
 }
 
+export function listarTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
+  return getDb().prepare(
+    'SELECT data, turno FROM turno_massagista WHERE massagista_id=? AND data>=? AND data<=? ORDER BY data ASC'
+  ).all(massagista_id, data_inicio, data_fim);
+}
+export function buscarBackupFeriasPeriodo(massagista_id, data_inicio, data_fim) {
+  return getDb().prepare(`
+    SELECT data, antes FROM turno_historico
+    WHERE massagista_id=? AND data>=? AND data<=? AND origem='ferias-backup' AND depois IS NULL AND antes IS NOT NULL
+    GROUP BY data HAVING id=MAX(id) ORDER BY data ASC
+  `).all(massagista_id, data_inicio, data_fim);
+}
 export function limparTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
   return getDb().prepare(
     'DELETE FROM turno_massagista WHERE massagista_id = ? AND data >= ? AND data <= ?'

@@ -4,7 +4,7 @@ import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
-  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo, buscarFeriasById, aplicarPadraoDatas,
+  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo, listarTurnosNoPeriodo, buscarBackupFeriasPeriodo, buscarFeriasById, aplicarPadraoDatas,
   listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
@@ -134,6 +134,11 @@ router.post('/massagistas/:id/ferias', ...podeEscreverSpa, (req, res) => {
   if (data_inicio > data_fim) return res.status(400).json({ ok: false, error: 'Início deve ser anterior ao fim' });
   if (feriasConflito(m.id, data_inicio, data_fim, null))
     return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  const turnosParaApagar = listarTurnosNoPeriodo(m.id, data_inicio, data_fim);
+  const usuario = req.user?.username || req.user?.email || 'sistema';
+  for (const t of turnosParaApagar) {
+    try { registrarTurnoHistorico(m.id, t.data, t.turno, null, usuario, 'ferias-backup'); } catch {}
+  }
   limparTurnosNoPeriodo(m.id, data_inicio, data_fim);
   const id = criarFeriasMassagista(m.id, data_inicio, data_fim, observacao?.trim() || null);
   res.json({ ok: true, id });
@@ -150,6 +155,11 @@ router.put('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
   const fId = parseInt(req.params.fId);
   if (feriasConflito(m.id, data_inicio, data_fim, fId))
     return res.status(409).json({ ok: false, error: 'Período se sobrepõe a férias já programadas' });
+  const turnosParaApagarEdit = listarTurnosNoPeriodo(m.id, data_inicio, data_fim);
+  const usuarioEdit = req.user?.username || req.user?.email || 'sistema';
+  for (const t of turnosParaApagarEdit) {
+    try { registrarTurnoHistorico(m.id, t.data, t.turno, null, usuarioEdit, 'ferias-backup'); } catch {}
+  }
   limparTurnosNoPeriodo(m.id, data_inicio, data_fim);
   const changes = atualizarFeriasMassagista(fId, data_inicio, data_fim, observacao?.trim() || null);
   if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
@@ -163,10 +173,31 @@ router.delete('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => 
   if (!ferias) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
   const changes = excluirFeriasMassagista(fId);
   if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
+  // Restaurar turnos que existiam antes das férias serem criadas
+  const backup = buscarBackupFeriasPeriodo(mId, ferias.data_inicio, ferias.data_fim);
+  const diasComBackup = new Set();
+  const usuarioDel = req.user?.username || req.user?.email || 'sistema';
+  for (const b of backup) {
+    try { upsertTurno(mId, b.data, b.antes); diasComBackup.add(b.data); } catch {}
+    try { registrarTurnoHistorico(mId, b.data, null, b.antes, usuarioDel, 'ferias-canceladas'); } catch {}
+  }
+  // Para dias sem backup, aplicar padrão semanal
   const massagista = buscarMassagistaById(mId);
   if (massagista?.padrao_entrada) {
     try {
-      aplicarPadraoDatas(mId, JSON.parse(massagista.padrao_entrada), ferias.data_inicio, ferias.data_fim);
+      const padrao = JSON.parse(massagista.padrao_entrada);
+      const _DOW = ['dom','seg','ter','qua','qui','sex','sab'];
+      let cur = new Date(ferias.data_inicio + 'T12:00:00Z');
+      const end = new Date(ferias.data_fim + 'T12:00:00Z');
+      while (cur <= end) {
+        const dateStr = cur.toISOString().slice(0, 10);
+        if (!diasComBackup.has(dateStr)) {
+          const valor = padrao[_DOW[cur.getUTCDay()]];
+          if (valor === 'FOLGA') try { upsertTurno(mId, dateStr, 'X'); } catch {}
+          else if (valor && /^\d{2}:\d{2}$/.test(valor)) try { upsertTurno(mId, dateStr, valor); } catch {}
+        }
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
     } catch (_) {}
   }
   res.json({ ok: true });
