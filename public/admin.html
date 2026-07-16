@@ -1727,10 +1727,10 @@
     }
     .mgmt-card-ident { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 
-    /* mgmt-item-nome: global (Tipos usa tamanho normal); Profissionais override para serif */
+    /* mgmt-item-nome: global (Tipos usa tamanho normal); Profissionais só muda o tamanho */
     .mgmt-item-nome { font-size: 0.9375rem; font-weight: 600; color: var(--text); line-height: 1.3; }
     #view-massagistas .mgmt-item-nome {
-      font-family: 'Cormorant Garamond', 'Georgia', serif;
+      font-family: var(--font);
       font-size: 1.125rem; line-height: 1.2; letter-spacing: .01em;
     }
 
