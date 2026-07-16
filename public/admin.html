@@ -1692,7 +1692,8 @@
     #view-massagistas .mgmt-item {
       flex-direction: column; align-items: stretch;
       gap: 0.875rem; padding: 1.25rem;
-      position: relative; overflow: hidden;
+      /* overflow visible: o menu "···" (.mgmt-more-menu) precisa escapar do card */
+      position: relative; overflow: visible;
       transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
       animation: mgmt-card-in .35s ease both;
     }
