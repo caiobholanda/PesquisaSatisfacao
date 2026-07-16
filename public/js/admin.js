@@ -1378,7 +1378,8 @@ function renderMassagistas() {
     el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : 'Nenhuma massoterapeuta ativa.'}</div>`;
     return;
   }
-  el.innerHTML = '<div class="mgmt-list">' + filtered.map(m => {
+
+  function renderCardItem(m) {
     const tot = m.total_avaliacoes || 0;
     const respondentes = (m.rec_sim || 0) + (m.rec_nao || 0);
     const pctRec = respondentes > 0 ? Math.round((m.rec_sim || 0) / respondentes * 100) : null;
@@ -1403,7 +1404,20 @@ function renderMassagistas() {
         <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
         <button class="btn btn-outline btn-sm" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
       </div>`;
-  }).join('') + '</div>';
+  }
+
+  const receps  = filtered.filter(m => m.funcao && m.funcao.toLowerCase().includes('recep'));
+  const massos  = filtered.filter(m => !m.funcao || !m.funcao.toLowerCase().includes('recep'));
+  const grupos  = [];
+  if (receps.length)  grupos.push({ label: 'Recepcionistas',  profs: receps });
+  if (massos.length)  grupos.push({ label: 'Massoterapeutas', profs: massos });
+
+  const sepHtml = label => count =>
+    `<div class="mgmt-group-sep"><span class="mgmt-group-label">${label}</span><span class="mgmt-group-count">${count}</span></div>`;
+
+  el.innerHTML = '<div class="mgmt-list">' +
+    grupos.map(g => sepHtml(g.label)(g.profs.length) + g.profs.map(renderCardItem).join('')).join('') +
+    '</div>';
 }
 
 
