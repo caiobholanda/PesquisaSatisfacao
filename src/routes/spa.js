@@ -386,7 +386,10 @@ router.post('/perfil', (req, res) => {
   }
   const reserva_id = _tokenRow.reserva_id;
   const _pessoaReserva = _tokenRow.pessoa === 2 ? 2 : 1;
-  if (locale) vincularDocumentoToken(reserva_id, locale);
+  // Grava o idioma no slot da pessoa certa (idioma_documento2 p/ pessoa 2):
+  // antes a coluna única era sobrescrita por quem enviasse por último e a
+  // pesquisa do casal saía no idioma errado.
+  if (locale) vincularDocumentoToken(reserva_id, locale, _pessoaReserva);
 
   try {
     const id = inserirSpaPerfilComLock({
