@@ -2077,16 +2077,44 @@ export function statusPesquisaPessoa(reservaId, pessoa = 1) {
 export function buscarSurveyTokenAtivo() {
   // ⚠️ MODO TEMPORARIO: janela de 15min desativada a pedido do usuario.
   // Para restaurar a rigorosidade de tempo, troque pelo bloco comentado abaixo.
-  return getDb().prepare(`
-    SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
-           r.tipo_cliente, r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome
+  const row = getDb().prepare(`
+    SELECT st.token, st.liberada_em, st.pessoa,
+           r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
+           r.tipo_cliente, r.quarto,
+           r.idioma_documento, r.idioma_documento2,
+           r.idioma AS idioma_cad, r.idioma2 AS idioma_cad2,
+           m.nome AS massagista_nome,
+           r.cliente2, r.apto2, r.email2, r.telefone2, r.tratamento2, r.tipo_cliente2,
+           m2.nome AS massagista_nome2
     FROM survey_tokens st
     JOIN reservas r ON r.id = st.reserva_id
-    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    LEFT JOIN massagistas m  ON m.id  = r.massagista_id
+    LEFT JOIN massagistas m2 ON m2.id = r.massagista_id2
     WHERE st.liberada_em IS NOT NULL
       AND st.respondida_em IS NULL
     ORDER BY st.liberada_em DESC LIMIT 1
-  `).get() || null;
+  `).get();
+  if (!row) return null;
+  const idioma = resolverIdiomaPesquisa(row, row.pessoa);
+  // Mesmo mascaramento por pessoa do buscarSurveyToken: se o token ativo é
+  // da pessoa 2 (casal), o tablet deve mostrar os dados e o idioma DELA.
+  if (row.pessoa === 2) {
+    return {
+      token: row.token,
+      liberada_em: row.liberada_em,
+      cliente:       row.cliente2 || row.cliente,
+      apto:          row.apto2     || row.apto,
+      email:         row.email2    || row.email,
+      telefone:      row.telefone2 || row.telefone,
+      data:          row.data,
+      tratamento:    row.tratamento2 || row.tratamento,
+      tipo_cliente:  row.tipo_cliente2 || row.tipo_cliente,
+      quarto:        row.quarto,
+      idioma,
+      massagista_nome: row.massagista_nome2 || row.massagista_nome,
+    };
+  }
+  return { ...row, idioma };
   /* VERSAO ORIGINAL (com janela de 15min):
   return getDb().prepare(`
     SELECT st.token, st.liberada_em, r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento,
