@@ -1434,6 +1434,12 @@ function renderMassagistas() {
       </div>`;
   }
 
+  const receps = filtered.filter(m => m.funcao && m.funcao.toLowerCase().includes('recep'));
+  const massos = filtered.filter(m => !m.funcao || !m.funcao.toLowerCase().includes('recep'));
+  const grupos = [];
+  if (receps.length) grupos.push({ label: 'Recepcionistas',  profs: receps });
+  if (massos.length) grupos.push({ label: 'Massoterapeutas', profs: massos });
+
   const sepHtml = label => count =>
     `<div class="mgmt-group-sep"><span class="mgmt-group-label">${label}</span><span class="mgmt-group-count">&nbsp;·&nbsp;${count}</span></div>`;
 
