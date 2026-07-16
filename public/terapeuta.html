@@ -481,28 +481,29 @@ button, input, select { font-family: inherit; }
     padding: 0 2.5rem;
   }
 
-  /* Agenda: layout em 2 colunas — sidebar + conteúdo */
+  /* Agenda: tabs no topo full-width + sidebar esquerda + conteúdo direita */
   .tx-agenda {
     padding: 2rem 0 5rem;
     display: grid;
     grid-template-columns: 210px 1fr;
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     gap: 0 2.25rem;
     align-items: start;
   }
 
-  /* Coluna esquerda: tabs de vista + day tabs */
+  /* Tabs sempre horizontais no topo, full width */
   .tx-view-tabs {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 1;
-    flex-direction: column;
+    flex-direction: row;
     margin-bottom: .75rem;
   }
-  .tx-view-tab { text-align: left; padding: .6rem .9rem; font-size: .82rem; }
+  .tx-view-tab { text-align: center; padding: .52rem .9rem; font-size: .84rem; }
 
+  /* Sidebar: day tabs abaixo das view-tabs */
   #tx-day-tabs {
     grid-column: 1;
-    grid-row: 2 / span 3;
+    grid-row: 2 / span 4;
     flex-direction: column;
     overflow-x: visible;
     scroll-snap-type: none;
@@ -528,10 +529,10 @@ button, input, select { font-family: inherit; }
   .tx-day-tab .tx-tab-num { font-size: .88rem; font-weight: 600; }
 
   /* Coluna direita: greeting, banner, lista */
-  .tx-greet     { grid-column: 2; grid-row: 1; font-size: 1.55rem; margin-bottom: .15rem; }
-  .tx-greet-sub { grid-column: 2; grid-row: 2; font-size: .88rem; margin-bottom: 1rem; }
-  #tx-escala-banner { grid-column: 2; grid-row: 3; }
-  #tx-list      { grid-column: 2; grid-row: 4; }
+  .tx-greet     { grid-column: 2; grid-row: 2; font-size: 1.55rem; margin-bottom: .15rem; }
+  .tx-greet-sub { grid-column: 2; grid-row: 3; font-size: .88rem; margin-bottom: 1rem; }
+  #tx-escala-banner { grid-column: 2; grid-row: 4; }
+  #tx-list      { grid-column: 2; grid-row: 5; }
 
   /* Cards em grid 2 colunas */
   .tx-list {
@@ -555,6 +556,36 @@ button, input, select { font-family: inherit; }
     animation: tx-fade .2s ease;
   }
   @keyframes tx-fade { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+
+  /* ── Mês: 2 colunas (calendário esq + painel do dia dir) ── */
+  .tx-agenda.mes-view {
+    grid-template-columns: 1fr 310px;
+    padding: 2rem 0 5rem;
+  }
+  /* Greet e sub passam a ser full-width (acima do calendário) */
+  .tx-agenda.mes-view .tx-greet     { grid-column: 1 / -1; grid-row: 2; }
+  .tx-agenda.mes-view .tx-greet-sub { grid-column: 1 / -1; grid-row: 3; margin-bottom: .5rem; }
+  /* Calendário ocupa coluna esquerda, rows 4-5 */
+  .tx-agenda.mes-view #tx-cal-container {
+    grid-column: 1;
+    grid-row: 4 / 6;
+    max-width: none;
+  }
+  /* Painel direito: banner e lista do dia selecionado */
+  .tx-agenda.mes-view #tx-escala-banner { grid-column: 2; grid-row: 4; }
+  .tx-agenda.mes-view #tx-list         { grid-column: 2; grid-row: 5; }
+
+  /* Células maiores no calendário desktop */
+  .tx-cal-day { min-height: 72px; padding: .55rem .45rem .35rem; }
+  .tx-cal-dnum { font-size: .88rem; }
+  .tx-cal-dow { font-size: .64rem; padding: .55rem .1rem; }
+  .tx-cal-escala { font-size: .58rem; }
+  .tx-cal-folga { font-size: .58rem; }
+
+  /* Painel direito: lista coluna única (espaço limitado) */
+  .tx-agenda.mes-view .tx-list { grid-template-columns: 1fr; }
+
+  .tx-anam-sheet { border-radius: 8px; max-width: 620px; max-height: 85vh; animation: tx-fade .2s ease; }
 }
 
 /* ════════════════════════════════════════
@@ -562,7 +593,8 @@ button, input, select { font-family: inherit; }
    ════════════════════════════════════════ */
 @media (min-width: 1280px) {
   .app { max-width: 1200px; }
-  .tx-agenda { grid-template-columns: 230px 1fr; gap: 0 2.75rem; }
+  .tx-agenda:not(.mes-view) { grid-template-columns: 230px 1fr; gap: 0 2.75rem; }
+  .tx-agenda.mes-view { grid-template-columns: 1fr 340px; }
   .tx-greet { font-size: 1.6rem; }
 }
 
@@ -638,14 +670,18 @@ button, input, select { font-family: inherit; }
 }
 .tx-btn-anam:hover { background: var(--gold); color: #fff; }
 
-/* Modo mês: bloco linear no desktop (sem grid de 2 colunas) */
-@media (min-width: 960px) {
-  .tx-agenda.mes-view { display: block; padding: 2rem 0 5rem; }
-  .tx-agenda.mes-view .tx-view-tabs { flex-direction: row; margin-bottom: .75rem; }
-  .tx-agenda.mes-view .tx-view-tab { text-align: center; padding: .52rem .5rem; font-size: .84rem; }
-  .tx-agenda.mes-view #tx-cal-container { max-width: 520px; }
-  .tx-anam-sheet { border-radius: 8px; max-width: 620px; max-height: 85vh; animation: tx-fade .2s ease; }
+/* Cabeçalho do painel direito no modo mês */
+.tx-mes-panel-hdr {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: .5rem 0 .6rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .75rem;
 }
+
 </style>
 </head>
 <body>
@@ -1003,12 +1039,15 @@ button, input, select { font-family: inherit; }
     if (!iso) return;
     renderEscalaBanner(iso);
     const list = $('tx-list');
+    const isHoje = iso === toLocalISO(new Date());
+    const hdrLabel = isHoje ? `Hoje · ${fmtDate(iso)}` : fmtDate(iso);
+    const header = `<div class="tx-mes-panel-hdr">${esc(hdrLabel)}</div>`;
     const items = _reservasMes.filter(r => r.data === iso).sort((a,b) => (a.hora_inicio||'').localeCompare(b.hora_inicio||''));
     if (!items.length) {
-      list.innerHTML = `<div class="tx-empty"><h3>${iso === toLocalISO(new Date()) ? 'Hoje livre' : 'Sem atendimentos'}</h3><p>${fmtDate(iso)}</p></div>`;
+      list.innerHTML = `${header}<div class="tx-empty"><h3>${isHoje ? 'Hoje livre' : 'Sem atendimentos'}</h3></div>`;
       return;
     }
-    list.innerHTML = cardsHtml(items);
+    list.innerHTML = header + cardsHtml(items);
     list.querySelectorAll('.tx-card').forEach(c => c.addEventListener('click', () => abrirDetalhe(+c.dataset.id)));
   }
 
