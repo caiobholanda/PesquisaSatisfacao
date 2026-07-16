@@ -392,6 +392,9 @@ initDb();
 try { seedQualidadeSpa(); } catch (err) { console.error('[Qualidade] seed falhou:', err.message); }
 try { seedAnamneseSpa(); } catch (err) { console.error('[Anamnese] seed falhou:', err.message); }
 try { seedAnamneseOpcoes(); } catch (err) { console.error('[Anamnese-Opcoes] seed falhou:', err.message); }
+// Backfill idempotente das traducoes curadas da pesquisa de satisfacao
+// (pt-PT/es/fr/it/de). So insere onde falta; nunca sobrescreve.
+try { backfillTraducoesLocc(); } catch (err) { console.error('[Traducoes-Locc] backfill falhou:', err.message); }
 // Seed idempotente da receita 2026 da planilha (data/receita-2026.json).
 // Roda sempre: upsert por chave (ano,mes,mass,tipo,faixa). Edicoes manuais
 // na tabela serao preservadas a menos que o JSON tenha valor para a mesma
