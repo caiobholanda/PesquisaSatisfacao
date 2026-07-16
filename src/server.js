@@ -20,6 +20,7 @@ import terapeutaRouter from './routes/terapeuta.js';
 import gqRouter from './routes/gq.js';
 import salasRouter from './routes/salas.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
+import { backfillTraducoesLocc } from './traducoes-locc.js';
 import { auditMiddleware } from './middleware/audit.js';
 
 const SPA_ADMIN_EMAILS = [
