@@ -23,6 +23,9 @@ export default function App() {
   const [formStart,    setFormStart]    = useState(null);
   const [i18n,         setI18n]         = useState(null);
   const pollRef = useRef(null);
+  const urlTokenRef = useRef(false);
+  // Ultimo payload do /live (JSON) — evita re-render por segundo quando nada mudou.
+  const lastLiveRef = useRef('');
 
   const [theme, setTheme] = useState(() => {
     try { const t = localStorage.getItem('gm-theme'); return t === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
