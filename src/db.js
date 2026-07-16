@@ -2371,10 +2371,12 @@ export function buscarDocumentoToken(token) {
   if (!row) return null;
   const pessoa = (row.documento_token2 === token) ? 2 : 1;
   // Verifica expiração: se a hora_fim da reserva passou, link é inválido.
+  // ⚠️ MODO TEMPORARIO: expiry check desativado. Reverter quando user disser "volte o tempo como era antes".
   const expiry = pessoa === 2 ? row.documento_token_expiry2 : row.documento_token_expiry;
-  if (expiry && new Date(expiry) < new Date()) {
-    return { expirado: true, locale: row.locale || 'pt-BR' };
-  }
+  // if (expiry && new Date(expiry) < new Date()) {
+  //   return { expirado: true, locale: row.locale || 'pt-BR' };
+  // }
+  void expiry;
   // ja_respondida: o slot da pessoa em reservas ja aponta para um spa_perfis.
   // Gate de uso único — checado tanto no GET /documento quanto na transação do POST /perfil.
   const _perfilIdSlot = pessoa === 2 ? row.documento_perfil_id2 : row.documento_perfil_id;

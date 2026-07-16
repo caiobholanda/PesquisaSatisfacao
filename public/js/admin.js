@@ -774,7 +774,8 @@ function _estadoBtnFicha(r) {
   if (+h > 23 || +m[2] > 59) return 'ok';
   const inicio = new Date(`${r.data}T${h}:${m[2]}:00-03:00`).getTime();
   if (!Number.isFinite(inicio)) return 'ok';
-  if (Date.now() > inicio + 15 * 60 * 1000) return 'fora_prazo';
+  // ⚠️ MODO TEMPORARIO: gate de 15min desativado. Reverter quando user disser "volte o tempo como era antes".
+  // if (Date.now() > inicio + 15 * 60 * 1000) return 'fora_prazo';
   return 'ok';
 }
 
@@ -890,9 +891,10 @@ function _estadoBtnLiberar(r) {
   const h = match[1].padStart(2, '0');
   const fim = new Date(`${r.data}T${h}:${match[2]}:00-03:00`).getTime();
   if (!Number.isFinite(fim)) return 'ok';
-  const now = Date.now();
-  if (now < fim) return 'antes_fim';
-  if (now > fim + 40 * 60 * 1000) return 'fora_prazo';
+  // ⚠️ MODO TEMPORARIO: gates antes_fim e fora_prazo desativados. Reverter quando user disser "volte o tempo como era antes".
+  // const now = Date.now();
+  // if (now < fim) return 'antes_fim';
+  // if (now > fim + 40 * 60 * 1000) return 'fora_prazo';
   return 'ok';
   /* VERSAO ORIGINAL (com janela de fim+30min):
   if (_pesquisasLiberadas.has(r.id)) return 'liberada';

@@ -618,19 +618,20 @@ router.post('/:id/gerar-ficha', ...podeEscreverSpa, (req, res) => {
   // Hardcoded -03:00 evita depender do TZ do container Fly.io.
   // slice(0,5) defende contra hora_inicio sujo no banco (ex: 'HH:MM:SS' que
   // quebraria o parse ISO -> NaN -> bypass acidental).
-  if (reserva.data && reserva.hora_inicio) {
-    const hhmm = _normalizarHHMM(reserva.hora_inicio);
-    if (hhmm) {
-      const inicioMs = new Date(`${reserva.data}T${hhmm}:00-03:00`).getTime();
-      if (Number.isFinite(inicioMs)) {
-        const limiteMs = inicioMs + 15 * 60 * 1000;
-        if (Date.now() > limiteMs) {
-          return res.status(409).json({ ok: false, error: 'tempo_expirado',
-            message: 'Tempo para enviar anamnese expirado' });
-        }
-      }
-    }
-  }
+  // ⚠️ MODO TEMPORARIO: gate de 15min backend desativado. Reverter quando user disser "volte o tempo como era antes".
+  // if (reserva.data && reserva.hora_inicio) {
+  //   const hhmm = _normalizarHHMM(reserva.hora_inicio);
+  //   if (hhmm) {
+  //     const inicioMs = new Date(`${reserva.data}T${hhmm}:00-03:00`).getTime();
+  //     if (Number.isFinite(inicioMs)) {
+  //       const limiteMs = inicioMs + 15 * 60 * 1000;
+  //       if (Date.now() > limiteMs) {
+  //         return res.status(409).json({ ok: false, error: 'tempo_expirado',
+  //           message: 'Tempo para enviar anamnese expirado' });
+  //       }
+  //     }
+  //   }
+  // }
 
   const origin = process.env.NODE_ENV === 'production'
     ? `https://${req.get('host')}`
