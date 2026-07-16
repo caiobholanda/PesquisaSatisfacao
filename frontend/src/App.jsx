@@ -158,6 +158,7 @@ export default function App() {
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token');
+    urlTokenRef.current = !!token;
 
     if (token) {
       fetch(`/api/survey/${encodeURIComponent(token)}`, { cache: 'no-store' })
@@ -169,13 +170,18 @@ export default function App() {
     }
 
     setTokenChecked(true);
+    return () => clearInterval(pollRef.current);
+  }, [carregarI18n]);
+
+  // Polling amarrado a tela: roda sempre que estiver na welcome (sem token na
+  // URL) e para nas demais telas. Garante retomada ao voltar para a welcome
+  // por qualquer caminho, nao so afterSubmit/clearToken.
+  useEffect(() => {
+    if (screen !== 'welcome') { clearInterval(pollRef.current); return; }
+    if (urlTokenRef.current) return;
     startPolling();
     return () => clearInterval(pollRef.current);
-  }, [startPolling, carregarI18n]);
-
-  useEffect(() => {
-    if (screen !== 'welcome') clearInterval(pollRef.current);
-  }, [screen]);
+  }, [screen, startPolling]);
 
   const go = (next, opts = {}) => {
     setVisible(false);
