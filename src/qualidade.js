@@ -286,7 +286,14 @@ function montarConfigPesquisa(pesquisaId, idioma) {
   const secoes = db.prepare("SELECT id, chave, ordem FROM pesquisa_secao WHERE pesquisa_id=? AND ativo=1 ORDER BY ordem").all(pesquisaId);
   for (const s of secoes) {
     const trS = db.prepare("SELECT titulo FROM pesquisa_secao_traducao WHERE pesquisa_secao_id=? AND idioma=?").get(s.id, idioma);
-    s.titulo = trS?.titulo || s.chave;
+    if (trS?.titulo && trS.titulo.trim()) {
+      s.titulo = trS.titulo;
+    } else {
+      // Mesmo fallback do rotulo de pergunta (BUG-O1): sem traducao do
+      // idioma alvo, usa pt-BR antes de expor a chave tecnica na UI.
+      const trSPt = db.prepare("SELECT titulo FROM pesquisa_secao_traducao WHERE pesquisa_secao_id=? AND idioma='pt-BR'").get(s.id);
+      s.titulo = (trSPt?.titulo && trSPt.titulo.trim()) ? trSPt.titulo : s.chave;
+    }
     s.perguntas = db.prepare(`
       SELECT pp.ordem, pp.obrigatoria, p.id AS pergunta_id, p.chave, p.tipo, p.escala_id, p.mapeia_campo_legado
       FROM pesquisa_pergunta pp
