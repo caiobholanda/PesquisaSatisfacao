@@ -168,6 +168,12 @@ function showApp() {
   // Aplica visibilidade conforme o role gravado no JWT atual.
   try { aplicarRoleNaUI((currentUserPayload() || {}).role); } catch {}
   loadAll(); // sempre carrega dados do painel principal em background
+  if (new URLSearchParams(location.search).get('home') === '1') {
+    history.replaceState(null, '', '/admin');
+    showView('view-reservas');
+    loadReservas();
+    return;
+  }
   const st = JSON.parse(sessionStorage.getItem('_vst') || '{}');
   // view-escala foi removida (escala mensal em /escala-spa.html é a única) —
   // sessões antigas com _vst apontando pra ela caem em reservas.

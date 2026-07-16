@@ -262,7 +262,7 @@
       if (homeBtn) {
         homeBtn.style.display = "";
         homeBtn.addEventListener("click", function () {
-          window.location.href = "/admin";
+          window.location.href = "/admin?home=1";
         });
       }
     }
