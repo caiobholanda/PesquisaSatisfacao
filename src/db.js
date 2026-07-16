@@ -2219,7 +2219,9 @@ export function buscarSurveyToken(token) {
     SELECT st.liberada_em, st.pessoa, st.reserva_id AS reserva_id,
            r.cliente_id AS cliente_id,
            r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
-           r.quarto, r.idioma_documento AS idioma, m.nome AS massagista_nome,
+           r.quarto, r.idioma_documento, r.idioma_documento2,
+           r.idioma AS idioma_cad, r.idioma2 AS idioma_cad2,
+           m.nome AS massagista_nome,
            r.cliente2, r.apto2, r.email2, r.telefone2, r.tratamento2, r.tipo_cliente2,
            m2.nome AS massagista_nome2
     FROM survey_tokens st
@@ -2229,6 +2231,8 @@ export function buscarSurveyToken(token) {
     WHERE st.token = ?
   `).get(token);
   if (!row) return null;
+  // Idioma resolvido por pessoa: anamnese → cadastro da reserva → pt-BR.
+  const idioma = resolverIdiomaPesquisa(row, row.pessoa);
   // BUG-U fix: para tokens da pessoa 2 (cliente2 em reservas casal),
   // devolve os campos do cliente2 mascarando os campos principais —
   // pra que o link da pessoa 2 carregue os dados DELA, nao da pessoa 1.
@@ -2246,11 +2250,11 @@ export function buscarSurveyToken(token) {
       tratamento:    row.tratamento2 || row.tratamento,
       tipo_cliente:  row.tipo_cliente2 || row.tipo_cliente,
       quarto:        row.quarto,
-      idioma:        row.idioma,
+      idioma,
       massagista_nome: row.massagista_nome2 || row.massagista_nome,
     };
   }
-  return row;
+  return { ...row, idioma };
 }
 
 export function buscarAdmin(username) {
