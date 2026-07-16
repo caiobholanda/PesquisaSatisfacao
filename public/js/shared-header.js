@@ -78,7 +78,7 @@
       if (isAdmin) {
         return "<button class=\"dropdown-item\" id=\"" + id + "\">" + label + "</button>";
       }
-      return "<a href=\"" + (href || "/admin") + "\" class=\"dropdown-item\">" + label + "</a>";
+      return "<a href=\"" + (href || ("/admin?open=" + id)) + "\" class=\"dropdown-item\">" + label + "</a>";
     }
 
     var escalaItem = isAdmin

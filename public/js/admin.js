@@ -9507,3 +9507,23 @@ document.addEventListener('click', e => {
     case 'fechar-sala-bloqueio': fecharModalBloqueio(); break;
   }
 });
+
+// Deep-link via ?open=: gerado por shared-header.js quando context !== 'admin'
+// (ex: escala-spa.html). Roda após todos os addEventListener estarem registrados
+// para poder delegar via .click(). Allowlist impede valores arbitrários.
+(function () {
+  const open = new URLSearchParams(location.search).get('open');
+  if (!open) return;
+  const ALLOW = new Set([
+    'btn-open-massagistas', 'btn-open-tipos', 'btn-open-relatorios',
+    'btn-open-qualidade', 'btn-open-anamnese-editor', 'btn-open-pesquisa-editor',
+    'btn-open-clientes', 'btn-open-usuarios', 'btn-open-salas', 'btn-open-auditoria',
+  ]);
+  if (!ALLOW.has(open)) return;
+  if (document.getElementById('app-screen')?.style.display !== 'block') return;
+  const btn = document.getElementById(open);
+  if (btn) {
+    btn.click();
+    history.replaceState(null, '', '/admin');
+  }
+}());
