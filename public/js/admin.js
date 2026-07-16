@@ -1319,6 +1319,7 @@ function setupDelegation() {
 
 function _fecharMoreMenus() {
   document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.mgmt-item.menu-open').forEach(c => c.classList.remove('menu-open'));
   document.querySelectorAll('[data-action="toggle-more"][aria-expanded="true"]')
     .forEach(b => b.setAttribute('aria-expanded', 'false'));
 }
