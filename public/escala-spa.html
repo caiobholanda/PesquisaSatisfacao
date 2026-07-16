@@ -1027,6 +1027,7 @@ function _updatePickerActive() {
 }
 
 function showPicker(cellEl, mId, date) {
+  if (feriasMapa[`${mId}-${date}`]) return;
   pickerMId  = mId;
   pickerDate = date;
   const curr = turnos[`${mId}-${date}`] || '';
