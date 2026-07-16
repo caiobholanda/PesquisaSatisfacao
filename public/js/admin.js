@@ -1295,13 +1295,26 @@ function setupDelegation() {
       const menu = el.closest('.mgmt-item-more')?.querySelector('.mgmt-more-menu');
       if (!menu) return;
       const wasOpen = menu.classList.contains('open');
-      document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
-      if (!wasOpen) menu.classList.add('open');
+      _fecharMoreMenus();
+      if (!wasOpen) { menu.classList.add('open'); el.setAttribute('aria-expanded', 'true'); }
     }
   });
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
+  // Fecha ao clicar fora. Nao pode reagir ao proprio clique do botao "···":
+  // stopPropagation nao impede outro listener no MESMO no (document), entao o
+  // menu abria e fechava no mesmo clique.
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-action="toggle-more"]')) return;
+    _fecharMoreMenus();
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') _fecharMoreMenus();
+  });
+}
+
+function _fecharMoreMenus() {
+  document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('[data-action="toggle-more"][aria-expanded="true"]')
+    .forEach(b => b.setAttribute('aria-expanded', 'false'));
 }
 
 // Estado de massagistas: declarado ANTES do IIFE init() porque
