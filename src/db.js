@@ -1046,9 +1046,11 @@ export function listarTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
 }
 export function buscarBackupFeriasPeriodo(massagista_id, data_inicio, data_fim) {
   return getDb().prepare(`
-    SELECT data, antes FROM turno_historico
-    WHERE massagista_id=? AND data>=? AND data<=? AND origem='ferias-backup' AND depois IS NULL AND antes IS NOT NULL
-    GROUP BY data HAVING id=MAX(id) ORDER BY data ASC
+    SELECT data, antes FROM turno_historico th
+    WHERE massagista_id=? AND data>=? AND data<=? AND origem='ferias-backup'
+      AND depois IS NULL AND antes IS NOT NULL
+      AND id=(SELECT MAX(id) FROM turno_historico WHERE massagista_id=th.massagista_id AND data=th.data AND origem='ferias-backup' AND depois IS NULL AND antes IS NOT NULL)
+    ORDER BY data ASC
   `).all(massagista_id, data_inicio, data_fim);
 }
 export function limparTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
