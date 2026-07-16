@@ -137,10 +137,19 @@ export default function App() {
       fetch('/api/survey/live', { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
         .then(d => {
+          // Polling CONTINUO enquanto estiver na welcome: antes ele parava no
+          // primeiro sucesso (clearInterval) e, se o hospede nao respondesse,
+          // nenhuma liberacao nova aparecia sem F5. Agora o estado acompanha
+          // sempre o /live: nova liberacao aparece na hora e token consumido
+          // em outro lugar some sozinho. So re-renderiza quando o payload muda.
+          const json = d?.ok ? JSON.stringify(d.dados) : '';
+          if (json === lastLiveRef.current) return;
+          lastLiveRef.current = json;
           if (d?.ok) {
             setTokenData(d.dados);
             carregarI18n(d.dados?.idioma);
-            clearInterval(pollRef.current);
+          } else {
+            setTokenData(null);
           }
         })
         .catch(() => {});
