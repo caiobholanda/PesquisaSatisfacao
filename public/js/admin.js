@@ -1390,55 +1390,52 @@ function renderMassagistas() {
     return;
   }
 
+  let _ci = 0;
   function renderCardItem(m) {
+    const idx = _ci++;
     const tot = m.total_avaliacoes || 0;
     const respondentes = (m.rec_sim || 0) + (m.rec_nao || 0);
     const pctRec = respondentes > 0 ? Math.round((m.rec_sim || 0) / respondentes * 100) : null;
-    const statHtml = tot > 0
-      ? `<span class="mgmt-item-stat">${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}${pctRec != null ? ` · ${pctRec}% recomendam` : ''}</span>`
-      : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
+    const ratingCls = pctRec == null ? '' : pctRec >= 75 ? 'mgmt-rating-high' : pctRec >= 50 ? 'mgmt-rating-mid' : 'mgmt-rating-low';
+    const ratingBadge = pctRec != null ? `<span class="mgmt-rating-badge ${ratingCls}">${pctRec}<small>%</small></span>` : '';
+    const statLine = tot > 0 ? `${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}` : 'Sem avaliações';
     const badges = [];
     if (m.funcao) badges.push(`<span class="mgmt-badge mgmt-badge-funcao">${escHtml(m.funcao)}</span>`);
     if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${escHtml(m.matricula)}</span>`);
     if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
     if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">Bilíngue</span>`);
-    const ratingCls = pctRec == null ? '' : pctRec >= 75 ? 'mgmt-rating-high' : pctRec >= 50 ? 'mgmt-rating-mid' : 'mgmt-rating-low';
-    const ratingBadge = pctRec != null ? `<span class="mgmt-rating-badge ${ratingCls}">${pctRec}%</span>` : '';
-    const statLine = tot > 0
-      ? `<span class="mgmt-item-stat">${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}</span>${ratingBadge}`
-      : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
-    const footParts = [];
-    if (m.especialidade_original) footParts.push(`<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>`);
-    footParts.push(statLine);
+    const words = m.nome.trim().split(/\s+/);
+    const initials = (words[0]?.[0] || '') + (words.length > 1 ? (words[words.length - 1]?.[0] || '') : '');
     return `
-      <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
-        <div class="mgmt-item-info">
-          <span class="mgmt-item-nome">${escHtml(m.nome)}</span>
-          ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
-          <div class="mgmt-item-foot">${footParts.join('<span class="mgmt-item-foot-sep">·</span>')}</div>
-        </div>
-        <div class="mgmt-item-actions">
-          <div class="mgmt-item-more">
-            <button class="btn btn-outline btn-sm mgmt-btn-more" data-action="toggle-more" title="Mais ações">···</button>
-            <div class="mgmt-more-menu">
-              <button class="mgmt-more-item" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
-              <button class="mgmt-more-item" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}">PIN</button>
-              <button class="mgmt-more-item" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}">Link</button>
-            </div>
+      <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}" style="animation-delay:${idx * 0.04}s">
+        <div class="mgmt-card-head">
+          <div class="mgmt-avatar">${escHtml(initials.toUpperCase())}</div>
+          <div class="mgmt-card-ident">
+            <span class="mgmt-item-nome">${escHtml(m.nome)}</span>
+            ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
           </div>
-          <button class="btn btn-outline btn-sm mgmt-btn-edit" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
+          ${ratingBadge ? `<div class="mgmt-card-rating">${ratingBadge}</div>` : ''}
+        </div>
+        ${m.especialidade_original ? `<div class="mgmt-item-esp">${escHtml(m.especialidade_original)}</div>` : ''}
+        <div class="mgmt-card-foot">
+          <span class="mgmt-item-stat${tot === 0 ? ' sem-aval' : ''}">${statLine}</span>
+          <div class="mgmt-card-acts">
+            <div class="mgmt-item-more">
+              <button class="mgmt-btn-more" data-action="toggle-more" title="Mais ações">···</button>
+              <div class="mgmt-more-menu">
+                <button class="mgmt-more-item" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
+                <button class="mgmt-more-item" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}">PIN</button>
+                <button class="mgmt-more-item" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}">Link</button>
+              </div>
+            </div>
+            <button class="btn btn-sm mgmt-btn-edit" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
+          </div>
         </div>
       </div>`;
   }
 
-  const receps  = filtered.filter(m => m.funcao && m.funcao.toLowerCase().includes('recep'));
-  const massos  = filtered.filter(m => !m.funcao || !m.funcao.toLowerCase().includes('recep'));
-  const grupos  = [];
-  if (receps.length)  grupos.push({ label: 'Recepcionistas',  profs: receps });
-  if (massos.length)  grupos.push({ label: 'Massoterapeutas', profs: massos });
-
   const sepHtml = label => count =>
-    `<div class="mgmt-group-sep"><span class="mgmt-group-label">${label}</span><span class="mgmt-group-count">${count}</span></div>`;
+    `<div class="mgmt-group-sep"><span class="mgmt-group-label">${label}</span><span class="mgmt-group-count">&nbsp;·&nbsp;${count}</span></div>`;
 
   el.innerHTML = '<div class="mgmt-list">' +
     grupos.map(g => sepHtml(g.label)(g.profs.length) + g.profs.map(renderCardItem).join('')).join('') +
