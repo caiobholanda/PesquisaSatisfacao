@@ -327,7 +327,11 @@ function montarOpcoesEscala(escalaId, idioma) {
   const db = getDb();
   return db.prepare(`
     SELECT eo.chave, eo.valor_numerico, eo.polaridade, eo.ordem,
-      COALESCE((SELECT rotulo FROM escala_opcao_traducao WHERE escala_opcao_id=eo.id AND idioma=?), eo.chave) AS rotulo
+      COALESCE(
+        (SELECT rotulo FROM escala_opcao_traducao WHERE escala_opcao_id=eo.id AND idioma=?),
+        (SELECT rotulo FROM escala_opcao_traducao WHERE escala_opcao_id=eo.id AND idioma='pt-BR'),
+        eo.chave
+      ) AS rotulo
     FROM escala_opcao eo WHERE eo.escala_id=? ORDER BY eo.ordem
   `).all(idioma, escalaId);
 }
