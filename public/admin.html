@@ -63,7 +63,8 @@
       --header-bg:   rgba(244, 238, 225, 0.82);
       --logo-filter: none;
       --font:        'Inter', 'DM Sans', system-ui, sans-serif;
-      --serif:       'Helvetica Neue', Helvetica, Arial, sans-serif, Georgia, serif;
+      /* --serif apontava para uma cadeia inválida (sans-serif no meio); títulos usam a fonte padrão */
+      --serif:       var(--font);
       --mono:        'JetBrains Mono', monospace;
       --bg-grad-1:   rgba(156,88,67,.06);
       --bg-grad-2:   rgba(156,88,67,.03);
