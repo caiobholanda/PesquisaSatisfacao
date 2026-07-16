@@ -565,6 +565,87 @@ button, input, select { font-family: inherit; }
   .tx-agenda { grid-template-columns: 230px 1fr; gap: 0 2.75rem; }
   .tx-greet { font-size: 1.6rem; }
 }
+
+/* ── Calendário mensal ── */
+.tx-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.tx-cal-title { font-size: .92rem; font-weight: 700; color: var(--text); letter-spacing: .01em; text-transform: capitalize; }
+.tx-cal-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted2);
+  width: 30px; height: 30px; border-radius: 5px; cursor: pointer;
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  font-family: inherit; line-height: 1;
+}
+.tx-cal-btn:hover { border-color: var(--gold); color: var(--gold); }
+.tx-cal-grid {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 5px; overflow: hidden; margin-bottom: 1rem;
+}
+.tx-cal-head { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
+.tx-cal-dow {
+  text-align: center; font-size: .58rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: .48rem .1rem;
+}
+.tx-cal-body { display: grid; grid-template-columns: repeat(7, 1fr); }
+.tx-cal-day {
+  position: relative; min-height: 50px; padding: .4rem .36rem .25rem;
+  cursor: pointer; border-right: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+}
+.tx-cal-day:hover:not(.tx-cal-day--vazia) { background: var(--gold-dim); }
+.tx-cal-day--vazia { cursor: default; }
+.tx-cal-day--hoje { background: var(--bg); }
+.tx-cal-day--hoje .tx-cal-dnum { color: var(--gold); font-weight: 800; }
+.tx-cal-day--ativo { background: var(--gold-dim) !important; }
+.tx-cal-day--ativo .tx-cal-dnum { color: var(--gold); font-weight: 700; }
+.tx-cal-dnum { font-size: .8rem; font-weight: 600; color: var(--text); line-height: 1; }
+.tx-cal-day--vazia .tx-cal-dnum { color: transparent; }
+.tx-cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.tx-cal-escala { font-size: .5rem; font-weight: 700; color: var(--success); line-height: 1.3; word-break: break-all; }
+.tx-cal-ferias { font-size: .65rem; line-height: 1; }
+.tx-cal-folga { font-size: .5rem; color: var(--muted); font-style: italic; line-height: 1.2; }
+
+/* ── Anamnese overlay ── */
+.tx-anam-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 300;
+  display: none; align-items: flex-end;
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+}
+.tx-anam-overlay.show { display: flex; }
+.tx-anam-sheet {
+  background: var(--surface); width: 100%; max-width: 600px; margin: 0 auto;
+  border-radius: 12px 12px 0 0; padding: 1.25rem 1.25rem 2.5rem;
+  max-height: 94vh; overflow-y: auto; animation: tx-up .22s ease;
+}
+.tx-anam-section { margin-bottom: 1rem; }
+.tx-anam-secao {
+  font-size: .63rem; color: var(--gold); text-transform: uppercase;
+  letter-spacing: .18em; font-weight: 700; margin-bottom: .5rem;
+}
+.tx-anam-item {
+  display: flex; justify-content: space-between; gap: .8rem;
+  padding: .35rem 0; border-bottom: 1px solid var(--border-soft); font-size: .85rem;
+}
+.tx-anam-item:last-child { border-bottom: 0; }
+.tx-anam-label { color: var(--muted2); flex-shrink: 0; min-width: 110px; }
+.tx-anam-val { color: var(--text); text-align: right; word-break: break-word; }
+.tx-anam-val--empty { color: var(--muted); font-style: italic; font-size: .8rem; }
+.tx-btn-anam {
+  background: var(--gold-dim); border: 1px solid var(--gold); color: var(--gold);
+  padding: .35rem .8rem; border-radius: 5px; font-size: .73rem; font-weight: 600;
+  letter-spacing: .04em; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap;
+}
+.tx-btn-anam:hover { background: var(--gold); color: #fff; }
+
+/* Modo mês: bloco linear no desktop (sem grid de 2 colunas) */
+@media (min-width: 960px) {
+  .tx-agenda.mes-view { display: block; padding: 2rem 0 5rem; }
+  .tx-agenda.mes-view .tx-view-tabs { flex-direction: row; margin-bottom: .75rem; }
+  .tx-agenda.mes-view .tx-view-tab { text-align: center; padding: .52rem .5rem; font-size: .84rem; }
+  .tx-agenda.mes-view #tx-cal-container { max-width: 520px; }
+  .tx-anam-sheet { border-radius: 8px; max-width: 620px; max-height: 85vh; animation: tx-fade .2s ease; }
+}
 </style>
 </head>
 <body>
@@ -606,9 +687,26 @@ button, input, select { font-family: inherit; }
       </div>
       <div class="tx-view-tabs">
         <button class="tx-view-tab active" id="btn-view-hoje">Hoje</button>
-        <button class="tx-view-tab" id="btn-view-semana">Esta semana</button>
+        <button class="tx-view-tab" id="btn-view-semana">Semana</button>
+        <button class="tx-view-tab" id="btn-view-mes">Mês</button>
       </div>
       <div class="tx-day-tabs" id="tx-day-tabs" style="display:none"></div>
+      <div id="tx-cal-container" style="display:none">
+        <div class="tx-cal-nav">
+          <button class="tx-cal-btn" id="tx-cal-prev">‹</button>
+          <span class="tx-cal-title" id="tx-cal-title"></span>
+          <button class="tx-cal-btn" id="tx-cal-next">›</button>
+        </div>
+        <div class="tx-cal-grid">
+          <div class="tx-cal-head">
+            <div class="tx-cal-dow">Dom</div><div class="tx-cal-dow">Seg</div>
+            <div class="tx-cal-dow">Ter</div><div class="tx-cal-dow">Qua</div>
+            <div class="tx-cal-dow">Qui</div><div class="tx-cal-dow">Sex</div>
+            <div class="tx-cal-dow">Sáb</div>
+          </div>
+          <div class="tx-cal-body" id="tx-cal-body"></div>
+        </div>
+      </div>
       <div id="tx-list"></div>
     </section>
   </div>
@@ -620,16 +718,39 @@ button, input, select { font-family: inherit; }
   <div class="tx-sheet" id="tx-sheet"></div>
 </div>
 
+<!-- ── MODAL ANAMNESE ── -->
+<div id="tx-anam-overlay" class="tx-anam-overlay">
+  <div class="tx-anam-sheet" id="tx-anam-sheet"></div>
+</div>
+
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = (iso) => { if(!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const SALA_NOME = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
+  const pad = n => String(n).padStart(2,'0');
 
   let _me = null, _reservas = [], _diaAtivo = null, _modoVista = 'hoje';
   let _escalaDias = {};
+  let _mesAtivo = null; // { year, month (0-indexed) }
+  let _reservasMes = [], _escalaMes = {};
   const DIAS_LABEL = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+
+  // ── parseAnamField: trata null, [], [""], strings JSON ──
+  function parseAnamField(v) {
+    if (v === null || v === undefined) return null;
+    const s = String(v).trim();
+    if (!s || s === 'null' || s === 'undefined') return null;
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter(x => x !== null && x !== undefined && String(x).trim());
+        return filtered.length ? filtered.join(', ') : null;
+      }
+    } catch {}
+    return s || null;
+  }
 
   // ── Tema ──
   (function() {
@@ -659,12 +780,13 @@ button, input, select { font-family: inherit; }
   function renderEscalaBanner(iso) {
     const banner = $('tx-escala-banner');
     const txt = $('tx-escala-texto');
+    if (!iso) { banner.style.display = 'none'; return; }
     const hojeStr = toLocalISO(new Date());
     const [y,m,d] = iso.split('-');
     const dowIndex = new Date(+y,+m-1,+d).getDay();
     const ehHoje = iso === hojeStr;
     const prefixo = ehHoje ? 'Hoje' : `Na ${DIAS_LABEL[dowIndex]}`;
-    const av = _escalaDias[iso];
+    const av = (_modoVista === 'mes' ? _escalaMes : _escalaDias)[iso];
     if (av) {
       if (av.faixa) {
         const [ini, fim] = av.faixa.split('-').map(s => s.trim());
@@ -759,21 +881,139 @@ button, input, select { font-family: inherit; }
     }
   }
 
+  function ativarTab(id) {
+    ['btn-view-hoje','btn-view-semana','btn-view-mes'].forEach(b => {
+      const el = $(b); if (el) el.classList.toggle('active', b === id);
+    });
+  }
+  function sairMesView() {
+    const ag = document.querySelector('.tx-agenda');
+    if (ag) ag.classList.remove('mes-view');
+    $('tx-cal-container').style.display = 'none';
+  }
+
   $('btn-view-hoje').addEventListener('click', () => {
+    if (_modoVista === 'hoje') return;
+    sairMesView();
     _modoVista = 'hoje';
-    $('btn-view-hoje').classList.add('active');
-    $('btn-view-semana').classList.remove('active');
+    ativarTab('btn-view-hoje');
     _diaAtivo = toLocalISO(new Date());
     renderAgenda();
   });
   $('btn-view-semana').addEventListener('click', () => {
+    if (_modoVista === 'semana') return;
+    sairMesView();
     _modoVista = 'semana';
-    $('btn-view-semana').classList.add('active');
-    $('btn-view-hoje').classList.remove('active');
+    ativarTab('btn-view-semana');
     renderAgenda();
   });
+  $('btn-view-mes').addEventListener('click', () => {
+    if (_modoVista === 'mes') return;
+    _modoVista = 'mes';
+    ativarTab('btn-view-mes');
+    document.querySelector('.tx-agenda').classList.add('mes-view');
+    $('tx-day-tabs').style.display = 'none';
+    $('tx-cal-container').style.display = '';
+    const hoje = new Date();
+    if (!_mesAtivo) _mesAtivo = { year: hoje.getFullYear(), month: hoje.getMonth() };
+    if (!_diaAtivo) _diaAtivo = toLocalISO(hoje);
+    $('tx-escala-banner').style.display = 'none';
+    carregarMes(_mesAtivo.year, _mesAtivo.month);
+  });
+
+  $('tx-cal-prev').addEventListener('click', () => {
+    let { year, month } = _mesAtivo;
+    month--; if (month < 0) { month = 11; year--; }
+    _mesAtivo = { year, month };
+    _diaAtivo = `${year}-${pad(month+1)}-01`;
+    carregarMes(year, month);
+  });
+  $('tx-cal-next').addEventListener('click', () => {
+    let { year, month } = _mesAtivo;
+    month++; if (month > 11) { month = 0; year++; }
+    _mesAtivo = { year, month };
+    _diaAtivo = `${year}-${pad(month+1)}-01`;
+    carregarMes(year, month);
+  });
+
+  // ── Agenda mensal ──
+  async function carregarMes(year, month) {
+    const sub = $('tx-greet-sub');
+    sub.textContent = 'Carregando mês…';
+    const from = `${year}-${pad(month+1)}-01`;
+    const lastDay = new Date(year, month+1, 0).getDate();
+    const to = `${year}-${pad(month+1)}-${pad(lastDay)}`;
+    try {
+      const [ra, re] = await Promise.all([
+        fetch(`/api/terapeuta/agenda?from=${from}&to=${to}`),
+        fetch(`/api/terapeuta/escala?from=${from}&to=${to}`),
+      ]);
+      if (ra.status === 401) return mostrarLogin();
+      const da = await ra.json();
+      _reservasMes = da.items || [];
+      _escalaMes = {};
+      if (re.ok) { const de = await re.json(); if (de.ok) _escalaMes = de.dias || {}; }
+      const total = _reservasMes.length;
+      sub.textContent = `${total} atendimento${total !== 1 ? 's' : ''} neste mês`;
+      renderCalendario();
+    } catch { sub.textContent = 'Erro de rede.'; }
+  }
+
+  function renderCalendario() {
+    const { year, month } = _mesAtivo;
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    $('tx-cal-title').textContent = `${MESES[month]} ${year}`;
+    const hojeStr = toLocalISO(new Date());
+    const firstDow = new Date(year, month, 1).getDay();
+    const lastDay = new Date(year, month+1, 0).getDate();
+    let html = '';
+    for (let i = 0; i < firstDow; i++) html += `<div class="tx-cal-day tx-cal-day--vazia"><span class="tx-cal-dnum"></span></div>`;
+    for (let d = 1; d <= lastDay; d++) {
+      const iso = `${year}-${pad(month+1)}-${pad(d)}`;
+      const isHoje = iso === hojeStr;
+      const isAtivo = iso === _diaAtivo;
+      const cnt = _reservasMes.filter(r => r.data === iso).length;
+      const escala = _escalaMes[iso];
+      let cls = 'tx-cal-day';
+      if (isHoje) cls += ' tx-cal-day--hoje';
+      if (isAtivo) cls += ' tx-cal-day--ativo';
+      let badges = '';
+      if (cnt > 0) badges += `<span class="tx-cal-dot" title="${cnt} atendimento${cnt>1?'s':''}"></span>`;
+      if (escala) {
+        if (escala.faixa) badges += `<span class="tx-cal-escala">${esc(escala.faixa)}</span>`;
+        else if (!escala.disponivel && escala.motivo) {
+          const mot = String(escala.motivo).toLowerCase();
+          if (mot.includes('férias') || mot.includes('ferias')) badges += `<span class="tx-cal-ferias">🌴</span>`;
+          else if (mot.includes('folga')) badges += `<span class="tx-cal-folga">folga</span>`;
+        }
+      }
+      html += `<div class="${cls}" data-dia="${iso}"><span class="tx-cal-dnum">${d}</span>${badges}</div>`;
+    }
+    $('tx-cal-body').innerHTML = html;
+    $('tx-cal-body').querySelectorAll('.tx-cal-day:not(.tx-cal-day--vazia)').forEach(el => {
+      el.addEventListener('click', () => {
+        _diaAtivo = el.dataset.dia;
+        renderCalendario();
+      });
+    });
+    renderListaMes(_diaAtivo);
+  }
+
+  function renderListaMes(iso) {
+    if (!iso) return;
+    renderEscalaBanner(iso);
+    const list = $('tx-list');
+    const items = _reservasMes.filter(r => r.data === iso).sort((a,b) => (a.hora_inicio||'').localeCompare(b.hora_inicio||''));
+    if (!items.length) {
+      list.innerHTML = `<div class="tx-empty"><h3>${iso === toLocalISO(new Date()) ? 'Hoje livre' : 'Sem atendimentos'}</h3><p>${fmtDate(iso)}</p></div>`;
+      return;
+    }
+    list.innerHTML = cardsHtml(items);
+    list.querySelectorAll('.tx-card').forEach(c => c.addEventListener('click', () => abrirDetalhe(+c.dataset.id)));
+  }
 
   function renderAgenda() {
+    if (_modoVista === 'mes') return;
     const hojeStr = toLocalISO(new Date());
     const semana = getWeekDates(new Date());
     const hoje_count = _reservas.filter(r => r.data === hojeStr).length;
@@ -876,21 +1116,17 @@ button, input, select { font-family: inherit; }
     const trat = isP1 ? (reserva.tipo_massagem_nome || reserva.tratamento) : (reserva.tipo_massagem_nome2 || reserva.tratamento2 || reserva.tipo_massagem_nome);
     const sala = SALA_NOME[reserva.sala] || `Sala ${reserva.sala}`;
     const anam = p?.anamnese;
-    const camposAnam = anam ? [
-      ['Documento', anam.documento ? `${(anam.tipo_documento||'CPF').toUpperCase()} ${anam.documento}` : null],
-      ['Nascimento', anam.data_nascimento],
-      ['Pressão preferida', anam.pressao_massagem],
-      ['Rotina facial', anam.rotina_facial],
-      ['Rotina corporal', anam.rotina_corporal],
-      ['Produto específico', anam.produto_especifico],
-      ['Informações médicas', anam.info_medica],
-      ['Contato', anam.telefone || anam.email],
-    ].filter(([,v]) => v && String(v).trim()) : [];
-    const anamHtml = anam
-      ? (camposAnam.length
-          ? camposAnam.map(([k,v]) => `<div class="tx-bloco-row tx-bloco-row-anam"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
-          : `<div class="tx-bloco-row"><span style="color:var(--muted2);font-style:italic">Anamnese preenchida (sem campos adicionais)</span></div>`)
+
+    const anamBtnHtml = anam
+      ? `<div class="tx-bloco-row" style="padding-top:.6rem;border-top:1px solid var(--border-soft);margin-top:.3rem">
+           <span style="color:var(--muted2);font-size:.82rem">Ficha de saúde</span>
+           <button class="tx-btn-anam" data-anam-btn>
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+             Ver anamnese
+           </button>
+         </div>`
       : `<div class="tx-bloco-row"><span class="tx-anam-vazia">⚠ Anamnese não preenchida</span></div>`;
+
     sheet.innerHTML = `
       <div class="tx-sheet-head">
         <div style="flex:1;min-width:0">
@@ -900,15 +1136,78 @@ button, input, select { font-family: inherit; }
         <button class="tx-close" data-close>✕</button>
       </div>
       <div class="tx-bloco${anam ? ' tx-bloco-anam' : ''}">
-        <div class="tx-bloco-titulo">Características do atendimento</div>
+        <div class="tx-bloco-titulo">Atendimento</div>
         <div class="tx-bloco-row"><span>Quarto</span><span>${esc(quarto || '—')}</span></div>
         <div class="tx-bloco-row"><span>Tratamento</span><span>${esc(trat || '—')}</span></div>
         <div class="tx-bloco-row"><span>Pesquisa</span><span>${p?.pesquisa_respondida_em ? '✓ Respondida' : 'Pendente'}</span></div>
-        <div class="tx-bloco-sep"></div>
-        ${anamHtml}
+        ${anamBtnHtml}
       </div>`;
+
     sheet.querySelector('[data-close]').addEventListener('click', () => ov.classList.remove('show'));
+    const btnAnam = sheet.querySelector('[data-anam-btn]');
+    if (btnAnam) btnAnam.addEventListener('click', () => abrirAnamnese(anam, cliente));
   }
+
+  // ── Anamnese overlay ──
+  function abrirAnamnese(anam, nomeCliente) {
+    const ov = $('tx-anam-overlay'), sheet = $('tx-anam-sheet');
+    sheet.innerHTML = renderAnamHtml(anam, nomeCliente || '');
+    ov.classList.add('show');
+    sheet.querySelector('[data-anam-close]').addEventListener('click', () => ov.classList.remove('show'));
+  }
+
+  function renderAnamHtml(anam, nomeCliente) {
+    function renderRows(items) {
+      return items.map(([k, rawV]) => {
+        const v = parseAnamField(rawV);
+        return `<div class="tx-anam-item">
+          <span class="tx-anam-label">${esc(k)}</span>
+          <span class="tx-anam-val${!v ? ' tx-anam-val--empty' : ''}">${v ? esc(v) : 'Sem resposta'}</span>
+        </div>`;
+      }).join('');
+    }
+    if (!anam) {
+      return `<div class="tx-sheet-head"><div style="flex:1;min-width:0"><h2 class="tx-detail-titulo">Anamnese</h2><p class="tx-detail-meta">${esc(nomeCliente)}</p></div><button class="tx-close" data-anam-close>✕</button></div>
+        <div style="padding:2rem 0;text-align:center;color:var(--muted2);font-style:italic;font-size:.9rem">Anamnese não preenchida.</div>`;
+    }
+    const pessoais = [
+      ['Nome', anam.nome],
+      ['Documento', anam.documento ? `${(anam.tipo_documento||'CPF').toUpperCase()} ${anam.documento}` : null],
+      ['Nascimento', anam.data_nascimento],
+      ['Telefone', anam.telefone],
+      ['E-mail', anam.email],
+      ['Quarto', anam.quarto],
+      ['Nacionalidade', anam.nacionalidade],
+    ];
+    const saude = [
+      ['Pressão preferida', anam.pressao_massagem],
+      ['Informações médicas', anam.info_medica],
+    ];
+    const rotinas = [
+      ['Rotina facial', anam.rotina_facial],
+      ['Rotina corporal', anam.rotina_corporal],
+      ['Produto específico', anam.produto_especifico],
+    ];
+    return `<div class="tx-sheet-head">
+        <div style="flex:1;min-width:0"><h2 class="tx-detail-titulo">Anamnese</h2><p class="tx-detail-meta">${esc(nomeCliente)}</p></div>
+        <button class="tx-close" data-anam-close>✕</button>
+      </div>
+      <div class="tx-anam-section">
+        <div class="tx-anam-secao">Informações pessoais</div>
+        <div class="tx-bloco">${renderRows(pessoais)}</div>
+      </div>
+      <div class="tx-anam-section">
+        <div class="tx-anam-secao">Saúde &amp; preferências</div>
+        <div class="tx-bloco">${renderRows(saude)}</div>
+      </div>
+      <div class="tx-anam-section">
+        <div class="tx-anam-secao">Rotinas de cuidado</div>
+        <div class="tx-bloco">${renderRows(rotinas)}</div>
+      </div>`;
+  }
+
+  $('tx-anam-overlay').addEventListener('click', e => { if (e.target === $('tx-anam-overlay')) $('tx-anam-overlay').classList.remove('show'); });
+  $('tx-overlay').addEventListener('click', e => { if (e.target === $('tx-overlay')) $('tx-overlay').classList.remove('show'); });
 
   checarSessao();
 })();
