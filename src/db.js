@@ -239,6 +239,10 @@ export function initDb() {
   // Migration: idioma escolhido no cadastro da sessão (pessoa 1 e 2)
   try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma TEXT`); } catch {}
   try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma2 TEXT`); } catch {}
+  // Migration: idioma escolhido pela pessoa 2 na anamnese (espelho de
+  // idioma_documento, que é da pessoa 1/individual). Antes a coluna única
+  // era sobrescrita por quem enviasse a anamnese por último.
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN idioma_documento2 TEXT`); } catch {}
   // Migration: nacionalidade por pessoa na reserva (pré-preenchimento da anamnese)
   try { db.exec(`ALTER TABLE reservas ADD COLUMN nacionalidade TEXT`); } catch {}
   try { db.exec(`ALTER TABLE reservas ADD COLUMN nacionalidade2 TEXT`); } catch {}
