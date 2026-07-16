@@ -1708,6 +1708,8 @@
       opacity: 0; transition: opacity .25s;
     }
     #view-massagistas .mgmt-item:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,.09); border-color: rgba(155,100,66,.28); background: var(--surface); }
+    /* Card com menu "···" aberto fica acima dos vizinhos (senão o card seguinte cobre o menu) */
+    .mgmt-item.menu-open { z-index: 300; }
     #view-massagistas .mgmt-item:hover::before { opacity: 0.8; }
 
     .mgmt-card-head { display: flex; align-items: flex-start; gap: 0.875rem; }
