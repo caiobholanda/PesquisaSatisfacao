@@ -1296,7 +1296,13 @@ function setupDelegation() {
       if (!menu) return;
       const wasOpen = menu.classList.contains('open');
       _fecharMoreMenus();
-      if (!wasOpen) { menu.classList.add('open'); el.setAttribute('aria-expanded', 'true'); }
+      if (!wasOpen) {
+        menu.classList.add('open');
+        el.setAttribute('aria-expanded', 'true');
+        // Eleva o card enquanto o menu está aberto: o z-index do menu só compete
+        // dentro do próprio card; sem isso o card seguinte no DOM cobre o menu.
+        el.closest('.mgmt-item')?.classList.add('menu-open');
+      }
     }
   });
   // Fecha ao clicar fora. Nao pode reagir ao proprio clique do botao "···":
