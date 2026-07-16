@@ -1044,6 +1044,29 @@ export function limparTurnosNoPeriodo(massagista_id, data_inicio, data_fim) {
     'DELETE FROM turno_massagista WHERE massagista_id = ? AND data >= ? AND data <= ?'
   ).run(massagista_id, data_inicio, data_fim).changes;
 }
+export function buscarFeriasById(id) {
+  return getDb().prepare('SELECT * FROM ferias_massagista WHERE id = ?').get(id);
+}
+const _DOW_CHAVE_BE = ['dom','seg','ter','qua','qui','sex','sab'];
+export function aplicarPadraoDatas(massagista_id, padrao, data_inicio, data_fim) {
+  const db = getDb();
+  const upsert = db.prepare(
+    'INSERT INTO turno_massagista (massagista_id, data, turno) VALUES (?,?,?) ON CONFLICT(massagista_id,data) DO UPDATE SET turno=excluded.turno'
+  );
+  let cur = new Date(data_inicio + 'T12:00:00Z');
+  const end = new Date(data_fim + 'T12:00:00Z');
+  while (cur <= end) {
+    const dateStr = cur.toISOString().slice(0, 10);
+    const chave = _DOW_CHAVE_BE[cur.getUTCDay()];
+    const valor = padrao[chave];
+    if (valor === 'FOLGA') {
+      upsert.run(massagista_id, dateStr, 'X');
+    } else if (valor && typeof valor === 'string' && /^\d{2}:\d{2}$/.test(valor)) {
+      upsert.run(massagista_id, dateStr, valor);
+    }
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+}
 
 // ── Turnos (escala mensal) ──
 export function listarTurnosPeriodo(ano, mes) {

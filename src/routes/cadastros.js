@@ -4,7 +4,7 @@ import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
-  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo,
+  listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo, buscarFeriasById, aplicarPadraoDatas,
   listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
@@ -157,8 +157,18 @@ router.put('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
 });
 
 router.delete('/massagistas/:id/ferias/:fId', ...podeEscreverSpa, (req, res) => {
-  const changes = excluirFeriasMassagista(parseInt(req.params.fId));
+  const fId = parseInt(req.params.fId);
+  const mId = parseInt(req.params.id);
+  const ferias = buscarFeriasById(fId);
+  if (!ferias) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
+  const changes = excluirFeriasMassagista(fId);
   if (!changes) return res.status(404).json({ ok: false, error: 'Período não encontrado' });
+  const massagista = buscarMassagistaById(mId);
+  if (massagista?.padrao_entrada) {
+    try {
+      aplicarPadraoDatas(mId, JSON.parse(massagista.padrao_entrada), ferias.data_inicio, ferias.data_fim);
+    } catch (_) {}
+  }
   res.json({ ok: true });
 });
 
