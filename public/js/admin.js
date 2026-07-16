@@ -1434,7 +1434,7 @@ function renderMassagistas() {
           <span class="mgmt-item-stat${tot === 0 ? ' sem-aval' : ''}">${statLine}</span>
           <div class="mgmt-card-acts">
             <div class="mgmt-item-more">
-              <button class="mgmt-btn-more" data-action="toggle-more" title="Mais ações">···</button>
+              <button class="mgmt-btn-more" data-action="toggle-more" title="Mais ações" aria-haspopup="menu" aria-expanded="false">···</button>
               <div class="mgmt-more-menu">
                 <button class="mgmt-more-item" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
                 <button class="mgmt-more-item" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}">PIN</button>
