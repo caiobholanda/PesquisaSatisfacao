@@ -313,6 +313,13 @@ app.get('/sso', (req, res) => {
       }
     }
 
+    // Fallback: JWT pode estar cacheado sem site_roles atualizado. Se o email
+    // pertence a uma massagista ativa no SPA DB, eleva para massoterapeuta.
+    if (role === 'user') {
+      const mFallback = buscarMassagistaPorEmail(email);
+      if (mFallback && mFallback.ativo) role = 'massoterapeuta';
+    }
+
     // Massoterapeuta: fluxo separado — cookie spa_terapeuta_sess + redirect /terapeuta
     if (role === 'massoterapeuta') {
       const m = buscarMassagistaPorEmail(email);
