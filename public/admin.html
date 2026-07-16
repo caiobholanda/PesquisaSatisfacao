@@ -125,6 +125,7 @@
       font-size: 15px;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
+      overflow-x: hidden;
     }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2802,6 +2803,39 @@
       background: rgba(91,103,150,.12);
       color: var(--indigo);
     }
+
+    /* ── Rating badge ── */
+    .mgmt-rating-badge {
+      display: inline-flex; align-items: center;
+      padding: 0.1rem 0.42rem; border-radius: 3px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: .02em; line-height: 1.5;
+    }
+    .mgmt-rating-high { background: rgba(34,139,34,.1); color: #2a7a2a; }
+    .mgmt-rating-mid  { background: rgba(184,134,11,.1); color: #8a6500; }
+    .mgmt-rating-low  { background: rgba(180,40,40,.1);  color: #a02020; }
+
+    /* ── Dropdown "···" ── */
+    .mgmt-item-more { position: relative; }
+    .mgmt-btn-more {
+      padding: 0.3rem 0.65rem !important; font-size: 1.1rem !important;
+      letter-spacing: 0 !important; line-height: 1; color: var(--muted) !important;
+      border-color: var(--border-soft) !important;
+    }
+    .mgmt-btn-more:hover { color: var(--text) !important; border-color: var(--border) !important; opacity: 1 !important; }
+    .mgmt-more-menu {
+      display: none; position: absolute; right: 0; top: calc(100% + 5px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 7px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      min-width: 140px; z-index: 250; padding: 3px 0; overflow: hidden;
+    }
+    .mgmt-more-menu.open { display: block; }
+    .mgmt-more-item {
+      display: block; width: 100%; padding: .5rem 1.1rem;
+      background: none; border: none; text-align: left;
+      font-size: .78rem; font-family: inherit; color: var(--text);
+      cursor: pointer; letter-spacing: .03em; white-space: nowrap;
+    }
+    .mgmt-more-item:hover { background: var(--surface2); color: var(--gold-dark, var(--gold)); }
     /* ── Read-only Hub fields ── */
     .hub-ro-field {
       padding: .55rem .7rem .55rem .85rem;
@@ -3612,9 +3646,6 @@
         </div>
       </div>
       <div class="mgmt-list-card">
-        <div class="mgmt-list-card-header">
-          <span class="mgmt-list-card-title">Profissionais</span>
-        </div>
         <div class="mgmt-search">
           <div class="search-wrap">
             <svg class="search-lupa" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

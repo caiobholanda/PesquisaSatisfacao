@@ -1290,6 +1290,17 @@ function setupDelegation() {
     else if (action === 'enviar-pre-massagem'){ enviarPreMassagemReserva(); }
     else if (action === 'abrir-anamnese-casal'){ abrirAnamneseCasalPopup(); }
     else if (action === 'ver-anamnese-pessoa'){ abrirAnamneseReadonly(_resDetAtual?.id, +el.dataset.pessoa || 1); }
+    else if (action === 'toggle-more') {
+      e.stopPropagation();
+      const menu = el.closest('.mgmt-item-more')?.querySelector('.mgmt-more-menu');
+      if (!menu) return;
+      const wasOpen = menu.classList.contains('open');
+      document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
+      if (!wasOpen) menu.classList.add('open');
+    }
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.mgmt-more-menu.open').forEach(m => m.classList.remove('open'));
   });
 }
 
@@ -1391,9 +1402,14 @@ function renderMassagistas() {
     if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${escHtml(m.matricula)}</span>`);
     if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
     if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">Bilíngue</span>`);
+    const ratingCls = pctRec == null ? '' : pctRec >= 75 ? 'mgmt-rating-high' : pctRec >= 50 ? 'mgmt-rating-mid' : 'mgmt-rating-low';
+    const ratingBadge = pctRec != null ? `<span class="mgmt-rating-badge ${ratingCls}">${pctRec}%</span>` : '';
+    const statLine = tot > 0
+      ? `<span class="mgmt-item-stat">${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}</span>${ratingBadge}`
+      : `<span class="mgmt-item-stat sem-aval">Sem avaliações</span>`;
     const footParts = [];
     if (m.especialidade_original) footParts.push(`<span class="mgmt-item-esp">${escHtml(m.especialidade_original)}</span>`);
-    footParts.push(statHtml);
+    footParts.push(statLine);
     return `
       <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}">
         <div class="mgmt-item-info">
@@ -1402,10 +1418,13 @@ function renderMassagistas() {
           <div class="mgmt-item-foot">${footParts.join('<span class="mgmt-item-foot-sep">·</span>')}</div>
         </div>
         <div class="mgmt-item-actions">
-          <div class="mgmt-item-btns-sec">
-            <button class="btn btn-outline btn-sm" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
-            <button class="btn btn-outline btn-sm" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}" title="Definir PIN de acesso mobile">PIN</button>
-            <button class="btn btn-outline btn-sm" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}" title="Copiar link de acesso mobile">Link</button>
+          <div class="mgmt-item-more">
+            <button class="btn btn-outline btn-sm mgmt-btn-more" data-action="toggle-more" title="Mais ações">···</button>
+            <div class="mgmt-more-menu">
+              <button class="mgmt-more-item" data-action="ver-hist" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Histórico</button>
+              <button class="mgmt-more-item" data-action="set-pin" data-id="${m.id}" data-nome="${escHtml(m.nome)}">PIN</button>
+              <button class="mgmt-more-item" data-action="copiar-link-terapeuta" data-nome="${escHtml(m.nome)}">Link</button>
+            </div>
           </div>
           <button class="btn btn-outline btn-sm mgmt-btn-edit" data-action="edit-mass" data-id="${m.id}" data-nome="${escHtml(m.nome)}">Editar</button>
         </div>

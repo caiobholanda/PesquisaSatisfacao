@@ -45,7 +45,7 @@
     ".header-brand { display: flex; align-items: center; gap: 1.25rem; text-decoration: none; color: inherit; cursor: pointer; }",
     ".header-brand .brand-logo { height: 32px; width: auto; filter: var(--logo-filter, none); transition: filter 0.3s ease; }",
     ".header-brand .sep { width: 1px; height: 20px; background: var(--border); }",
-    ".header-brand small { font-size: 0.75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }",
+    ".header-brand small { font-size: 0.75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }",
     ".header-actions { display: flex; align-items: center; gap: 0.5rem; }",
     ".btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5625rem 1.125rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; border: none; font-family: var(--font); letter-spacing: .09em; text-transform: uppercase; transition: opacity .15s, background .15s; border-radius: 0; white-space: nowrap; }",
     ".btn:hover { opacity: .82; }",
