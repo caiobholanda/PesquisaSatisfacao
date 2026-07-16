@@ -2590,8 +2590,38 @@ function _inserirSpaPerfilCore(dados) {
   return perfil_id;
 }
 
-export function vincularDocumentoToken(reservaId, locale) {
-  try { getDb().prepare('UPDATE reservas SET idioma_documento=? WHERE id=?').run(locale, reservaId); } catch {}
+export function vincularDocumentoToken(reservaId, locale, pessoa = 1) {
+  const col = pessoa === 2 ? 'idioma_documento2' : 'idioma_documento';
+  try { getDb().prepare(`UPDATE reservas SET ${col}=? WHERE id=?`).run(locale, reservaId); } catch {}
+}
+
+// ── Resolução de idioma da pesquisa de satisfação ────────────────────────
+// Prioridade por pessoa: idioma escolhido na anamnese (idioma_documento/2)
+// → idioma do cadastro da reserva (idioma/idioma2) → pt-BR.
+// A pesquisa NÃO pode depender de a anamnese ter sido preenchida.
+const IDIOMAS_PESQUISA = ['pt-BR', 'pt-PT', 'en', 'es', 'fr', 'it', 'de'];
+
+export function normalizarIdioma(v) {
+  if (!v || typeof v !== 'string') return null;
+  const t = v.trim();
+  if (IDIOMAS_PESQUISA.includes(t)) return t;
+  const lower = t.toLowerCase();
+  if (lower === 'pt' || lower === 'pt-br') return 'pt-BR';
+  if (lower === 'pt-pt') return 'pt-PT';
+  const base = lower.split('-')[0];
+  if (['en', 'es', 'fr', 'it', 'de'].includes(base)) return base;
+  return null;
+}
+
+function resolverIdiomaPesquisa(row, pessoa) {
+  const cadeia = pessoa === 2
+    ? [row.idioma_documento2, row.idioma_cad2, row.idioma_documento, row.idioma_cad]
+    : [row.idioma_documento, row.idioma_cad];
+  for (const c of cadeia) {
+    const n = normalizarIdioma(c);
+    if (n) return n;
+  }
+  return 'pt-BR';
 }
 
 // ── Quartos do Hotel Gran Marquise ───────────────────────────────────────
