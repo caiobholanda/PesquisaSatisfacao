@@ -78,9 +78,19 @@ export async function traduzirParaTodos(ptBR, idiomas) {
   // (especialmente do IP compartilhado do Fly.io GRU). 6 requests
   // sequenciais (~1s cada) acabam sendo mais robustas que 6 paralelas
   // que falham juntas.
+  const falharam = [];
   for (const alvo of alvos) {
     const texto = await _traduzirUm(fonte, alvo);
     if (texto) out[alvo] = texto;
+    else falharam.push(alvo);
+  }
+  // Log explicito: antes a falha era silenciosa e o registro ficava so em
+  // pt-BR sem ninguem saber (auditoria 2026-07-16 achou pesquisas
+  // monolingues por causa disso). O retorno inclui __falhas para o caller
+  // poder alertar/re-tentar.
+  if (falharam.length) {
+    console.warn(`[Traduzir] FALLBACK pt-BR para [${falharam.join(', ')}] — texto: "${fonte.slice(0, 60)}"`);
+    Object.defineProperty(out, '__falhas', { value: falharam, enumerable: false });
   }
   return out;
 }
