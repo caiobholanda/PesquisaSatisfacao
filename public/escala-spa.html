@@ -184,13 +184,15 @@ body {
 .gh-dsem.hoje-c { color: var(--success); }
 .gh-fer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); position: absolute; top: 40px; }
 
-.group-sep { display: flex; border-bottom: 1px solid var(--border); height: 22px; background: var(--surface2); }
+.group-sep { display: flex; border-bottom: 2px solid var(--gold); height: 30px; background: var(--surface2); }
+.grid-row + .group-sep { border-top: 4px solid var(--border); }
 .gs-label-wrap {
   width: var(--col-prof); flex-shrink: 0; position: sticky; left: 0; z-index: 40;
   background: var(--surface2); border-right: 2px solid var(--border);
-  display: flex; align-items: center; padding: 0 14px;
+  display: flex; align-items: center; padding: 0 14px; gap: 8px;
 }
-.gs-label { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); font-family: var(--mono); }
+.gs-label { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-family: var(--mono); }
+.gs-count { font-size: 10px; font-weight: 400; letter-spacing: 0; color: var(--muted); font-family: var(--mono); opacity: .8; }
 .gs-bar { flex: 1; display: flex; align-items: center; padding-left: 12px; }
 .gs-line { height: 1px; flex: 1; background: var(--border); }
 
@@ -955,7 +957,7 @@ function render() {
   let _firstRowDone = false;
   for (const grp of grupos) {
     html += '<div class="group-sep">';
-    html += `<div class="gs-label-wrap"><span class="gs-label">${grp.label}</span></div>`;
+    html += `<div class="gs-label-wrap"><span class="gs-label">${grp.label}</span><span class="gs-count">${grp.profs.length}</span></div>`;
     html += '<div class="gs-bar"><div class="gs-line"></div></div>';
     html += '</div>';
 
