@@ -340,7 +340,11 @@ function montarOpcoesPergunta(perguntaId, idioma) {
   const db = getDb();
   return db.prepare(`
     SELECT po.chave, po.valor_numerico, po.ordem,
-      COALESCE((SELECT rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=po.id AND idioma=?), po.chave) AS rotulo
+      COALESCE(
+        (SELECT rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=po.id AND idioma=?),
+        (SELECT rotulo FROM pergunta_opcao_traducao WHERE pergunta_opcao_id=po.id AND idioma='pt-BR'),
+        po.chave
+      ) AS rotulo
     FROM pergunta_opcao po WHERE po.pergunta_id=? AND po.ativo=1 ORDER BY po.ordem
   `).all(idioma, perguntaId);
 }
