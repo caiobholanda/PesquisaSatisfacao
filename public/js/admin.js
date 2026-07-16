@@ -1507,6 +1507,7 @@ function _renderFeriasList() {
       if (!res) return;
       const d = await res.json();
       if (!d.ok) { showToast(d.error || 'Erro ao excluir'); return; }
+      try { localStorage.setItem('granspa_ferias_ts', Date.now().toString()); } catch(_) {}
       await _loadFerias(_editMId);
     });
   });
@@ -1547,6 +1548,7 @@ document.getElementById('mgmt-m-ferias-form-save').addEventListener('click', asy
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { errEl.textContent = d.error || 'Erro ao salvar.'; errEl.style.display = ''; return; }
+    try { localStorage.setItem('granspa_ferias_ts', Date.now().toString()); } catch(_) {}
     document.getElementById('mgmt-m-ferias-form').style.display = 'none';
     document.getElementById('mgmt-m-ferias-add-btn').style.display = '';
     _editFeriaId = null;

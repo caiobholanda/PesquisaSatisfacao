@@ -1211,6 +1211,9 @@ function _reloadSeVoltou() {
 }
 document.addEventListener('visibilitychange', _reloadSeVoltou);
 window.addEventListener('focus', _reloadSeVoltou);
+window.addEventListener('storage', function(e) {
+  if (e.key === 'granspa_ferias_ts') { hidePicker(); hideHistPop(); loadData(); }
+});
 
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 document.getElementById('btn-prev').onclick = () => {
