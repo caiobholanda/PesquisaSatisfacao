@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["src/server.js"],
       "port": 3000
+    },
+    {
+      "name": "hubtest",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\estagio.ti\\AppData\\Local\\Temp\\claude\\C--Users-estagio-ti-Desktop-ClaudeCode-PesquisaSatisfacaoSPA\\9ad9cab5-4989-4529-b758-57fc8c4026f7\\scratchpad\\hubtest\\start.js"],
+      "port": 3300
     }
   ]
 }
