@@ -3619,7 +3619,7 @@ function _atualizarComboLinhaPreco() {
   if (t.preco) {
     const sub = Number(t.preco);
     const aptoVal = document.getElementById('res-inp-apto')?.value?.replace(/\D/g,'') || '';
-    const ehGC = _resTipo === 'hospede' && aptoVal.length === 4 && quartoCategoria(aptoVal) === 'gran_class';
+    const ehGC = _resTipo === 'hospede' && aptoVal.length === 4 && quartoCategoria(aptoVal) === 'gran_class' && t?.tipo !== 'combo';
     const desconto = ehGC ? sub * 0.10 : 0;
     const subDesc = sub - desconto;
     const taxaServ = subDesc * TAXA_SERVICO;
@@ -3754,7 +3754,7 @@ function _precoBloco(tm, ehGC) {
 
 function _precoDetHtml(r) {
   const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id || t.nome === r.tratamento);
-  const ehGC = r.quarto_categoria === 'gran_class';
+  const ehGC = r.quarto_categoria === 'gran_class' && tm?.tipo !== 'combo';
   let out = '';
   if (tm?.tipo === 'combo' && tm.componentes_nomes?.length) {
     out += `<div class="resdet-kv"><div class="resdet-kv-label">Inclusos</div><div class="resdet-kv-val">${tm.componentes_nomes.map(n => `<span style="display:inline-block;background:var(--gold-dim);color:var(--gold-dark);padding:.12rem .5rem;border-radius:999px;font-size:.75rem;font-weight:500;margin:.1rem .2rem .1rem 0">${n}</span>`).join('')}</div></div>`;
@@ -3766,7 +3766,7 @@ function _precoDetHtml(r) {
 function _precoDetHtml2(r) {
   const tm = _tratamentos.find(t => t.id === r.tipo_massagem_id2 || t.nome === r.tratamento2);
   // GC vale tanto pra pessoa 1 quanto 2 (quarto e' do casal)
-  const ehGC = r.quarto_categoria === 'gran_class';
+  const ehGC = r.quarto_categoria === 'gran_class' && tm?.tipo !== 'combo';
   return _precoBloco(tm, ehGC);
 }
 
