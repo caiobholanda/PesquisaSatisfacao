@@ -275,6 +275,17 @@ function dataRealValida(s) {
   return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 
+// Feriados sincronizados com o Hub (cache 60s + fallback local em src/feriados-hub.js).
+// Shape da resposta casa com o antigo FERIADOS hardcoded do frontend: { 'YYYY-MM-DD': 'Nome' }.
+router.get('/feriados', async (_req, res) => {
+  try {
+    const { feriados, fonte } = await getFeriados();
+    res.json({ ok: true, feriados, fonte });
+  } catch {
+    res.json({ ok: true, feriados: FERIADOS_FALLBACK, fonte: 'fallback' });
+  }
+});
+
 router.get('/escala-spa', (req, res) => {
   const ano = parseInt(req.query.ano);
   const mes = parseInt(req.query.mes);
