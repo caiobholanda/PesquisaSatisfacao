@@ -3113,6 +3113,8 @@ function calOpenModal(salaId, data, hora) {
   ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  document.querySelectorAll('#res-cortesia-chips .res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
+  const _acLr = document.getElementById('res-cortesia-ac-lista'); if (_acLr) _acLr.style.display = 'none';
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
@@ -4209,6 +4211,7 @@ async function calAbrirEdicao(r) {
     _setV('res-inp-cortesia-autorizado-nome', r.cortesia_autorizado_por_nome || '');
     const _idHid = document.getElementById('res-inp-cortesia-autorizado-id');
     if (_idHid) _idHid.value = r.cortesia_autorizado_por || '';
+    _resLoadHubCortesiaData(r.cortesia_justificativa || null);
   }
 }
 
@@ -4485,6 +4488,72 @@ document.querySelectorAll('.res-tipo-btn[data-tipo]').forEach(btn=>{
   btn.addEventListener('click',()=>calSetTipo(btn.dataset.tipo));
 });
 
+// ── Cortesia Hub integration ──────────────────────────────────────────────────
+let _resHubTipos = null, _resHubAutorizados = null;
+
+async function _resLoadHubCortesiaData(currentJust) {
+  if (_resHubTipos === null) {
+    try {
+      const HUB = 'https://hub-granmarquise.fly.dev';
+      const [rT, rA] = await Promise.all([
+        fetch(`${HUB}/api/pub/tipos-cortesia`).then(r => r.json()),
+        fetch(`${HUB}/api/pub/cortesia-autorizados`).then(r => r.json())
+      ]);
+      _resHubTipos = rT.ok ? rT.tipos : [];
+      _resHubAutorizados = rA.ok ? rA.autorizados : [];
+    } catch { _resHubTipos = []; _resHubAutorizados = []; }
+  }
+  _resRenderCortesiaChips(currentJust);
+}
+
+function _resRenderCortesiaChips(currentJust) {
+  const area = document.getElementById('res-cortesia-chips-area');
+  const wrap = document.getElementById('res-cortesia-chips');
+  if (!area || !wrap) return;
+  if (!_resHubTipos?.length) { area.style.display = 'none'; return; }
+  area.style.display = 'flex';
+  wrap.innerHTML = _resHubTipos.map(t => {
+    const on = currentJust && currentJust === t.nome;
+    return `<button type="button" class="res-cortesia-chip${on ? ' res-chip-on' : ''}" data-nome="${t.nome}" style="padding:.3rem .8rem;border-radius:99px;font-size:.75rem;cursor:pointer;transition:all .15s;border:1px solid rgba(153,100,66,.5);background:${on ? 'rgba(153,100,66,.5)' : 'rgba(153,100,66,.1)'};color:#ECE4D2">${t.nome}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.res-cortesia-chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      const txt = document.getElementById('res-inp-cortesia-justificativa');
+      if (!txt) return;
+      const isOn = ch.classList.contains('res-chip-on');
+      wrap.querySelectorAll('.res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
+      if (isOn) { txt.value = ''; }
+      else { txt.value = ch.dataset.nome; ch.classList.add('res-chip-on'); ch.style.background = 'rgba(153,100,66,.5)'; }
+    });
+    ch.addEventListener('mouseenter', () => { if (!ch.classList.contains('res-chip-on')) ch.style.background = 'rgba(153,100,66,.25)'; });
+    ch.addEventListener('mouseleave', () => { if (!ch.classList.contains('res-chip-on')) ch.style.background = 'rgba(153,100,66,.1)'; });
+  });
+}
+
+function _resInitCortesiaAC() {
+  const inp = document.getElementById('res-inp-cortesia-autorizado-nome');
+  const hid = document.getElementById('res-inp-cortesia-autorizado-id');
+  const lista = document.getElementById('res-cortesia-ac-lista');
+  if (!inp || !lista) return;
+  inp.addEventListener('input', () => {
+    if (hid) hid.value = '';
+    const q = inp.value.toLowerCase().trim();
+    if (!q || !_resHubAutorizados?.length) { lista.style.display = 'none'; return; }
+    const hits = _resHubAutorizados.filter(a => (a.nome || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q)).slice(0, 7);
+    if (!hits.length) { lista.style.display = 'none'; return; }
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#1e2d29';
+    lista.style.background = bg;
+    lista.innerHTML = hits.map(a => `<div class="res-ac-item" data-email="${a.email}" data-nome="${a.nome || a.email}" style="padding:.45rem .75rem;cursor:pointer;font-size:.82rem;color:#ECE4D2;border-bottom:1px solid rgba(153,100,66,.15)"><b>${a.nome || a.email}</b> <span style="opacity:.5;font-size:.73rem">${a.email}</span></div>`).join('');
+    lista.querySelectorAll('.res-ac-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = 'rgba(153,100,66,.2)');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+      el.addEventListener('click', () => { inp.value = el.dataset.nome; if (hid) hid.value = el.dataset.email; lista.style.display = 'none'; });
+    });
+    lista.style.display = 'block';
+  });
+  document.addEventListener('click', e => { if (e.target !== inp && !lista.contains(e.target)) lista.style.display = 'none'; }, true);
+}
+
 // Pagamento / Cortesia toggle
 document.querySelectorAll('.res-tipo-btn[data-pag]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -4494,13 +4563,17 @@ document.querySelectorAll('.res-tipo-btn[data-pag]').forEach(btn => {
     if (hid) hid.value = pag;
     const campos = document.getElementById('res-sec-cortesia-campos');
     if (campos) campos.style.display = pag === 'cortesia' ? 'flex' : 'none';
+    if (pag === 'cortesia') _resLoadHubCortesiaData(null);
     if (pag === 'pago') {
       ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
+      const _acL = document.getElementById('res-cortesia-ac-lista'); if (_acL) _acL.style.display = 'none';
+      document.querySelectorAll('#res-cortesia-chips .res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
     }
   });
 });
+_resInitCortesiaAC();
 
 document.getElementById('res-inp-tratamento').addEventListener('change', calAtualizarHoraFim);
 

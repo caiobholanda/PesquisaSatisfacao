@@ -4842,16 +4842,21 @@
         <input type="hidden" id="res-inp-tipo-pagamento" value="pago">
         <div id="res-sec-cortesia-campos" style="display:none;flex-direction:column;gap:.6rem">
           <div class="res-frow">
-            <div class="res-fg" style="grid-column:1/-1">
-              <label class="res-label" for="res-inp-cortesia-justificativa">Justificativa <span class="res-required">*</span></label>
-              <textarea id="res-inp-cortesia-justificativa" class="res-inp" rows="2" placeholder="Ex: Reclamação de barulho, cortesia da gerência…" style="resize:vertical;min-height:3rem;font-family:inherit;font-size:.8rem"></textarea>
+            <div class="res-fg" style="grid-column:1/-1;position:relative">
+              <label class="res-label" for="res-inp-cortesia-autorizado-nome">Autorizado por <span class="res-required">*</span></label>
+              <input type="text" id="res-inp-cortesia-autorizado-nome" class="res-inp" placeholder="Buscar colaborador autorizado…" autocomplete="off">
+              <input type="hidden" id="res-inp-cortesia-autorizado-id">
+              <div id="res-cortesia-ac-lista" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:200;border-radius:.4rem;overflow:hidden;border:1px solid rgba(153,100,66,.6);box-shadow:0 6px 20px rgba(0,0,0,.5)"></div>
             </div>
+          </div>
+          <div id="res-cortesia-chips-area" style="display:none;flex-direction:column;gap:.35rem">
+            <label class="res-label">Tipo de cortesia</label>
+            <div id="res-cortesia-chips" style="display:flex;flex-wrap:wrap;gap:.4rem"></div>
           </div>
           <div class="res-frow">
             <div class="res-fg" style="grid-column:1/-1">
-              <label class="res-label" for="res-inp-cortesia-autorizado-nome">Autorizado por</label>
-              <input type="text" id="res-inp-cortesia-autorizado-nome" class="res-inp" placeholder="Nome de quem autorizou" autocomplete="off">
-              <input type="hidden" id="res-inp-cortesia-autorizado-id">
+              <label class="res-label" for="res-inp-cortesia-justificativa">Justificativa <span class="res-required">*</span></label>
+              <textarea id="res-inp-cortesia-justificativa" class="res-inp" rows="2" placeholder="Ex: Reclamação de barulho, cortesia da gerência…" style="resize:vertical;min-height:3rem;font-family:inherit;font-size:.8rem;background:rgba(255,255,255,.06);color:inherit;border-color:rgba(153,100,66,.3)"></textarea>
             </div>
           </div>
         </div>
