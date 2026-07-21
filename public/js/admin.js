@@ -4477,7 +4477,10 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   } else {
     if(!tratamento){err.textContent='Selecione o tratamento.';return;}
     if(!_resHoraFim){
-      err.textContent='Horário inválido: o tratamento ultrapassaria o expediente do spa (fecha às 22:00).';
+      const _tObj = _tratSelecionado();
+      err.textContent = (_tObj && !_tObj.duracao_min)
+        ? 'O tratamento não possui duração definida. Configure a duração no cadastro de tratamentos.'
+        : 'Horário inválido: o tratamento ultrapassaria o expediente do spa (fecha às 22:00).';
       return;
     }
   }
