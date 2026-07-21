@@ -961,7 +961,7 @@ function render() {
     const cls  = ['gh-day', isWk ? 'wk' : '', isFer ? 'fer' : '', isHj ? 'hoje' : ''].filter(Boolean).join(' ');
     const ncls = isHj ? 'hoje-c' : isWk ? 'wkc' : '';
     const dcls = isHj ? 'hoje-c' : isWk ? 'wkc' : '';
-    html += `<div class="${cls}" data-tip="${isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w] + (isHj ? ' · Hoje' : '')}">`;
+    html += `<div class="${cls}" data-tip="${escH(isFer ? '★ ' + FERIADOS[d.i] : DS_NOM[w] + (isHj ? ' · Hoje' : ''))}">`;
     if (mudou) html += `<div class="gh-mes-label">${MESES_ABR[d.mes]}</div>`;
     html += `<div class="gh-num ${ncls}">${p2(d.dia)}</div>`;
     html += `<div class="gh-dsem ${dcls}">${DS_ABR[w]}</div>`;
