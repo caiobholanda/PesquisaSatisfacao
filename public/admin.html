@@ -2225,7 +2225,9 @@
       padding: .06rem .34rem; border: 1px solid #9C5843;
       border-radius: 9999px; background: linear-gradient(180deg,#F5EFE2,#B8705A);
       color: #202C28; font-size: .6rem; font-weight: 700; letter-spacing: .06em;
+      cursor: pointer; font-family: var(--font);
     }
+    .aq-gc-chip:hover { filter: brightness(1.06); }
     .aq-cell {
       display: flex; align-items: center; justify-content: center; gap: .38rem;
     }
@@ -3985,7 +3987,7 @@
           <div class="aq-row">
             <div class="aq-row-lbl">
               Gran Class
-              <span class="aq-gc-chip">★ GC</span>
+              <button type="button" class="aq-gc-chip" data-action="gc-info" title="Ver benefícios Gran Class">★ GC</button>
             </div>
             <div class="aq-cell">
               <button class="aq-btn" data-aq-tipo="gran_class" data-aq-equip="jacuzzi" data-aq-delta="-1" aria-label="Diminuir Gran Class Jacuzzi">−</button>
