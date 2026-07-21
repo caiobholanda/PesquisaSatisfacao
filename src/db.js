@@ -139,6 +139,7 @@ export function initDb() {
     'categoria TEXT',
     'componentes TEXT',
     'linhas TEXT',
+    'espaco_beleza INTEGER NOT NULL DEFAULT 0',
   ]) {
     try { db.exec(`ALTER TABLE tipos_massagem ADD COLUMN ${col}`); } catch {}
   }
@@ -1246,13 +1247,14 @@ export function inserirTipoMassagem(nome, duracao_min, preco, descricao, opts = 
   ).run(nome.trim(), descricao || null, duracao_min || null, preco || null, tipo, categoria, componentes, linhas).lastInsertRowid;
 }
 export function atualizarTipoMassagem(id, nome, duracao_min, preco, ativo, descricao, opts = {}) {
-  const { tipo, categoria, componentes, linhas } = opts;
+  const { tipo, categoria, componentes, linhas, espaco_beleza } = opts;
   const sets = ['nome=?', 'descricao=?', 'duracao_min=?', 'preco=?', 'ativo=?'];
   const vals = [nome.trim(), descricao || null, duracao_min || null, preco || null, ativo];
   if (tipo !== undefined) { sets.push('tipo=?'); vals.push(tipo); }
   if (categoria !== undefined) { sets.push('categoria=?'); vals.push(categoria); }
   if (componentes !== undefined) { sets.push('componentes=?'); vals.push(componentes); }
   if (linhas !== undefined) { sets.push('linhas=?'); vals.push(linhas); }
+  if (espaco_beleza !== undefined) { sets.push('espaco_beleza=?'); vals.push(espaco_beleza ? 1 : 0); }
   vals.push(id);
   return getDb().prepare(`UPDATE tipos_massagem SET ${sets.join(', ')} WHERE id=?`).run(...vals).changes;
 }

@@ -1272,8 +1272,8 @@ function setupDelegation() {
     }
     else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'edit-tipo') {
-      const { id, nome, dur, preco, ativo, desc } = el.dataset;
-      openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc);
+      const { id, nome, dur, preco, ativo, desc, espacoBeleza } = el.dataset;
+      openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc, +espacoBeleza);
     }
     else if (action === 'cal-day')     { calSelectDay(el.dataset.ds); }
     else if (action === 'cal-ver')     { calVerDetalhes(+el.dataset.id); }
@@ -1696,7 +1696,7 @@ function renderTipos() {
         ${t.descricao ? `<div class="mgmt-item-meta" style="margin-top:2px">${escHtml(t.descricao)}</div>` : ''}
       </div>
       ${meta ? `<span class="mgmt-item-meta">${escHtml(meta)}</span>` : ''}
-      <button class="btn btn-outline btn-sm" data-action="edit-tipo" data-id="${t.id}" data-nome="${escHtml(t.nome)}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-ativo="${t.ativo?1:0}" data-desc="${escHtml(t.descricao||'')}">Editar</button>
+      <button class="btn btn-outline btn-sm" data-action="edit-tipo" data-id="${t.id}" data-nome="${escHtml(t.nome)}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-ativo="${t.ativo?1:0}" data-desc="${escHtml(t.descricao||'')}" data-espaco-beleza="${t.espaco_beleza?1:0}">Editar</button>
     </div>`;
   }).join('') + '</div>';
 }
@@ -1737,7 +1737,7 @@ document.getElementById('btn-add-tipo').addEventListener('click', async () => {
   loadTipos();
 });
 
-window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
+window.openEditTipo = (id, nome, dur, preco, ativo, desc, espacoBeleza) => {
   _editTId = id;
   document.getElementById('mgmt-t-sub').textContent = nome;
   document.getElementById('mgmt-t-nome').value = nome;
@@ -1747,6 +1747,9 @@ window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
   const chk = document.getElementById('mgmt-t-ativo');
   chk.checked = !!ativo;
   document.getElementById('mgmt-t-ativo-txt').textContent = ativo ? 'Ativo' : 'Inativo';
+  const chkBeleza = document.getElementById('mgmt-t-espaco-beleza');
+  chkBeleza.checked = !!espacoBeleza;
+  document.getElementById('mgmt-t-espaco-beleza-txt').textContent = espacoBeleza ? 'Sim' : 'Não';
   document.getElementById('mgmt-t-err').textContent = '';
   _modalOpen = true;
   document.getElementById('mgmt-t-overlay').style.display = 'flex';
@@ -1755,6 +1758,9 @@ window.openEditTipo = (id, nome, dur, preco, ativo, desc) => {
 
 document.getElementById('mgmt-t-ativo').addEventListener('change', function() {
   document.getElementById('mgmt-t-ativo-txt').textContent = this.checked ? 'Ativo' : 'Inativo';
+});
+document.getElementById('mgmt-t-espaco-beleza').addEventListener('change', function() {
+  document.getElementById('mgmt-t-espaco-beleza-txt').textContent = this.checked ? 'Sim' : 'Não';
 });
 function closeMgmtT() { _modalOpen = false; document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
 document.getElementById('mgmt-t-x').addEventListener('click', closeMgmtT);
@@ -1771,7 +1777,8 @@ document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
   const btn = document.getElementById('mgmt-t-salvar');
   btn.disabled = true;
   try {
-    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'PUT', body: JSON.stringify({ nome, descricao, duracao_min, preco: preco_val, ativo }) });
+    const espaco_beleza = document.getElementById('mgmt-t-espaco-beleza').checked ? 1 : 0;
+    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'PUT', body: JSON.stringify({ nome, descricao, duracao_min, preco: preco_val, ativo, espaco_beleza }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }

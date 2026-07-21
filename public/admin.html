@@ -1802,6 +1802,7 @@
       flex-shrink: 0;
     }
     .mgmt-toggle input:checked + .mgmt-toggle-track { background: var(--success); }
+    .mgmt-toggle--beleza input:checked + .mgmt-toggle-track { background: var(--gold); }
     .mgmt-toggle-thumb {
       position: absolute;
       top: 3px;
@@ -4818,6 +4819,17 @@
           <input type="checkbox" id="mgmt-t-ativo">
           <span class="mgmt-toggle-track"><span class="mgmt-toggle-thumb"></span></span>
           <span class="mgmt-toggle-txt" id="mgmt-t-ativo-txt">Ativo</span>
+        </label>
+      </div>
+      <div class="mgmt-toggle-row">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span class="mgmt-toggle-row-label">Espaço Beleza</span>
+          <span style="font-size:0.75rem;color:var(--muted);font-weight:400">Disponível no espaço de beleza</span>
+        </div>
+        <label class="mgmt-toggle mgmt-toggle--beleza">
+          <input type="checkbox" id="mgmt-t-espaco-beleza">
+          <span class="mgmt-toggle-track"><span class="mgmt-toggle-thumb"></span></span>
+          <span class="mgmt-toggle-txt" id="mgmt-t-espaco-beleza-txt">Não</span>
         </label>
       </div>
     </div>
