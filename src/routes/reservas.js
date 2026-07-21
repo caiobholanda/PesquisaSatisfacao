@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, atualizarReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista } from '../db.js';
+import { listarReservasSemana, inserirReserva, atualizarReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista, getUsoAquatico, upsertUsoAquatico } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -669,6 +669,29 @@ router.delete('/:id', ...podeEscreverSpa, (req, res) => {
   const changes = cancelarReserva(+req.params.id);
   if (!changes) return res.status(404).json({ ok: false, error: 'Reserva não encontrada' });
   res.json({ ok: true });
+});
+
+router.get('/uso-aquatico', (req, res) => {
+  const { data } = req.query;
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
+    return res.status(400).json({ ok: false, error: 'data obrigatória (YYYY-MM-DD)' });
+  res.json({ ok: true, items: getUsoAquatico(data) });
+});
+
+router.post('/uso-aquatico', ...podeEscreverSpa, (req, res) => {
+  const { data, equipamento, tipo_usuario, quantidade } = req.body || {};
+  if (!data || !equipamento || !tipo_usuario || quantidade === undefined)
+    return res.status(400).json({ ok: false, error: 'campos obrigatórios: data, equipamento, tipo_usuario, quantidade' });
+  if (!['jacuzzi','sauna'].includes(equipamento))
+    return res.status(400).json({ ok: false, error: 'equipamento: jacuzzi ou sauna' });
+  if (!['hospede','passante','gran_class'].includes(tipo_usuario))
+    return res.status(400).json({ ok: false, error: 'tipo_usuario: hospede, passante ou gran_class' });
+  try {
+    const item = upsertUsoAquatico(data, equipamento, tipo_usuario, Number(quantidade));
+    res.json({ ok: true, item });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 export default router;

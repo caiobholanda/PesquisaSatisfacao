@@ -2167,6 +2167,102 @@
     .dp-day.dp-today { border-color: rgba(156,88,67,.45); color: var(--gold-dark); font-weight: 600; }
     .dp-day.dp-sel { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-dark); font-weight: 600; }
 
+    /* ── Área Molhada — Registro de Uso Jacuzzi / Sauna ── */
+    .aq-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; margin-bottom: .75rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04); overflow: hidden;
+      border-top: 2px solid var(--gold);
+    }
+    .aq-hd {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: .52rem .85rem; background: none; border: none; cursor: pointer;
+      text-align: left; border-radius: 0; transition: background .15s;
+    }
+    .aq-hd:hover { background: var(--gold-dim); }
+    .aq-hd-left  { display: flex; align-items: center; gap: .45rem; }
+    .aq-hd-right { display: flex; align-items: center; gap: .6rem; }
+    .aq-icon { color: var(--gold); display: flex; align-items: center; }
+    .aq-title {
+      font-family: var(--serif); font-size: .9rem; font-weight: 600;
+      letter-spacing: .04em; color: var(--text);
+    }
+    .aq-date-badge {
+      font-size: .68rem; font-weight: 600; letter-spacing: .05em;
+      background: var(--gold-dim); color: var(--gold-dark);
+      border: 1px solid rgba(156,88,67,.22); border-radius: 999px; padding: .1rem .5rem;
+    }
+    .aq-summary { font-size: .74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .aq-chevron { color: var(--muted); display: flex; align-items: center; transition: transform .22s ease; }
+    .aq-panel.open .aq-chevron { transform: rotate(180deg); }
+    .aq-body {
+      padding: .55rem .85rem .75rem; border-top: 1px solid var(--border); display: none;
+    }
+    .aq-panel.open .aq-body { display: block; }
+    .aq-grid-hd {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: .4rem; margin-bottom: .3rem;
+      padding-bottom: .35rem; border-bottom: 1px solid var(--border-soft);
+    }
+    .aq-equip-hd {
+      display: flex; align-items: center; justify-content: center; gap: .28rem;
+      font-size: .66rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--muted); font-weight: 600;
+    }
+    .aq-equip-icon { display: flex; align-items: center; color: var(--gold); }
+    .aq-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: .4rem; align-items: center;
+      padding: .32rem 0; border-bottom: 1px solid var(--border-soft);
+    }
+    .aq-row:last-of-type { border-bottom: none; }
+    .aq-row-lbl {
+      font-size: .79rem; color: var(--text); font-weight: 500;
+      display: flex; align-items: center; gap: .3rem;
+    }
+    .aq-gc-chip {
+      display: inline-flex; align-items: center;
+      padding: .06rem .34rem; border: 1px solid #9C5843;
+      border-radius: 9999px; background: linear-gradient(180deg,#F5EFE2,#B8705A);
+      color: #202C28; font-size: .6rem; font-weight: 700; letter-spacing: .06em;
+    }
+    .aq-cell {
+      display: flex; align-items: center; justify-content: center; gap: .38rem;
+    }
+    .aq-btn {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; line-height: 1; transition: all .14s; flex-shrink: 0;
+      font-weight: 400; padding: 0;
+    }
+    .aq-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .aq-btn:active { transform: scale(.88); }
+    .aq-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .aq-count {
+      font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums;
+      min-width: 30px; text-align: center; color: var(--muted2); line-height: 1;
+      transition: color .15s;
+    }
+    .aq-count.nz { color: var(--gold-dark); }
+    .aq-foot {
+      margin-top: .55rem; padding-top: .45rem; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem;
+    }
+    .aq-foot-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+    .aq-foot-totals { display: flex; gap: .9rem; align-items: center; }
+    .aq-foot-item { font-size: .77rem; color: var(--muted); }
+    .aq-foot-item strong { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+    .aq-foot-big {
+      font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums;
+      color: var(--gold-dark); background: var(--gold-dim);
+      border: 1px solid rgba(156,88,67,.2); border-radius: 8px; padding: .14rem .52rem;
+    }
+    @media (max-width: 640px) {
+      .aq-grid-hd, .aq-row { grid-template-columns: .85fr 1fr 1fr; }
+      .aq-title { font-size: .82rem; }
+    }
+
     /* ── Container ── */
     .cal-container {
       background: var(--surface); border: 1px solid var(--border);
@@ -3820,6 +3916,97 @@
           <span class="cal-leg"><span class="cal-leg-dot s3"></span>Sala 3</span>
           <span class="cal-leg"><span class="cal-leg-dot s4"></span>Sala 4</span>
           <span class="cal-leg"><span class="cal-leg-dot s5"></span>Espaço Beleza</span>
+        </div>
+      </div>
+
+      <!-- ── Área Molhada: Registro de Uso Jacuzzi / Sauna ── -->
+      <div class="aq-panel open" id="aq-panel">
+        <button class="aq-hd" id="aq-toggle" type="button" aria-expanded="true">
+          <div class="aq-hd-left">
+            <span class="aq-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M2 18c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M12 2v4"/><path d="M8 4l1.5 2"/><path d="M16 4l-1.5 2"/></svg>
+            </span>
+            <span class="aq-title">Área Molhada</span>
+            <span class="aq-date-badge" id="aq-date-badge">—</span>
+          </div>
+          <div class="aq-hd-right">
+            <span class="aq-summary" id="aq-summary"></span>
+            <span class="aq-chevron">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </div>
+        </button>
+        <div class="aq-body" id="aq-body">
+          <!-- Header colunas -->
+          <div class="aq-grid-hd">
+            <div></div>
+            <div class="aq-equip-hd">
+              <span class="aq-equip-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M2 18c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/></svg>
+              </span>
+              Jacuzzi
+            </div>
+            <div class="aq-equip-hd">
+              <span class="aq-equip-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3c0 2.5 4 2.5 4 5s-4 2.5-4 5"/><path d="M14 3c0 2.5 4 2.5 4 5s-4 2.5-4 5"/><rect x="2" y="16" width="20" height="5" rx="2"/></svg>
+              </span>
+              Sauna
+            </div>
+          </div>
+          <!-- Linha: Hóspede -->
+          <div class="aq-row">
+            <div class="aq-row-lbl">Hóspede</div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="hospede" data-aq-equip="jacuzzi" data-aq-delta="-1" aria-label="Diminuir Hóspede Jacuzzi">−</button>
+              <span class="aq-count" id="aq-hospede-jacuzzi">0</span>
+              <button class="aq-btn" data-aq-tipo="hospede" data-aq-equip="jacuzzi" data-aq-delta="1" aria-label="Aumentar Hóspede Jacuzzi">+</button>
+            </div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="hospede" data-aq-equip="sauna" data-aq-delta="-1" aria-label="Diminuir Hóspede Sauna">−</button>
+              <span class="aq-count" id="aq-hospede-sauna">0</span>
+              <button class="aq-btn" data-aq-tipo="hospede" data-aq-equip="sauna" data-aq-delta="1" aria-label="Aumentar Hóspede Sauna">+</button>
+            </div>
+          </div>
+          <!-- Linha: Passante -->
+          <div class="aq-row">
+            <div class="aq-row-lbl">Passante</div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="passante" data-aq-equip="jacuzzi" data-aq-delta="-1" aria-label="Diminuir Passante Jacuzzi">−</button>
+              <span class="aq-count" id="aq-passante-jacuzzi">0</span>
+              <button class="aq-btn" data-aq-tipo="passante" data-aq-equip="jacuzzi" data-aq-delta="1" aria-label="Aumentar Passante Jacuzzi">+</button>
+            </div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="passante" data-aq-equip="sauna" data-aq-delta="-1" aria-label="Diminuir Passante Sauna">−</button>
+              <span class="aq-count" id="aq-passante-sauna">0</span>
+              <button class="aq-btn" data-aq-tipo="passante" data-aq-equip="sauna" data-aq-delta="1" aria-label="Aumentar Passante Sauna">+</button>
+            </div>
+          </div>
+          <!-- Linha: Gran Class -->
+          <div class="aq-row">
+            <div class="aq-row-lbl">
+              Gran Class
+              <span class="aq-gc-chip">★ GC</span>
+            </div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="gran_class" data-aq-equip="jacuzzi" data-aq-delta="-1" aria-label="Diminuir Gran Class Jacuzzi">−</button>
+              <span class="aq-count" id="aq-gran_class-jacuzzi">0</span>
+              <button class="aq-btn" data-aq-tipo="gran_class" data-aq-equip="jacuzzi" data-aq-delta="1" aria-label="Aumentar Gran Class Jacuzzi">+</button>
+            </div>
+            <div class="aq-cell">
+              <button class="aq-btn" data-aq-tipo="gran_class" data-aq-equip="sauna" data-aq-delta="-1" aria-label="Diminuir Gran Class Sauna">−</button>
+              <span class="aq-count" id="aq-gran_class-sauna">0</span>
+              <button class="aq-btn" data-aq-tipo="gran_class" data-aq-equip="sauna" data-aq-delta="1" aria-label="Aumentar Gran Class Sauna">+</button>
+            </div>
+          </div>
+          <!-- Totais -->
+          <div class="aq-foot">
+            <span class="aq-foot-label">Total do dia</span>
+            <div class="aq-foot-totals">
+              <span class="aq-foot-item">Jacuzzi: <strong id="aq-tot-jacuzzi">0</strong></span>
+              <span class="aq-foot-item">Sauna: <strong id="aq-tot-sauna">0</strong></span>
+              <span class="aq-foot-big" id="aq-tot-geral">0 pessoas</span>
+            </div>
+          </div>
         </div>
       </div>
 

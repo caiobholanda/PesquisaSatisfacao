@@ -2616,6 +2616,7 @@ async function loadReservas() {
     _reservas=d.items; renderCalWeekPills(); renderCalDia();
     const st=JSON.parse(sessionStorage.getItem('_vst')||'{}');
     sessionStorage.setItem('_vst',JSON.stringify({...st,calOff:_calWeekOffset,calDay:_calDiaSel?calDateStr(_calDiaSel):null}));
+    if(_calDiaSel) loadUsoAquatico(calDateStr(_calDiaSel));
   }
 }
 
@@ -2651,6 +2652,7 @@ window.calSelectDay=(ds)=>{
   _calDiaSel=new Date(y,m-1,day);
   renderCalWeekPills();
   renderCalDia();
+  loadUsoAquatico(ds);
 };
 
 // ── Date Picker ──────────────────────────────────────────────
@@ -4733,6 +4735,119 @@ document.getElementById('espb-btn-sim').addEventListener('click', async () => {
   } finally {
     btn.disabled = false;
   }
+});
+
+// ── Área Molhada — Jacuzzi / Sauna ──────────────────────────────────
+const _AQ_TIPOS  = ['hospede','passante','gran_class'];
+const _AQ_EQUIPS = ['jacuzzi','sauna'];
+let _aqState  = {};  // { tipo_equipamento: quantidade }
+let _aqDate   = null;
+let _aqSaving = false;
+
+function _aqKey(tipo, equip) { return `${tipo}_${equip}`; }
+
+function _aqGet(tipo, equip) { return _aqState[_aqKey(tipo, equip)] || 0; }
+
+function _aqRender() {
+  const LABEL_PT = { hospede: 'Hóspede', passante: 'Passante', gran_class: 'Gran Class' };
+  for (const tipo of _AQ_TIPOS) {
+    for (const equip of _AQ_EQUIPS) {
+      const el = document.getElementById(`aq-${tipo}-${equip}`);
+      if (!el) continue;
+      const v = _aqGet(tipo, equip);
+      el.textContent = v;
+      el.className = 'aq-count' + (v > 0 ? ' nz' : '');
+      const minus = el.previousElementSibling;
+      if (minus) minus.disabled = v <= 0;
+    }
+  }
+  _aqRenderTotals();
+}
+
+function _aqRenderTotals() {
+  let totJ = 0, totS = 0;
+  for (const tipo of _AQ_TIPOS) {
+    totJ += _aqGet(tipo, 'jacuzzi');
+    totS += _aqGet(tipo, 'sauna');
+  }
+  const total = totJ + totS;
+  const elJ = document.getElementById('aq-tot-jacuzzi');
+  const elS = document.getElementById('aq-tot-sauna');
+  const elG = document.getElementById('aq-tot-geral');
+  const elSumm = document.getElementById('aq-summary');
+  if (elJ) elJ.textContent = totJ;
+  if (elS) elS.textContent = totS;
+  if (elG) elG.textContent = `${total} pessoa${total !== 1 ? 's' : ''}`;
+  if (elSumm) elSumm.textContent = total > 0 ? `${total} pessoa${total !== 1 ? 's' : ''} hoje` : '';
+}
+
+function _aqRenderDateBadge(ds) {
+  const badge = document.getElementById('aq-date-badge');
+  if (!badge || !ds) return;
+  const [y,m,d] = ds.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const todayStr = calDateStr(new Date());
+  if (ds === todayStr) badge.textContent = 'Hoje';
+  else badge.textContent = dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+}
+
+async function loadUsoAquatico(ds) {
+  if (!ds) return;
+  _aqDate = ds;
+  _aqRenderDateBadge(ds);
+  const res = await api(`/api/reservas/uso-aquatico?data=${ds}`);
+  if (!res) return;
+  const d = await res.json();
+  if (!d.ok) return;
+  _aqState = {};
+  for (const item of (d.items || [])) {
+    _aqState[_aqKey(item.tipo_usuario, item.equipamento)] = item.quantidade;
+  }
+  _aqRender();
+}
+
+async function _aqSaveCell(tipo, equip, novaQtd) {
+  if (_aqSaving) return;
+  _aqSaving = true;
+  const ds = _aqDate || (_calDiaSel ? calDateStr(_calDiaSel) : calDateStr(new Date()));
+  try {
+    const res = await api('/api/reservas/uso-aquatico', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: ds, equipamento: equip, tipo_usuario: tipo, quantidade: novaQtd }),
+    });
+    if (res && res.ok) {
+      const d = await res.json();
+      if (d.ok) {
+        _aqState[_aqKey(tipo, equip)] = novaQtd;
+        _aqRender();
+      }
+    }
+  } finally { _aqSaving = false; }
+}
+
+// Toggle painel
+document.getElementById('aq-toggle')?.addEventListener('click', () => {
+  const panel = document.getElementById('aq-panel');
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  document.getElementById('aq-toggle')?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+});
+
+// Botões +/-
+document.getElementById('aq-body')?.addEventListener('click', e => {
+  const btn = e.target.closest('[data-aq-delta]');
+  if (!btn || btn.disabled) return;
+  const tipo  = btn.dataset.aqTipo;
+  const equip = btn.dataset.aqEquip;
+  const delta = parseInt(btn.dataset.aqDelta, 10);
+  if (!tipo || !equip || isNaN(delta)) return;
+  const atual  = _aqGet(tipo, equip);
+  const nova   = Math.max(0, atual + delta);
+  if (nova === atual) return;
+  _aqState[_aqKey(tipo, equip)] = nova;
+  _aqRender();
+  _aqSaveCell(tipo, equip, nova);
 });
 
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});

@@ -746,6 +746,21 @@ export function initDb() {
       INSERT OR IGNORE INTO salas (id, nome, tipo, observacao) VALUES (5, 'Espaço Beleza', 'beleza', 'Área de serviços de beleza');
     `);
   } catch (e) { console.error('[migration salas]', e.message); }
+
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS uso_aquatico (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data TEXT NOT NULL,
+        equipamento TEXT NOT NULL CHECK(equipamento IN ('jacuzzi','sauna')),
+        tipo_usuario TEXT NOT NULL CHECK(tipo_usuario IN ('hospede','passante','gran_class')),
+        quantidade INTEGER NOT NULL DEFAULT 0,
+        registrado_em TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(data, equipamento, tipo_usuario)
+      );
+      CREATE INDEX IF NOT EXISTS idx_uso_aquatico_data ON uso_aquatico(data);
+    `);
+  } catch (e) { console.error('[migration uso_aquatico]', e.message); }
 }
 
 // Retorna saldo CF: feriados trabalhados (ganhos) − dias com turno='CF' (usados)
@@ -3271,6 +3286,24 @@ export function listarSalasDisponiveis({ data, hora_inicio, hora_fim, excluirSal
 }
 
 // ─── Alterar sala de uma reserva ─────────────────────
+
+// ─── Uso Aquático (Jacuzzi / Sauna) ─────────────────────────
+
+export function getUsoAquatico(data) {
+  return getDb().prepare('SELECT * FROM uso_aquatico WHERE data = ?').all(data);
+}
+
+export function upsertUsoAquatico(data, equipamento, tipo_usuario, quantidade) {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO uso_aquatico (data, equipamento, tipo_usuario, quantidade)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(data, equipamento, tipo_usuario) DO UPDATE SET
+      quantidade = excluded.quantidade,
+      registrado_em = datetime('now')
+  `).run(data, equipamento, tipo_usuario, Math.max(0, parseInt(quantidade) || 0));
+  return db.prepare('SELECT * FROM uso_aquatico WHERE data=? AND equipamento=? AND tipo_usuario=?').get(data, equipamento, tipo_usuario);
+}
 
 export function atualizarSalaReserva(reservaId, novaSala) {
   const db = getDb();
