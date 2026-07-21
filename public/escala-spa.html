@@ -686,7 +686,11 @@ const MESES_ABR = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','
 const DS_ABR    = ['D','S','T','Q','Q','S','S'];
 const DS_NOM    = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
-const FERIADOS = (() => {
+// FERIADOS agora vem do Hub Gran Marquise via GET /api/feriados (tela Feriados
+// do Hub e a fonte da verdade; o backend faz cache 60s e tem fallback proprio).
+// O seed abaixo so cobre o intervalo entre o 1o paint e a resposta da API e o
+// caso extremo de /api/feriados falhar — loadFeriados() o substitui inteiro.
+let FERIADOS = (() => {
   const F = {};
   const fixos = [
     ['01-01','Ano Novo'],['03-19','São José'],['03-25','Data Magna CE'],
@@ -710,6 +714,22 @@ const FERIADOS = (() => {
   };
   return { ...F, ...moveis };
 })();
+
+// Carrega feriados do backend (que sincroniza com o Hub). Em erro mantem o
+// valor atual de FERIADOS — comportamento identico ao antigo hardcoded.
+async function loadFeriados() {
+  try {
+    const r = await apiFetch('/api/feriados');
+    if (!r) return false;
+    const d = await r.json();
+    if (d && d.ok && d.feriados && typeof d.feriados === 'object') {
+      const antes = JSON.stringify(FERIADOS);
+      FERIADOS = d.feriados;
+      return JSON.stringify(FERIADOS) !== antes;
+    }
+  } catch { /* mantem FERIADOS atual */ }
+  return false;
+}
 
 // Horários de entrada: chave = valor salvo no banco
 const TIMES_CFG = {
