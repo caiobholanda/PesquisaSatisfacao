@@ -4629,9 +4629,88 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       err.textContent = d.error || 'Erro ao salvar.';
       return;
     }
+    // Se o tratamento está marcado como "Espaço Beleza" e é uma nova reserva,
+    // captura os dados antes de fechar o modal e exibe o popup de confirmação.
+    const _tratBeleza = _tratSelecionado();
+    const _dadosBeleza = _tratBeleza?.espaco_beleza && !_resEditandoId ? {
+      nome: body.cliente,
+      data: body.data,
+      email: body.email,
+      telefone: body.telefone || null,
+      tipo_cliente: body.tipo_cliente,
+      apto: body.apto || null,
+      tipo_doc: body.tipo_doc,
+      doc: body.doc,
+      quarto: body.quarto || null,
+      idioma: body.idioma || 'pt-BR',
+      nacionalidade: body.nacionalidade || null,
+    } : null;
     calCloseModal();
     loadReservas();
+    if (_dadosBeleza) _abrirEspbPopup(_dadosBeleza);
   }finally{btn.disabled=false;}
+});
+
+// ── Espaço Beleza — popup pós-reserva ──────────────────────────────────────
+let _espbDados = null;
+
+function _abrirEspbPopup(dados) {
+  _espbDados = dados;
+  const [y, m, dia] = dados.data.split('-');
+  document.getElementById('espb-popup-nome').textContent = dados.nome;
+  document.getElementById('espb-popup-data').textContent = `${dia}/${m}/${y}`;
+  document.getElementById('espb-err').textContent = '';
+  document.getElementById('espb-overlay').style.display = 'flex';
+}
+
+function _fecharEspbPopup() {
+  document.getElementById('espb-overlay').style.display = 'none';
+  _espbDados = null;
+}
+
+document.getElementById('espb-btn-nao').addEventListener('click', () => {
+  _fecharEspbPopup();
+});
+
+document.getElementById('espb-btn-sim').addEventListener('click', async () => {
+  if (!_espbDados) return;
+  const btn = document.getElementById('espb-btn-sim');
+  const errEl = document.getElementById('espb-err');
+  errEl.textContent = '';
+  btn.disabled = true;
+  try {
+    const reservaBeleza = {
+      sala: 5,
+      tipo_cliente: _espbDados.tipo_cliente,
+      cliente: _espbDados.nome,
+      apto: _espbDados.apto || null,
+      email: _espbDados.email,
+      telefone: _espbDados.telefone || null,
+      tratamento: 'Espaço Beleza',
+      data: _espbDados.data,
+      hora_inicio: '09:00',
+      hora_fim: '22:00',
+      tipo_doc: _espbDados.tipo_doc,
+      doc: _espbDados.doc,
+      quarto: _espbDados.quarto || null,
+      idioma: _espbDados.idioma || 'pt-BR',
+      nacionalidade: _espbDados.nacionalidade || null,
+    };
+    const r = await api('/api/reservas', { method: 'POST', body: JSON.stringify(reservaBeleza) });
+    if (r) {
+      const d = await r.json();
+      if (!d.ok) {
+        errEl.textContent = r.status === 409
+          ? 'Espaço Beleza já está reservado neste dia.'
+          : (d.error || 'Não foi possível reservar o Espaço Beleza.');
+        return;
+      }
+      loadReservas();
+    }
+    _fecharEspbPopup();
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});

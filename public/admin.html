@@ -4841,6 +4841,46 @@
   </div>
 </div>
 
+<!-- POPUP ESPAÇO BELEZA -->
+<div class="res-modal-overlay" id="espb-overlay" style="display:none">
+  <div class="res-modal" style="max-width:460px">
+    <div class="espb-hd">
+      <div class="espb-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/>
+          <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+          <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+          <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="res-modal-title">Espaço Beleza</div>
+        <div class="res-modal-sub">Deseja também reservar o Espaço Beleza?</div>
+      </div>
+    </div>
+    <div class="res-modal-body" style="padding-top:.875rem">
+      <div class="espb-info-card">
+        <div class="espb-info-row">
+          <span class="espb-info-lbl">Hóspede</span>
+          <span class="espb-info-val" id="espb-popup-nome"></span>
+        </div>
+        <div class="espb-info-row">
+          <span class="espb-info-lbl">Data</span>
+          <span class="espb-info-val" id="espb-popup-data"></span>
+        </div>
+      </div>
+      <div class="espb-note">
+        O Espaço Beleza será bloqueado das <strong>09:00</strong> às <strong>22:00</strong> nesta data, sem massoterapeuta vinculada.
+      </div>
+    </div>
+    <div class="res-modal-err" id="espb-err"></div>
+    <div class="res-modal-ft">
+      <button class="btn btn-outline" id="espb-btn-nao">Não, obrigado</button>
+      <button class="btn btn-gold" id="espb-btn-sim">Sim, reservar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PRODUTO -->
 <div class="res-modal-overlay" id="prod-modal-overlay" style="display:none">
   <div class="res-modal" style="max-width:440px">
@@ -4921,6 +4961,16 @@
   #modal-salas-lotadas .sl-decor::before,#modal-salas-lotadas .sl-decor::after{content:'';position:absolute;background:var(--gold,#9C5843)}
   #modal-salas-lotadas .sl-decor::before{top:14px;right:0;width:34px;height:1px;opacity:.5}
   #modal-salas-lotadas .sl-decor::after{top:0;right:14px;width:1px;height:34px;opacity:.5}
+  /* ── Espaço Beleza popup ── */
+  .espb-hd{padding:1.5rem 1.75rem 0;display:flex;align-items:center;gap:1rem}
+  .espb-icon-wrap{width:48px;height:48px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(156,88,67,.35)}
+  .espb-info-card{background:var(--bg,var(--surface));border:1px solid var(--border);border-radius:10px;padding:.875rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+  .espb-info-row{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+  .espb-info-row+.espb-info-row{padding-top:.5rem;border-top:1px solid var(--border-soft)}
+  .espb-info-lbl{font-size:.6875rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);flex-shrink:0}
+  .espb-info-val{font-size:.9375rem;color:var(--text);font-weight:500;text-align:right}
+  .espb-note{font-size:.8125rem;color:var(--muted);line-height:1.55;padding:.625rem .875rem;background:rgba(156,88,67,.06);border-left:2px solid var(--gold);border-radius:0 6px 6px 0}
+  .espb-note strong{color:var(--text);font-weight:600}
 </style>
 <div id="modal-salas-lotadas" role="dialog" aria-modal="true" aria-labelledby="sl-title">
   <div class="slcard">

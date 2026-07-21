@@ -161,6 +161,7 @@ app.get('/api/tipos-massagem-ativos', (_req, res) => {
       componentes,
       componentes_nomes: componentes ? componentes.map(cid => nomePorId[cid]).filter(Boolean) : null,
       linhas,
+      espaco_beleza: t.espaco_beleza ? 1 : 0,
     };
   });
   res.json({ nomes: ativos.map(t => t.nome), items });
