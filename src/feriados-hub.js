@@ -58,6 +58,16 @@ export async function getFeriados() {
             map[f.data] = String(f.nome);
           }
         }
+        // Anos que o Hub NAO conhece continuam vindo do fallback — o calculo de
+        // CF acumulado percorre feriados historicos (ex.: 2025) e o Hub pode ter
+        // sido cadastrado so a partir de um certo ano. Anos conhecidos pelo Hub
+        // (mesmo com feriados inativados) NUNCA sao completados pelo fallback.
+        const anosHub = new Set(
+          (Array.isArray(d.anos) && d.anos.length ? d.anos.map(String) : Object.keys(map).map(k => k.slice(0, 4)))
+        );
+        for (const [dt, nome] of Object.entries(FALLBACK)) {
+          if (!anosHub.has(dt.slice(0, 4))) map[dt] = nome;
+        }
         cache = { at: agora, feriados: map, fonte: 'hub' };
         return { feriados: map, fonte: 'hub' };
       }
