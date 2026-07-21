@@ -838,8 +838,9 @@ function setSaveInd(state, txt) {
 // ─── LOAD DATA ────────────────────────────────────────────────────────────────
 async function loadData() {
   const { ano, mes } = periodo;
-  await loadFeriados();
+  const feriadosPromise = loadFeriados(); // paralelo ao fetch da escala
   const r = await apiFetch(`/api/escala-spa?ano=${ano}&mes=${mes}`);
+  await feriadosPromise;
   if (!r) return;
   const d = await r.json();
   if (!d.ok) { showToast('Erro ao carregar dados', 'err'); return; }
