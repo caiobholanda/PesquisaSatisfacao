@@ -238,16 +238,16 @@ router.put('/comissao/regras', ...podeEscreverSpa, (req, res) => {
 router.get('/tipos-massagem', (_req, res) => res.json({ ok: true, items: listarTiposMassagem() }));
 
 router.post('/tipos-massagem', ...podeEscreverSpa, (req, res) => {
-  const { nome, duracao_min, preco, descricao } = req.body || {};
+  const { nome, duracao_min, preco, descricao, tipo } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
-  const id = inserirTipoMassagem(nome, duracao_min, preco, descricao);
+  const id = inserirTipoMassagem(nome, duracao_min, preco, descricao, { tipo: tipo || 'individual' });
   res.status(201).json({ ok: true, id });
 });
 
 router.put('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
-  const { nome, duracao_min, preco, ativo = 1, descricao, espaco_beleza } = req.body || {};
+  const { nome, duracao_min, preco, ativo = 1, descricao, espaco_beleza, tipo } = req.body || {};
   if (!nome?.trim()) return res.status(400).json({ ok: false, error: 'Nome obrigatório' });
-  const changes = atualizarTipoMassagem(parseInt(req.params.id), nome, duracao_min, preco, ativo ? 1 : 0, descricao, { espaco_beleza });
+  const changes = atualizarTipoMassagem(parseInt(req.params.id), nome, duracao_min, preco, ativo ? 1 : 0, descricao, { espaco_beleza, tipo });
   if (!changes) return res.status(404).json({ ok: false, error: 'Não encontrado' });
   res.json({ ok: true });
 });

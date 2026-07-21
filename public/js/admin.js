@@ -1272,8 +1272,8 @@ function setupDelegation() {
     }
     else if (action === 'edit-mass'){ openEditMassagista(+el.dataset.id, el.dataset.nome); }
     else if (action === 'edit-tipo') {
-      const { id, nome, dur, preco, ativo, desc, espacoBeleza } = el.dataset;
-      openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc, +espacoBeleza);
+      const { id, nome, dur, preco, ativo, desc, espacoBeleza, tipo } = el.dataset;
+      openEditTipo(+id, nome, dur ? +dur : null, preco ? +preco : null, +ativo, desc, +espacoBeleza, tipo || 'individual');
     }
     else if (action === 'cal-day')     { calSelectDay(el.dataset.ds); }
     else if (action === 'cal-ver')     { calVerDetalhes(+el.dataset.id); }
@@ -1696,7 +1696,7 @@ function renderTipos() {
         ${t.descricao ? `<div class="mgmt-item-meta" style="margin-top:2px">${escHtml(t.descricao)}</div>` : ''}
       </div>
       ${meta ? `<span class="mgmt-item-meta">${escHtml(meta)}</span>` : ''}
-      <button class="btn btn-outline btn-sm" data-action="edit-tipo" data-id="${t.id}" data-nome="${escHtml(t.nome)}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-ativo="${t.ativo?1:0}" data-desc="${escHtml(t.descricao||'')}" data-espaco-beleza="${t.espaco_beleza?1:0}">Editar</button>
+      <button class="btn btn-outline btn-sm" data-action="edit-tipo" data-id="${t.id}" data-nome="${escHtml(t.nome)}" data-dur="${t.duracao_min||''}" data-preco="${t.preco||''}" data-ativo="${t.ativo?1:0}" data-desc="${escHtml(t.descricao||'')}" data-espaco-beleza="${t.espaco_beleza?1:0}" data-tipo="${escHtml(t.tipo||'individual')}">Editar</button>
     </div>`;
   }).join('') + '</div>';
 }
@@ -1711,6 +1711,8 @@ function toggleFormTipo(show) {
     document.getElementById('inp-t-preco').value = '';
     document.getElementById('inp-t-descricao').value = '';
     document.getElementById('err-tipo').textContent = '';
+    document.getElementById('inp-t-tipo').value = 'individual';
+    document.querySelectorAll('#form-t-tipo-sel .mgmt-tipo-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
   }
 }
 
@@ -1726,10 +1728,11 @@ document.getElementById('btn-add-tipo').addEventListener('click', async () => {
   const duracao_min = parseInt(document.getElementById('inp-t-duracao').value) || null;
   const preco = parseFloat(document.getElementById('inp-t-preco').value) || null;
   const descricao = document.getElementById('inp-t-descricao').value.trim() || null;
+  const tipo = document.getElementById('inp-t-tipo').value || 'individual';
   const err = document.getElementById('err-tipo');
   err.textContent = '';
   if (!nome) { err.textContent = 'Informe o nome.'; return; }
-  const res = await api('/api/tipos-massagem', { method: 'POST', body: JSON.stringify({ nome, duracao_min, preco, descricao }) });
+  const res = await api('/api/tipos-massagem', { method: 'POST', body: JSON.stringify({ nome, duracao_min, preco, descricao, tipo }) });
   if (!res) return;
   const d = await res.json();
   if (!d.ok) { err.textContent = d.error; return; }
@@ -1737,7 +1740,7 @@ document.getElementById('btn-add-tipo').addEventListener('click', async () => {
   loadTipos();
 });
 
-window.openEditTipo = (id, nome, dur, preco, ativo, desc, espacoBeleza) => {
+window.openEditTipo = (id, nome, dur, preco, ativo, desc, espacoBeleza, tipo) => {
   _editTId = id;
   document.getElementById('mgmt-t-sub').textContent = nome;
   document.getElementById('mgmt-t-nome').value = nome;
@@ -1750,6 +1753,9 @@ window.openEditTipo = (id, nome, dur, preco, ativo, desc, espacoBeleza) => {
   const chkBeleza = document.getElementById('mgmt-t-espaco-beleza');
   chkBeleza.checked = !!espacoBeleza;
   document.getElementById('mgmt-t-espaco-beleza-txt').textContent = espacoBeleza ? 'Sim' : 'Não';
+  const tipoVal = tipo || 'individual';
+  document.getElementById('mgmt-t-tipo').value = tipoVal;
+  document.querySelectorAll('#mgmt-t-tipo-sel .mgmt-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipoTrat === tipoVal));
   document.getElementById('mgmt-t-err').textContent = '';
   _modalOpen = true;
   document.getElementById('mgmt-t-overlay').style.display = 'flex';
@@ -1761,6 +1767,18 @@ document.getElementById('mgmt-t-ativo').addEventListener('change', function() {
 });
 document.getElementById('mgmt-t-espaco-beleza').addEventListener('change', function() {
   document.getElementById('mgmt-t-espaco-beleza-txt').textContent = this.checked ? 'Sim' : 'Não';
+});
+document.querySelectorAll('#mgmt-t-tipo-sel .mgmt-tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('mgmt-t-tipo').value = btn.dataset.tipoTrat;
+    document.querySelectorAll('#mgmt-t-tipo-sel .mgmt-tipo-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+document.querySelectorAll('#form-t-tipo-sel .mgmt-tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('inp-t-tipo').value = btn.dataset.tipoTratForm;
+    document.querySelectorAll('#form-t-tipo-sel .mgmt-tipo-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
 });
 function closeMgmtT() { _modalOpen = false; document.getElementById('mgmt-t-overlay').style.display = 'none'; _editTId = null; }
 document.getElementById('mgmt-t-x').addEventListener('click', closeMgmtT);
@@ -1778,7 +1796,8 @@ document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
   btn.disabled = true;
   try {
     const espaco_beleza = document.getElementById('mgmt-t-espaco-beleza').checked ? 1 : 0;
-    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'PUT', body: JSON.stringify({ nome, descricao, duracao_min, preco: preco_val, ativo, espaco_beleza }) });
+    const tipo = document.getElementById('mgmt-t-tipo').value || 'individual';
+    const res = await api(`/api/tipos-massagem/${_editTId}`, { method: 'PUT', body: JSON.stringify({ nome, descricao, duracao_min, preco: preco_val, ativo, espaco_beleza, tipo }) });
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }

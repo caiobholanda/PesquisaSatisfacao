@@ -3710,9 +3710,25 @@
               <input type="number" id="inp-t-preco" min="0" step="0.01">
             </div>
           </div>
-          <div class="filter-group" style="margin-bottom:1rem">
-            <label class="section-label">Descrição <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.75rem">(opcional)</span></label>
-            <input type="text" id="inp-t-descricao" placeholder="Breve descrição do tratamento">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem">
+            <div class="filter-group">
+              <label class="section-label">Descrição <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.75rem">(opcional)</span></label>
+              <input type="text" id="inp-t-descricao" placeholder="Breve descrição do tratamento">
+            </div>
+            <div class="filter-group">
+              <label class="section-label">Tipo</label>
+              <div class="mgmt-tipo-sel" id="form-t-tipo-sel">
+                <button type="button" class="mgmt-tipo-btn active" data-tipo-trat-form="individual">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  Individual
+                </button>
+                <button type="button" class="mgmt-tipo-btn" data-tipo-trat-form="combo">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Combo
+                </button>
+              </div>
+              <input type="hidden" id="inp-t-tipo" value="individual">
+            </div>
           </div>
           <div style="display:flex;gap:0.625rem">
             <button class="btn btn-gold" id="btn-add-tipo">Adicionar</button>
@@ -4802,6 +4818,20 @@
         <label>Descrição</label>
         <input type="text" id="mgmt-t-desc" placeholder="Opcional">
       </div>
+      <div class="res-fg">
+        <label>Tipo</label>
+        <div class="mgmt-tipo-sel" id="mgmt-t-tipo-sel">
+          <button type="button" class="mgmt-tipo-btn active" data-tipo-trat="individual">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Individual
+          </button>
+          <button type="button" class="mgmt-tipo-btn" data-tipo-trat="combo">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Combo
+          </button>
+        </div>
+        <input type="hidden" id="mgmt-t-tipo" value="individual">
+      </div>
       <div class="res-frow">
         <div class="res-fg">
           <label>Duração (min)</label>
@@ -4960,6 +4990,12 @@
   #modal-salas-lotadas .sl-decor::before,#modal-salas-lotadas .sl-decor::after{content:'';position:absolute;background:var(--gold,#9C5843)}
   #modal-salas-lotadas .sl-decor::before{top:14px;right:0;width:34px;height:1px;opacity:.5}
   #modal-salas-lotadas .sl-decor::after{top:0;right:14px;width:1px;height:34px;opacity:.5}
+  /* ── Tipo de tratamento (individual / combo) ── */
+  .mgmt-tipo-sel{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:100%}
+  .mgmt-tipo-btn{flex:1;padding:.5rem .75rem;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font);transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center;gap:.4rem;line-height:1}
+  .mgmt-tipo-btn+.mgmt-tipo-btn{border-left:1px solid var(--border)}
+  .mgmt-tipo-btn.active{background:var(--gold);color:#fff}
+  .mgmt-tipo-btn:not(.active):hover{background:rgba(0,0,0,.04);color:var(--text)}
   /* ── Espaço Beleza popup ── */
   .espb-hd{padding:1.5rem 1.75rem 0;display:flex;align-items:center;gap:1rem}
   .espb-icon-wrap{width:48px;height:48px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(156,88,67,.35)}
