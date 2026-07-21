@@ -838,6 +838,7 @@ function setSaveInd(state, txt) {
 // ─── LOAD DATA ────────────────────────────────────────────────────────────────
 async function loadData() {
   const { ano, mes } = periodo;
+  await loadFeriados();
   const r = await apiFetch(`/api/escala-spa?ano=${ano}&mes=${mes}`);
   if (!r) return;
   const d = await r.json();
