@@ -98,6 +98,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     tipo_doc2, doc2, quarto2,
     idioma, nacionalidade,
     idioma2, nacionalidade2,
+    tipo_pagamento, cortesia_justificativa, cortesia_autorizado_por, cortesia_autorizado_por_nome,
     // compat: clientes antigos podem ainda enviar cpf/cpf2
     cpf: _cpfLegacy, cpf2: _cpf2Legacy,
   } = req.body || {};
@@ -330,6 +331,10 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         idioma2: _locale2 || null,
         nacionalidade: _nac1,
         nacionalidade2: _nac2,
+        tipo_pagamento: tipo_pagamento === 'cortesia' ? 'cortesia' : 'pago',
+        cortesia_justificativa: tipo_pagamento === 'cortesia' ? (cortesia_justificativa?.trim() || null) : null,
+        cortesia_autorizado_por: tipo_pagamento === 'cortesia' ? (cortesia_autorizado_por?.trim() || null) : null,
+        cortesia_autorizado_por_nome: tipo_pagamento === 'cortesia' ? (cortesia_autorizado_por_nome?.trim() || null) : null,
       }
     );
 
@@ -399,6 +404,7 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
     tipo_doc2, doc2, quarto2,
     idioma, nacionalidade,
     idioma2, nacionalidade2,
+    tipo_pagamento, cortesia_justificativa, cortesia_autorizado_por, cortesia_autorizado_por_nome,
     cpf: _cpfLegacy, cpf2: _cpf2Legacy,
   } = req.body || {};
 
@@ -520,6 +526,10 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
         idioma2: _locale2,
         nacionalidade: nacionalidade?.trim() || null,
         nacionalidade2: _p2Presente ? (nacionalidade2?.trim() || null) : null,
+        tipo_pagamento: tipo_pagamento === 'cortesia' ? 'cortesia' : 'pago',
+        cortesia_justificativa: tipo_pagamento === 'cortesia' ? (cortesia_justificativa?.trim() || null) : null,
+        cortesia_autorizado_por: tipo_pagamento === 'cortesia' ? (cortesia_autorizado_por?.trim() || null) : null,
+        cortesia_autorizado_por_nome: tipo_pagamento === 'cortesia' ? (cortesia_autorizado_por_nome?.trim() || null) : null,
       }
     );
 

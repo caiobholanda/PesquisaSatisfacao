@@ -251,6 +251,10 @@ export function initDb() {
   try { db.exec(`ALTER TABLE clientes ADD COLUMN passaporte TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_passaporte ON clientes(passaporte) WHERE passaporte IS NOT NULL AND passaporte <> ''`); } catch {}
   try { db.exec(`ALTER TABLE reservas ADD COLUMN passaporte TEXT`); } catch {}
+  // Migration: pagamento / cortesia
+  for (const col of ["tipo_pagamento TEXT DEFAULT 'pago'", 'cortesia_justificativa TEXT', 'cortesia_autorizado_por TEXT', 'cortesia_autorizado_por_nome TEXT']) {
+    try { db.exec(`ALTER TABLE reservas ADD COLUMN ${col}`); } catch {}
+  }
 
   // Tabela de auditoria das mudancas no editor de anamnese / pesquisa
   // de satisfacao. Registra criar/editar/remover/excluir/reativar de
@@ -1787,6 +1791,7 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
     cliente2 = null, tipo_cliente2 = null, apto2 = null, email2 = null, telefone2 = null,
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
     idioma = null, idioma2 = null, nacionalidade = null, nacionalidade2 = null,
+    tipo_pagamento = 'pago', cortesia_justificativa = null, cortesia_autorizado_por = null, cortesia_autorizado_por_nome = null,
   } = opts;
   const db = getDb();
 
@@ -1858,13 +1863,15 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
 
   return db.prepare(
     `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id, criado_por,
-       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2,
+       tipo_pagamento, cortesia_justificativa, cortesia_autorizado_por, cortesia_autorizado_por_nome)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim,
     linha, tipo_massagem_id, massagista_id, criado_por,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
-    idioma, idioma2, nacionalidade, nacionalidade2
+    idioma, idioma2, nacionalidade, nacionalidade2,
+    tipo_pagamento || 'pago', cortesia_justificativa || null, cortesia_autorizado_por || null, cortesia_autorizado_por_nome || null
   ).lastInsertRowid;
 }
 
@@ -1878,6 +1885,7 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
     cliente2 = null, tipo_cliente2 = null, apto2 = null, email2 = null, telefone2 = null,
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
     idioma = null, idioma2 = null, nacionalidade = null, nacionalidade2 = null,
+    tipo_pagamento = 'pago', cortesia_justificativa = null, cortesia_autorizado_por = null, cortesia_autorizado_por_nome = null,
   } = opts;
   const db = getDb();
 
@@ -1926,13 +1934,15 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
       sala=?, cliente=?, tipo_cliente=?, apto=?, email=?, telefone=?, tratamento=?,
       data=?, hora_inicio=?, hora_fim=?, linha=?, tipo_massagem_id=?, massagista_id=?,
       cliente2=?, tipo_cliente2=?, apto2=?, email2=?, telefone2=?, tratamento2=?,
-      tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?, nacionalidade=?, nacionalidade2=?
+      tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?, nacionalidade=?, nacionalidade2=?,
+      tipo_pagamento=?, cortesia_justificativa=?, cortesia_autorizado_por=?, cortesia_autorizado_por_nome=?
     WHERE id=?
   `).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento,
     data, horaInicio, horaFim, linha, tipo_massagem_id, massagista_id,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2,
     tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2,
+    tipo_pagamento || 'pago', cortesia_justificativa || null, cortesia_autorizado_por || null, cortesia_autorizado_por_nome || null,
     id
   );
   return { ok: true };

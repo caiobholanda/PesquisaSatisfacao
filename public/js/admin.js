@@ -2857,26 +2857,29 @@ function renderCalDia() {
           const anamBadge = _anamN > 0
             ? `<span class="cal-anam-badge" title="Anamnese preenchida${res.cliente2 ? ' ('+_anamN+'/2)' : ''}">✓${res.cliente2 ? ' '+_anamN+'/2' : ''}</span>`
             : '';
+          const cortesiaBadge = res.tipo_pagamento === 'cortesia'
+            ? `<span style="background:rgba(153,100,66,.18);color:var(--gold-dark);border-radius:9999px;padding:.05rem .4rem;font-size:.6rem;font-weight:700;letter-spacing:.03em;line-height:1.3;flex-shrink:0" title="Cortesia">🎁</span>`
+            : '';
           const isCasalCard = !!res.cliente2;
           let inner = '';
           if (modo === 'compact') {
             // Ultra compacto: nome + GC badge + horario na mesma linha
             inner = `
               <div style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;line-height:1.15;color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                ${gcBadge}${casalBadge}${anamBadge}
+                ${gcBadge}${casalBadge}${anamBadge}${cortesiaBadge}
                 <span style="overflow:hidden;text-overflow:ellipsis">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span>
               </div>
               <div style="font-size:.7rem;opacity:.85;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.hora_inicio}–${res.hora_fim}${res.tratamento ? ' · ' + escHtml(res.tratamento) : ''}</div>
             `;
           } else if (modo === 'medium') {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}${cortesiaBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
             `;
           } else {
             inner = `
-              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
+              <div class="cal-res-name" style="display:flex;align-items:center;gap:.35rem">${gcBadge}${casalBadge}${anamBadge}${cortesiaBadge}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(res.cliente)}${res.cliente2 ? ' &amp; ' + escHtml(res.cliente2) : ''}</span></div>
               ${res.tratamento?`<div class="cal-res-trat">${escHtml(res.tratamento)}${res.tratamento2?' / '+escHtml(res.tratamento2):''}</div>`:''}
               <div class="cal-res-time">${res.hora_inicio} – ${res.hora_fim}${res.quarto ? ' · qto ' + escHtml(res.quarto) : ''}</div>
               ${res.massagista_nome?`<div class="cal-res-by">${escHtml(res.massagista_nome)}${res.massagista_nome2?' &amp; '+escHtml(res.massagista_nome2):''}</div>`:''}
@@ -3098,6 +3101,18 @@ function calOpenModal(salaId, data, hora) {
   if (_sep1) _sep1.style.display = 'none';
   const _wrap1 = document.getElementById('res-pessoa1-wrap');
   if (_wrap1) _wrap1.classList.remove('casal-ativo');
+  // Reset pagamento / cortesia
+  const _pagBtnPago = document.getElementById('res-pag-btn-pago');
+  const _pagBtnCortesia = document.getElementById('res-pag-btn-cortesia');
+  const _pagHid = document.getElementById('res-inp-tipo-pagamento');
+  const _pagCampos = document.getElementById('res-sec-cortesia-campos');
+  if (_pagBtnPago) _pagBtnPago.classList.add('active');
+  if (_pagBtnCortesia) _pagBtnCortesia.classList.remove('active');
+  if (_pagHid) _pagHid.value = 'pago';
+  if (_pagCampos) _pagCampos.style.display = 'none';
+  ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
@@ -4009,6 +4024,15 @@ async function calVerDetalhes(id) {
     </div>
     ` : ''}
 
+    ${r.tipo_pagamento === 'cortesia' ? `
+    <div style="margin:.75rem 0;padding:.75rem 1rem;background:var(--gold-dim);border:1px solid var(--gold);border-radius:.5rem;display:flex;flex-direction:column;gap:.35rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-dark)">🎁 Cortesia</span>
+      </div>
+      ${r.cortesia_justificativa ? `<div class="resdet-kv"><div class="resdet-kv-label">Justificativa</div><div class="resdet-kv-val">${escHtml(r.cortesia_justificativa)}</div></div>` : ''}
+      ${r.cortesia_autorizado_por_nome ? `<div class="resdet-kv"><div class="resdet-kv-label">Autorizado por</div><div class="resdet-kv-val">${escHtml(r.cortesia_autorizado_por_nome)}</div></div>` : ''}
+    </div>` : ''}
+
     <div class="resdet-registro">
       <div class="resdet-registro-item">
         <div class="resdet-registro-label">Reserva</div>
@@ -4170,6 +4194,21 @@ async function calAbrirEdicao(r) {
         if (hidMass2) hidMass2.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
+  }
+  // pagamento / cortesia
+  if (r.tipo_pagamento === 'cortesia') {
+    const _phid = document.getElementById('res-inp-tipo-pagamento');
+    const _ppago = document.getElementById('res-pag-btn-pago');
+    const _pcort = document.getElementById('res-pag-btn-cortesia');
+    const _pcampos = document.getElementById('res-sec-cortesia-campos');
+    if (_phid) _phid.value = 'cortesia';
+    if (_ppago) _ppago.classList.remove('active');
+    if (_pcort) _pcort.classList.add('active');
+    if (_pcampos) _pcampos.style.display = 'flex';
+    _setV('res-inp-cortesia-justificativa', r.cortesia_justificativa || '');
+    _setV('res-inp-cortesia-autorizado-nome', r.cortesia_autorizado_por_nome || '');
+    const _idHid = document.getElementById('res-inp-cortesia-autorizado-id');
+    if (_idHid) _idHid.value = r.cortesia_autorizado_por || '';
   }
 }
 
@@ -4446,6 +4485,23 @@ document.querySelectorAll('.res-tipo-btn[data-tipo]').forEach(btn=>{
   btn.addEventListener('click',()=>calSetTipo(btn.dataset.tipo));
 });
 
+// Pagamento / Cortesia toggle
+document.querySelectorAll('.res-tipo-btn[data-pag]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pag = btn.dataset.pag;
+    document.querySelectorAll('.res-tipo-btn[data-pag]').forEach(b => b.classList.toggle('active', b.dataset.pag === pag));
+    const hid = document.getElementById('res-inp-tipo-pagamento');
+    if (hid) hid.value = pag;
+    const campos = document.getElementById('res-sec-cortesia-campos');
+    if (campos) campos.style.display = pag === 'cortesia' ? 'flex' : 'none';
+    if (pag === 'pago') {
+      ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+    }
+  });
+});
+
 document.getElementById('res-inp-tratamento').addEventListener('change', calAtualizarHoraFim);
 
 document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
@@ -4616,6 +4672,10 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       quarto: quartoInp || null,
       idioma: document.getElementById('res-inp-idioma')?.value || null,
       nacionalidade: resolverNacionalidade(document.getElementById('res-inp-nacionalidade')?.value?.trim() || '', NACIONALIDADES) || null,
+      tipo_pagamento: document.getElementById('res-inp-tipo-pagamento')?.value || 'pago',
+      cortesia_justificativa: document.getElementById('res-inp-cortesia-justificativa')?.value?.trim() || null,
+      cortesia_autorizado_por: document.getElementById('res-inp-cortesia-autorizado-id')?.value?.trim() || null,
+      cortesia_autorizado_por_nome: document.getElementById('res-inp-cortesia-autorizado-nome')?.value?.trim() || null,
     };
     if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {

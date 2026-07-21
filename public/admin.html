@@ -4828,6 +4828,35 @@
         </div>
       </div>
 
+      <!-- ── Pagamento / Cortesia ── -->
+      <div id="res-sec-pagamento" style="margin-top:.25rem">
+        <div class="res-pessoa1-sep"><span>✦ Pagamento</span></div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+          <button type="button" class="res-tipo-btn active" id="res-pag-btn-pago" data-pag="pago" style="flex:1;font-size:.78rem;padding:.5rem .75rem">
+            <span style="margin-right:.35rem">💳</span>Pago
+          </button>
+          <button type="button" class="res-tipo-btn" id="res-pag-btn-cortesia" data-pag="cortesia" style="flex:1;font-size:.78rem;padding:.5rem .75rem">
+            <span style="margin-right:.35rem">🎁</span>Cortesia
+          </button>
+        </div>
+        <input type="hidden" id="res-inp-tipo-pagamento" value="pago">
+        <div id="res-sec-cortesia-campos" style="display:none;flex-direction:column;gap:.6rem">
+          <div class="res-frow">
+            <div class="res-fg" style="grid-column:1/-1">
+              <label class="res-label" for="res-inp-cortesia-justificativa">Justificativa <span class="res-required">*</span></label>
+              <textarea id="res-inp-cortesia-justificativa" class="res-inp" rows="2" placeholder="Ex: Reclamação de barulho, cortesia da gerência…" style="resize:vertical;min-height:3rem;font-family:inherit;font-size:.8rem"></textarea>
+            </div>
+          </div>
+          <div class="res-frow">
+            <div class="res-fg" style="grid-column:1/-1">
+              <label class="res-label" for="res-inp-cortesia-autorizado-nome">Autorizado por</label>
+              <input type="text" id="res-inp-cortesia-autorizado-nome" class="res-inp" placeholder="Nome de quem autorizou" autocomplete="off">
+              <input type="hidden" id="res-inp-cortesia-autorizado-id">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="res-tempo-info" id="res-tempo-info">
         <span class="res-tempo-label">Horário final</span>
         <span id="res-tempo-val">—</span>
