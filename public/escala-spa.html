@@ -1248,6 +1248,15 @@ window.addEventListener('storage', function(e) {
   if (e.key === 'granspa_ferias_ts') { hidePicker(); hideHistPop(); loadData(); }
 });
 
+// ─── SYNC DE FERIADOS COM O HUB (tempo real) ─────────────────────────────────
+// Feriado criado/inativado no Hub reflete aqui em ate 60s com a aba aberta
+// (alem do reload por foco acima). Re-renderiza so quando a lista mudou.
+setInterval(async () => {
+  if (document.visibilityState !== 'visible') return;
+  const mudou = await loadFeriados();
+  if (mudou) { render(); reloadCf(); }
+}, 60000);
+
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 document.getElementById('btn-prev').onclick = () => {
   periodo = periodo.mes === 0
