@@ -4501,7 +4501,7 @@ async function _resLoadHubCortesiaData(currentJust) {
       ]);
       _resHubTipos = rT.ok ? rT.tipos : [];
       _resHubAutorizados = rA.ok ? rA.autorizados : [];
-    } catch { _resHubTipos = []; _resHubAutorizados = []; }
+    } catch { _resHubTipos = null; _resHubAutorizados = null; }
   }
   _resRenderCortesiaChips(currentJust);
 }
@@ -4510,7 +4510,7 @@ function _resRenderCortesiaChips(currentJust) {
   const area = document.getElementById('res-cortesia-chips-area');
   const wrap = document.getElementById('res-cortesia-chips');
   if (!area || !wrap) return;
-  if (!_resHubTipos?.length) { area.style.display = 'none'; return; }
+  if (!_resHubTipos || !_resHubTipos.length) { area.style.display = 'none'; return; }
   area.style.display = 'flex';
   wrap.innerHTML = _resHubTipos.map(t => {
     const on = currentJust && currentJust === t.nome;

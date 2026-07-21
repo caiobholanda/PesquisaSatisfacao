@@ -76,7 +76,7 @@ app.use(helmet({
       styleSrc:    ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc:     ["'self'", 'https://fonts.gstatic.com'],
       imgSrc:      ["'self'", 'data:', 'https://letsimage.s3.amazonaws.com'],
-      connectSrc:  ["'self'"],
+      connectSrc:  ["'self'", 'https://hub-granmarquise.fly.dev'],
       frameSrc:    ["'none'"],
       objectSrc:   ["'none'"],
     },
