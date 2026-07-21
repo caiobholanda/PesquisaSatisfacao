@@ -1357,7 +1357,7 @@ document.getElementById('btn-open-massagistas').addEventListener('click', () => 
 document.getElementById('btn-back-historico').addEventListener('click', () => { showView('view-massagistas'); loadMassagistas(); });
 
 document.getElementById('btn-open-tipos').addEventListener('click', () => { showView('view-tipos'); loadTipos(); });
-document.getElementById('btn-back-tipos').addEventListener('click', () => showView('view-main'));
+document.getElementById('btn-back-tipos')?.addEventListener('click', () => showView('view-main'));
 
 document.getElementById('btn-open-salas')?.addEventListener('click', () => { showView('view-salas'); loadSalas(); });
 
