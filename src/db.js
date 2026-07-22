@@ -1294,11 +1294,12 @@ export function contarLivresIntervalo(data, horaInicio, horaFim, opts = {}) {
 export function avaliarRegraRecepcao(data, horaInicio, horaFim, opts = {}) {
   const { selecionadas = [], excluirReservaId = null } = opts;
   const sel = selecionadas.map(Number).filter(n => Number.isInteger(n) && n > 0);
-  const { livres, total } = contarLivresIntervalo(data, horaInicio, horaFim, { excluirReservaId });
+  const { livres, total, recepcaoCoberta } = contarLivresIntervalo(data, horaInicio, horaFim, { excluirReservaId });
   const livresSet = new Set(livres.map(l => l.id));
   const todasLivres = sel.length > 0 && sel.every(id => livresSet.has(id));
-  const viola = todasLivres && (total - sel.length) < 1;
-  return { viola, total, livres, consumo: sel.length };
+  // Recepção já coberta por recepcionista em escala → regra não se aplica.
+  const viola = !recepcaoCoberta && todasLivres && (total - sel.length) < 1;
+  return { viola, total, livres, consumo: sel.length, recepcaoCoberta };
 }
 
 export function listarReservasMassagistaData(massagista_id, data) {
