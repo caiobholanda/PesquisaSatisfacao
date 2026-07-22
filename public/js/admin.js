@@ -2507,6 +2507,7 @@ async function _fetchEscalaAval(data, horaInicio, horaFim) {
     _escalaAvalMap = new Map((d.items || []).map(it => [it.massagista_id, it]));
     _escalaAvalLancada = !!d.lancada;
     _escalaAvalLivres = Number.isInteger(d.livres) ? d.livres : null;
+    _escalaAvalRecepCoberta = d.recepcao_coberta === true;
     _renderMassagistasModal();
     _renderMassagistasModal2();
   } catch { if (_escalaAvalKey === key) _escalaAvalKey = null; /* fail-open + retry */ }
