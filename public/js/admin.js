@@ -4786,8 +4786,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       cortesia_autorizado_por_nome: document.getElementById('res-inp-cortesia-autorizado-nome')?.value?.trim() || null,
     };
     // Override explícito (escala/recepção): flags auditadas no body como
-    // decisão consciente do admin. Consumidas no finally deste envio.
-    if (_resOverrideRegra) { body.override_escala = true; body.override_recepcao = true; }
+    // decisão consciente do admin. Vale só para ESTE envio (consumida acima).
+    if (_overrideEnvio) { body.override_escala = true; body.override_recepcao = true; }
     if (_isCasal() && _p2Preenchida) {
       Object.assign(body, {
         cliente2: nome2, tipo_cliente2: tipo2 || null, apto2, email2, telefone2: tel2,
