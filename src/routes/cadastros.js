@@ -359,18 +359,32 @@ router.get('/escala-spa/disponibilidade', (req, res) => {
   const horaFim = req.query.hora_fim || null;
   if (!dataRealValida(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
   const ctx = contextoEscalaDia(data);
+  // Ocupação + regra da recepção: só calculável com intervalo completo.
+  // `excluir` = id da reserva em edição (não conta contra a própria terapeuta).
+  const _excluirRaw = parseInt(req.query.excluir, 10);
+  const excluirReservaId = Number.isInteger(_excluirRaw) && _excluirRaw > 0 ? _excluirRaw : null;
+  let ocupadas = new Set();
+  let livresTotal = null;
+  if (horaIni && horaFim) {
+    try {
+      const r = contarLivresIntervalo(data, horaIni, horaFim, { excluirReservaId, ctx });
+      ocupadas = r.ocupadas;
+      livresTotal = r.total;
+    } catch {}
+  }
   const items = listarMassagistas().filter(m => m.ativo).map(m => {
     const av = avaliarEscalaMassagista(m, data, horaIni, horaFim, ctx);
     return {
       massagista_id: m.id,
       disponivel: av.disponivel,
+      ocupada: ocupadas.has(m.id),
       fonte: av.fonte,
       motivo: av.motivo || null,
       faixa: av.faixa || null,
       aviso: av.aviso || null,
     };
   });
-  res.json({ ok: true, lancada: ctx.lancada, items });
+  res.json({ ok: true, lancada: ctx.lancada, items, livres: livresTotal });
 });
 
 // Histórico antes→depois de uma célula da escala mensal
