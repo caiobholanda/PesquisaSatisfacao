@@ -4813,6 +4813,8 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   // Massoterapeuta obrigatória (exceto Espaço Beleza)
   const massagistaId = document.getElementById('res-inp-massagista')?.value ? +document.getElementById('res-inp-massagista').value : null;
   if (!_isEspBeleza() && !massagistaId) { err.textContent = 'Selecione a massoterapeuta que vai atender.'; return; }
+  // Combo: massoterapeutas extras participam do mesmo tratamento
+  const massagistasExtras = _isComboTrat() ? _resMassExtras.slice(0, 4) : [];
 
   // Casal: campos pessoa 2 — TODOS OPCIONAIS. Se NADA estiver preenchido,
   // pessoa 2 e' ignorada (sala 3 pode ser usada por uma pessoa so).
