@@ -553,6 +553,22 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
         }
       }
     }
+    if (!overrideEscala && massagistasExtras.length) {
+      const ctxEscala = contextoEscalaDia(data);
+      for (const mid of massagistasExtras) {
+        const mx = buscarMassagistaById(mid);
+        if (!mx) continue;
+        const avx = avaliarEscalaMassagista(mx, data, hora_inicio, hora_fim, ctxEscala);
+        if (!avx.disponivel) {
+          return res.status(409).json({
+            ok: false, tipo: 'escala',
+            error: `Equipe: ${mx.nome} — ${avx.motivo || 'fora da escala'} nesta data/horário`,
+            motivo: avx.motivo, fonte: avx.fonte, faixa: avx.faixa || null,
+            massagista: mx.nome, massagista_id: mx.id, override_permitido: true,
+          });
+        }
+      }
+    }
 
     // ── Regra da recepção na edição: revalida no NOVO intervalo; a própria
     // reserva não conta contra si mesma (excluirReservaId). Mesma semântica
