@@ -2493,6 +2493,7 @@ async function _fetchEscalaAval(data, horaInicio, horaFim) {
   _escalaAvalMap = null;
   _escalaAvalLancada = null;
   _escalaAvalLivres = null;
+  _escalaAvalRecepCoberta = null;
   try {
     const qs = new URLSearchParams({ data });
     if (horaInicio) qs.set('hora_inicio', horaInicio);
