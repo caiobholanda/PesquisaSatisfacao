@@ -5049,9 +5049,10 @@ document.getElementById('espb-btn-sim').addEventListener('click', async () => {
 // ── Área Molhada — Day Use (Jacuzzi + Sauna) ─────────────────────────
 const _AQ_TIPOS = ['hospede', 'passante', 'gran_class'];
 const _AQ_PRECO = { hospede: 60 * 1.15, passante: 120 * 1.15, gran_class: 0 };
-let _aqState  = {};  // { tipo: quantidade }
-let _aqDate   = null;
-let _aqSaving = false;
+let _aqState   = {};  // { tipo: quantidade }
+let _aqDate    = null;
+let _aqSaving  = false;
+let _aqLogCache = [];
 
 function _aqGet(tipo) { return _aqState[tipo] || 0; }
 
@@ -5118,40 +5119,89 @@ async function loadUsoAquatico(ds) {
 
 const _AQ_TIPO_LABEL = { hospede: 'Hóspede', passante: 'Passante', gran_class: 'Gran Class' };
 const _AQ_PRECO_BASE = { hospede: 60, passante: 120, gran_class: 0 };
+const _AQ_LOG_PREVIEW = 5;
+
+function _aqLogRowHtml(item) {
+  const delta = item.delta;
+  const sign = delta > 0 ? '+' : '';
+  const cls = delta > 0 ? 'pos' : 'neg';
+  const label = _AQ_TIPO_LABEL[item.tipo_usuario] || item.tipo_usuario;
+  const base = _AQ_PRECO_BASE[item.tipo_usuario] || 0;
+  const valorFmt = item.tipo_usuario === 'gran_class'
+    ? 'Gratuito'
+    : _aqFmt(Math.abs(delta) * base * 1.15);
+  const dt = new Date(item.registrado_em.replace(' ', 'T') + (item.registrado_em.includes('T') ? '' : 'Z'));
+  const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const dia  = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const oper = item.operador || '—';
+  return `<div class="aq-ledger-row">
+    <span class="aq-ledger-delta ${cls}">${sign}${delta}</span>
+    <div>
+      <div class="aq-ledger-tipo">${label}</div>
+      <div class="aq-ledger-oper">${oper}</div>
+    </div>
+    <div class="aq-ledger-valor">${valorFmt}</div>
+    <div class="aq-ledger-meta">${hora}<br>${dia}</div>
+  </div>`;
+}
 
 async function _aqLoadLog(ds) {
   const el = document.getElementById('aq-ledger-list');
+  const moreBtn = document.getElementById('aq-ledger-more-btn');
   if (!el || !ds) return;
   const res = await api(`/api/reservas/uso-aquatico-log?data=${ds}`);
   if (!res) return;
   const d = await res.json();
   if (!d.ok || !d.items?.length) {
     el.innerHTML = '<div class="aq-ledger-empty">Sem registros para esta data</div>';
+    moreBtn?.classList.remove('visible');
+    _aqLogCache = [];
     return;
   }
-  el.innerHTML = d.items.map(item => {
-    const delta = item.delta;
-    const sign = delta > 0 ? '+' : '';
-    const cls = delta > 0 ? 'pos' : 'neg';
-    const label = _AQ_TIPO_LABEL[item.tipo_usuario] || item.tipo_usuario;
-    const base = _AQ_PRECO_BASE[item.tipo_usuario] || 0;
-    const valorFmt = item.tipo_usuario === 'gran_class'
-      ? 'Gratuito'
-      : _aqFmt(Math.abs(delta) * base * 1.15);
-    const dt = new Date(item.registrado_em.replace(' ', 'T') + (item.registrado_em.includes('T') ? '' : 'Z'));
-    const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const dia  = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const oper = item.operador || '—';
-    return `<div class="aq-ledger-row">
-      <span class="aq-ledger-delta ${cls}">${sign}${delta}</span>
-      <div>
-        <div class="aq-ledger-tipo">${label}</div>
-        <div class="aq-ledger-oper">${oper}</div>
+  _aqLogCache = d.items;
+  el.innerHTML = d.items.slice(0, _AQ_LOG_PREVIEW).map(_aqLogRowHtml).join('');
+  if (moreBtn) {
+    if (d.items.length > _AQ_LOG_PREVIEW) {
+      moreBtn.textContent = `Ver todas as ${d.items.length} alterações →`;
+      moreBtn.classList.add('visible');
+    } else {
+      moreBtn.classList.remove('visible');
+    }
+  }
+}
+
+function _aqOpenLogPopup() {
+  if (document.getElementById('_aq-log-popup')) return;
+  const ds = _aqDate || (_calDiaSel ? calDateStr(_calDiaSel) : calDateStr(new Date()));
+  const [y, m, dv] = ds.split('-').map(Number);
+  const dtStr = new Date(y, m - 1, dv).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  const rows = _aqLogCache.map(_aqLogRowHtml).join('');
+  const ov = document.createElement('div');
+  ov.id = '_aq-log-popup';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.75);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:14px;max-width:580px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.48)">
+      <div style="padding:1.3rem 1.6rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-size:.64rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:.28rem">◆ Área Molhada · Day Use</div>
+          <div style="font-weight:600;color:var(--text);font-size:1rem;line-height:1.3">Histórico de alterações</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.18rem;text-transform:capitalize">${dtStr}</div>
+        </div>
+        <button data-act="close" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:.3rem .4rem;border-radius:6px;line-height:1;margin-top:-.1rem">✕</button>
       </div>
-      <div class="aq-ledger-valor">${valorFmt}</div>
-      <div class="aq-ledger-meta">${hora}<br>${dia}</div>
+      <div style="overflow-y:auto;flex:1;padding:.4rem 1.6rem .8rem">
+        ${rows || '<div class="aq-ledger-empty" style="padding:2.5rem 0">Sem registros para esta data</div>'}
+      </div>
+      <div style="padding:.8rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--surface2)">
+        <span style="font-size:.7rem;color:var(--muted)">${_aqLogCache.length} registro${_aqLogCache.length !== 1 ? 's' : ''}</span>
+        <button data-act="close" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.42rem 1.1rem;font-size:.74rem;font-weight:600;letter-spacing:.04em;color:var(--muted);cursor:pointer;transition:border-color .18s,color .18s">Fechar</button>
+      </div>
     </div>`;
-  }).join('');
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  ov.addEventListener('click', e => { const t = e.target.closest('[data-act="close"]'); if (t || e.target === ov) close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
 }
 
 async function _aqSaveCell(tipo, novaQtd) {
@@ -5191,6 +5241,7 @@ document.getElementById('btn-aq-drawer-open')?.addEventListener('click', _openAq
 document.getElementById('aq-drawer-close')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-gc-chip-btn')?.addEventListener('click', e => { e.stopPropagation(); _abrirModalGranClass(); });
+document.getElementById('aq-ledger-more-btn')?.addEventListener('click', _aqOpenLogPopup);
 
 // Botões +/-
 document.getElementById('aq-body')?.addEventListener('click', e => {

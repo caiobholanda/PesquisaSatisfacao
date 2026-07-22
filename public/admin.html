@@ -2373,36 +2373,47 @@
     }
     .aq-gc-info-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; margin-top: .05rem; }
     /* ── Ledger histórico Day Use ── */
-    .aq-ledger { margin-top: 1.6rem; padding-bottom: .5rem; }
+    .aq-ledger { margin-top: 1.9rem; padding-bottom: .25rem; }
     .aq-ledger-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--gold); padding-bottom: .38rem; margin-bottom: .65rem;
-      border-bottom: 1px solid rgba(153,100,66,.35);
-      display: flex; align-items: center; gap: .42rem;
+      font-family: var(--font);
+      font-size: .67rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+      color: var(--gold); padding-bottom: .48rem; margin-bottom: .8rem;
+      border-bottom: 1px solid rgba(153,100,66,.28);
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .aq-ledger-title-gem { font-size: .55rem; opacity: .8; }
+    .aq-ledger-title-left { display: flex; align-items: center; gap: .38rem; }
+    .aq-ledger-title-gem { font-size: .5rem; opacity: .7; }
     .aq-ledger-empty {
-      font-size: .72rem; color: var(--muted); padding: .6rem 0;
-      text-align: center; font-style: italic; font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: .76rem; color: var(--muted); padding: 1.1rem 0;
+      text-align: center; font-style: italic;
     }
     .aq-ledger-row {
-      display: grid; grid-template-columns: 2rem 1fr auto auto;
-      align-items: center; gap: .3rem .65rem;
-      padding: .42rem 0; border-bottom: 1px dashed rgba(153,100,66,.15);
-      font-size: .74rem;
+      display: grid; grid-template-columns: 2.8rem 1fr auto auto;
+      align-items: center; gap: .4rem .8rem;
+      padding: .65rem 0; border-bottom: 1px solid var(--border-soft);
+      font-size: .8rem;
     }
     .aq-ledger-row:last-child { border-bottom: none; }
     .aq-ledger-delta {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: .95rem; font-weight: 700; text-align: center; line-height: 1;
+      font-family: var(--font);
+      font-size: .95rem; font-weight: 800; text-align: center; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: -.01em;
     }
     .aq-ledger-delta.pos { color: #4d8c5e; }
     .aq-ledger-delta.neg { color: #b05a52; }
-    .aq-ledger-tipo { font-weight: 600; color: var(--text); font-size: .74rem; line-height: 1.2; }
-    .aq-ledger-oper { color: var(--muted); font-size: .64rem; margin-top: .06rem; }
-    .aq-ledger-valor { color: var(--gold-dark); font-variant-numeric: tabular-nums; font-size: .73rem; text-align: right; white-space: nowrap; }
-    .aq-ledger-meta { color: var(--muted); font-size: .64rem; text-align: right; line-height: 1.45; white-space: nowrap; }
+    .aq-ledger-tipo { font-weight: 600; color: var(--text); font-size: .8rem; line-height: 1.25; }
+    .aq-ledger-oper { color: var(--muted); font-size: .67rem; margin-top: .08rem; }
+    .aq-ledger-valor { color: var(--gold-dark); font-variant-numeric: tabular-nums; font-size: .78rem; text-align: right; white-space: nowrap; font-weight: 600; }
+    .aq-ledger-meta { color: var(--muted); font-size: .67rem; text-align: right; line-height: 1.5; white-space: nowrap; }
+    .aq-ledger-more {
+      display: none; width: 100%; margin-top: .9rem;
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); font-family: var(--font); font-size: .72rem; font-weight: 500;
+      letter-spacing: .03em; padding: .5rem 0; cursor: pointer; text-align: center;
+      transition: border-color .18s, color .18s, background .18s;
+    }
+    .aq-ledger-more:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .aq-ledger-more.visible { display: block; }
 
     .aq-dw-footer {
       display: flex; align-items: center; justify-content: space-between;
@@ -5374,11 +5385,12 @@
     <!-- Ledger histórico -->
     <div class="aq-ledger">
       <div class="aq-ledger-title">
-        <span class="aq-ledger-title-gem">◆</span> Registro de alterações
+        <span class="aq-ledger-title-left"><span class="aq-ledger-title-gem">◆</span> Registro de alterações</span>
       </div>
-      <div id="aq-ledger-list" class="aq-ledger-list">
+      <div id="aq-ledger-list">
         <div class="aq-ledger-empty">Sem registros para esta data</div>
       </div>
+      <button class="aq-ledger-more" id="aq-ledger-more-btn" type="button">Ver todas as alterações →</button>
     </div>
   </div>
   <!-- Footer -->
