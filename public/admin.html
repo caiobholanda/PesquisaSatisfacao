@@ -3895,7 +3895,10 @@
           </div>
           <p class="page-sub">Disponibilidade e agenda das salas de massagem</p>
         </div>
-        <button class="btn" id="btn-nova-reserva" style="margin-left:auto;background:#202C28;color:#ECE4D2;border-color:#202C28">+ Novo Atendimento</button>
+        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-outline btn-sm" id="btn-aq-drawer-open" type="button">🌊 Day Use</button>
+          <button class="btn" id="btn-nova-reserva" style="background:#202C28;color:#ECE4D2;border-color:#202C28">+ Novo Atendimento</button>
+        </div>
       </div>
 
       <div class="cal-toolbar">
@@ -3940,74 +3943,6 @@
         </div>
       </div>
 
-      <!-- ── Área Molhada: Day Use (Jacuzzi + Sauna) ── -->
-      <div class="aq-panel" id="aq-panel">
-        <button class="aq-hd" id="aq-toggle" type="button" aria-expanded="false">
-          <div class="aq-hd-left">
-            <span class="aq-icon">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M2 18c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M12 2v4"/><path d="M8 4l1.5 2"/><path d="M16 4l-1.5 2"/></svg>
-            </span>
-            <div>
-              <span class="aq-title">Área Molhada · Day Use</span>
-              <span class="aq-subtitle">Jacuzzi + Sauna incluídos</span>
-            </div>
-            <span class="aq-date-badge" id="aq-date-badge">—</span>
-          </div>
-          <div class="aq-hd-right">
-            <span class="aq-revenue-chip" id="aq-revenue-chip" style="display:none"></span>
-            <span class="aq-chevron">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-          </div>
-        </button>
-        <div class="aq-body" id="aq-body">
-          <div class="aq-cards">
-            <!-- Hóspede -->
-            <div class="aq-card">
-              <div class="aq-card-header">
-                <span class="aq-card-label">Hóspede</span>
-                <span class="aq-card-price">R$ 60 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
-              </div>
-              <div class="aq-card-counter">
-                <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="-1" aria-label="Diminuir Hóspede" disabled>−</button>
-                <span class="aq-count" id="aq-count-hospede">0</span>
-                <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="1" aria-label="Aumentar Hóspede">+</button>
-              </div>
-              <div class="aq-card-subtotal" id="aq-sub-hospede">—</div>
-            </div>
-            <!-- Passante -->
-            <div class="aq-card">
-              <div class="aq-card-header">
-                <span class="aq-card-label">Passante</span>
-                <span class="aq-card-price">R$ 120 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
-              </div>
-              <div class="aq-card-counter">
-                <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="-1" aria-label="Diminuir Passante" disabled>−</button>
-                <span class="aq-count" id="aq-count-passante">0</span>
-                <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="1" aria-label="Aumentar Passante">+</button>
-              </div>
-              <div class="aq-card-subtotal" id="aq-sub-passante">—</div>
-            </div>
-            <!-- Gran Class -->
-            <div class="aq-card">
-              <div class="aq-card-header">
-                <span class="aq-card-label">Gran Class</span>
-                <span class="aq-gc-chip">★ GC</span>
-              </div>
-              <div class="aq-card-counter">
-                <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="-1" aria-label="Diminuir Gran Class" disabled>−</button>
-                <span class="aq-count" id="aq-count-gran_class">0</span>
-                <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="1" aria-label="Aumentar Gran Class">+</button>
-              </div>
-              <div class="aq-card-free">Gratuito</div>
-            </div>
-          </div>
-          <div class="aq-footer">
-            <div class="aq-footer-left"><span id="aq-tot-geral">0 pessoas</span></div>
-            <div class="aq-footer-right" id="aq-footer-revenue">—</div>
-          </div>
-        </div>
-      </div>
 
       <div class="cal-container">
         <div class="cal-scroll">
@@ -5241,6 +5176,75 @@
     <div class="sl-actions">
       <button type="button" class="sl-btn sl-btn-ghost" id="sl-btn-fechar">Fechar</button>
       <button type="button" class="sl-btn sl-btn-primary" id="sl-btn-alterar">Alterar horário</button>
+    </div>
+  </div>
+</div>
+
+<!-- AQ DAY USE DRAWER -->
+<div class="drawer-overlay" id="aq-drawer-overlay"></div>
+<div class="drawer" id="aq-drawer" style="width:min(400px,100vw);padding:1.75rem">
+  <div class="drawer-header" style="margin-bottom:1.25rem;padding-bottom:1rem">
+    <div>
+      <div style="font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.02em">Área Molhada · Day Use</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:.22rem;display:flex;align-items:center;gap:.5rem">
+        <span>Jacuzzi + Sauna incluídos</span>
+        <span class="aq-date-badge" id="aq-date-badge">—</span>
+        <span class="aq-revenue-chip" id="aq-revenue-chip" style="display:none"></span>
+      </div>
+    </div>
+    <button class="drawer-close" id="aq-drawer-close" aria-label="Fechar painel Day Use">✕</button>
+  </div>
+  <div id="aq-body">
+    <div class="aq-cards" style="grid-template-columns:1fr;gap:.55rem;padding:0 0 .5rem">
+      <!-- Hóspede -->
+      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
+        <div style="flex:1">
+          <div class="aq-card-header" style="margin-bottom:.1rem">
+            <span class="aq-card-label">Hóspede</span>
+            <span class="aq-card-price">R$ 60 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
+          </div>
+          <div class="aq-card-subtotal" id="aq-sub-hospede" style="text-align:left">—</div>
+        </div>
+        <div class="aq-card-counter" style="gap:.6rem">
+          <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="-1" aria-label="Diminuir Hóspede" disabled>−</button>
+          <span class="aq-count" id="aq-count-hospede">0</span>
+          <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="1" aria-label="Aumentar Hóspede">+</button>
+        </div>
+      </div>
+      <!-- Passante -->
+      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
+        <div style="flex:1">
+          <div class="aq-card-header" style="margin-bottom:.1rem">
+            <span class="aq-card-label">Passante</span>
+            <span class="aq-card-price">R$ 120 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
+          </div>
+          <div class="aq-card-subtotal" id="aq-sub-passante" style="text-align:left">—</div>
+        </div>
+        <div class="aq-card-counter" style="gap:.6rem">
+          <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="-1" aria-label="Diminuir Passante" disabled>−</button>
+          <span class="aq-count" id="aq-count-passante">0</span>
+          <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="1" aria-label="Aumentar Passante">+</button>
+        </div>
+      </div>
+      <!-- Gran Class -->
+      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
+        <div style="flex:1">
+          <div class="aq-card-header" style="margin-bottom:.1rem">
+            <span class="aq-card-label">Gran Class</span>
+            <span class="aq-gc-chip">★ GC</span>
+          </div>
+          <div class="aq-card-free" style="text-align:left">Gratuito</div>
+        </div>
+        <div class="aq-card-counter" style="gap:.6rem">
+          <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="-1" aria-label="Diminuir Gran Class" disabled>−</button>
+          <span class="aq-count" id="aq-count-gran_class">0</span>
+          <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="1" aria-label="Aumentar Gran Class">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="aq-footer" style="margin:0 -1.75rem -1.75rem;padding:.55rem 1.75rem">
+      <div class="aq-footer-left"><span id="aq-tot-geral">0 pessoas</span></div>
+      <div class="aq-footer-right" id="aq-footer-revenue">—</div>
     </div>
   </div>
 </div>

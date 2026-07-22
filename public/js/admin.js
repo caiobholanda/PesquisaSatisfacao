@@ -5140,13 +5140,20 @@ async function _aqSaveCell(tipo, novaQtd) {
   } finally { _aqSaving = false; }
 }
 
-// Toggle painel
-document.getElementById('aq-toggle')?.addEventListener('click', () => {
-  const panel = document.getElementById('aq-panel');
-  if (!panel) return;
-  const isOpen = panel.classList.toggle('open');
-  document.getElementById('aq-toggle')?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-});
+// Drawer Day Use
+function _openAqDrawer() {
+  const ds = _calDiaSel ? calDateStr(_calDiaSel) : calDateStr(new Date());
+  loadUsoAquatico(ds);
+  document.getElementById('aq-drawer')?.classList.add('open');
+  document.getElementById('aq-drawer-overlay')?.classList.add('open');
+}
+function _closeAqDrawer() {
+  document.getElementById('aq-drawer')?.classList.remove('open');
+  document.getElementById('aq-drawer-overlay')?.classList.remove('open');
+}
+document.getElementById('btn-aq-drawer-open')?.addEventListener('click', _openAqDrawer);
+document.getElementById('aq-drawer-close')?.addEventListener('click', _closeAqDrawer);
+document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAqDrawer);
 
 // Botões +/-
 document.getElementById('aq-body')?.addEventListener('click', e => {
