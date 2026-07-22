@@ -2426,8 +2426,9 @@ function _renderMassagistasModal2() {
   if (data) _fetchEscalaAval(data, horaInicio, _resHoraFim);
   let lista = _massagistasModal.filter(m => !m.funcao?.toLowerCase().includes('recep'));
   lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
-  // Exclui a massagista já selecionada para pessoa 1
+  // Exclui a massagista já selecionada para pessoa 1 e as extras do combo
   if (mass1Id) lista = lista.filter(m => String(m.id) !== String(mass1Id));
+  if (_resMassExtras.length) lista = lista.filter(m => !_resMassExtras.includes(m.id));
   const aviso2 = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
   // Regra da recepção no casal: a reserva consome DUAS livres — só pode haver
   // pessoa 2 com ≥3 livres no intervalo (duas atendem, uma sobra p/ recepção).
