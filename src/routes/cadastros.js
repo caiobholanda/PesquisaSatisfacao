@@ -365,9 +365,17 @@ router.get('/escala-spa/disponibilidade', (req, res) => {
   const excluirReservaId = Number.isInteger(_excluirRaw) && _excluirRaw > 0 ? _excluirRaw : null;
   let ocupadas = new Set();
   let livresTotal = null;
-  if (horaIni && horaFim) {
+  // Sem hora_fim (tratamento ainda não escolhido no modal): usa intervalo-ponto
+  // [início, início+1min) — já filtra quem está EM atendimento nesse instante.
+  const _fimEfetivo = horaFim || (() => {
+    const m = /^(\d{2}):(\d{2})$/.exec(String(horaIni || ''));
+    if (!m) return null;
+    const t = Math.min(+m[1] * 60 + +m[2] + 1, 23 * 60 + 59);
+    return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+  })();
+  if (horaIni && _fimEfetivo) {
     try {
-      const r = contarLivresIntervalo(data, horaIni, horaFim, { excluirReservaId, ctx });
+      const r = contarLivresIntervalo(data, horaIni, _fimEfetivo, { excluirReservaId, ctx });
       ocupadas = r.ocupadas;
       livresTotal = r.total;
     } catch {}
