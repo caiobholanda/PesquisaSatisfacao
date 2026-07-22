@@ -2632,22 +2632,38 @@ function _renderMassagistasModal() {
     list.innerHTML = aviso + `<div class="res-cb-opt cb-empty">${_semNinguem}</div>`;
     return;
   }
-  list.innerHTML = aviso + lista.map(m => {
+  const combo = _isComboTrat();
+  // Fora do modo combo, extras não fazem sentido: colapsa para só a principal
+  if (!combo && _resMassExtras.length) { _resMassExtras = []; _massSyncInput(); }
+  // Extras que saíram da lista (escala/conflito mudou) são removidas
+  if (combo && _resMassExtras.length) {
+    const idsSet = new Set(lista.map(m => m.id));
+    const antes = _resMassExtras.length;
+    _resMassExtras = _resMassExtras.filter(x => idsSet.has(x));
+    if (antes !== _resMassExtras.length) _massSyncInput();
+  }
+  const hintCombo = combo ? '<div class="res-cb-opt cb-empty">Combo — marque uma ou mais massoterapeutas</div>' : '';
+  list.innerHTML = aviso + hintCombo + lista.map(m => {
     const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
-    return `<div class="res-cb-opt" data-val="${m.id}" data-label="${escHtml(m.nome)}">${escHtml(m.nome)}${suffix}${m.bilingue ? ' 🌍' : ''}</div>`;
+    const marcada = combo && (String(hid?.value || '') === String(m.id) || _resMassExtras.includes(m.id));
+    const chk = combo ? `<span style="display:inline-block;width:1.1em">${marcada ? '☑' : '☐'}</span> ` : '';
+    return `<div class="res-cb-opt" ${combo ? 'data-multi="1"' : ''} data-val="${m.id}" data-label="${escHtml(m.nome)}">${chk}${escHtml(m.nome)}${suffix}${m.bilingue ? ' 🌍' : ''}</div>`;
   }).join('');
-  // Se seleção anterior saiu da lista, limpa
+  // Se seleção anterior saiu da lista, limpa (no combo: promove uma extra)
   if (prevId && !lista.find(m => String(m.id) === String(prevId))) {
-    if (hid) hid.value = '';
-    if (inp) { inp.value = ''; }
-    if (clr) clr.style.display = 'none';
+    const promovida = combo ? (_resMassExtras.shift() || null) : null;
+    if (hid) hid.value = promovida ? String(promovida) : '';
+    if (combo) _massSyncInput();
+    else {
+      if (inp) { inp.value = ''; }
+      if (clr) clr.style.display = 'none';
+    }
   }
   // Auto-seleciona quando só uma disponível e nada selecionado
   if (lista.length === 1 && !hid?.value) {
     const m = lista[0];
-    const suffix = m.vinculo ? ` · ${m.vinculo}` : '';
     if (hid) hid.value = m.id;
-    if (inp) inp.value = m.nome + suffix;
+    if (inp) inp.value = _massLabel(m);
     if (clr) clr.style.display = '';
     hid?.dispatchEvent(new Event('change', { bubbles: true }));
   }
