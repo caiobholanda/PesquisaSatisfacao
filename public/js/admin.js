@@ -2465,17 +2465,26 @@ async function loadMassagistasModal() {
 let _escalaAvalKey = null;
 let _escalaAvalMap = null;
 let _escalaAvalLancada = null;
+let _escalaAvalLivres = null; // contagem de livres do intervalo (escala ∧ sem conflito) — regra da recepção
+
+function _escalaAvalKeyFor(data, horaInicio, horaFim) {
+  // Inclui a reserva em edição: na edição a própria reserva não conta
+  // contra a terapeuta (excluir=id no backend).
+  return `${data}|${horaInicio || ''}|${horaFim || ''}|${_resEditandoId || ''}`;
+}
 
 async function _fetchEscalaAval(data, horaInicio, horaFim) {
-  const key = `${data}|${horaInicio || ''}|${horaFim || ''}`;
+  const key = _escalaAvalKeyFor(data, horaInicio, horaFim);
   if (key === _escalaAvalKey) return;
   _escalaAvalKey = key;
   _escalaAvalMap = null;
   _escalaAvalLancada = null;
+  _escalaAvalLivres = null;
   try {
     const qs = new URLSearchParams({ data });
     if (horaInicio) qs.set('hora_inicio', horaInicio);
     if (horaFim) qs.set('hora_fim', horaFim);
+    if (_resEditandoId) qs.set('excluir', _resEditandoId);
     const r = await api(`/api/escala-spa/disponibilidade?${qs.toString()}`);
     if (!r) return;
     const d = await r.json();
@@ -2483,17 +2492,27 @@ async function _fetchEscalaAval(data, horaInicio, horaFim) {
     if (!d.ok) { _escalaAvalKey = null; return; } // permite retry na próxima interação
     _escalaAvalMap = new Map((d.items || []).map(it => [it.massagista_id, it]));
     _escalaAvalLancada = !!d.lancada;
+    _escalaAvalLivres = Number.isInteger(d.livres) ? d.livres : null;
     _renderMassagistasModal();
     _renderMassagistasModal2();
   } catch { if (_escalaAvalKey === key) _escalaAvalKey = null; /* fail-open + retry */ }
 }
 
 function _escalaFiltra(m, data, horaInicio, horaFim) {
-  if (data && _escalaAvalMap && _escalaAvalKey === `${data}|${horaInicio || ''}|${horaFim || ''}`) {
+  if (data && _escalaAvalMap && _escalaAvalKey === _escalaAvalKeyFor(data, horaInicio, horaFim)) {
     const av = _escalaAvalMap.get(m.id);
-    if (av) return av.disponivel;
+    // fora da escala OU já em atendimento no intervalo → fora do seletor
+    if (av) return av.disponivel && !av.ocupada;
   }
   return true; // fail-open: sem aval carregada, backend valida no POST
+}
+
+// Contagem de livres válida para o intervalo atual (null = ainda não carregada)
+function _livresIntervalo(data, horaInicio, horaFim) {
+  if (data && horaInicio && horaFim && _escalaAvalKey === _escalaAvalKeyFor(data, horaInicio, horaFim)) {
+    return _escalaAvalLivres;
+  }
+  return null;
 }
 
 function _escalaAvisoHtml(data, horaInicio, horaFim) {
