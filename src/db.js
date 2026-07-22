@@ -1248,6 +1248,50 @@ export function avaliarEscalaMassagista(m, data, horaInicio, horaFim, ctx) {
   return { disponivel: ok, fonte: 'padrao', motivo: ok ? null : 'fora do padrão semanal', faixa };
 }
 
+// ── Regra da recepção: sempre deve sobrar ≥1 massoterapeuta livre p/ recepção ──
+// LIVRE no intervalo = ativa, não-recepcionista, em escala (avaliarEscalaMassagista)
+// E sem reserva conflitante. Fonte única da verdade: usada pelo seletor do modal
+// (GET /escala-spa/disponibilidade) e pela validação do POST/PUT de reservas.
+// excluirReservaId: na edição, a própria reserva não conta contra a terapeuta.
+export function contarLivresIntervalo(data, horaInicio, horaFim, opts = {}) {
+  const { excluirReservaId = null, ctx = null } = opts;
+  const db = getDb();
+  const c = ctx || contextoEscalaDia(data);
+  const rows = db.prepare(`
+    SELECT massagista_id, massagista_id2 FROM reservas
+    WHERE data = ? AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      AND (? IS NULL OR id != ?)
+  `).all(data, horaInicio, horaFim, excluirReservaId, excluirReservaId);
+  const ocupadas = new Set();
+  for (const r of rows) {
+    if (r.massagista_id)  ocupadas.add(r.massagista_id);
+    if (r.massagista_id2) ocupadas.add(r.massagista_id2);
+  }
+  const livres = [];
+  for (const m of listarMassagistas()) {
+    if (!m.ativo) continue;
+    if (m.funcao && m.funcao.toLowerCase().includes('recep')) continue;
+    if (ocupadas.has(m.id)) continue;
+    if (!avaliarEscalaMassagista(m, data, horaInicio, horaFim, c).disponivel) continue;
+    livres.push({ id: m.id, nome: m.nome });
+  }
+  return { livres, ocupadas, total: livres.length };
+}
+
+// Decide se agendar `selecionadas` (1 ou 2 massoterapeutas) no intervalo viola a
+// regra da recepção: após consumir as selecionadas, deve sobrar ≥1 livre.
+// Se alguma selecionada NÃO está livre (conflito próprio), não é violação desta
+// regra — o CONFLITO_PROF do insert/update aponta o conflito real, mais preciso.
+export function avaliarRegraRecepcao(data, horaInicio, horaFim, opts = {}) {
+  const { selecionadas = [], excluirReservaId = null } = opts;
+  const sel = selecionadas.map(Number).filter(n => Number.isInteger(n) && n > 0);
+  const { livres, total } = contarLivresIntervalo(data, horaInicio, horaFim, { excluirReservaId });
+  const livresSet = new Set(livres.map(l => l.id));
+  const todasLivres = sel.length > 0 && sel.every(id => livresSet.has(id));
+  const viola = todasLivres && (total - sel.length) < 1;
+  return { viola, total, livres, consumo: sel.length };
+}
+
 export function listarReservasMassagistaData(massagista_id, data) {
   return getDb().prepare(
     `SELECT id, cliente, cliente2, sala, hora_inicio, hora_fim, massagista_id, massagista_id2
