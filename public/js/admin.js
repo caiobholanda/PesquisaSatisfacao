@@ -4015,6 +4015,15 @@ document.getElementById('res-inp-hora-inicio').addEventListener('change', () => 
 document.getElementById('res-inp-data')?.addEventListener('change', () => { _ajustarHoraInicioBounds(); _renderMassagistasModal(); _renderMassagistasModal2(); _atualizarDisponibilidadeSalas(); });
 document.getElementById('res-flt-bilingue')?.addEventListener('change', () => { _renderMassagistasModal(); _renderMassagistasModal2(); });
 document.getElementById('res-inp-massagista').addEventListener('change', _renderMassagistasModal2);
+// Botão ✕ do seletor (hid e input vazios) descarta também as extras do combo
+document.getElementById('res-inp-massagista').addEventListener('change', () => {
+  const hid = document.getElementById('res-inp-massagista');
+  const inp = document.getElementById('res-cb-mass-inp');
+  if (!hid?.value && !inp?.value && _resMassExtras.length) {
+    _resMassExtras = [];
+    _renderMassagistasModal();
+  }
+});
 document.getElementById('res-inp-tratamento2').addEventListener('change', calAtualizarHoraFim);
 
 // Modal de detalhes da reserva
