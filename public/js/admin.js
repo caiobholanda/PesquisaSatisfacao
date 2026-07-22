@@ -2591,7 +2591,8 @@ function _massMultiToggle(id) {
     const data = document.getElementById('res-inp-data')?.value || null;
     const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
     const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
-    const selDepois = 2 + _resMassExtras.length; // principal + extras + esta
+    const p2Sel = (_isCasal() && document.getElementById('res-inp-massagista2')?.value) ? 1 : 0;
+    const selDepois = 2 + _resMassExtras.length + p2Sel; // principal + extras + esta (+ pessoa 2)
     if (_escalaAvalRecepCoberta !== true && livres !== null && selDepois > livres - 1) {
       showToast('🛎 Regra da recepção: adicionar mais uma massoterapeuta deixaria a recepção descoberta. Escolha outro horário ou use o override ao salvar.', 6000);
       return;
