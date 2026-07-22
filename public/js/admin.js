@@ -2340,6 +2340,12 @@ function _cbInit({ textId, listId, clrId, hiddenId }) {
     e.preventDefault();
     const opt = e.target.closest('.res-cb-opt:not(.cb-empty)');
     if (!opt) return;
+    // Combo multi-massoterapeuta: opção com data-multi alterna seleção e
+    // mantém a lista aberta para marcar mais de uma.
+    if (opt.dataset.multi === '1') {
+      _massMultiToggle(+opt.dataset.val);
+      return;
+    }
     hid.value = opt.dataset.val;
     inp.value = opt.dataset.label;
     clr.style.display = '';
