@@ -66,9 +66,20 @@ function rodarPassagem(pass) {
     check(pass, '2b. 2 livres → agenda OK', rr([ids.B], '14:00', '15:00').viola === false);
     const resB = reservar(2, ids.B, '14:00', '15:00');
 
-    // 3. 1 livre → recusa (equivale ao 409 tipo:recepcao do POST)
+    // 3. 1 livre e recepção descoberta → recusa (equivale ao 409 tipo:recepcao)
     const v3 = rr([ids.C], '14:00', '15:00');
     check(pass, '3. última livre → viola', v3.viola === true && v3.total === 1, JSON.stringify(v3));
+
+    // 3b. recepcionista EM ESCALA no intervalo cobre a recepção → regra desligada
+    upsertTurno(ids.R, DATA, '09:00|22:00');
+    const v3b = rr([ids.C], '14:00', '15:00');
+    check(pass, '3b. recepcionista em escala → última masso pode', v3b.viola === false && v3b.recepcaoCoberta === true, JSON.stringify(v3b));
+
+    // 3c. turno da recepcionista NÃO cobre o intervalo do tratamento → regra ativa
+    upsertTurno(ids.R, DATA, '09:00|13:00');
+    const v3c = rr([ids.C], '14:00', '15:00');
+    check(pass, '3c. turno da recepcionista não cobre 14h → viola', v3c.viola === true && v3c.recepcaoCoberta === false, JSON.stringify(v3c));
+    upsertTurno(ids.R, DATA, 'X'); // volta ao padrão (descoberta) p/ cenários seguintes
 
     // 4. override: com a flag o POST pula a regra e o INSERT persiste normalmente
     const resC = reservar(4, ids.C, '14:00', '15:00');
