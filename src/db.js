@@ -1261,7 +1261,7 @@ export function contarLivresIntervalo(data, horaInicio, horaFim, opts = {}) {
   const db = getDb();
   const c = ctx || contextoEscalaDia(data);
   const rows = db.prepare(`
-    SELECT massagista_id, massagista_id2 FROM reservas
+    SELECT massagista_id, massagista_id2, massagistas_extras FROM reservas
     WHERE data = ? AND NOT (hora_fim <= ? OR hora_inicio >= ?)
       AND (? IS NULL OR id != ?)
   `).all(data, horaInicio, horaFim, excluirReservaId, excluirReservaId);
@@ -1269,6 +1269,10 @@ export function contarLivresIntervalo(data, horaInicio, horaFim, opts = {}) {
   for (const r of rows) {
     if (r.massagista_id)  ocupadas.add(r.massagista_id);
     if (r.massagista_id2) ocupadas.add(r.massagista_id2);
+    // Combo: integrantes extras também estão ocupadas no intervalo
+    if (r.massagistas_extras) {
+      try { for (const x of JSON.parse(r.massagistas_extras)) { const n = Number(x); if (Number.isInteger(n) && n > 0) ocupadas.add(n); } } catch {}
+    }
   }
   const livres = [];
   // Recepcionista EM ESCALA no intervalo cobre a recepção — nesse caso a regra
