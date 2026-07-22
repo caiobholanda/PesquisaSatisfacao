@@ -2427,13 +2427,25 @@
     .aq-ledger-more.visible { display: block; }
 
     .aq-dw-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: .7rem 1.75rem; margin-top: 1rem;
+      display: flex; flex-direction: column; gap: 0;
+      padding: .75rem 1.75rem .9rem; margin-top: 1rem;
       border-top: 1px solid var(--border); background: var(--surface2);
       flex-shrink: 0;
     }
+    .aq-pb { display: none; width: 100%; margin-bottom: .3rem; }
+    .aq-pb.visible { display: block; }
+    .aq-pb-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .19rem 0; font-size: .76rem; color: var(--muted);
+    }
+    .aq-pb-row span:last-child { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .aq-pb-sep { border-top: 1px solid var(--border); margin: .38rem 0; }
+    .aq-dw-footer-total {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%;
+    }
     .aq-dw-footer-left { font-size: .78rem; color: var(--muted); }
-    .aq-dw-footer-rev { font-size: .95rem; font-weight: 800; color: var(--gold-dark); font-variant-numeric: tabular-nums; }
+    .aq-dw-footer-rev { font-size: 1rem; font-weight: 800; color: var(--gold-dark); font-variant-numeric: tabular-nums; }
 
     /* ── Container ── */
     .cal-container {
@@ -5402,8 +5414,16 @@
   </div>
   <!-- Footer -->
   <div class="aq-dw-footer">
-    <div class="aq-dw-footer-left"><span id="aq-tot-geral">0 pessoas</span></div>
-    <div class="aq-dw-footer-rev" id="aq-footer-revenue">—</div>
+    <div class="aq-pb" id="aq-pb">
+      <div class="aq-pb-row"><span>Subtotal</span><span id="aq-pb-sub">—</span></div>
+      <div class="aq-pb-row"><span>Taxa de serviço (10%)</span><span id="aq-pb-taxa">—</span></div>
+      <div class="aq-pb-row"><span>ISS (5%)</span><span id="aq-pb-iss">—</span></div>
+      <div class="aq-pb-sep"></div>
+    </div>
+    <div class="aq-dw-footer-total">
+      <span class="aq-dw-footer-left" id="aq-tot-geral">0 pessoas</span>
+      <span class="aq-dw-footer-rev" id="aq-footer-revenue">—</span>
+    </div>
   </div>
 </div>
 

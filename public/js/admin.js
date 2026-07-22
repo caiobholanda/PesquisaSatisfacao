@@ -5059,11 +5059,11 @@ function _aqGet(tipo) { return _aqState[tipo] || 0; }
 function _aqFmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
 function _aqRender() {
-  let totPessoas = 0, totReceita = 0;
+  let totPessoas = 0, totSubtotal = 0;
   for (const tipo of _AQ_TIPOS) {
     const qty = _aqGet(tipo);
     totPessoas += qty;
-    totReceita += qty * _AQ_PRECO[tipo];
+    totSubtotal += qty * (_AQ_PRECO_BASE[tipo] || 0);
     const elCount = document.getElementById(`aq-count-${tipo}`);
     if (elCount) {
       elCount.textContent = qty;
@@ -5078,15 +5078,27 @@ function _aqRender() {
       }
     }
   }
+  const totTaxa = totSubtotal * 0.10;
+  const totIss  = totSubtotal * 0.05;
+  const totTotal = totSubtotal * 1.15;
+
   const elTot = document.getElementById('aq-tot-geral');
   if (elTot) elTot.textContent = `${totPessoas} pessoa${totPessoas !== 1 ? 's' : ''}`;
   const elFootRev = document.getElementById('aq-footer-revenue');
-  if (elFootRev) elFootRev.textContent = totReceita > 0 ? _aqFmt(totReceita) : '—';
+  if (elFootRev) elFootRev.textContent = totTotal > 0 ? _aqFmt(totTotal) : '—';
   const elChip = document.getElementById('aq-revenue-chip');
   if (elChip) {
-    elChip.textContent = totReceita > 0 ? _aqFmt(totReceita) : '';
-    elChip.style.display = totReceita > 0 ? '' : 'none';
+    elChip.textContent = totTotal > 0 ? _aqFmt(totTotal) : '';
+    elChip.style.display = totTotal > 0 ? '' : 'none';
   }
+  const elPb = document.getElementById('aq-pb');
+  if (elPb) elPb.classList.toggle('visible', totSubtotal > 0);
+  const elPbSub  = document.getElementById('aq-pb-sub');
+  const elPbTaxa = document.getElementById('aq-pb-taxa');
+  const elPbIss  = document.getElementById('aq-pb-iss');
+  if (elPbSub)  elPbSub.textContent  = totSubtotal > 0 ? _aqFmt(totSubtotal) : '—';
+  if (elPbTaxa) elPbTaxa.textContent = totSubtotal > 0 ? _aqFmt(totTaxa)     : '—';
+  if (elPbIss)  elPbIss.textContent  = totSubtotal > 0 ? _aqFmt(totIss)      : '—';
 }
 
 function _aqRenderDateBadge(ds) {
