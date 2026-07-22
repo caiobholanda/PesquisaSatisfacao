@@ -2433,7 +2433,7 @@ function _renderMassagistasModal2() {
   // Regra da recepção no casal: a reserva consome DUAS livres — só pode haver
   // pessoa 2 com ≥3 livres no intervalo (duas atendem, uma sobra p/ recepção).
   const livres2 = _livresIntervalo(data, horaInicio, _resHoraFim);
-  if (livres2 !== null && livres2 <= 2 && _escalaAvalRecepCoberta !== true) {
+  if (livres2 !== null && livres2 <= 2 + _resMassExtras.length && _escalaAvalRecepCoberta !== true) {
     // Seleção prévia mantida de propósito (caminho do override no salvar).
     const _msg2 = livres2 <= 1
       ? '🛎 Sem massoterapeuta disponível para a pessoa 2 — ao menos uma precisa cobrir a recepção do spa.'
