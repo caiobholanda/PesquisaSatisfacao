@@ -1960,8 +1960,10 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
     idioma = null, idioma2 = null, nacionalidade = null, nacionalidade2 = null,
     tipo_pagamento = 'pago', cortesia_justificativa = null, cortesia_autorizado_por = null, cortesia_autorizado_por_nome = null,
+    massagistas_extras = null,
   } = opts;
   const db = getDb();
+  const extras = _normalizarExtras(massagistas_extras, massagista_id, massagista_id2);
 
   const existing = db.prepare('SELECT id FROM reservas WHERE id = ?').get(id);
   if (!existing) throw Object.assign(new Error('Reserva não encontrada'), { code: 'NOT_FOUND' });
