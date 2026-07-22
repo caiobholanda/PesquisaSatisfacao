@@ -2519,9 +2519,10 @@ function _escalaFiltra(m, data, horaInicio, horaFim) {
   return true; // fail-open: sem aval carregada, backend valida no POST
 }
 
-// Contagem de livres válida para o intervalo atual (null = ainda não carregada)
+// Contagem de livres válida para o intervalo atual (null = ainda não carregada).
+// Sem hora_fim o backend usa intervalo-ponto no início — preview já correto.
 function _livresIntervalo(data, horaInicio, horaFim) {
-  if (data && horaInicio && horaFim && _escalaAvalKey === _escalaAvalKeyFor(data, horaInicio, horaFim)) {
+  if (data && horaInicio && _escalaAvalKey === _escalaAvalKeyFor(data, horaInicio, horaFim)) {
     return _escalaAvalLivres;
   }
   return null;
