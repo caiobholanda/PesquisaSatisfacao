@@ -2517,7 +2517,7 @@ function _livresIntervalo(data, horaInicio, horaFim) {
 
 function _escalaAvisoHtml(data, horaInicio, horaFim) {
   if (!data || _escalaAvalLancada !== false) return '';
-  if (_escalaAvalKey !== `${data}|${horaInicio || ''}|${horaFim || ''}`) return '';
+  if (_escalaAvalKey !== _escalaAvalKeyFor(data, horaInicio, horaFim)) return '';
   return '<div class="res-cb-opt cb-empty">⚠ Escala mensal não lançada para esta data — usando padrão semanal</div>';
 }
 
