@@ -5122,6 +5122,44 @@ async function loadUsoAquatico(ds) {
   _aqRender();
 }
 
+const _AQ_TIPO_LABEL = { hospede: 'Hóspede', passante: 'Passante', gran_class: 'Gran Class' };
+const _AQ_PRECO_BASE = { hospede: 60, passante: 120, gran_class: 0 };
+
+async function _aqLoadLog(ds) {
+  const el = document.getElementById('aq-ledger-list');
+  if (!el || !ds) return;
+  const res = await api(`/api/reservas/uso-aquatico-log?data=${ds}`);
+  if (!res) return;
+  const d = await res.json();
+  if (!d.ok || !d.items?.length) {
+    el.innerHTML = '<div class="aq-ledger-empty">Sem registros para esta data</div>';
+    return;
+  }
+  el.innerHTML = d.items.map(item => {
+    const delta = item.delta;
+    const sign = delta > 0 ? '+' : '';
+    const cls = delta > 0 ? 'pos' : 'neg';
+    const label = _AQ_TIPO_LABEL[item.tipo_usuario] || item.tipo_usuario;
+    const base = _AQ_PRECO_BASE[item.tipo_usuario] || 0;
+    const valorFmt = item.tipo_usuario === 'gran_class'
+      ? 'Gratuito'
+      : _aqFmt(Math.abs(delta) * base * 1.15);
+    const dt = new Date(item.registrado_em.replace(' ', 'T') + (item.registrado_em.includes('T') ? '' : 'Z'));
+    const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const dia  = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const oper = item.operador || '—';
+    return `<div class="aq-ledger-row">
+      <span class="aq-ledger-delta ${cls}">${sign}${delta}</span>
+      <div>
+        <div class="aq-ledger-tipo">${label}</div>
+        <div class="aq-ledger-oper">${oper}</div>
+      </div>
+      <div class="aq-ledger-valor">${valorFmt}</div>
+      <div class="aq-ledger-meta">${hora}<br>${dia}</div>
+    </div>`;
+  }).join('');
+}
+
 async function _aqSaveCell(tipo, novaQtd) {
   if (_aqSaving) return;
   _aqSaving = true;
@@ -5137,6 +5175,7 @@ async function _aqSaveCell(tipo, novaQtd) {
       if (d.ok) {
         _aqState[tipo] = novaQtd;
         _aqRender();
+        _aqLoadLog(ds);
       }
     }
   } finally { _aqSaving = false; }
@@ -5146,6 +5185,7 @@ async function _aqSaveCell(tipo, novaQtd) {
 function _openAqDrawer() {
   const ds = _calDiaSel ? calDateStr(_calDiaSel) : calDateStr(new Date());
   loadUsoAquatico(ds);
+  _aqLoadLog(ds);
   document.getElementById('aq-drawer')?.classList.add('open');
   document.getElementById('aq-drawer-overlay')?.classList.add('open');
 }

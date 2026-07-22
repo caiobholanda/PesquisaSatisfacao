@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
-import { listarReservasSemana, inserirReserva, atualizarReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista, avaliarRegraRecepcao, getUsoAquatico, upsertUsoAquatico } from '../db.js';
+import { listarReservasSemana, inserirReserva, atualizarReserva, cancelarReserva, listarTodasReservas, buscarReservaById, buscarReservaDetalhe, criarSurveyToken, gerarDocumentoToken, countSessoesSemPesquisa, buscarAdminById, buscarClientePorCpf, buscarClientePorPassaporte, inserirCliente, atualizarCliente, validarCpfMod11, validarPassaporte, getDb, quartoValido, isGranClass, telefoneValido, statusPesquisaPessoa, buscarMassagistaById, contextoEscalaDia, avaliarEscalaMassagista, avaliarRegraRecepcao, getUsoAquatico, upsertUsoAquatico, getUsoAquaticoLog } from '../db.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -803,11 +803,19 @@ router.post('/uso-aquatico', ...podeEscreverSpa, (req, res) => {
   if (!['hospede','passante','gran_class'].includes(tipo_usuario))
     return res.status(400).json({ ok: false, error: 'tipo_usuario: hospede, passante ou gran_class' });
   try {
-    const item = upsertUsoAquatico(data, equipamento, tipo_usuario, Number(quantidade));
+    const operador = req.user?.username || req.user?.sub || null;
+    const item = upsertUsoAquatico(data, equipamento, tipo_usuario, Number(quantidade), operador);
     res.json({ ok: true, item });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+router.get('/uso-aquatico-log', (req, res) => {
+  const { data } = req.query;
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data))
+    return res.status(400).json({ ok: false, error: 'data obrigatória (YYYY-MM-DD)' });
+  res.json({ ok: true, items: getUsoAquaticoLog(data) });
 });
 
 export default router;

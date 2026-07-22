@@ -768,6 +768,23 @@ export function initDb() {
       CREATE INDEX IF NOT EXISTS idx_uso_aquatico_data ON uso_aquatico(data);
     `);
   } catch (e) { console.error('[migration uso_aquatico]', e.message); }
+
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS uso_aquatico_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data TEXT NOT NULL,
+        equipamento TEXT NOT NULL,
+        tipo_usuario TEXT NOT NULL,
+        quantidade_antes INTEGER NOT NULL DEFAULT 0,
+        quantidade_depois INTEGER NOT NULL DEFAULT 0,
+        delta INTEGER NOT NULL DEFAULT 0,
+        operador TEXT,
+        registrado_em TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_uso_aquatico_log_data ON uso_aquatico_log(data);
+    `);
+  } catch (e) { console.error('[migration uso_aquatico_log]', e.message); }
 }
 
 // Retorna saldo CF: feriados trabalhados (ganhos) − dias com turno='CF' (usados)
@@ -3372,16 +3389,29 @@ export function getUsoAquatico(data) {
   return getDb().prepare('SELECT * FROM uso_aquatico WHERE data = ?').all(data);
 }
 
-export function upsertUsoAquatico(data, equipamento, tipo_usuario, quantidade) {
+export function upsertUsoAquatico(data, equipamento, tipo_usuario, quantidade, operador) {
   const db = getDb();
+  const antes = db.prepare('SELECT quantidade FROM uso_aquatico WHERE data=? AND equipamento=? AND tipo_usuario=?').get(data, equipamento, tipo_usuario);
+  const qtdAntes = antes ? antes.quantidade : 0;
+  const qtdDepois = Math.max(0, parseInt(quantidade) || 0);
   db.prepare(`
     INSERT INTO uso_aquatico (data, equipamento, tipo_usuario, quantidade)
     VALUES (?, ?, ?, ?)
     ON CONFLICT(data, equipamento, tipo_usuario) DO UPDATE SET
       quantidade = excluded.quantidade,
       registrado_em = datetime('now')
-  `).run(data, equipamento, tipo_usuario, Math.max(0, parseInt(quantidade) || 0));
+  `).run(data, equipamento, tipo_usuario, qtdDepois);
+  if (qtdAntes !== qtdDepois) {
+    db.prepare(`
+      INSERT INTO uso_aquatico_log (data, equipamento, tipo_usuario, quantidade_antes, quantidade_depois, delta, operador)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(data, equipamento, tipo_usuario, qtdAntes, qtdDepois, qtdDepois - qtdAntes, operador || null);
+  }
   return db.prepare('SELECT * FROM uso_aquatico WHERE data=? AND equipamento=? AND tipo_usuario=?').get(data, equipamento, tipo_usuario);
+}
+
+export function getUsoAquaticoLog(data) {
+  return getDb().prepare('SELECT * FROM uso_aquatico_log WHERE data = ? ORDER BY registrado_em DESC LIMIT 60').all(data);
 }
 
 export function atualizarSalaReserva(reservaId, novaSala) {

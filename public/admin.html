@@ -2372,6 +2372,38 @@
       line-height: 1.6; display: flex; gap: .55rem; align-items: flex-start;
     }
     .aq-gc-info-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; margin-top: .05rem; }
+    /* ── Ledger histórico Day Use ── */
+    .aq-ledger { margin-top: 1.6rem; padding-bottom: .5rem; }
+    .aq-ledger-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); padding-bottom: .38rem; margin-bottom: .65rem;
+      border-bottom: 1px solid rgba(153,100,66,.35);
+      display: flex; align-items: center; gap: .42rem;
+    }
+    .aq-ledger-title-gem { font-size: .55rem; opacity: .8; }
+    .aq-ledger-empty {
+      font-size: .72rem; color: var(--muted); padding: .6rem 0;
+      text-align: center; font-style: italic; font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .aq-ledger-row {
+      display: grid; grid-template-columns: 2rem 1fr auto auto;
+      align-items: center; gap: .3rem .65rem;
+      padding: .42rem 0; border-bottom: 1px dashed rgba(153,100,66,.15);
+      font-size: .74rem;
+    }
+    .aq-ledger-row:last-child { border-bottom: none; }
+    .aq-ledger-delta {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: .95rem; font-weight: 700; text-align: center; line-height: 1;
+    }
+    .aq-ledger-delta.pos { color: #4d8c5e; }
+    .aq-ledger-delta.neg { color: #b05a52; }
+    .aq-ledger-tipo { font-weight: 600; color: var(--text); font-size: .74rem; line-height: 1.2; }
+    .aq-ledger-oper { color: var(--muted); font-size: .64rem; margin-top: .06rem; }
+    .aq-ledger-valor { color: var(--gold-dark); font-variant-numeric: tabular-nums; font-size: .73rem; text-align: right; white-space: nowrap; }
+    .aq-ledger-meta { color: var(--muted); font-size: .64rem; text-align: right; line-height: 1.45; white-space: nowrap; }
+
     .aq-dw-footer {
       display: flex; align-items: center; justify-content: space-between;
       padding: .7rem 1.75rem; margin-top: 1rem;
@@ -5337,6 +5369,15 @@
           <span class="aq-dw-count" id="aq-count-gran_class">0</span>
           <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="1" aria-label="Aumentar Gran Class">+</button>
         </div>
+      </div>
+    </div>
+    <!-- Ledger histórico -->
+    <div class="aq-ledger">
+      <div class="aq-ledger-title">
+        <span class="aq-ledger-title-gem">◆</span> Registro de alterações
+      </div>
+      <div id="aq-ledger-list" class="aq-ledger-list">
+        <div class="aq-ledger-empty">Sem registros para esta data</div>
       </div>
     </div>
   </div>
