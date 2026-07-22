@@ -29,7 +29,10 @@ function setup() {
   ids.B = criarMassagista('Bia', 'Massoterapeuta');
   ids.C = criarMassagista('Cris', 'Massoterapeuta');
   ids.R = criarMassagista('Rec', 'Recepcionista');
-  for (const id of Object.values(ids)) upsertTurno(id, DATA, '09:00|22:00');
+  for (const id of [ids.A, ids.B, ids.C]) upsertTurno(id, DATA, '09:00|22:00');
+  // Recepcionista de FOLGA por padrão → recepção descoberta → regra ativa.
+  // Cenários 3b/3c ligam o turno dela para testar a cobertura.
+  upsertTurno(ids.R, DATA, 'X');
 }
 
 function cleanup() {
