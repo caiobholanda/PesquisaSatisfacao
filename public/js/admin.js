@@ -4799,11 +4799,19 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     if(!res)return;
     const d=await res.json();
     if(!d.ok){
-      // Fora da escala — override explícito do admin (exceções operacionais:
-      // troca informal, cobertura). A flag fica registrada na auditoria.
-      if (res.status === 409 && d.tipo === 'escala') {
+      // Fora da escala OU regra da recepção — override explícito do admin
+      // ("Agendar mesmo assim"). A flag fica registrada na auditoria.
+      if (res.status === 409 && (d.tipo === 'escala' || d.tipo === 'recepcao')) {
         const faixa = d.faixa ? ` (turno: ${d.faixa})` : '';
-        err.textContent = (d.error || 'Massoterapeuta fora da escala nesta data/horário') + faixa + '. Escolha outro horário ou outra massoterapeuta.';
+        const base = d.tipo === 'recepcao'
+          ? (d.error || 'Regra da recepção: precisa sobrar ao menos uma massoterapeuta livre neste horário.')
+          : (d.error || 'Massoterapeuta fora da escala nesta data/horário') + faixa + '. Escolha outro horário ou outra massoterapeuta.';
+        err.innerHTML = `${escHtml(base)}<br><button type="button" id="btn-res-override" class="btn btn-danger" style="margin-top:.4rem">Agendar mesmo assim</button>`;
+        document.getElementById('btn-res-override')?.addEventListener('click', () => {
+          _resOverrideRegra = true;
+          err.textContent = '';
+          document.getElementById('btn-res-salvar')?.click();
+        }, { once: true });
         return;
       }
       // Conflito detectado pelo servidor
