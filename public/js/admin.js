@@ -3939,6 +3939,30 @@ function _precoDetHtml2(r) {
   return _precoBloco(tm, ehGC);
 }
 
+function _precoV2(tm, ehGC) {
+  if (!tm?.preco) return '';
+  const sub = Number(tm.preco);
+  const desconto = ehGC ? sub * 0.10 : 0;
+  const sd = sub - desconto;
+  const taxaServ = sd * TAXA_SERVICO;
+  const taxaIss = sd * TAXA_ISS;
+  const total = sd + taxaServ + taxaIss;
+  const fmt = v => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  let h = '<div class="rd2-fin">';
+  h += `<div class="rd2-fin-row"><span class="rd2-fin-lbl">Subtotal</span><span class="rd2-fin-val">${fmt(sub)}</span></div>`;
+  if (ehGC) h += `<div class="rd2-fin-row desconto"><span class="rd2-fin-lbl">★ Gran Class (−10%)</span><span class="rd2-fin-val">−${fmt(desconto)}</span></div>`;
+  h += `<div class="rd2-fin-row"><span class="rd2-fin-lbl">Taxa de serviço (10%)</span><span class="rd2-fin-val">${fmt(taxaServ)}</span></div>`;
+  h += `<div class="rd2-fin-row"><span class="rd2-fin-lbl">ISS (5%)</span><span class="rd2-fin-val">${fmt(taxaIss)}</span></div>`;
+  h += `<div class="rd2-fin-row total"><span class="rd2-fin-lbl">Total</span><span class="rd2-fin-val">${fmt(total)}</span></div>`;
+  h += '</div>';
+  return h;
+}
+
+function _comboPillsV2(tm) {
+  if (!tm || tm.tipo !== 'combo' || !tm.componentes_nomes?.length) return '';
+  return '<div class="rd2-pills">' + tm.componentes_nomes.map(n => `<span class="rd2-pill">${escHtml(n)}</span>`).join('') + '</div>';
+}
+
 // Modal de beneficios Gran Class — popup ao clicar no badge na agenda
 // ou nos detalhes da reserva.
 function _abrirModalGranClass() {
@@ -4101,110 +4125,98 @@ async function calVerDetalhes(id) {
     (_ehGCDet ? `<span style="margin-left:.5rem">${badgeGranClassHtml()}</span>` : '');
 
   const isCasal = !!r.cliente2;
+  const _tm1 = _tratamentos.find(t => t.id === r.tipo_massagem_id || t.nome === r.tratamento);
+  const _tm2 = isCasal ? _tratamentos.find(t => t.id === r.tipo_massagem_id2 || t.nome === r.tratamento2) : null;
+  const _ehGC1 = _ehGCDet && _tm1?.tipo !== 'combo';
+  const _ehGC2 = _ehGCDet && (_tm2?.tipo !== 'combo');
+  const _combo1 = _comboPillsV2(_tm1);
+  const _combo2 = _comboPillsV2(_tm2);
+  const _fin1 = r.tipo_pagamento !== 'cortesia' ? _precoV2(_tm1, _ehGC1) : '';
+  const _fin2 = r.tipo_pagamento !== 'cortesia' && isCasal ? _precoV2(_tm2, _ehGC2) : '';
   document.getElementById('resdet-body').innerHTML = `
-    <div class="resdet-hero">
+    <div class="rd2-tl-wrap">
+      <div class="rd2-tb">
+        <div class="rd2-tv">${r.hora_inicio}</div>
+        <div class="rd2-tl">início</div>
+      </div>
+      <div class="rd2-bridge">
+        <div class="rd2-bridge-line"></div>
+        <div class="rd2-bridge-dur">${dur} min</div>
+      </div>
+      <div class="rd2-tb rd2-tb-r">
+        <div class="rd2-tv">${r.hora_fim}</div>
+        <div class="rd2-tl">${calFmtData(r.data)}</div>
+      </div>
+    </div>
+
+    ${isCasal ? '<div class="rd2-casal-div"><span>Pessoa 1</span></div>' : ''}
+
+    <div class="rd2-sec">Cliente${isCasal ? ' 1' : ''}</div>
+    <div class="rd2-cli-hd">
+      <div class="resdet-avatar">${_iniciais(r.cliente)}</div>
       <div>
-        <div class="resdet-hero-time">${r.hora_inicio}</div>
-        <div class="resdet-hero-sub">início</div>
-      </div>
-      <div class="resdet-hero-mid">
-        <div class="resdet-hero-dash"></div>
-        <div class="resdet-hero-dur">${dur} min</div>
-      </div>
-      <div class="resdet-hero-right">
-        <div class="resdet-hero-time">${r.hora_fim}</div>
-        <div class="resdet-hero-sub" style="text-align:right">${calFmtData(r.data)}</div>
-      </div>
-    </div>
-
-    ${isCasal ? `<div style="display:flex;align-items:center;gap:.6rem;margin:.75rem 0 .5rem"><div style="height:1px;flex:1;background:var(--border)"></div><span style="font-size:.7rem;letter-spacing:.1em;color:var(--gold);font-weight:600;text-transform:uppercase;white-space:nowrap">Pessoa 1</span><div style="height:1px;flex:1;background:var(--border)"></div></div>` : ''}
-
-    <div class="resdet-grid">
-      <div class="resdet-card">
-        <div class="resdet-card-title">${isCasal ? 'Pessoa 1' : 'Cliente'}</div>
-        <div class="resdet-client-hd">
-          <div class="resdet-avatar">${_iniciais(r.cliente)}</div>
-          <div>
-            <div class="resdet-client-name">${escHtml(r.cliente || '—')}</div>
-            <div class="resdet-client-sub">
-              <span class="resdet-pill-tipo ${tipoCliCls}">${tipoCli}</span>
-              ${r.apto ? `<span>· Apto ${escHtml(r.apto)}</span>` : ''}
-            </div>
-          </div>
+        <div class="rd2-cli-nome">${escHtml(r.cliente || '—')}</div>
+        <div class="rd2-cli-meta">
+          <span class="resdet-pill-tipo ${tipoCliCls}">${tipoCli}</span>
+          ${r.apto ? `<span>· Apto ${escHtml(r.apto)}</span>` : ''}
+          ${_ehGCDet && r.tipo_cliente === 'hospede' ? `<span style="color:var(--gold-dark);font-weight:600">· ★ Gran Class</span>` : ''}
         </div>
-        ${r.email ? `<div class="resdet-kv"><div class="resdet-kv-label">E-mail</div><div class="resdet-kv-val">${escHtml(r.email)}</div></div>` : ''}
-        ${r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-label">Telefone</div><div class="resdet-kv-val mono">${escHtml(r.telefone)}</div></div>` : ''}
-        ${!r.email && !r.telefone ? `<div class="resdet-kv"><div class="resdet-kv-val empty">Sem contato informado</div></div>` : ''}
-        <div class="resdet-kv"><div class="resdet-kv-label">Registrado por</div><div class="resdet-kv-val">${r.criado_por ? escHtml(r.criado_por) : '—'}</div></div>
-      </div>
-
-      <div class="resdet-card">
-        <div class="resdet-card-title">Tratamento${isCasal ? ' 1' : ''}</div>
-        <div class="resdet-tratamento-name">${r.tratamento ? escHtml(r.tratamento) : '<span style="font-style:italic;color:var(--muted);font-family:var(--font);font-size:.9rem">não informado</span>'}</div>
-        ${r.linha ? `<div class="resdet-kv"><div class="resdet-kv-label">Linha</div><div class="resdet-kv-val">${escHtml(r.linha)}</div></div>` : ''}
-        <div class="resdet-kv"><div class="resdet-kv-label">Profissional</div>${_massagistaDetHtml(r)}</div>
-        <div class="resdet-kv"><div class="resdet-kv-label">Duração</div><div class="resdet-kv-val mono">${dur} min</div></div>
-        ${_precoDetHtml(r)}
       </div>
     </div>
+    ${r.email ? `<div class="rd2-row"><span class="rd2-lbl">E-mail</span><span class="rd2-val">${escHtml(r.email)}</span></div>` : ''}
+    ${r.telefone ? `<div class="rd2-row"><span class="rd2-lbl">Telefone</span><span class="rd2-val mono">${escHtml(r.telefone)}</span></div>` : ''}
+    ${r.cpf ? `<div class="rd2-row"><span class="rd2-lbl">CPF</span><span class="rd2-val mono">${escHtml(r.cpf)}</span></div>` : ''}
+    ${r.passaporte ? `<div class="rd2-row"><span class="rd2-lbl">Passaporte</span><span class="rd2-val mono">${escHtml(r.passaporte)}</span></div>` : ''}
+    ${r.nacionalidade ? `<div class="rd2-row"><span class="rd2-lbl">Nacionalidade</span><span class="rd2-val">${escHtml(r.nacionalidade)}</span></div>` : ''}
+    ${r.idioma && r.idioma !== 'pt-BR' ? `<div class="rd2-row"><span class="rd2-lbl">Idioma</span><span class="rd2-val">${escHtml(r.idioma)}</span></div>` : ''}
+    ${!r.email && !r.telefone ? `<div class="rd2-row"><span class="rd2-val empty">Sem contato informado</span></div>` : ''}
+
+    <div class="rd2-sec">Tratamento${isCasal ? ' 1' : ''}</div>
+    <div class="rd2-tx-nome">${r.tratamento ? escHtml(r.tratamento) : '<span style="font-style:italic;color:var(--muted)">não informado</span>'}</div>
+    ${_combo1 ? `<div class="rd2-row"><span class="rd2-lbl">Inclusos</span><span class="rd2-val">${_combo1}</span></div>` : ''}
+    ${r.linha ? `<div class="rd2-row"><span class="rd2-lbl">Linha</span><span class="rd2-val">${escHtml(r.linha)}</span></div>` : ''}
+    <div class="rd2-row"><span class="rd2-lbl">Profissional</span>${_massagistaDetHtml(r)}</div>
+
+    ${_fin1 ? `<div class="rd2-sec">Financeiro</div>${_fin1}` : ''}
 
     ${isCasal ? `
-    <div style="display:flex;align-items:center;gap:.6rem;margin:.75rem 0 .5rem"><div style="height:1px;flex:1;background:var(--border)"></div><span style="font-size:.7rem;letter-spacing:.1em;color:var(--gold);font-weight:600;text-transform:uppercase;white-space:nowrap">Pessoa 2</span><div style="height:1px;flex:1;background:var(--border)"></div></div>
-    <div class="resdet-grid">
-      <div class="resdet-card">
-        <div class="resdet-card-title">Pessoa 2</div>
-        <div class="resdet-client-hd">
-          <div class="resdet-avatar">${_iniciais(r.cliente2)}</div>
-          <div>
-            <div class="resdet-client-name">${escHtml(r.cliente2 || '—')}</div>
-            <div class="resdet-client-sub">
-              <span class="resdet-pill-tipo ${r.tipo_cliente2 === 'hospede' ? 'hospede' : 'passante'}">${r.tipo_cliente2 === 'hospede' ? 'Hóspede' : 'Passante'}</span>
-              ${r.apto2 ? `<span>· Apto ${escHtml(r.apto2)}</span>` : ''}
-            </div>
-          </div>
+    <div class="rd2-casal-div"><span>Pessoa 2</span></div>
+    <div class="rd2-sec">Cliente 2</div>
+    <div class="rd2-cli-hd">
+      <div class="resdet-avatar">${_iniciais(r.cliente2)}</div>
+      <div>
+        <div class="rd2-cli-nome">${escHtml(r.cliente2 || '—')}</div>
+        <div class="rd2-cli-meta">
+          <span class="resdet-pill-tipo ${r.tipo_cliente2 === 'hospede' ? 'hospede' : 'passante'}">${r.tipo_cliente2 === 'hospede' ? 'Hóspede' : 'Passante'}</span>
+          ${r.apto2 ? `<span>· Apto ${escHtml(r.apto2)}</span>` : ''}
         </div>
-        ${r.email2 ? `<div class="resdet-kv"><div class="resdet-kv-label">E-mail</div><div class="resdet-kv-val">${escHtml(r.email2)}</div></div>` : ''}
-        ${r.telefone2 ? `<div class="resdet-kv"><div class="resdet-kv-label">Telefone</div><div class="resdet-kv-val mono">${escHtml(r.telefone2)}</div></div>` : ''}
-        ${!r.email2 && !r.telefone2 ? `<div class="resdet-kv"><div class="resdet-kv-val empty">Sem contato informado</div></div>` : ''}
-        <div class="resdet-kv"><div class="resdet-kv-label">Registrado por</div><div class="resdet-kv-val">${r.criado_por ? escHtml(r.criado_por) : '—'}</div></div>
-      </div>
-      <div class="resdet-card">
-        <div class="resdet-card-title">Tratamento 2</div>
-        <div class="resdet-tratamento-name">${r.tratamento2 ? escHtml(r.tratamento2) : '<span style="font-style:italic;color:var(--muted);font-family:var(--font);font-size:.9rem">não informado</span>'}</div>
-        ${r.linha2 ? `<div class="resdet-kv"><div class="resdet-kv-label">Linha</div><div class="resdet-kv-val">${escHtml(r.linha2)}</div></div>` : ''}
-        <div class="resdet-kv"><div class="resdet-kv-label">Profissional</div>${_massagistaDetHtml2(r)}</div>
-        <div class="resdet-kv"><div class="resdet-kv-label">Duração</div><div class="resdet-kv-val mono">${dur} min</div></div>
-        ${_precoDetHtml2(r)}
       </div>
     </div>
+    ${r.email2 ? `<div class="rd2-row"><span class="rd2-lbl">E-mail</span><span class="rd2-val">${escHtml(r.email2)}</span></div>` : ''}
+    ${r.telefone2 ? `<div class="rd2-row"><span class="rd2-lbl">Telefone</span><span class="rd2-val mono">${escHtml(r.telefone2)}</span></div>` : ''}
+    ${!r.email2 && !r.telefone2 ? `<div class="rd2-row"><span class="rd2-val empty">Sem contato informado</span></div>` : ''}
+    <div class="rd2-sec">Tratamento 2</div>
+    <div class="rd2-tx-nome">${r.tratamento2 ? escHtml(r.tratamento2) : '<span style="font-style:italic;color:var(--muted)">não informado</span>'}</div>
+    ${_combo2 ? `<div class="rd2-row"><span class="rd2-lbl">Inclusos</span><span class="rd2-val">${_combo2}</span></div>` : ''}
+    ${r.linha2 ? `<div class="rd2-row"><span class="rd2-lbl">Linha</span><span class="rd2-val">${escHtml(r.linha2)}</span></div>` : ''}
+    <div class="rd2-row"><span class="rd2-lbl">Profissional</span>${_massagistaDetHtml2(r)}</div>
+    ${_fin2 ? `<div class="rd2-sec">Financeiro 2</div>${_fin2}` : ''}
     ` : ''}
 
     ${r.tipo_pagamento === 'cortesia' ? `
-    <div style="margin:.75rem 0;padding:.75rem 1rem;background:var(--gold-dim);border:1px solid var(--gold);border-radius:.5rem;display:flex;flex-direction:column;gap:.35rem">
-      <div style="display:flex;align-items:center;gap:.5rem">
-        <span style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-dark)">🎁 Cortesia</span>
-      </div>
-      ${r.cortesia_justificativa ? `<div class="resdet-kv"><div class="resdet-kv-label">Justificativa</div><div class="resdet-kv-val">${escHtml(r.cortesia_justificativa)}</div></div>` : ''}
-      ${r.cortesia_autorizado_por_nome ? `<div class="resdet-kv"><div class="resdet-kv-label">Autorizado por</div><div class="resdet-kv-val">${escHtml(r.cortesia_autorizado_por_nome)}</div></div>` : ''}
+    <div class="rd2-sec">Financeiro</div>
+    <div class="rd2-cortesia-blk">
+      <div class="rd2-cortesia-hd">🎁 Cortesia</div>
+      ${r.cortesia_justificativa ? `<div class="rd2-row"><span class="rd2-lbl">Justificativa</span><span class="rd2-val">${escHtml(r.cortesia_justificativa)}</span></div>` : ''}
+      ${r.cortesia_autorizado_por_nome ? `<div class="rd2-row" style="border-bottom:none"><span class="rd2-lbl">Autorizado por</span><span class="rd2-val">${escHtml(r.cortesia_autorizado_por_nome)}</span></div>` : ''}
     </div>` : ''}
 
-    <div class="resdet-registro">
-      <div class="resdet-registro-item">
-        <div class="resdet-registro-label">Reserva</div>
-        <div class="resdet-registro-val">#${r.id}</div>
-      </div>
-      <div class="resdet-registro-item">
-        <div class="resdet-registro-label">Criado em</div>
-        <div class="resdet-registro-val">${r.criado_em ? fmtDataHoraBR(r.criado_em) : '—'}</div>
-      </div>
-      <div class="resdet-registro-item">
-        <div class="resdet-registro-label">Registrado por</div>
-        <div class="resdet-registro-val">${r.criado_por ? escHtml(r.criado_por) : '—'}</div>
-      </div>
-      <div class="resdet-registro-item">
-        <div class="resdet-registro-label">Sala</div>
-        <div class="resdet-registro-val">${salaName}</div>
-      </div>
+    <div class="rd2-reg-strip">
+      <span class="rd2-reg-item rd2-reg-id">#${r.id}</span>
+      <span class="rd2-reg-dot"></span>
+      <span class="rd2-reg-item">${r.criado_em ? fmtDataHoraBR(r.criado_em) : '—'}</span>
+      <span class="rd2-reg-dot"></span>
+      <span class="rd2-reg-item">${r.criado_por ? escHtml(r.criado_por) : '—'}</span>
     </div>
   `;
 
