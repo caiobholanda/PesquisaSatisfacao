@@ -2324,6 +2324,7 @@ function _cbInit({ textId, listId, clrId, hiddenId }) {
   }
   inp.addEventListener('focus', () => { list.style.display = 'block'; doFilter(); });
   inp.addEventListener('input', () => {
+    delete inp.dataset.synced; // usuário digitou: volta a filtrar normalmente
     hid.value = ''; clr.style.display = inp.value ? '' : 'none';
     list.style.display = 'block'; doFilter();
     hid.dispatchEvent(new Event('change', { bubbles: true }));
