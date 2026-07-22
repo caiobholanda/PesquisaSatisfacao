@@ -508,6 +508,25 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
       }
     }
 
+    // ── Regra da recepção na edição: revalida no NOVO intervalo; a própria
+    // reserva não conta contra si mesma (excluirReservaId). Mesma semântica
+    // e mesmo override do POST. Handler síncrono → contagem+UPDATE atômicos.
+    const overrideRecepcao = overrideEscala || !!(req.body?.override_recepcao);
+    if (!overrideRecepcao && +sala !== 5 && massagista_id) {
+      const selecionadas = (_p2Presente && massagista_id2)
+        ? [massagista_id, massagista_id2] : [massagista_id];
+      const rr = avaliarRegraRecepcao(data, hora_inicio, hora_fim, { selecionadas, excluirReservaId: id });
+      if (rr.viola) {
+        const plural = rr.total === 1 ? '1 massoterapeuta livre' : `${rr.total} massoterapeutas livres`;
+        return res.status(409).json({
+          ok: false, tipo: 'recepcao',
+          error: `Regra da recepção: ${plural} neste horário — ao menos uma precisa ficar livre para cobrir a recepção do spa. Escolha outro horário ou use o override.`,
+          livres: rr.total, consumo: rr.consumo, necessarias: rr.consumo + 1,
+          override_permitido: true,
+        });
+      }
+    }
+
     const _locale1 = idioma?.trim() || null;
     const _locale2 = _p2Presente ? (idioma2?.trim() || null) : null;
     if (docNorm1) {
