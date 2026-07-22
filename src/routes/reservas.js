@@ -503,6 +503,24 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
     if (telefone2 && !telefoneValido(telefone2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: telefone inválido' });
   }
 
+  // Combo com mais de uma massoterapeuta (mesma semântica do POST)
+  const _ehRecepPut = (mm) => !!mm?.funcao && mm.funcao.toLowerCase().includes('recep');
+  const _extrasReq = Array.isArray(req.body?.massagistas_extras) ? req.body.massagistas_extras : [];
+  const massagistasExtras = [];
+  if (+sala !== 5 && massagista_id) {
+    for (const v of _extrasReq) {
+      const n = parseInt(v, 10);
+      if (!Number.isInteger(n) || n <= 0) continue;
+      if (n === +massagista_id || (massagista_id2 && n === +massagista_id2)) continue;
+      if (massagistasExtras.includes(n)) continue;
+      const mx = buscarMassagistaById(n);
+      if (!mx) return res.status(400).json({ ok: false, error: 'Equipe do combo: massoterapeuta não encontrada' });
+      if (_ehRecepPut(mx)) return res.status(400).json({ ok: false, error: `Equipe do combo: ${mx.nome} é recepcionista — escolha massoterapeutas` });
+      massagistasExtras.push(n);
+      if (massagistasExtras.length >= 4) break;
+    }
+  }
+
   try {
     const overrideEscala = !!(req.body?.override_escala);
     if (!overrideEscala && massagista_id) {
