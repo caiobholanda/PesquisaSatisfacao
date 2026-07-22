@@ -2568,7 +2568,7 @@ function _massSyncInput() {
     const m = _massagistasModal.find(mm => mm.id === x);
     if (m) nomes.push(m.nome);
   }
-  if (inp) inp.value = nomes.join(' + ');
+  if (inp) { inp.value = nomes.join(' + '); inp.dataset.synced = '1'; }
   if (clr) clr.style.display = nomes.length ? '' : 'none';
 }
 
