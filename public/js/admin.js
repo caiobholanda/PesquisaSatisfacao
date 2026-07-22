@@ -2289,6 +2289,7 @@ let _resHoraFim    = null;
 let _resEditandoId  = null; // id da reserva sendo editada; null = nova reserva
 let _resOverrideRegra = false; // "Agendar mesmo assim" (escala/recepção) — consumida a cada envio
 let _resEditandoObj = null; // objeto r completo salvo por calAbrirEdicao para voltar ao detalhe
+let _resMassExtras = []; // combo: massoterapeutas EXTRAS (ids) além da principal (res-inp-massagista)
 let _tratamentos = []; // [{nome, duracao_min, ...}]
 let _massagistasModal = []; // cache p/ modal de reserva — [{id, nome, bilingue, vinculo, ...}]
 
