@@ -1872,7 +1872,7 @@ function _conflitoProfIntervalo(db, mid, data, horaInicio, horaFim, excluirId = 
     WHERE data = ? AND (? IS NULL OR id != ?)
       AND NOT (hora_fim <= ? OR hora_inicio >= ?)
       AND (massagista_id = ? OR massagista_id2 = ?
-           OR EXISTS (SELECT 1 FROM json_each(COALESCE(massagistas_extras,'[]')) WHERE json_each.value = ?))
+           OR EXISTS (SELECT 1 FROM json_each(COALESCE(NULLIF(massagistas_extras,''),'[]')) WHERE json_each.value = ?))
     LIMIT 1
   `).get(data, excluirId, excluirId, horaInicio, horaFim, mid, mid, mid);
 }
