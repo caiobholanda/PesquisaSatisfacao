@@ -2302,7 +2302,9 @@ function _cbInit({ textId, listId, clrId, hiddenId }) {
   const hid = document.getElementById(hiddenId);
 
   function doFilter() {
-    const q = inp.value.trim().toLowerCase();
+    // Texto sincronizado programaticamente (combo: "Ana + Bia") não filtra a
+    // lista — senão focar o campo esconderia todas as opções.
+    const q = inp.dataset.synced === '1' ? '' : inp.value.trim().toLowerCase();
     list.querySelectorAll('.res-cb-opt').forEach(o => {
       o.style.display = (!q || o.textContent.toLowerCase().includes(q)) ? '' : 'none';
     });
