@@ -575,8 +575,8 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
     // e mesmo override do POST. Handler síncrono → contagem+UPDATE atômicos.
     const overrideRecepcao = overrideEscala || !!(req.body?.override_recepcao);
     if (!overrideRecepcao && +sala !== 5 && massagista_id) {
-      const selecionadas = (_p2Presente && massagista_id2)
-        ? [massagista_id, massagista_id2] : [massagista_id];
+      const selecionadas = [massagista_id, ...massagistasExtras];
+      if (_p2Presente && massagista_id2) selecionadas.push(massagista_id2);
       const rr = avaliarRegraRecepcao(data, hora_inicio, hora_fim, { selecionadas, excluirReservaId: id });
       if (rr.viola) {
         const plural = rr.total === 1 ? '1 massoterapeuta livre' : `${rr.total} massoterapeutas livres`;
