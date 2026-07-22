@@ -1998,7 +1998,8 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
       data=?, hora_inicio=?, hora_fim=?, linha=?, tipo_massagem_id=?, massagista_id=?,
       cliente2=?, tipo_cliente2=?, apto2=?, email2=?, telefone2=?, tratamento2=?,
       tipo_massagem_id2=?, massagista_id2=?, idioma=?, idioma2=?, nacionalidade=?, nacionalidade2=?,
-      tipo_pagamento=?, cortesia_justificativa=?, cortesia_autorizado_por=?, cortesia_autorizado_por_nome=?
+      tipo_pagamento=?, cortesia_justificativa=?, cortesia_autorizado_por=?, cortesia_autorizado_por_nome=?,
+      massagistas_extras=?
     WHERE id=?
   `).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento,
@@ -2006,6 +2007,7 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2,
     tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2,
     tipo_pagamento || 'pago', cortesia_justificativa || null, cortesia_autorizado_por || null, cortesia_autorizado_por_nome || null,
+    extras.length ? JSON.stringify(extras) : null,
     id
   );
   return { ok: true };
