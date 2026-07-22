@@ -4291,7 +4291,13 @@ async function calAbrirEdicao(r) {
     if (linhaEl) linhaEl.value = r.linha;
   }
 
-  // massagista (combobox)
+  // massagista (combobox) + extras do combo
+  _resMassExtras = (() => {
+    try {
+      const a = JSON.parse(r.massagistas_extras || 'null');
+      return Array.isArray(a) ? a.map(Number).filter(n => Number.isInteger(n) && n > 0) : [];
+    } catch { return []; }
+  })();
   if (r.massagista_id) {
     const mass = _massagistasModal.find(m => m.id === r.massagista_id);
     if (mass) {
@@ -4301,6 +4307,7 @@ async function calAbrirEdicao(r) {
       if (hidMass) { hidMass.value = mass.id; }
       if (txtMass) { txtMass.value = mass.nome; }
       if (clrMass) { clrMass.style.display = ''; }
+      if (_resMassExtras.length) _massSyncInput();
       if (hidMass) hidMass.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
