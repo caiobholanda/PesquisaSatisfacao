@@ -1268,14 +1268,23 @@ export function contarLivresIntervalo(data, horaInicio, horaFim, opts = {}) {
     if (r.massagista_id2) ocupadas.add(r.massagista_id2);
   }
   const livres = [];
+  // Recepcionista EM ESCALA no intervalo cobre a recepção — nesse caso a regra
+  // de reservar uma massoterapeuta livre não se aplica (todas podem atender).
+  // O foco da cobertura são as recepcionistas; a massoterapeuta é o fallback.
+  let recepcaoCoberta = false;
   for (const m of listarMassagistas()) {
     if (!m.ativo) continue;
-    if (m.funcao && m.funcao.toLowerCase().includes('recep')) continue;
+    if (m.funcao && m.funcao.toLowerCase().includes('recep')) {
+      if (!recepcaoCoberta && avaliarEscalaMassagista(m, data, horaInicio, horaFim, c).disponivel) {
+        recepcaoCoberta = true;
+      }
+      continue;
+    }
     if (ocupadas.has(m.id)) continue;
     if (!avaliarEscalaMassagista(m, data, horaInicio, horaFim, c).disponivel) continue;
     livres.push({ id: m.id, nome: m.nome });
   }
-  return { livres, ocupadas, total: livres.length };
+  return { livres, ocupadas, total: livres.length, recepcaoCoberta };
 }
 
 // Decide se agendar `selecionadas` (1 ou 2 massoterapeutas) no intervalo viola a
