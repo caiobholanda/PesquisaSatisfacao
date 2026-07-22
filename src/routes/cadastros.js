@@ -394,7 +394,7 @@ router.get('/escala-spa/disponibilidade', (req, res) => {
       aviso: av.aviso || null,
     };
   });
-  res.json({ ok: true, lancada: ctx.lancada, items, livres: livresTotal });
+  res.json({ ok: true, lancada: ctx.lancada, items, livres: livresTotal, recepcao_coberta: recepCoberta });
 });
 
 // Histórico antes→depois de uma célula da escala mensal
