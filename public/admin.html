@@ -2284,6 +2284,103 @@
       .aq-title { font-size: .82rem; }
     }
 
+    /* ── Drawer Day Use — melhorias ── */
+    #aq-drawer {
+      border-top: 3px solid var(--gold) !important;
+      width: min(520px, 100vw) !important;
+      padding: 0 !important;
+      display: flex; flex-direction: column;
+    }
+    .aq-dw-hd {
+      padding: 1.4rem 1.75rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+      background: linear-gradient(135deg, var(--surface) 70%, rgba(153,100,66,.04));
+      flex-shrink: 0;
+    }
+    .aq-dw-title {
+      font-family: var(--serif); font-size: 1.1rem; font-weight: 700;
+      color: var(--text); letter-spacing: .02em; margin-bottom: .28rem;
+    }
+    .aq-dw-meta {
+      display: flex; align-items: center; gap: .45rem; flex-wrap: wrap;
+      font-size: .7rem; color: var(--muted);
+    }
+    .aq-dw-sep { color: var(--border); }
+    .aq-dw-body { flex: 1; padding: 1.1rem 1.75rem 0; overflow-y: auto; }
+    .aq-dw-cards { display: flex; flex-direction: column; gap: .5rem; }
+    .aq-dw-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: .9rem 1.1rem;
+      display: grid; grid-template-columns: 1fr auto auto;
+      align-items: center; gap: 1rem;
+      transition: border-color .18s, box-shadow .18s, border-left-width .18s;
+      position: relative; overflow: hidden;
+    }
+    .aq-dw-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--gold); border-radius: 0 2px 2px 0;
+      transform: scaleY(0); transform-origin: bottom; transition: transform .22s ease;
+    }
+    .aq-dw-card.active::before { transform: scaleY(1); }
+    .aq-dw-card.active { border-color: rgba(153,100,66,.35); box-shadow: 0 2px 12px rgba(153,100,66,.07); }
+    .aq-dw-card:hover { border-color: rgba(153,100,66,.3); }
+    .aq-dw-info { min-width: 0; }
+    .aq-dw-label {
+      font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text); margin-bottom: .18rem;
+      display: flex; align-items: center; gap: .45rem;
+    }
+    .aq-dw-price { font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .aq-dw-price strong { color: var(--text); font-weight: 600; }
+    .aq-dw-sub {
+      font-size: .78rem; font-weight: 600; color: var(--muted);
+      font-variant-numeric: tabular-nums; transition: color .15s;
+      text-align: right; min-width: 68px;
+    }
+    .aq-dw-sub.nz { color: var(--gold-dark); }
+    .aq-dw-sub-free { font-size: .75rem; font-weight: 600; color: #4a9e6e; text-align: right; min-width: 68px; }
+    .aq-dw-counter { display: flex; align-items: center; gap: .6rem; }
+    .aq-dw-count {
+      font-size: 1.65rem; font-weight: 800; font-variant-numeric: tabular-nums;
+      min-width: 36px; text-align: center; color: var(--muted2);
+      line-height: 1; transition: color .15s;
+    }
+    .aq-dw-count.nz { color: var(--gold-dark); }
+    .aq-gc-btn {
+      display: inline-flex; align-items: center;
+      padding: .06rem .38rem; border: 1px solid #9C5843;
+      border-radius: 9999px; background: linear-gradient(180deg,#F5EFE2,#B8705A);
+      color: #202C28; font-size: .6rem; font-weight: 700; letter-spacing: .06em;
+      cursor: pointer; font-family: var(--font);
+      transition: box-shadow .15s, transform .1s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .aq-gc-btn:hover { box-shadow: 0 0 0 2.5px rgba(156,88,67,.45); transform: scale(1.06); }
+    .aq-gc-btn:active { transform: scale(.93); }
+    #aq-gc-info {
+      max-height: 0; overflow: hidden;
+      transition: max-height .32s cubic-bezier(.4,0,.2,1), opacity .25s;
+      opacity: 0;
+    }
+    #aq-gc-info.open { max-height: 160px; opacity: 1; }
+    .aq-gc-info-card {
+      margin-top: .5rem;
+      background: linear-gradient(135deg,rgba(153,100,66,.08),rgba(156,88,67,.03));
+      border: 1px solid rgba(153,100,66,.28); border-radius: 8px;
+      padding: .75rem .95rem; font-size: .79rem; color: var(--muted2);
+      line-height: 1.6; display: flex; gap: .55rem; align-items: flex-start;
+    }
+    .aq-gc-info-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; margin-top: .05rem; }
+    .aq-dw-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem 1.75rem; margin-top: 1rem;
+      border-top: 1px solid var(--border); background: var(--surface2);
+      flex-shrink: 0;
+    }
+    .aq-dw-footer-left { font-size: .78rem; color: var(--muted); }
+    .aq-dw-footer-rev { font-size: .95rem; font-weight: 800; color: var(--gold-dark); font-variant-numeric: tabular-nums; }
+
     /* ── Container ── */
     .cal-container {
       background: var(--surface); border: 1px solid var(--border);
@@ -5182,70 +5279,78 @@
 
 <!-- AQ DAY USE DRAWER -->
 <div class="drawer-overlay" id="aq-drawer-overlay"></div>
-<div class="drawer" id="aq-drawer" style="width:min(400px,100vw);padding:1.75rem">
-  <div class="drawer-header" style="margin-bottom:1.25rem;padding-bottom:1rem">
+<div class="drawer" id="aq-drawer">
+  <!-- Header -->
+  <div class="aq-dw-hd">
     <div>
-      <div style="font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.02em">Área Molhada · Day Use</div>
-      <div style="font-size:.7rem;color:var(--muted);margin-top:.22rem;display:flex;align-items:center;gap:.5rem">
+      <div class="aq-dw-title">Área Molhada · Day Use</div>
+      <div class="aq-dw-meta">
         <span>Jacuzzi + Sauna incluídos</span>
+        <span class="aq-dw-sep">·</span>
         <span class="aq-date-badge" id="aq-date-badge">—</span>
         <span class="aq-revenue-chip" id="aq-revenue-chip" style="display:none"></span>
       </div>
     </div>
     <button class="drawer-close" id="aq-drawer-close" aria-label="Fechar painel Day Use">✕</button>
   </div>
-  <div id="aq-body">
-    <div class="aq-cards" style="grid-template-columns:1fr;gap:.55rem;padding:0 0 .5rem">
+  <!-- Cards -->
+  <div class="aq-dw-body" id="aq-body">
+    <div class="aq-dw-cards">
       <!-- Hóspede -->
-      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
-        <div style="flex:1">
-          <div class="aq-card-header" style="margin-bottom:.1rem">
-            <span class="aq-card-label">Hóspede</span>
-            <span class="aq-card-price">R$ 60 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
-          </div>
-          <div class="aq-card-subtotal" id="aq-sub-hospede" style="text-align:left">—</div>
+      <div class="aq-dw-card" data-aq-card="hospede">
+        <div class="aq-dw-info">
+          <div class="aq-dw-label">Hóspede</div>
+          <div class="aq-dw-price"><strong>R$ 60</strong> <span style="font-size:.67rem;color:var(--muted)">+15% serv.</span></div>
         </div>
-        <div class="aq-card-counter" style="gap:.6rem">
+        <div class="aq-dw-sub" id="aq-sub-hospede">—</div>
+        <div class="aq-dw-counter">
           <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="-1" aria-label="Diminuir Hóspede" disabled>−</button>
-          <span class="aq-count" id="aq-count-hospede">0</span>
+          <span class="aq-dw-count" id="aq-count-hospede">0</span>
           <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="1" aria-label="Aumentar Hóspede">+</button>
         </div>
       </div>
       <!-- Passante -->
-      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
-        <div style="flex:1">
-          <div class="aq-card-header" style="margin-bottom:.1rem">
-            <span class="aq-card-label">Passante</span>
-            <span class="aq-card-price">R$ 120 <span style="font-weight:400;font-size:.6rem;color:var(--muted)">+15%</span></span>
-          </div>
-          <div class="aq-card-subtotal" id="aq-sub-passante" style="text-align:left">—</div>
+      <div class="aq-dw-card" data-aq-card="passante">
+        <div class="aq-dw-info">
+          <div class="aq-dw-label">Passante</div>
+          <div class="aq-dw-price"><strong>R$ 120</strong> <span style="font-size:.67rem;color:var(--muted)">+15% serv.</span></div>
         </div>
-        <div class="aq-card-counter" style="gap:.6rem">
+        <div class="aq-dw-sub" id="aq-sub-passante">—</div>
+        <div class="aq-dw-counter">
           <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="-1" aria-label="Diminuir Passante" disabled>−</button>
-          <span class="aq-count" id="aq-count-passante">0</span>
+          <span class="aq-dw-count" id="aq-count-passante">0</span>
           <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="1" aria-label="Aumentar Passante">+</button>
         </div>
       </div>
       <!-- Gran Class -->
-      <div class="aq-card" style="flex-direction:row;align-items:center;gap:.75rem;padding:.65rem .85rem">
-        <div style="flex:1">
-          <div class="aq-card-header" style="margin-bottom:.1rem">
-            <span class="aq-card-label">Gran Class</span>
-            <span class="aq-gc-chip">★ GC</span>
+      <div class="aq-dw-card" data-aq-card="gran_class">
+        <div class="aq-dw-info">
+          <div class="aq-dw-label">
+            Gran Class
+            <button class="aq-gc-btn" id="aq-gc-chip-btn" type="button" aria-label="Ver benefício Gran Class" aria-expanded="false">★ GC</button>
           </div>
-          <div class="aq-card-free" style="text-align:left">Gratuito</div>
+          <div class="aq-dw-sub-free">Gratuito</div>
         </div>
-        <div class="aq-card-counter" style="gap:.6rem">
+        <div></div>
+        <div class="aq-dw-counter">
           <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="-1" aria-label="Diminuir Gran Class" disabled>−</button>
-          <span class="aq-count" id="aq-count-gran_class">0</span>
+          <span class="aq-dw-count" id="aq-count-gran_class">0</span>
           <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="1" aria-label="Aumentar Gran Class">+</button>
         </div>
       </div>
     </div>
-    <div class="aq-footer" style="margin:0 -1.75rem -1.75rem;padding:.55rem 1.75rem">
-      <div class="aq-footer-left"><span id="aq-tot-geral">0 pessoas</span></div>
-      <div class="aq-footer-right" id="aq-footer-revenue">—</div>
+    <!-- GC info panel -->
+    <div id="aq-gc-info">
+      <div class="aq-gc-info-card">
+        <span class="aq-gc-info-icon">★</span>
+        <span>Hóspedes do programa <strong>Gran Class</strong> têm acesso gratuito à Área Molhada (Jacuzzi + Sauna) como benefício incluso na hospedagem — sem cobrança adicional.</span>
+      </div>
     </div>
+  </div>
+  <!-- Footer -->
+  <div class="aq-dw-footer">
+    <div class="aq-dw-footer-left"><span id="aq-tot-geral">0 pessoas</span></div>
+    <div class="aq-dw-footer-rev" id="aq-footer-revenue">—</div>
   </div>
 </div>
 

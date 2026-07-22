@@ -5072,16 +5072,18 @@ function _aqRender() {
     const elCount = document.getElementById(`aq-count-${tipo}`);
     if (elCount) {
       elCount.textContent = qty;
-      elCount.className = 'aq-count' + (qty > 0 ? ' nz' : '');
+      elCount.className = (elCount.classList.contains('aq-dw-count') ? 'aq-dw-count' : 'aq-count') + (qty > 0 ? ' nz' : '');
       const minus = elCount.previousElementSibling;
       if (minus) minus.disabled = qty <= 0;
     }
+    const elCard = document.querySelector(`[data-aq-card="${tipo}"]`);
+    if (elCard) elCard.classList.toggle('active', qty > 0);
     if (tipo !== 'gran_class') {
       const elSub = document.getElementById(`aq-sub-${tipo}`);
       if (elSub) {
         const sub = qty * _AQ_PRECO[tipo];
         elSub.textContent = qty > 0 ? _aqFmt(sub) : '—';
-        elSub.className = 'aq-card-subtotal' + (qty > 0 ? ' nz' : '');
+        elSub.className = (elSub.classList.contains('aq-dw-sub') ? 'aq-dw-sub' : 'aq-card-subtotal') + (qty > 0 ? ' nz' : '');
       }
     }
   }
@@ -5154,6 +5156,13 @@ function _closeAqDrawer() {
 document.getElementById('btn-aq-drawer-open')?.addEventListener('click', _openAqDrawer);
 document.getElementById('aq-drawer-close')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAqDrawer);
+document.getElementById('aq-gc-chip-btn')?.addEventListener('click', () => {
+  const info = document.getElementById('aq-gc-info');
+  const btn  = document.getElementById('aq-gc-chip-btn');
+  if (!info) return;
+  const open = info.classList.toggle('open');
+  btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
 
 // Botões +/-
 document.getElementById('aq-body')?.addEventListener('click', e => {
