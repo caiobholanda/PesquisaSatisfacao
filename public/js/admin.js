@@ -2544,6 +2544,61 @@ function _escalaAvisoHtml(data, horaInicio, horaFim) {
   return '<div class="res-cb-opt cb-empty">⚠ Escala mensal não lançada para esta data — usando padrão semanal</div>';
 }
 
+// Combo (tipos_massagem.tipo === 'combo'): mais de uma massoterapeuta pode
+// participar do mesmo tratamento — o seletor vira multi-seleção (checkboxes).
+function _isComboTrat() {
+  const t = _tratSelecionado();
+  return !!t && t.tipo === 'combo' && !_isEspBeleza();
+}
+
+function _massLabel(m) { return m.nome + (m.vinculo ? ` · ${m.vinculo}` : ''); }
+
+// Sincroniza o texto do input com principal + extras ("Ana + Bia")
+function _massSyncInput() {
+  const hid = document.getElementById('res-inp-massagista');
+  const inp = document.getElementById('res-cb-mass-inp');
+  const clr = document.getElementById('res-cb-mass-clr');
+  const nomes = [];
+  const principal = hid?.value ? _massagistasModal.find(m => String(m.id) === String(hid.value)) : null;
+  if (principal) nomes.push(_massLabel(principal));
+  for (const x of _resMassExtras) {
+    const m = _massagistasModal.find(mm => mm.id === x);
+    if (m) nomes.push(m.nome);
+  }
+  if (inp) inp.value = nomes.join(' + ');
+  if (clr) clr.style.display = nomes.length ? '' : 'none';
+}
+
+function _massMultiToggle(id) {
+  const hid = document.getElementById('res-inp-massagista');
+  const principal = hid?.value ? +hid.value : null;
+  if (principal === id) {
+    // desmarca a principal; promove a primeira extra, se houver
+    const promovida = _resMassExtras.shift() || null;
+    if (hid) hid.value = promovida ? String(promovida) : '';
+  } else if (_resMassExtras.includes(id)) {
+    _resMassExtras = _resMassExtras.filter(x => x !== id);
+  } else if (!principal) {
+    if (hid) hid.value = String(id);
+  } else {
+    if (_resMassExtras.length >= 4) { showToast('Máximo de 5 massoterapeutas por combo', 4000); return; }
+    // Regra da recepção: sem recepcionista em escala, o total selecionado não
+    // pode zerar as livres do intervalo (backend revalida; override no salvar).
+    const data = document.getElementById('res-inp-data')?.value || null;
+    const horaInicio = document.getElementById('res-inp-hora-inicio')?.value || null;
+    const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
+    const selDepois = 2 + _resMassExtras.length; // principal + extras + esta
+    if (_escalaAvalRecepCoberta !== true && livres !== null && selDepois > livres - 1) {
+      showToast('🛎 Regra da recepção: adicionar mais uma massoterapeuta deixaria a recepção descoberta. Escolha outro horário ou use o override ao salvar.', 6000);
+      return;
+    }
+    _resMassExtras.push(id);
+  }
+  _massSyncInput();
+  _renderMassagistasModal();
+  hid?.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 function _renderMassagistasModal() {
   const list = document.getElementById('res-cb-mass-list');
   const hid  = document.getElementById('res-inp-massagista');
