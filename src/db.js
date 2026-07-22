@@ -1365,22 +1365,26 @@ export function seedTratamentosGranSpa() {
   insert('Lifting',             50, 445, 'Tratamento facial com efeito tensor que firma e revitaliza a pele do rosto.', { categoria: F, linhas: linhasFacial });
   insert('Muscular Profunda',   50, 445, 'Tratamento facial que trabalha a musculatura do rosto, relaxando e tonificando.', { categoria: F, linhas: linhasFacial });
   insert('Drenagem Linfática',  50, 445, 'Tratamento facial de drenagem que reduz o inchaço e ativa a circulação.', { categoria: F, linhas: linhasFacial });
+  insert('Massagem facial',     50, 445, "Massagem facial com produtos L'Occitane — Immortelle ou Source Réotier.", { categoria: F, linhas: linhasFacial });
 
-  // Combos — resolve IDs dos componentes pelo nome
+  // Combos — resolve IDs dos componentes pelo nome (suporta N componentes via array comps)
   const id = n => exists(n)?.id;
   const combos = [
-    { nome: 'Gran sublime',      duracao: 80, preco: 663, desc: 'Combo Gran Sublime — Esfoliação Karité + Relaxante aromacologia. 80 minutos de hidratação e relaxamento profundo.', a: 'Esfoliação corporal nutritiva Karité', b: 'Relaxante aromacologia' },
-    { nome: 'Gran relaxamento',  duracao: 80, preco: 613, desc: 'Combo Gran Relaxamento — Relaxante aromacologia + Power nap. 80 minutos de relaxamento total.',                       a: 'Relaxante aromacologia',                b: 'Power nap' },
-    { nome: 'Ritual detox',      duracao: 80, preco: 663, desc: 'Combo Ritual Detox — Esfoliação Karité + Desintoxicante de amêndoa. 80 minutos de purificação e renovação.',          a: 'Esfoliação corporal nutritiva Karité', b: 'Desintoxicante de amêndoa' },
+    { nome: 'Gran sublime',     duracao: 80,  preco: 663,  desc: 'Combo Gran Sublime — Esfoliação Karité + Relaxante aromacologia. 80 minutos de hidratação e relaxamento profundo.',                                                          comps: ['Esfoliação corporal nutritiva Karité', 'Relaxante aromacologia'] },
+    { nome: 'Gran relaxamento', duracao: 80,  preco: 613,  desc: 'Combo Gran Relaxamento — Relaxante aromacologia + Power nap. 80 minutos de relaxamento total.',                                                                               comps: ['Relaxante aromacologia', 'Power nap'] },
+    { nome: 'Ritual detox',     duracao: 80,  preco: 663,  desc: 'Combo Ritual Detox — Esfoliação Karité + Desintoxicante de amêndoa. 80 minutos de purificação e renovação.',                                                                  comps: ['Esfoliação corporal nutritiva Karité', 'Desintoxicante de amêndoa'] },
+    { nome: 'Dia da Noiva',     duracao: 130, preco: 1075, desc: 'Ritual exclusivo para noivas — Esfoliação corporal + Tratamento desintoxicante de amêndoas + Massagem facial (Immortelle ou Source Réotier). 130 minutos de cuidado total.', comps: ['Esfoliação corporal nutritiva Karité', 'Desintoxicante de amêndoa', 'Massagem facial'] },
+    { nome: 'Dia do Noivo',     duracao: 110, preco: 770,  desc: 'Ritual exclusivo para noivos — Esfoliação corporal karité + Massagem nutrição intensa de karité. 110 minutos de relaxamento profundo.',                                      comps: ['Esfoliação corporal nutritiva Karité', 'Nutrição intensa karité'] },
   ];
   for (const c of combos) {
     if (exists(c.nome)) continue;
-    const ida = id(c.a), idb = id(c.b);
-    if (!ida || !idb) { console.warn(`[seed] Combo ${c.nome}: componente faltando (${c.a}, ${c.b})`); continue; }
+    const ids = c.comps.map(n => id(n));
+    const missing = c.comps.filter((_, i) => !ids[i]);
+    if (missing.length) { console.warn(`[seed] Combo ${c.nome}: componente faltando (${missing.join(', ')})`); continue; }
     db.prepare(
       `INSERT INTO tipos_massagem (nome, descricao, duracao_min, preco, tipo, categoria, componentes, ativo)
        VALUES (?, ?, ?, ?, 'combo', 'Combo', ?, 1)`
-    ).run(c.nome, c.desc, c.duracao, c.preco, JSON.stringify([ida, idb]));
+    ).run(c.nome, c.desc, c.duracao, c.preco, JSON.stringify(ids));
   }
   // Marca o seed como concluído para não re-rodar em restarts futuros.
   try {

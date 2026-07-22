@@ -265,6 +265,29 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       }
     }
 
+    // ── Regra da recepção: sempre deve sobrar ≥1 massoterapeuta livre no
+    // intervalo para cobrir a recepção. Agendar consome 1 livre (2 no casal)
+    // — exige livres ≥ consumo+1. Conta POR INTERVALO, nunca por dia.
+    // Handler síncrono (better-sqlite3, sem await até o INSERT): duas
+    // requisições simultâneas são serializadas pelo event loop — a segunda
+    // reconta já vendo a reserva da primeira e recebe o 409.
+    // Override: mesmo mecanismo explícito da escala (flag auditada no body).
+    const overrideRecepcao = overrideEscala || !!(req.body?.override_recepcao);
+    if (!overrideRecepcao && +sala !== 5 && massagista_id) {
+      const selecionadas = (_p2Presente && massagista_id2)
+        ? [massagista_id, massagista_id2] : [massagista_id];
+      const rr = avaliarRegraRecepcao(data, hora_inicio, hora_fim, { selecionadas });
+      if (rr.viola) {
+        const plural = rr.total === 1 ? '1 massoterapeuta livre' : `${rr.total} massoterapeutas livres`;
+        return res.status(409).json({
+          ok: false, tipo: 'recepcao',
+          error: `Regra da recepção: ${plural} neste horário — ao menos uma precisa ficar livre para cobrir a recepção do spa. Escolha outro horário ou use o override.`,
+          livres: rr.total, consumo: rr.consumo, necessarias: rr.consumo + 1,
+          override_permitido: true,
+        });
+      }
+    }
+
     const _locale1 = idioma?.trim() || null;
     const _nac1 = nacionalidade?.trim() || null;
     const _locale2 = _p2Presente ? (idioma2?.trim() || null) : null;
