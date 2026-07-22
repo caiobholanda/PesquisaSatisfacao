@@ -339,17 +339,22 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       {
         linha: linha?.trim() || null,
         tipo_massagem_id: tipo_massagem_id ? +tipo_massagem_id : null,
-        // sala 5 (Espaco Beleza) nao tem massoterapeuta: grava NULL, nao 0.
-        massagista_id: massagista_id ? +massagista_id : null,
+        // sala 5 (Espaco Beleza) nao tem massoterapeuta: grava NULL sempre —
+        // um massagista_id contrabandeado via API ocuparia uma livre sem
+        // passar pela regra da recepcao.
+        massagista_id: (+sala === 5) ? null : (massagista_id ? +massagista_id : null),
         criado_por,
-        cliente2: cliente2?.trim() || null,
-        tipo_cliente2: tipo_cliente2 || null,
-        apto2: apto2?.trim() || null,
-        email2: email2?.trim() || null,
-        telefone2: telefone2?.trim() || null,
-        tratamento2: tratamento2?.trim() || null,
-        tipo_massagem_id2: tipo_massagem_id2 ? +tipo_massagem_id2 : null,
-        massagista_id2: massagista_id2 ? +massagista_id2 : null,
+        // Campos de pessoa 2 gateados por _p2Presente (salas 3/4 + algum campo
+        // preenchido), como no PUT — massagista_id2 fora desse contexto furaria
+        // a contagem da regra da recepcao (consumo contado como 1, ocupando 2).
+        cliente2: _p2Presente ? (cliente2?.trim() || null) : null,
+        tipo_cliente2: _p2Presente ? (tipo_cliente2 || null) : null,
+        apto2: _p2Presente ? (apto2?.trim() || null) : null,
+        email2: _p2Presente ? (email2?.trim() || null) : null,
+        telefone2: _p2Presente ? (telefone2?.trim() || null) : null,
+        tratamento2: _p2Presente ? (tratamento2?.trim() || null) : null,
+        tipo_massagem_id2: _p2Presente && tipo_massagem_id2 ? +tipo_massagem_id2 : null,
+        massagista_id2: _p2Presente && massagista_id2 ? +massagista_id2 : null,
         idioma: _locale1 || null,
         idioma2: _locale2 || null,
         nacionalidade: _nac1,
