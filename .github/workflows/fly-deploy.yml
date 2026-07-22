@@ -26,6 +26,20 @@ jobs:
           node --check src/routes/auth.js
           node --check src/routes/dev.js
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - run: flyctl deploy --remote-only --wait-timeout 180
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Wait for health
+        run: |
+          echo "Aguardando app responder..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://pesquisa-satisfacao.fly.dev/api/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "App no ar (tentativa $i)"
+              exit 0
+            fi
+            echo "Tentativa $i — HTTP $STATUS, aguardando 5s..."
+            sleep 5
+          done
+          echo "Timeout: app nao respondeu em 150s"
+          exit 1
