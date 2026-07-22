@@ -365,6 +365,7 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
         // um massagista_id contrabandeado via API ocuparia uma livre sem
         // passar pela regra da recepcao.
         massagista_id: (+sala === 5) ? null : (massagista_id ? +massagista_id : null),
+        massagistas_extras: massagistasExtras,
         criado_por,
         // Campos de pessoa 2 gateados por _p2Presente (salas 3/4 + algum campo
         // preenchido), como no PUT — massagista_id2 fora desse contexto furaria
