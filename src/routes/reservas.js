@@ -229,6 +229,24 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
       if (_ehRecep(_m2)) return res.status(400).json({ ok: false, error: 'Pessoa 2: profissional selecionada é recepcionista — escolha uma massoterapeuta' });
     }
 
+    // ── Combo com mais de uma massoterapeuta: ids EXTRAS além da principal.
+    // Todas ficam ocupadas no intervalo (conflito + regra da recepção).
+    const _extrasReq = Array.isArray(req.body?.massagistas_extras) ? req.body.massagistas_extras : [];
+    const massagistasExtras = [];
+    if (+sala !== 5 && massagista_id) {
+      for (const v of _extrasReq) {
+        const n = parseInt(v, 10);
+        if (!Number.isInteger(n) || n <= 0) continue;
+        if (n === +massagista_id || (massagista_id2 && n === +massagista_id2)) continue;
+        if (massagistasExtras.includes(n)) continue;
+        const mx = buscarMassagistaById(n);
+        if (!mx) return res.status(400).json({ ok: false, error: 'Equipe do combo: massoterapeuta não encontrada' });
+        if (_ehRecep(mx)) return res.status(400).json({ ok: false, error: `Equipe do combo: ${mx.nome} é recepcionista — escolha massoterapeutas` });
+        massagistasExtras.push(n);
+        if (massagistasExtras.length >= 4) break;
+      }
+    }
+
     // ── Validação de escala (mensal → fallback semanal). O frontend já filtra,
     // mas o backend revalida — POST direto na API não burla a escala. Override
     // explícito (override_escala:true) permite agendar mesmo assim; a flag fica
