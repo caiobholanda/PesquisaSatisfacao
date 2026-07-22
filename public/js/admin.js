@@ -3247,6 +3247,7 @@ function calOpenModal(salaId, data, hora) {
   const _acLr = document.getElementById('res-cortesia-ac-lista'); if (_acLr) _acLr.style.display = 'none';
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
+  _resMassExtras = [];
   document.getElementById('res-inp-hora-inicio').value = _resHoraInicio;
   document.getElementById('res-tempo-val').textContent = 'selecione um tratamento';
   document.getElementById('res-extra-info').innerHTML = '';
