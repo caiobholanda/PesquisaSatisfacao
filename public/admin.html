@@ -2241,6 +2241,17 @@
     .aq-card-counter {
       display: flex; align-items: center; justify-content: center; gap: .55rem;
     }
+    .aq-add-btn {
+      background: var(--gold-dim); border: 1.5px solid var(--gold);
+      color: var(--gold-dark); border-radius: 8px;
+      font-family: var(--font); font-size: .73rem; font-weight: 700;
+      letter-spacing: .01em; padding: .48rem .9rem; cursor: pointer; white-space: nowrap;
+      transition: background .16s, border-color .16s, color .16s, transform .1s;
+      flex-shrink: 0;
+    }
+    .aq-add-btn:hover { background: var(--gold); color: #fff; border-color: var(--gold); }
+    .aq-add-btn:active { transform: scale(.93); }
+    .aq-count-cell { display: flex; flex-direction: column; align-items: flex-end; gap: .06rem; }
     .aq-btn {
       width: 26px; height: 26px; border-radius: 50%;
       border: 1px solid var(--border); background: var(--surface);
@@ -5345,12 +5356,11 @@
           <div class="aq-dw-label">Hóspede</div>
           <div class="aq-dw-price"><strong>R$ 60</strong> <span style="font-size:.67rem;color:var(--muted)">+15% serv.</span></div>
         </div>
-        <div class="aq-dw-sub" id="aq-sub-hospede">—</div>
-        <div class="aq-dw-counter">
-          <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="-1" aria-label="Diminuir Hóspede" disabled>−</button>
+        <div class="aq-count-cell">
           <span class="aq-dw-count" id="aq-count-hospede">0</span>
-          <button class="aq-btn" data-aq-tipo="hospede" data-aq-delta="1" aria-label="Aumentar Hóspede">+</button>
+          <span class="aq-dw-sub" id="aq-sub-hospede">—</span>
         </div>
+        <button class="aq-add-btn" data-aq-tipo="hospede" type="button">+ Adicionar</button>
       </div>
       <!-- Passante -->
       <div class="aq-dw-card" data-aq-card="passante">
@@ -5358,12 +5368,11 @@
           <div class="aq-dw-label">Passante</div>
           <div class="aq-dw-price"><strong>R$ 120</strong> <span style="font-size:.67rem;color:var(--muted)">+15% serv.</span></div>
         </div>
-        <div class="aq-dw-sub" id="aq-sub-passante">—</div>
-        <div class="aq-dw-counter">
-          <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="-1" aria-label="Diminuir Passante" disabled>−</button>
+        <div class="aq-count-cell">
           <span class="aq-dw-count" id="aq-count-passante">0</span>
-          <button class="aq-btn" data-aq-tipo="passante" data-aq-delta="1" aria-label="Aumentar Passante">+</button>
+          <span class="aq-dw-sub" id="aq-sub-passante">—</span>
         </div>
+        <button class="aq-add-btn" data-aq-tipo="passante" type="button">+ Adicionar</button>
       </div>
       <!-- Gran Class -->
       <div class="aq-dw-card" data-aq-card="gran_class">
@@ -5374,12 +5383,10 @@
           </div>
           <div class="aq-dw-sub-free">Gratuito</div>
         </div>
-        <div></div>
-        <div class="aq-dw-counter">
-          <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="-1" aria-label="Diminuir Gran Class" disabled>−</button>
+        <div class="aq-count-cell">
           <span class="aq-dw-count" id="aq-count-gran_class">0</span>
-          <button class="aq-btn" data-aq-tipo="gran_class" data-aq-delta="1" aria-label="Aumentar Gran Class">+</button>
         </div>
+        <button class="aq-add-btn" data-aq-tipo="gran_class" type="button">+ Adicionar</button>
       </div>
     </div>
     <!-- Ledger histórico -->

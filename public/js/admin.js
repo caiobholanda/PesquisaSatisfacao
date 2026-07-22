@@ -5067,18 +5067,14 @@ function _aqRender() {
     const elCount = document.getElementById(`aq-count-${tipo}`);
     if (elCount) {
       elCount.textContent = qty;
-      elCount.className = (elCount.classList.contains('aq-dw-count') ? 'aq-dw-count' : 'aq-count') + (qty > 0 ? ' nz' : '');
-      const minus = elCount.previousElementSibling;
-      if (minus) minus.disabled = qty <= 0;
+      elCount.className = 'aq-dw-count' + (qty > 0 ? ' nz' : '');
     }
-    const elCard = document.querySelector(`[data-aq-card="${tipo}"]`);
-    if (elCard) elCard.classList.toggle('active', qty > 0);
+    document.querySelector(`[data-aq-card="${tipo}"]`)?.classList.toggle('active', qty > 0);
     if (tipo !== 'gran_class') {
       const elSub = document.getElementById(`aq-sub-${tipo}`);
       if (elSub) {
-        const sub = qty * _AQ_PRECO[tipo];
-        elSub.textContent = qty > 0 ? _aqFmt(sub) : '—';
-        elSub.className = (elSub.classList.contains('aq-dw-sub') ? 'aq-dw-sub' : 'aq-card-subtotal') + (qty > 0 ? ' nz' : '');
+        elSub.textContent = qty > 0 ? _aqFmt(qty * _AQ_PRECO[tipo]) : '—';
+        elSub.className = 'aq-dw-sub' + (qty > 0 ? ' nz' : '');
       }
     }
   }
@@ -5243,19 +5239,55 @@ document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAq
 document.getElementById('aq-gc-chip-btn')?.addEventListener('click', e => { e.stopPropagation(); _abrirModalGranClass(); });
 document.getElementById('aq-ledger-more-btn')?.addEventListener('click', _aqOpenLogPopup);
 
-// Botões +/-
-document.getElementById('aq-body')?.addEventListener('click', e => {
-  const btn = e.target.closest('[data-aq-delta]');
-  if (!btn || btn.disabled) return;
-  const tipo  = btn.dataset.aqTipo;
-  const delta = parseInt(btn.dataset.aqDelta, 10);
-  if (!tipo || isNaN(delta)) return;
+function _aqShowAddModal(tipo) {
+  if (document.getElementById('_aq-add-modal')) return;
+  const label = _AQ_TIPO_LABEL[tipo] || tipo;
   const atual = _aqGet(tipo);
-  const nova  = Math.max(0, atual + delta);
-  if (nova === atual) return;
-  _aqState[tipo] = nova;
-  _aqRender();
-  _aqSaveCell(tipo, nova);
+  const ov = document.createElement('div');
+  ov.id = '_aq-add-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  ov.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:12px;max-width:340px;width:100%;padding:1.45rem 1.55rem 1.25rem;box-shadow:0 24px 60px rgba(0,0,0,.44)">
+      <div style="margin-bottom:1.15rem">
+        <div style="font-size:.63rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:.28rem">Área Molhada · Day Use</div>
+        <div style="font-weight:700;font-size:1rem;color:var(--text)">Adicionar ${label}</div>
+        ${atual > 0 ? `<div style="font-size:.74rem;color:var(--muted);margin-top:.18rem">Quantidade atual: <strong style="color:var(--text)">${atual}</strong></div>` : ''}
+      </div>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:.38rem;letter-spacing:.02em">Quantos foram adicionados?</label>
+      <input id="_aq-add-input" type="number" min="1" max="99" value="1"
+        style="width:100%;padding:.65rem .8rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:var(--font);font-size:1.4rem;font-weight:700;text-align:center;outline:none;transition:border-color .15s;margin-bottom:1.1rem">
+      <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <button data-act="cancel" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.46rem 1rem;font-size:.77rem;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--font)">Cancelar</button>
+        <button data-act="confirm" style="background:var(--gold);border:none;border-radius:8px;padding:.46rem 1.2rem;font-size:.77rem;font-weight:700;color:#fff;cursor:pointer;font-family:var(--font)">Confirmar</button>
+      </div>
+    </div>`;
+
+  function doConfirm() {
+    const val = parseInt(document.getElementById('_aq-add-input')?.value, 10);
+    if (!val || val < 1) return;
+    const nova = atual + val;
+    _aqState[tipo] = nova;
+    _aqRender();
+    _aqSaveCell(tipo, nova);
+    close();
+  }
+  function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+  function onKey(e) { if (e.key === 'Escape') close(); if (e.key === 'Enter') doConfirm(); }
+
+  ov.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'cancel' || e.target === ov) close();
+    if (act === 'confirm') doConfirm();
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+  setTimeout(() => { const inp = document.getElementById('_aq-add-input'); inp?.focus(); inp?.select(); }, 40);
+}
+
+document.getElementById('aq-body')?.addEventListener('click', e => {
+  const btn = e.target.closest('.aq-add-btn[data-aq-tipo]');
+  if (!btn) return;
+  _aqShowAddModal(btn.dataset.aqTipo);
 });
 
 document.getElementById('btn-week-prev').addEventListener('click',()=>{_calWeekOffset--;_calDiaSel=null;loadReservas();});
