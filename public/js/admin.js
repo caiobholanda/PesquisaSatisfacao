@@ -2418,6 +2418,19 @@ function _renderMassagistasModal2() {
   // Exclui a massagista já selecionada para pessoa 1
   if (mass1Id) lista = lista.filter(m => String(m.id) !== String(mass1Id));
   const aviso2 = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
+  // Regra da recepção no casal: a reserva consome DUAS livres — só pode haver
+  // pessoa 2 com ≥3 livres no intervalo (duas atendem, uma sobra p/ recepção).
+  const livres2 = _livresIntervalo(data, horaInicio, _resHoraFim);
+  if (livres2 !== null && livres2 <= 2) {
+    const _msg2 = livres2 <= 1
+      ? '🛎 Sem massoterapeuta disponível para a pessoa 2 — ao menos uma precisa cobrir a recepção do spa.'
+      : '🛎 2 massoterapeutas livres neste horário — agendar as duas deixaria a recepção do spa descoberta. Escolha outro horário (o admin pode usar o override ao salvar).';
+    list.innerHTML = aviso2 + `<div class="res-cb-opt cb-empty">${_msg2}</div>`;
+    if (hid) hid.value = '';
+    if (inp) inp.value = '';
+    if (clr) clr.style.display = 'none';
+    return;
+  }
   if (!lista.length) {
     list.innerHTML = aviso2 + '<div class="res-cb-opt cb-empty">Nenhuma massoterapeuta disponível</div>';
     return;
