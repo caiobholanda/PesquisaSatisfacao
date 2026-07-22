@@ -767,9 +767,8 @@ function _showRecepAlertPopup() {
       <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.5">Ajuste a escala ou escolha um horário em que haja recepcionista disponível.</p>
     </div>`;
   document.body.appendChild(overlay);
-  const closePopup = () => overlay.remove();
-  document.getElementById('_recep-alert-x').addEventListener('click', closePopup);
-  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+  // Fecha SOMENTE no ✕ (pedido explícito): clique fora não dispensa o alerta.
+  document.getElementById('_recep-alert-x').addEventListener('click', () => overlay.remove());
 }
 
 // ── Liberar Pesquisa de Satisfação ──
