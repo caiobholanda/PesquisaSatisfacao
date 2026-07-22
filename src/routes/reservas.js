@@ -272,13 +272,16 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
           override_permitido: true,
         };
       };
-      const escErr1 = _validaEscala(massagista_id, '');
-      const escErr2 = _p2Presente ? _validaEscala(massagista_id2, 'Pessoa 2: ') : null;
-      if (escErr1 || escErr2) {
-        // Reporta TODAS as violações de uma vez — o override libera ambas,
-        // então o admin precisa ver as duas antes de confirmar.
-        const principal = escErr1 || escErr2;
-        if (escErr1 && escErr2) principal.error = `${escErr1.error}; ${escErr2.error}`;
+      const escErrs = [
+        _validaEscala(massagista_id, ''),
+        _p2Presente ? _validaEscala(massagista_id2, 'Pessoa 2: ') : null,
+        ...massagistasExtras.map(mid => _validaEscala(mid, 'Equipe: ')),
+      ].filter(Boolean);
+      if (escErrs.length) {
+        // Reporta TODAS as violações de uma vez — o override libera todas,
+        // então o admin precisa vê-las antes de confirmar.
+        const principal = escErrs[0];
+        if (escErrs.length > 1) principal.error = escErrs.map(e => e.error).join('; ');
         return res.status(409).json(principal);
       }
     }
