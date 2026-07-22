@@ -619,6 +619,7 @@ router.put('/:id', ...podeEscreverSpa, (req, res) => {
         tipo_massagem_id: tipo_massagem_id ? +tipo_massagem_id : null,
         // sala 5 (Espaco Beleza) nunca grava massoterapeuta (regra da recepcao)
         massagista_id: (+sala === 5) ? null : (massagista_id ? +massagista_id : null),
+        massagistas_extras: massagistasExtras,
         cliente2: _p2Presente ? (cliente2?.trim() || null) : null,
         tipo_cliente2: _p2Presente ? (tipo_cliente2 || null) : null,
         apto2: _p2Presente ? (quarto2 || apto2?.trim() || null) : null,
