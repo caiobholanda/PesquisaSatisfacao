@@ -2538,8 +2538,21 @@ function _renderMassagistasModal() {
   if (apenasBilingue) lista = lista.filter(m => m.bilingue);
   lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
   const aviso = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
+  // Regra da recepção: com apenas 1 livre no intervalo, ela é obrigatoriamente
+  // a recepção — o seletor não a oferece (backend também recusa sem override).
+  const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
+  if (livres === 1 && !_isEspBeleza()) {
+    list.innerHTML = aviso + '<div class="res-cb-opt cb-empty">🛎 1 massoterapeuta livre neste horário — ela precisa cobrir a recepção do spa. Escolha outro horário (o admin pode usar o override ao salvar).</div>';
+    if (hid) hid.value = '';
+    if (inp) inp.value = '';
+    if (clr) clr.style.display = 'none';
+    return;
+  }
   if (!lista.length) {
-    list.innerHTML = aviso + `<div class="res-cb-opt cb-empty">${apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário'}</div>`;
+    const _semNinguem = (livres === 0)
+      ? 'Nenhuma massoterapeuta disponível neste horário — todas em atendimento ou fora de escala'
+      : (apenasBilingue ? 'Nenhuma bilíngue na escala deste horário' : 'Nenhuma massoterapeuta na escala deste horário');
+    list.innerHTML = aviso + `<div class="res-cb-opt cb-empty">${_semNinguem}</div>`;
     return;
   }
   list.innerHTML = aviso + lista.map(m => {
