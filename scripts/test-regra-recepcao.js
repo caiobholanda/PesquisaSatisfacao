@@ -123,6 +123,21 @@ function rodarPassagem(pass) {
     const v11 = rr([ids.A], '08:00', '08:30');
     check(pass, '11. 0 livres → escala/conflito aponta, não a recepção', v11.total === 0 && v11.viola === false);
 
+    // 12. combo com massoterapeutas extras: todas ficam ocupadas e contam na regra
+    const v12pre = rr([ids.A, ids.B], '12:00', '13:00'); // consumo 2 de 3 → sobra 1, OK
+    check(pass, '12a. combo A+B com 3 livres → OK', v12pre.viola === false);
+    const resCombo = reservar(1, ids.A, '12:00', '13:00', { massagistas_extras: [ids.B] });
+    check(pass, '12b. extra B ocupada no intervalo', total('12:00', '13:00') === 1);
+    let conflitou = false;
+    try { reservar(2, ids.B, '12:30', '13:30'); } catch (e) { conflitou = e.code === 'CONFLITO_PROF'; }
+    check(pass, '12c. agendar a extra em sobreposição → CONFLITO_PROF', conflitou);
+    const v12 = rr([ids.C], '12:00', '13:00');
+    check(pass, '12d. sobrou só C → viola', v12.viola === true && v12.total === 1);
+    const v12combo3 = rr([ids.A, ids.B, ids.C], '17:00', '18:00'); // combo com TODAS → 0 sobrando
+    check(pass, '12e. combo com todas as 3 → viola', v12combo3.viola === true);
+    cancelarReserva(resCombo);
+    check(pass, '12f. cancelou combo → liberou A e B', total('12:00', '13:00') === 3);
+
     cancelarReserva(resA); cancelarReserva(resCasal); cancelarReserva(res20); cancelarReserva(resReq1);
   } finally {
     cleanup();
