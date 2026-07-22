@@ -3563,8 +3563,16 @@ function _wireAtalhosData(hojeStr) {
   }
 }
 
-// Recalcula hora_fim sempre que hora_inicio ou tratamento mudam
+// Recalcula hora_fim sempre que hora_inicio ou tratamento mudam.
+// Wrapper: após QUALQUER recálculo (inclusive early-returns do core), re-renderiza
+// os seletores de massoterapeuta — o filtro de conflito/recepção depende do
+// intervalo completo, e o listener de hora-inicio renderiza ANTES do recálculo.
 function calAtualizarHoraFim() {
+  _calAtualizarHoraFimCore();
+  _renderMassagistasModal();
+  _renderMassagistasModal2();
+}
+function _calAtualizarHoraFimCore() {
   const inicio = document.getElementById('res-inp-hora-inicio').value;
   const trat = document.getElementById('res-inp-tratamento');
   const tratObj  = _tratSelecionado();
