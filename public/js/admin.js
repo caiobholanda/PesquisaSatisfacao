@@ -3950,47 +3950,41 @@ function _precoDetHtml2(r) {
 // Modal de beneficios Gran Class — popup ao clicar no badge na agenda
 // ou nos detalhes da reserva.
 function _abrirModalGranClass() {
+  if (document.getElementById('_gc-modal')) return;
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.78);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
-  ov.innerHTML = `
-    <div style="background:var(--surface);border:1px solid #9C5843;border-radius:12px;max-width:480px;width:100%;padding:1.5rem 1.7rem;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative">
-      <button data-act="close" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
-      <div style="text-align:center;margin-bottom:1.2rem">
-        <div style="font-size:2rem;color:#9C5843;margin-bottom:.2rem">★</div>
-        <h2 style="margin:0;font-family:var(--serif);font-weight:500;font-size:1.7rem;color:var(--text)">Benefícios Gran Class</h2>
-        <p style="margin:.3rem 0 0 0;color:var(--muted);font-size:.8rem;letter-spacing:.04em;text-transform:uppercase">Cortesia exclusiva para hóspedes Gran Class</p>
+  ov.id = '_gc-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,14,.72);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  const card = [
+    { icon: '🏆', title: '10% de desconto em todas as massagens', desc: 'Aplicado automaticamente sobre o subtotal antes da taxa de serviço.' },
+    { icon: '🔥', title: 'Sauna liberada gratuitamente',         desc: 'Acesso livre durante toda a estadia, sem custo adicional.' },
+    { icon: '💧', title: 'Jacuzzi liberada gratuitamente',       desc: 'Acesso livre durante toda a estadia, sem custo adicional.' },
+  ].map(b => `
+    <li style="display:flex;gap:.85rem;align-items:flex-start;padding:.75rem 1rem;background:#F5EEE2;border-radius:10px">
+      <span style="font-size:1.35rem;line-height:1.1;flex-shrink:0">${b.icon}</span>
+      <div>
+        <div style="font-weight:700;color:#202C28;font-size:.92rem;line-height:1.3">${b.title}</div>
+        <div style="font-size:.76rem;color:#5A4A3A;margin-top:.22rem;line-height:1.45">${b.desc}</div>
       </div>
-      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem">
-        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#9C5843;line-height:1">💆</div>
-          <div style="flex:1">
-            <div style="font-weight:600;color:var(--text);font-size:.95rem">10% de desconto em todas as massagens</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Aplicado automaticamente sobre o subtotal antes da taxa de serviço.</div>
-          </div>
-        </li>
-        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#9C5843;line-height:1">🔥</div>
-          <div style="flex:1">
-            <div style="font-weight:600;color:var(--text);font-size:.95rem">Sauna liberada gratuitamente</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
-          </div>
-        </li>
-        <li style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-          <div style="font-size:1.3rem;color:#9C5843;line-height:1">💧</div>
-          <div style="flex:1">
-            <div style="font-weight:600;color:var(--text);font-size:.95rem">Jacuzzi liberada gratuitamente</div>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem">Acesso livre durante toda a estadia, sem custo adicional.</div>
-          </div>
-        </li>
+    </li>`).join('');
+  ov.innerHTML = `
+    <div style="background:#ECE4D2;border-radius:14px;max-width:440px;width:100%;padding:1.8rem 1.75rem 1.4rem;box-shadow:0 28px 70px rgba(0,0,0,.45);position:relative">
+      <button data-act="close" style="position:absolute;top:.75rem;right:.85rem;background:none;border:none;color:#7A6A5A;font-size:1.1rem;cursor:pointer;line-height:1;padding:.25rem .4rem;border-radius:6px" aria-label="Fechar">✕</button>
+      <div style="text-align:center;margin-bottom:1.35rem">
+        <div style="font-size:1.9rem;color:#7A4334;margin-bottom:.3rem">★</div>
+        <h2 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.75rem;color:#202C28;letter-spacing:-.01em">Benefícios Gran Class</h2>
+        <p style="margin:.35rem 0 0;color:#7A6A5A;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Cortesia exclusiva para hóspedes Gran Class</p>
+      </div>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.6rem">
+        ${card}
       </ul>
-      <div style="display:flex;justify-content:flex-end;margin-top:1.2rem">
-        <button class="btn btn-outline" data-act="close">Fechar</button>
+      <div style="display:flex;justify-content:flex-end;margin-top:1.35rem">
+        <button data-act="close" style="background:none;border:1.5px solid #9C5843;color:#7A4334;border-radius:7px;padding:.42rem 1.2rem;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Fechar</button>
       </div>
     </div>
   `;
   function onKey(e) { if (e.key === 'Escape') close(); }
   function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
-  ov.addEventListener('click', e => { if (e.target.dataset.act === 'close') close(); });
+  ov.addEventListener('click', e => { const t = e.target.closest('[data-act="close"]'); if (t || e.target === ov) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
 }
@@ -5196,27 +5190,7 @@ function _closeAqDrawer() {
 document.getElementById('btn-aq-drawer-open')?.addEventListener('click', _openAqDrawer);
 document.getElementById('aq-drawer-close')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAqDrawer);
-document.getElementById('aq-gc-chip-btn')?.addEventListener('click', () => {
-  const existing = document.getElementById('_gc-info-popup');
-  if (existing) return;
-  const overlay = document.createElement('div');
-  overlay.id = '_gc-info-popup';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)';
-  overlay.innerHTML = `
-    <div style="background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;max-width:380px;width:90%;padding:1.4rem 1.5rem 1.25rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.38)">
-      <button id="_gc-info-x" style="position:absolute;top:.65rem;right:.8rem;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);line-height:1;padding:.2rem .3rem;border-radius:4px" aria-label="Fechar">✕</button>
-      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.9rem">
-        <span style="font-size:1.4rem;line-height:1">★</span>
-        <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.01em">Benefício Gran Class</span>
-      </div>
-      <p style="margin:0 0 .5rem;font-size:.85rem;color:var(--muted2);line-height:1.6">Hóspedes do programa <strong>Gran Class</strong> têm acesso gratuito à Área Molhada — Jacuzzi e Sauna incluídos — como benefício da hospedagem.</p>
-      <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.5">Nenhuma cobrança adicional é aplicada para este perfil de cliente.</p>
-    </div>`;
-  document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  document.getElementById('_gc-info-x').addEventListener('click', close);
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-});
+document.getElementById('aq-gc-chip-btn')?.addEventListener('click', e => { e.stopPropagation(); _abrirModalGranClass(); });
 
 // Botões +/-
 document.getElementById('aq-body')?.addEventListener('click', e => {
