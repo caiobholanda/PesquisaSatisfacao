@@ -1846,6 +1846,33 @@ export function listarTodasReservas({ from, to, sala, salas, busca, massagista_i
   return { total, items };
 }
 
+// Normaliza opts.massagistas_extras (combo com >1 massoterapeuta) para array
+// de ids únicos, sem a principal/pessoa 2. Retorna [] quando não há extras.
+function _normalizarExtras(massagistas_extras, massagista_id, massagista_id2) {
+  if (!Array.isArray(massagistas_extras)) return [];
+  const out = [];
+  for (const v of massagistas_extras) {
+    const n = Number(v);
+    if (!Number.isInteger(n) || n <= 0) continue;
+    if (n === Number(massagista_id) || n === Number(massagista_id2)) continue;
+    if (!out.includes(n)) out.push(n);
+  }
+  return out.slice(0, 4); // teto sanidade
+}
+
+// Conflito de massoterapeuta no intervalo: ocupada como principal, pessoa 2 OU
+// integrante extra de combo (JSON massagistas_extras) de outra reserva.
+function _conflitoProfIntervalo(db, mid, data, horaInicio, horaFim, excluirId = null) {
+  return db.prepare(`
+    SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
+    WHERE data = ? AND (? IS NULL OR id != ?)
+      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
+      AND (massagista_id = ? OR massagista_id2 = ?
+           OR EXISTS (SELECT 1 FROM json_each(COALESCE(massagistas_extras,'[]')) WHERE json_each.value = ?))
+    LIMIT 1
+  `).get(data, excluirId, excluirId, horaInicio, horaFim, mid, mid, mid);
+}
+
 export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim, opts = {}) {
   const {
     linha = null, tipo_massagem_id = null, massagista_id = null, criado_por = null,
@@ -1853,8 +1880,10 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
     tratamento2 = null, tipo_massagem_id2 = null, massagista_id2 = null,
     idioma = null, idioma2 = null, nacionalidade = null, nacionalidade2 = null,
     tipo_pagamento = 'pago', cortesia_justificativa = null, cortesia_autorizado_por = null, cortesia_autorizado_por_nome = null,
+    massagistas_extras = null,
   } = opts;
   const db = getDb();
+  const extras = _normalizarExtras(massagistas_extras, massagista_id, massagista_id2);
 
   // Verificar bloqueio de sala
   const _bloqueioAtivo = db.prepare(
