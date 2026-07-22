@@ -277,6 +277,9 @@ export function initDb() {
   `);
   // Migration: admin que criou a reserva
   try { db.exec(`ALTER TABLE reservas ADD COLUMN criado_por TEXT`); } catch {}
+  // Migration: combos com mais de uma massoterapeuta — JSON array de ids ALÉM
+  // da principal (massagista_id). Ex.: '[4,7]'. NULL = só a principal.
+  try { db.exec(`ALTER TABLE reservas ADD COLUMN massagistas_extras TEXT`); } catch {}
   // Migration: nacionalidade do cliente
   try { db.exec(`ALTER TABLE clientes ADD COLUMN nacionalidade TEXT`); } catch {}
   // Migration: nacionalidade na anamnese (spa_perfis)
