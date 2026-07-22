@@ -295,8 +295,9 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     // Override: mesmo mecanismo explícito da escala (flag auditada no body).
     const overrideRecepcao = overrideEscala || !!(req.body?.override_recepcao);
     if (!overrideRecepcao && +sala !== 5 && massagista_id) {
-      const selecionadas = (_p2Presente && massagista_id2)
-        ? [massagista_id, massagista_id2] : [massagista_id];
+      // Consumo: principal + extras do combo + pessoa 2 (casal)
+      const selecionadas = [massagista_id, ...massagistasExtras];
+      if (_p2Presente && massagista_id2) selecionadas.push(massagista_id2);
       const rr = avaliarRegraRecepcao(data, hora_inicio, hora_fim, { selecionadas });
       if (rr.viola) {
         const plural = rr.total === 1 ? '1 massoterapeuta livre' : `${rr.total} massoterapeutas livres`;
