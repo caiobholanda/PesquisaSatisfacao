@@ -4880,6 +4880,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       sala, tipo_cliente: tipo, cliente: nome, apto, email, telefone, tratamento, data,
       hora_inicio: horaInicio, hora_fim: _resHoraFim,
       linha, tipo_massagem_id: tipoMassagemId, massagista_id: massagistaId,
+      massagistas_extras: massagistasExtras,
       tipo_doc: tipoDoc, doc: cpfInpVal,
       quarto: quartoInp || null,
       idioma: document.getElementById('res-inp-idioma')?.value || null,
