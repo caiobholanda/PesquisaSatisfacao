@@ -4847,7 +4847,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
     calCloseModal();
     loadReservas();
     if (_dadosBeleza) _abrirEspbPopup(_dadosBeleza);
-  }finally{btn.disabled=false;}
+  }finally{btn.disabled=false;_resOverrideRegra=false;}
 });
 
 // ── Espaço Beleza — popup pós-reserva ──────────────────────────────────────
