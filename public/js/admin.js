@@ -5157,11 +5157,25 @@ document.getElementById('btn-aq-drawer-open')?.addEventListener('click', _openAq
 document.getElementById('aq-drawer-close')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-drawer-overlay')?.addEventListener('click', _closeAqDrawer);
 document.getElementById('aq-gc-chip-btn')?.addEventListener('click', () => {
-  const info = document.getElementById('aq-gc-info');
-  const btn  = document.getElementById('aq-gc-chip-btn');
-  if (!info) return;
-  const open = info.classList.toggle('open');
-  btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const existing = document.getElementById('_gc-info-popup');
+  if (existing) return;
+  const overlay = document.createElement('div');
+  overlay.id = '_gc-info-popup';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;max-width:380px;width:90%;padding:1.4rem 1.5rem 1.25rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.38)">
+      <button id="_gc-info-x" style="position:absolute;top:.65rem;right:.8rem;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);line-height:1;padding:.2rem .3rem;border-radius:4px" aria-label="Fechar">✕</button>
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.9rem">
+        <span style="font-size:1.4rem;line-height:1">★</span>
+        <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.01em">Benefício Gran Class</span>
+      </div>
+      <p style="margin:0 0 .5rem;font-size:.85rem;color:var(--muted2);line-height:1.6">Hóspedes do programa <strong>Gran Class</strong> têm acesso gratuito à Área Molhada — Jacuzzi e Sauna incluídos — como benefício da hospedagem.</p>
+      <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.5">Nenhuma cobrança adicional é aplicada para este perfil de cliente.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById('_gc-info-x').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 });
 
 // Botões +/-
