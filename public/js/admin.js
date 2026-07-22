@@ -2478,6 +2478,7 @@ let _escalaAvalKey = null;
 let _escalaAvalMap = null;
 let _escalaAvalLancada = null;
 let _escalaAvalLivres = null; // contagem de livres do intervalo (escala ∧ sem conflito) — regra da recepção
+let _escalaAvalRecepCoberta = null; // true = recepcionista em escala cobre a recepção → regra desligada
 
 function _escalaAvalKeyFor(data, horaInicio, horaFim) {
   // Inclui a reserva em edição: na edição a própria reserva não conta
