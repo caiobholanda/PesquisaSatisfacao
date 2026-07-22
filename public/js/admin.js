@@ -2636,8 +2636,10 @@ function _renderMassagistasModal() {
     return;
   }
   const combo = _isComboTrat();
-  // Fora do modo combo, extras não fazem sentido: colapsa para só a principal
-  if (!combo && _resMassExtras.length) { _resMassExtras = []; _massSyncInput(); }
+  // Fora do modo combo, extras não fazem sentido: colapsa para só a principal.
+  // Guard: só quando a lista de tratamentos já carregou — senão a edição de um
+  // combo apagaria as extras antes de _tratamentos resolver (corrida no prefill).
+  if (!combo && _tratamentos.length && _resMassExtras.length) { _resMassExtras = []; _massSyncInput(); }
   // Extras que saíram da lista (escala/conflito mudou) são removidas
   if (combo && _resMassExtras.length) {
     const idsSet = new Set(lista.map(m => m.id));
