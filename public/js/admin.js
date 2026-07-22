@@ -749,6 +749,29 @@ function showToast(msg, duration = 4000) {
   el._t = setTimeout(() => el.classList.remove('show'), duration);
 }
 
+function _showRecepAlertPopup() {
+  const existing = document.getElementById('_recep-alert-popup');
+  if (existing) return;
+  const overlay = document.createElement('div');
+  overlay.id = '_recep-alert-popup';
+  const isDark = document.documentElement.dataset.theme === 'dark' || document.body.dataset.theme === 'dark' || document.body.classList.contains('dark');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;max-width:380px;width:90%;padding:1.4rem 1.5rem 1.25rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.38)">
+      <button id="_recep-alert-x" style="position:absolute;top:.65rem;right:.8rem;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);line-height:1;padding:.2rem .3rem;border-radius:4px;transition:background .15s" aria-label="Fechar">✕</button>
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.9rem">
+        <span style="font-size:1.5rem;line-height:1">🛎</span>
+        <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.01em">Recepção descoberta</span>
+      </div>
+      <p style="margin:0 0 .5rem;font-size:.85rem;color:var(--muted2);line-height:1.6">Não há recepcionista em escala neste horário. Selecionar todas as massoterapeutas disponíveis deixaria a recepção do SPA descoberta.</p>
+      <p style="margin:0;font-size:.8rem;color:var(--muted);line-height:1.5">Ajuste a escala ou escolha um horário em que haja recepcionista disponível.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  const closePopup = () => overlay.remove();
+  document.getElementById('_recep-alert-x').addEventListener('click', closePopup);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+}
+
 // ── Liberar Pesquisa de Satisfação ──
 const _pesquisasLiberadas = new Set();
 
@@ -2593,8 +2616,8 @@ function _massMultiToggle(id) {
     const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
     const p2Sel = (_isCasal() && document.getElementById('res-inp-massagista2')?.value) ? 1 : 0;
     const selDepois = 2 + _resMassExtras.length + p2Sel; // principal + extras + esta (+ pessoa 2)
-    if (_escalaAvalRecepCoberta !== true && livres !== null && selDepois > livres - 1) {
-      showToast('🛎 Regra da recepção: adicionar mais uma massoterapeuta deixaria a recepção descoberta. Escolha outro horário ou use o override ao salvar.', 6000);
+    if (_escalaAvalRecepCoberta !== true && livres !== null && selDepois >= livres) {
+      _showRecepAlertPopup();
       return;
     }
     _resMassExtras.push(id);
@@ -2624,12 +2647,6 @@ function _renderMassagistasModal() {
   // Regra da recepção: com apenas 1 livre no intervalo, ela é obrigatoriamente
   // a recepção — o seletor não a oferece (backend também recusa sem override).
   const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
-  if (livres === 1 && !_isEspBeleza() && _escalaAvalRecepCoberta !== true) {
-    // Seleção prévia NÃO é limpa de propósito: é o caminho do override — ao
-    // salvar, o backend responde 409 (regra da recepção) e o admin decide.
-    list.innerHTML = aviso + '<div class="res-cb-opt cb-empty">🛎 1 massoterapeuta livre neste horário — ela precisa cobrir a recepção do spa. Escolha outro horário (o admin pode usar o override ao salvar).</div>';
-    return;
-  }
   if (!lista.length) {
     const _semNinguem = (livres === 0)
       ? 'Nenhuma massoterapeuta disponível neste horário — todas em atendimento ou fora de escala'
