@@ -2644,8 +2644,9 @@ function _renderMassagistasModal() {
   if (apenasBilingue) lista = lista.filter(m => m.bilingue);
   lista = lista.filter(m => _escalaFiltra(m, data, horaInicio, _resHoraFim));
   const aviso = _escalaAvisoHtml(data, horaInicio, _resHoraFim);
-  // Regra da recepção: com apenas 1 livre no intervalo, ela é obrigatoriamente
-  // a recepção — o seletor não a oferece (backend também recusa sem override).
+  // Regra da recepção: NENHUMA massoterapeuta é escondida do seletor. O alerta
+  // acontece no popup (_showRecepAlertPopup) ao tentar selecionar todas, e o
+  // gate duro fica no backend (409 + "Agendar mesmo assim" ao salvar).
   const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
   if (!lista.length) {
     const _semNinguem = (livres === 0)

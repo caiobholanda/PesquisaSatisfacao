@@ -3474,6 +3474,48 @@
     .resdet-kv-val.mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: "zero" 1; }
     .resdet-kv-val.gold { color: var(--gold-dark); font-weight: 600; }
 
+    /* ── Detalhes v2 — layout estruturado ── */
+    .rd2-tl-wrap { display:flex;align-items:center;padding:.9rem 0 .75rem;border-bottom:1px solid var(--border-soft);margin-bottom:.1rem }
+    .rd2-tb { display:flex;flex-direction:column }
+    .rd2-tv { font-family:'JetBrains Mono',monospace;font-size:1.75rem;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1 }
+    .rd2-tl { font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:.22rem }
+    .rd2-tb-r .rd2-tv,.rd2-tb-r .rd2-tl { text-align:right }
+    .rd2-bridge { flex:1;display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:0 .75rem }
+    .rd2-bridge-line { width:100%;height:1.5px;background:linear-gradient(90deg,rgba(156,88,67,.35),rgba(156,88,67,.1)) }
+    .rd2-bridge-dur { font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;color:var(--gold-dark);background:var(--gold-dim);border:1px solid rgba(156,88,67,.4);padding:.17rem .6rem;border-radius:99px;letter-spacing:.05em;white-space:nowrap }
+    .rd2-sec { font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:.65rem;padding:.85rem 0 .5rem }
+    .rd2-sec::after { content:'';flex:1;height:1px;background:var(--border-soft) }
+    .rd2-cli-hd { display:flex;align-items:center;gap:.85rem;margin-bottom:.6rem }
+    .rd2-cli-nome { font-size:1rem;font-weight:600;color:var(--text);line-height:1.25 }
+    .rd2-cli-meta { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.22rem;font-size:.77rem;color:var(--muted) }
+    .rd2-row { display:flex;align-items:baseline;gap:.75rem;padding:.32rem 0;border-bottom:1px solid var(--border-soft) }
+    .rd2-row:last-child { border-bottom:none }
+    .rd2-lbl { font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:110px;flex-shrink:0;line-height:1.5 }
+    .rd2-val { font-size:.86rem;color:var(--text);flex:1;word-break:break-word }
+    .rd2-val.mono { font-family:'JetBrains Mono',monospace }
+    .rd2-val.empty { color:var(--muted);font-style:italic }
+    .rd2-tx-nome { font-family:var(--serif);font-size:1.15rem;color:var(--gold-dark);line-height:1.3;margin-bottom:.55rem }
+    .rd2-pills { display:flex;flex-wrap:wrap;gap:.3rem }
+    .rd2-pill { background:var(--gold-dim);color:var(--gold-dark);padding:.14rem .5rem;border-radius:999px;font-size:.72rem;font-weight:500 }
+    .rd2-fin { border:1px solid var(--border-soft);border-radius:8px;overflow:hidden }
+    .rd2-fin-row { display:flex;justify-content:space-between;align-items:center;padding:.38rem .8rem;border-bottom:1px solid var(--border-soft) }
+    .rd2-fin-row:last-child { border-bottom:none }
+    .rd2-fin-lbl { font-size:.8rem;color:var(--muted) }
+    .rd2-fin-val { font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text) }
+    .rd2-fin-row.total { background:rgba(156,88,67,.06) }
+    .rd2-fin-row.total .rd2-fin-lbl { color:var(--text);font-weight:700;font-size:.85rem }
+    .rd2-fin-row.total .rd2-fin-val { color:var(--gold-dark);font-size:.98rem;font-weight:700 }
+    .rd2-fin-row.desconto .rd2-fin-lbl,.rd2-fin-row.desconto .rd2-fin-val { color:#9C5843 }
+    .rd2-cortesia-blk { background:var(--gold-dim);border:1px solid rgba(156,88,67,.4);border-radius:8px;padding:.65rem .9rem }
+    .rd2-cortesia-hd { font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:.4rem }
+    .rd2-reg-strip { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.75rem 0 .15rem;border-top:1px solid var(--border-soft);margin-top:.9rem }
+    .rd2-reg-item { font-family:'JetBrains Mono',monospace;font-size:.71rem;color:var(--muted) }
+    .rd2-reg-id { color:var(--text);font-weight:700;font-size:.75rem }
+    .rd2-reg-dot { width:3px;height:3px;border-radius:50%;background:var(--border-soft);flex-shrink:0 }
+    .rd2-casal-div { display:flex;align-items:center;gap:.6rem;margin:1rem 0 .35rem }
+    .rd2-casal-div::before,.rd2-casal-div::after { content:'';flex:1;height:1px;background:var(--border) }
+    .rd2-casal-div span { font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.1em;color:var(--gold);font-weight:600;text-transform:uppercase;white-space:nowrap }
+
     /* ━━━ ANAMNESE: badge no card do calendario + modal readonly + popup casal ━━━ */
     .cal-anam-badge {
       background: rgba(45,122,79,.18); color: var(--sala-s3-text, #144228);
