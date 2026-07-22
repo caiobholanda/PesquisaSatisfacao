@@ -4610,6 +4610,10 @@ document.getElementById('res-inp-tratamento').addEventListener('change', calAtua
 
 document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
   const err=document.getElementById('res-modal-err');
+  // Consome a flag de override JÁ NO INÍCIO: se qualquer validação abaixo
+  // retornar cedo, a flag não vaza para um envio futuro não autorizado.
+  const _overrideEnvio = _resOverrideRegra;
+  _resOverrideRegra = false;
   err.textContent='';
   // Casal sempre grava na sala 3 (espaço unificado 3+4); individual usa sala escolhida
   const sala = _isCasal() ? 3 : _resSala;
