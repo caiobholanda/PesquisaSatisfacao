@@ -1921,32 +1921,15 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
     throw e;
   }
 
-  // Conflito de massoterapeuta 1
-  if (massagista_id) {
-    const conflitoProf = db.prepare(`
-      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
-      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ?
-      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-    `).get(massagista_id, massagista_id, data, horaInicio, horaFim);
+  // Conflito de massoterapeutas: principal, pessoa 2 (casal) e extras (combo).
+  // O helper também enxerga ids em massagistas_extras de reservas existentes.
+  for (const mid of [massagista_id, massagista_id2, ...extras].filter(Boolean)) {
+    const conflitoProf = _conflitoProfIntervalo(db, +mid, data, horaInicio, horaFim);
     if (conflitoProf) {
       const e = new Error('CONFLITO_PROF');
       e.code = 'CONFLITO_PROF';
       e.conflito = conflitoProf;
-      throw e;
-    }
-  }
-
-  // Conflito de massoterapeuta 2 (casal)
-  if (massagista_id2) {
-    const conflitoProf2 = db.prepare(`
-      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
-      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ?
-      AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-    `).get(massagista_id2, massagista_id2, data, horaInicio, horaFim);
-    if (conflitoProf2) {
-      const e = new Error('CONFLITO_PROF');
-      e.code = 'CONFLITO_PROF';
-      e.conflito = conflitoProf2;
+      e.massagista_id = +mid;
       throw e;
     }
   }
@@ -1954,14 +1937,15 @@ export function inserirReserva(sala, cliente, tipo_cliente, apto, email, telefon
   return db.prepare(
     `INSERT INTO reservas (sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, hora_inicio, hora_fim, linha, tipo_massagem_id, massagista_id, criado_por,
        cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2, idioma, idioma2, nacionalidade, nacionalidade2,
-       tipo_pagamento, cortesia_justificativa, cortesia_autorizado_por, cortesia_autorizado_por_nome)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       tipo_pagamento, cortesia_justificativa, cortesia_autorizado_por, cortesia_autorizado_por_nome, massagistas_extras)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     sala, cliente, tipo_cliente, apto, email, telefone, tratamento, data, horaInicio, horaFim,
     linha, tipo_massagem_id, massagista_id, criado_por,
     cliente2, tipo_cliente2, apto2, email2, telefone2, tratamento2, tipo_massagem_id2, massagista_id2,
     idioma, idioma2, nacionalidade, nacionalidade2,
-    tipo_pagamento || 'pago', cortesia_justificativa || null, cortesia_autorizado_por || null, cortesia_autorizado_por_nome || null
+    tipo_pagamento || 'pago', cortesia_justificativa || null, cortesia_autorizado_por || null, cortesia_autorizado_por_nome || null,
+    extras.length ? JSON.stringify(extras) : null
   ).lastInsertRowid;
 }
 
