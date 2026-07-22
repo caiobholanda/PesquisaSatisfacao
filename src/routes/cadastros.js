@@ -8,7 +8,7 @@ import {
   listarFeriasMassagista, listarFeriasPeriodo, criarFeriasMassagista, atualizarFeriasMassagista, excluirFeriasMassagista, feriasConflito, limparTurnosNoPeriodo, listarTurnosNoPeriodo, buscarBackupFeriasPeriodo, buscarFeriasById, aplicarPadraoDatas,
   listarTurnosPeriodo, upsertTurno, deletarTurno, limparTurnosPeriodo, setPadraoEntrada, registrarLogPadrao, calcularSaldoCf,
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
-  contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData,
+  contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData, contarLivresIntervalo,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
   historicoMassagista, setMassagistaPinHash,
   calcularComissaoPorMes,
