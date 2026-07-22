@@ -2555,10 +2555,9 @@ function _renderMassagistasModal() {
   // a recepção — o seletor não a oferece (backend também recusa sem override).
   const livres = _livresIntervalo(data, horaInicio, _resHoraFim);
   if (livres === 1 && !_isEspBeleza()) {
+    // Seleção prévia NÃO é limpa de propósito: é o caminho do override — ao
+    // salvar, o backend responde 409 (regra da recepção) e o admin decide.
     list.innerHTML = aviso + '<div class="res-cb-opt cb-empty">🛎 1 massoterapeuta livre neste horário — ela precisa cobrir a recepção do spa. Escolha outro horário (o admin pode usar o override ao salvar).</div>';
-    if (hid) hid.value = '';
-    if (inp) inp.value = '';
-    if (clr) clr.style.display = 'none';
     return;
   }
   if (!lista.length) {
