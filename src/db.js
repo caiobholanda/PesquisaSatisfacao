@@ -1987,22 +1987,9 @@ export function atualizarReserva(id, sala, cliente, tipo_cliente, apto, email, t
   `).get(data, id, horaInicio, horaFim, sala, isSala34 ? 1 : 0, novaCasal ? 1 : 0);
   if (conflitoSala) throw Object.assign(new Error('CONFLITO_SALA'), { code: 'CONFLITO_SALA', conflito: conflitoSala });
 
-  if (massagista_id) {
-    const conflitoProf = db.prepare(`
-      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
-      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ? AND id != ?
-        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-    `).get(massagista_id, massagista_id, data, id, horaInicio, horaFim);
-    if (conflitoProf) throw Object.assign(new Error('CONFLITO_PROF'), { code: 'CONFLITO_PROF', conflito: conflitoProf });
-  }
-
-  if (massagista_id2) {
-    const conflitoProf2 = db.prepare(`
-      SELECT id, cliente, hora_inicio, hora_fim, sala FROM reservas
-      WHERE (massagista_id = ? OR massagista_id2 = ?) AND data = ? AND id != ?
-        AND NOT (hora_fim <= ? OR hora_inicio >= ?)
-    `).get(massagista_id2, massagista_id2, data, id, horaInicio, horaFim);
-    if (conflitoProf2) throw Object.assign(new Error('CONFLITO_PROF'), { code: 'CONFLITO_PROF', conflito: conflitoProf2 });
+  for (const mid of [massagista_id, massagista_id2, ...extras].filter(Boolean)) {
+    const conflitoProf = _conflitoProfIntervalo(db, +mid, data, horaInicio, horaFim, id);
+    if (conflitoProf) throw Object.assign(new Error('CONFLITO_PROF'), { code: 'CONFLITO_PROF', conflito: conflitoProf, massagista_id: +mid });
   }
 
   db.prepare(`
