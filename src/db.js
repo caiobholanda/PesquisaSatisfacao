@@ -647,6 +647,11 @@ export function initDb() {
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_feedback_cliente   ON feedback(cliente_id)`); } catch {}
 
   seedTratamentosGranSpa();
+  // Migration de dados: pacotes "DIA DA NOIVA OPC. 1/2" são serviços do Espaço
+  // Beleza — a flag liga o popup pós-reserva ("Deseja também reservar o Espaço
+  // Beleza?") em admin.js. LIKE com %OPC% NÃO pega o combo "Dia da Noiva"
+  // (130min), que não deve disparar o popup. Idempotente por natureza (UPDATE).
+  try { db.exec(`UPDATE tipos_massagem SET espaco_beleza=1 WHERE UPPER(nome) LIKE '%NOIVA%OPC%' AND (espaco_beleza IS NULL OR espaco_beleza=0)`); } catch {}
   seedMassoterapeutasGranSpa();
   seedQuartosGranMarquise();
   seedPadraoEntrada();
