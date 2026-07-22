@@ -3110,10 +3110,10 @@ function calOpenModal(salaId, data, hora) {
   if (_pagBtnCortesia) _pagBtnCortesia.classList.remove('active');
   if (_pagHid) _pagHid.value = 'pago';
   if (_pagCampos) _pagCampos.style.display = 'none';
-  ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
+  ['res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  document.querySelectorAll('#res-cortesia-chips .res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
+  const _selTipo = document.getElementById('res-sel-cortesia-tipo'); if (_selTipo) _selTipo.value = '';
   const _acLr = document.getElementById('res-cortesia-ac-lista'); if (_acLr) _acLr.style.display = 'none';
   _resHoraInicio = hora || '09:00';
   _resHoraFim = null;
@@ -4207,7 +4207,8 @@ async function calAbrirEdicao(r) {
     if (_ppago) _ppago.classList.remove('active');
     if (_pcort) _pcort.classList.add('active');
     if (_pcampos) _pcampos.style.display = 'flex';
-    _setV('res-inp-cortesia-justificativa', r.cortesia_justificativa || '');
+    const _selTipoEdit = document.getElementById('res-sel-cortesia-tipo');
+    if (_selTipoEdit && r.cortesia_justificativa) _selTipoEdit.value = r.cortesia_justificativa;
     _setV('res-inp-cortesia-autorizado-nome', r.cortesia_autorizado_por_nome || '');
     const _idHid = document.getElementById('res-inp-cortesia-autorizado-id');
     if (_idHid) _idHid.value = r.cortesia_autorizado_por || '';
@@ -4507,27 +4508,14 @@ async function _resLoadHubCortesiaData(currentJust) {
 }
 
 function _resRenderCortesiaChips(currentJust) {
-  const area = document.getElementById('res-cortesia-chips-area');
-  const wrap = document.getElementById('res-cortesia-chips');
-  if (!area || !wrap) return;
-  if (!_resHubTipos || !_resHubTipos.length) { area.style.display = 'none'; return; }
-  area.style.display = 'flex';
-  wrap.innerHTML = _resHubTipos.map(t => {
-    const on = currentJust && currentJust === t.nome;
-    return `<button type="button" class="res-cortesia-chip${on ? ' res-chip-on' : ''}" data-nome="${t.nome}" style="padding:.3rem .8rem;border-radius:99px;font-size:.75rem;cursor:pointer;transition:all .15s;border:1px solid rgba(153,100,66,.5);background:${on ? 'rgba(153,100,66,.5)' : 'rgba(153,100,66,.1)'};color:#ECE4D2">${t.nome}</button>`;
-  }).join('');
-  wrap.querySelectorAll('.res-cortesia-chip').forEach(ch => {
-    ch.addEventListener('click', () => {
-      const txt = document.getElementById('res-inp-cortesia-justificativa');
-      if (!txt) return;
-      const isOn = ch.classList.contains('res-chip-on');
-      wrap.querySelectorAll('.res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
-      if (isOn) { txt.value = ''; }
-      else { txt.value = ch.dataset.nome; ch.classList.add('res-chip-on'); ch.style.background = 'rgba(153,100,66,.5)'; }
-    });
-    ch.addEventListener('mouseenter', () => { if (!ch.classList.contains('res-chip-on')) ch.style.background = 'rgba(153,100,66,.25)'; });
-    ch.addEventListener('mouseleave', () => { if (!ch.classList.contains('res-chip-on')) ch.style.background = 'rgba(153,100,66,.1)'; });
-  });
+  const sel = document.getElementById('res-sel-cortesia-tipo');
+  if (!sel) return;
+  if (!_resHubTipos || !_resHubTipos.length) {
+    sel.innerHTML = '<option value="">Nenhum tipo cadastrado no Hub</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Selecione o tipo de cortesia…</option>' +
+    _resHubTipos.map(t => `<option value="${t.nome}"${currentJust === t.nome ? ' selected' : ''}>${t.nome}</option>`).join('');
 }
 
 function _resInitCortesiaAC() {
@@ -4565,11 +4553,11 @@ document.querySelectorAll('.res-tipo-btn[data-pag]').forEach(btn => {
     if (campos) campos.style.display = pag === 'cortesia' ? 'flex' : 'none';
     if (pag === 'cortesia') _resLoadHubCortesiaData(null);
     if (pag === 'pago') {
-      ['res-inp-cortesia-justificativa','res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
+      ['res-inp-cortesia-autorizado-nome','res-inp-cortesia-autorizado-id'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
+      const _selT = document.getElementById('res-sel-cortesia-tipo'); if (_selT) _selT.value = '';
       const _acL = document.getElementById('res-cortesia-ac-lista'); if (_acL) _acL.style.display = 'none';
-      document.querySelectorAll('#res-cortesia-chips .res-cortesia-chip').forEach(c => { c.classList.remove('res-chip-on'); c.style.background = 'rgba(153,100,66,.1)'; });
     }
   });
 });
@@ -4746,7 +4734,7 @@ document.getElementById('btn-res-salvar').addEventListener('click',async()=>{
       idioma: document.getElementById('res-inp-idioma')?.value || null,
       nacionalidade: resolverNacionalidade(document.getElementById('res-inp-nacionalidade')?.value?.trim() || '', NACIONALIDADES) || null,
       tipo_pagamento: document.getElementById('res-inp-tipo-pagamento')?.value || 'pago',
-      cortesia_justificativa: document.getElementById('res-inp-cortesia-justificativa')?.value?.trim() || null,
+      cortesia_justificativa: document.getElementById('res-sel-cortesia-tipo')?.value?.trim() || null,
       cortesia_autorizado_por: document.getElementById('res-inp-cortesia-autorizado-id')?.value?.trim() || null,
       cortesia_autorizado_por_nome: document.getElementById('res-inp-cortesia-autorizado-nome')?.value?.trim() || null,
     };
