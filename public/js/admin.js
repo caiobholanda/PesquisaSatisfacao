@@ -5016,6 +5016,23 @@ document.getElementById('espb-btn-sim').addEventListener('click', async () => {
   errEl.textContent = '';
   btn.disabled = true;
   try {
+    // Bloqueio padrão começa às 09:00 — mas se a data é HOJE e já passou das
+    // 09:00, o backend rejeita hora no passado ("Horário no passado. Agora
+    // são HH:MM"). Nesse caso o bloqueio começa no próximo múltiplo de 5min.
+    let _horaIniBeleza = '09:00';
+    try {
+      const _agoraFt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Fortaleza' }));
+      const _hojeFt = _agoraFt.getFullYear() + '-' + String(_agoraFt.getMonth()+1).padStart(2,'0') + '-' + String(_agoraFt.getDate()).padStart(2,'0');
+      if (_espbDados.data === _hojeFt) {
+        const _minAgora = _agoraFt.getHours()*60 + _agoraFt.getMinutes();
+        const _prox = Math.ceil((_minAgora + 1) / 5) * 5;
+        if (_prox >= 22*60) {
+          errEl.textContent = 'O Espaço Beleza já encerrou por hoje (fecha às 22:00). Reserve para outra data.';
+          return;
+        }
+        if (_prox > 9*60) _horaIniBeleza = String(Math.floor(_prox/60)).padStart(2,'0') + ':' + String(_prox%60).padStart(2,'0');
+      }
+    } catch {}
     const reservaBeleza = {
       sala: 5,
       tipo_cliente: _espbDados.tipo_cliente,
@@ -5025,7 +5042,7 @@ document.getElementById('espb-btn-sim').addEventListener('click', async () => {
       telefone: _espbDados.telefone || null,
       tratamento: 'Espaço Beleza',
       data: _espbDados.data,
-      hora_inicio: '09:00',
+      hora_inicio: _horaIniBeleza,
       hora_fim: '22:00',
       tipo_doc: _espbDados.tipo_doc,
       doc: _espbDados.doc,
