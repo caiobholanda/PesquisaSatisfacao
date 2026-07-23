@@ -185,7 +185,8 @@ router.post('/', ...podeEscreverSpa, (req, res) => {
     }
     if (data === hojeFt) {
       const nowMin = nowFt.getHours()*60 + nowFt.getMinutes();
-      if (iniMin < nowMin) {
+      const ehBloqueioEB = +sala === 5 && hora_inicio === '09:00' && hora_fim === '22:00';
+      if (!ehBloqueioEB && iniMin < nowMin) {
         const hh = String(nowFt.getHours()).padStart(2,'0') + ':' + String(nowFt.getMinutes()).padStart(2,'0');
         return res.status(400).json({ ok: false, error: `Horário no passado. Agora são ${hh} (Fortaleza)` });
       }
