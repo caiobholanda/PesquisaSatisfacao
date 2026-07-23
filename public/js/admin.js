@@ -1823,7 +1823,7 @@ document.getElementById('mgmt-t-salvar').addEventListener('click', async () => {
     if (!res) return;
     const d = await res.json();
     if (!d.ok) { err.textContent = d.error || 'Erro ao salvar.'; return; }
-    closeMgmtT(); loadTipos(); _tratamentos = [];
+    closeMgmtT(); loadTipos(); _tratamentos = []; loadTratamentosModal();
   } finally { btn.disabled = false; }
 });
 
@@ -2685,37 +2685,40 @@ function _renderMassagistasModal() {
   }
 }
 
+function _buildTratamentosHtml() {
+  const ordem = ['Combo', 'Massagem', 'Tratamento', 'Facial', 'Complementar'];
+  const porCat = {};
+  for (const t of _tratamentos) {
+    const cat = t.tipo === 'combo' ? 'Combo' : (t.categoria || 'Outros');
+    (porCat[cat] = porCat[cat] || []).push(t);
+  }
+  const cats = ordem.filter(c => porCat[c]).concat(Object.keys(porCat).filter(c => !ordem.includes(c)));
+  let html = '';
+  for (const cat of cats) {
+    html += `<div class="res-cb-grp">${cat}</div>`;
+    for (const t of porCat[cat]) {
+      const precoLbl = t.preco ? ` · R$ ${Number(t.preco).toFixed(0)}` : '';
+      const durLbl = t.duracao_min ? ` (${t.duracao_min} min)` : '';
+      html += `<div class="res-cb-opt" data-val="${escHtml(t.nome)}" data-label="${escHtml(t.nome)}">${escHtml(t.nome)}${durLbl}${precoLbl}</div>`;
+    }
+  }
+  return html || '<div class="res-cb-opt cb-empty">Nenhum tratamento disponível</div>';
+}
+
 async function loadTratamentosModal() {
-  if (_tratamentos.length) return;
-  try {
-    const r = await api('/api/tipos-massagem-ativos');
-    if (!r) return;
-    const d = await r.json();
-    _tratamentos = d.items || [];
-    const list = document.getElementById('res-cb-trat-list');
-    if (!list) return;
-    const ordem = ['Combo', 'Massagem', 'Tratamento', 'Facial', 'Complementar'];
-    const porCat = {};
-    for (const t of _tratamentos) {
-      const cat = t.tipo === 'combo' ? 'Combo' : (t.categoria || 'Outros');
-      (porCat[cat] = porCat[cat] || []).push(t);
-    }
-    const cats = ordem.filter(c => porCat[c]).concat(Object.keys(porCat).filter(c => !ordem.includes(c)));
-    let html = '';
-    for (const cat of cats) {
-      html += `<div class="res-cb-grp">${cat}</div>`;
-      for (const t of porCat[cat]) {
-        const precoLbl = t.preco ? ` · R$ ${Number(t.preco).toFixed(0)}` : '';
-        const durLbl = t.duracao_min ? ` (${t.duracao_min} min)` : '';
-        html += `<div class="res-cb-opt" data-val="${escHtml(t.nome)}" data-label="${escHtml(t.nome)}">${escHtml(t.nome)}${durLbl}${precoLbl}</div>`;
-      }
-    }
-    if (!html) html = '<div class="res-cb-opt cb-empty">Nenhum tratamento disponível</div>';
-    list.innerHTML = html;
-    // Replica a mesma lista para pessoa 2 (casal)
-    const list2 = document.getElementById('res-cb-trat2-list');
-    if (list2) list2.innerHTML = html;
-  } catch {}
+  if (!_tratamentos.length) {
+    try {
+      const r = await api('/api/tipos-massagem-ativos');
+      if (!r) return;
+      const d = await r.json();
+      _tratamentos = d.items || [];
+    } catch { return; }
+  }
+  const html = _buildTratamentosHtml();
+  const list = document.getElementById('res-cb-trat-list');
+  if (list) list.innerHTML = html;
+  const list2 = document.getElementById('res-cb-trat2-list');
+  if (list2) list2.innerHTML = html;
 }
 
 // Localiza o tratamento selecionado no modal
