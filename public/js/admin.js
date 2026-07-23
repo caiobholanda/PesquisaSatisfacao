@@ -2697,7 +2697,7 @@ async function loadTratamentosModal() {
     const ordem = ['Combo', 'Massagem', 'Tratamento', 'Facial', 'Complementar'];
     const porCat = {};
     for (const t of _tratamentos) {
-      const cat = t.categoria || 'Outros';
+      const cat = t.tipo === 'combo' ? 'Combo' : (t.categoria || 'Outros');
       (porCat[cat] = porCat[cat] || []).push(t);
     }
     const cats = ordem.filter(c => porCat[c]).concat(Object.keys(porCat).filter(c => !ordem.includes(c)));
