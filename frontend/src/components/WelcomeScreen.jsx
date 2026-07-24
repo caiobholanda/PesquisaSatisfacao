@@ -7,7 +7,7 @@ function _tokenValido(tokenData) {
   return Date.now() < lib + 15 * 60 * 1000;
 }
 
-export default function WelcomeScreen({ visible, onStart, tokenData }) {
+export default function WelcomeScreen({ visible, onStart, tokenData, jaRespondida }) {
   const ativo = _tokenValido(tokenData);
   return (
     <div className="screen min-h-screen w-full grid md:grid-cols-2" style={{ opacity: visible ? 1 : 0 }}>
@@ -37,7 +37,11 @@ export default function WelcomeScreen({ visible, onStart, tokenData }) {
             </div>
           </div>
           <div className="w-full max-w-sm" style={{ marginBottom: 'clamp(8px, 2vh, 28px)' }}>
-            {ativo ? (
+            {jaRespondida ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-warm)', fontSize: 12.5, letterSpacing: '0.08em', lineHeight: 1.8, paddingTop: 8 }}>
+                Avaliação já registrada.<br />Obrigado por compartilhar sua experiência.
+              </div>
+            ) : ativo ? (
               <button className="band-cta" onClick={onStart} aria-label="Iniciar avaliação da experiência no Gran SPA">
                 <div className="flex items-center justify-center" style={{ background: 'var(--gold)', minHeight: 70 }}>
                   <div className="flex flex-col items-center" style={{ color: '#FFFFFF', padding: '0 22px', letterSpacing: '0.22em', fontWeight: 500, fontSize: 16, lineHeight: 1.45, textAlign: 'center' }}>

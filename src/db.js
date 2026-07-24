@@ -2362,7 +2362,7 @@ export function countSessoesSemPesquisa() {
 
 export function buscarSurveyToken(token) {
   const row = getDb().prepare(`
-    SELECT st.liberada_em, st.pessoa, st.reserva_id AS reserva_id,
+    SELECT st.liberada_em, st.respondida_em, st.pessoa, st.reserva_id AS reserva_id,
            r.cliente_id AS cliente_id,
            r.cliente, r.apto, r.email, r.telefone, r.data, r.tratamento, r.tipo_cliente,
            r.quarto, r.idioma_documento, r.idioma_documento2,

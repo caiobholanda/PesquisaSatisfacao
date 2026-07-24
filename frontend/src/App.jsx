@@ -20,6 +20,7 @@ export default function App() {
   const [visible,      setVisible]      = useState(true);
   const [tokenData,    setTokenData]    = useState(null);
   const [tokenChecked, setTokenChecked] = useState(false);
+  const [jaRespondida, setJaRespondida] = useState(false);
   const [formStart,    setFormStart]    = useState(null);
   const [i18n,         setI18n]         = useState(null);
   const pollRef = useRef(null);
@@ -163,7 +164,7 @@ export default function App() {
     if (token) {
       fetch(`/api/survey/${encodeURIComponent(token)}`, { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.ok) { setTokenData(d.dados); carregarI18n(d.dados?.idioma); } })
+        .then(d => { if (d?.ok) { if (d.dados?.ja_respondida) { setJaRespondida(true); } else { setTokenData(d.dados); carregarI18n(d.dados?.idioma); } } })
         .catch(() => {})
         .finally(() => setTokenChecked(true));
       return;
@@ -215,7 +216,7 @@ export default function App() {
           : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a6.5 6.5 0 1 0 10.5 10.5z"/></svg>
         }
       </button>
-      {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} />}
+      {screen === 'welcome' && <WelcomeScreen      visible={visible} onStart={() => go('form')}    tokenData={tokenData} i18n={i18n} jaRespondida={jaRespondida} />}
       {screen === 'form'    && <FormScreen         visible={visible} onSubmit={() => go('confirm')} prefill={tokenData} formStart={formStart} onTimeout={() => go('welcome', { clearToken: true })} i18n={i18n} extrasPorSecao={extrasPorSecao} secoesOrdenadas={secoesOrdenadas} pesquisaVersao={pesquisaVersao} />}
       {screen === 'confirm' && <ConfirmationScreen visible={visible} onRestart={() => go('welcome', { afterSubmit: true })} i18n={i18n} />}
     </div>

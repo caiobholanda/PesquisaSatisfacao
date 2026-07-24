@@ -220,6 +220,7 @@ app.get('/api/survey/:token', (req, res, next) => {
       quarto: row.quarto || null,
       gran_class: quartoNum ? isGranClass(quartoNum) : false,
       idioma: row.idioma || 'pt-BR',
+      ja_respondida: !!row.respondida_em,
     },
   });
 });
