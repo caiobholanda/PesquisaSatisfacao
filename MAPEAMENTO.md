@@ -639,7 +639,7 @@ Grade mensal. Período 21/mês → 20/mês+1 (60 dias).
 | `HH:MM` | Entrada (saída = +8h20min, teto 22:00) |
 | `HH:MM\|HH:MM` | Jornada customizada |
 | X | Folga | FE/FÉR | Férias |
-| AT | Atestado | AA | Afastamento |
+| AT | Atestado | AA | Abono Aniversário |
 | CF | Comp. feriado | CH | Comp. hora |
 | LS | Lic. sindical | LC | Lic. casamento |
 | F | Falta |
