@@ -238,6 +238,10 @@ router.post('/', rateLimit, (req, res) => {
     .then(idioma => { if (idioma) atualizarIdiomaFeedback(id, idioma); })
     .catch(() => {});
 
+  // Encaminha cópia para o GestaoQualidade (centralização) — fire-and-forget,
+  // nunca afeta a resposta ao hóspede.
+  encaminharParaGQ({ feedbackId: id, body: b, submittedAt: new Date().toISOString() });
+
   return res.status(201).json({ ok: true, id });
 });
 
