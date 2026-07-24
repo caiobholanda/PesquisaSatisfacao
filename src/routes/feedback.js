@@ -3,6 +3,7 @@ import { inserirFeedback, listarFeedback, getFeedbackById, statsFeedback, marcar
 import { detectarIdioma } from '../utils/detectarIdioma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { inserirRespostaPesquisa, aplicarMetasEmStats } from '../qualidade.js';
+import { encaminharParaGQ } from '../gq-forward.js';
 
 const router = Router();
 
