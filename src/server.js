@@ -182,10 +182,15 @@ app.get('/api/survey/live', (_req, res) => {
   const row = buscarSurveyTokenAtivo();
   if (!row) return res.json({ ok: false });
   const quartoNum = row.quarto || row.apto || '';
+  // ATENCAO: este endpoint e PUBLICO (o tablet da recepcao polla sem login).
+  // Nao expor PII contactavel (email/telefone) aqui — qualquer um na internet
+  // leria os dados do ultimo hospede liberado. Esses campos so sao usados pelo
+  // front para pre-preencher o formulario, e isso so deve acontecer no fluxo
+  // por link privado (/api/survey/:token), que exige o token secreto do hospede.
   res.json({
     ok: true,
     dados: {
-      nome: row.cliente, apto: row.apto, email: row.email, telefone: row.telefone,
+      nome: row.cliente, apto: row.apto,
       data: row.data, tratamento: row.tratamento, tipo_cliente: row.tipo_cliente,
       massoterapeuta: row.massagista_nome || '',
       liberada_em: row.liberada_em,
