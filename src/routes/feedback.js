@@ -128,6 +128,7 @@ router.post('/', rateLimit, (req, res) => {
   // pesquisa_slug, criar resposta_pesquisa + resposta_item vinculados ao
   // feedback_id. Falhas aqui NAO derrubam a submissao publica — o feedback
   // legado ja foi gravado e a pesquisa nunca pode quebrar para o usuario.
+  let _rpSalva = false;
   if (b.pesquisa_slug) {
     try {
       const itens = [];
@@ -227,6 +228,7 @@ router.post('/', rateLimit, (req, res) => {
         feedback_id: id,
         itens,
       });
+      _rpSalva = true;
     } catch (err) {
       console.error('[Qualidade] gravacao estruturada falhou (legado OK):', err.message);
     }
@@ -238,9 +240,11 @@ router.post('/', rateLimit, (req, res) => {
     .then(idioma => { if (idioma) atualizarIdiomaFeedback(id, idioma); })
     .catch(() => {});
 
-  // Encaminha cópia para o GestaoQualidade (centralização) — fire-and-forget,
-  // nunca afeta a resposta ao hóspede.
-  encaminharParaGQ({ feedbackId: id, body: b, submittedAt: new Date().toISOString() });
+  // Encaminha para GestaoQualidade apenas se não há resposta_pesquisa (evita
+  // duplicação no overview do GQ quando pesquisa_slug está presente).
+  if (!_rpSalva) {
+    encaminharParaGQ({ feedbackId: id, body: b, submittedAt: new Date().toISOString() });
+  }
 
   return res.status(201).json({ ok: true, id });
 });
