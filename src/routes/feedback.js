@@ -134,7 +134,7 @@ router.post('/', rateLimit, (req, res) => {
       const itens = [];
       for (const campo of CAMPOS_NOTA) {
         if (b[campo]) {
-          const mapa = { otimo: 9, bom: 6, regular: 3, ruim: 0 };
+          const mapa = { otimo: 9, bom: 3, regular: 1, ruim: 0 };
           itens.push({ chave: campo, escala_opcao_chave: b[campo], valor_numerico: mapa[b[campo]] ?? null });
         }
       }
