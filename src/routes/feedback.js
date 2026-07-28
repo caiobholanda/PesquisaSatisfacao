@@ -56,9 +56,9 @@ router.post('/', rateLimit, (req, res) => {
   }
 
   const id = inserirFeedback({
-    nome: b.nome.trim(),
+    nome: b.nome?.trim() || '',
     apto: b.apto?.trim() || null,
-    email: b.email.trim().toLowerCase(),
+    email: b.email?.trim().toLowerCase() || '',
     telefone: b.telefone?.trim() || null,
     data_tratamento: b.data_tratamento || null,
     tratamento_realizado: b.tratamento_realizado?.trim() || null,
@@ -75,7 +75,7 @@ router.post('/', rateLimit, (req, res) => {
     recomenda: b.recomenda || null,
     recomenda_qual: b.recomenda_qual?.trim() || null,
     recomenda_porque: b.recomenda_porque?.trim() || null,
-    tipo_cliente: b.tipo_cliente.trim(),
+    tipo_cliente: b.tipo_cliente?.trim() || 'lazer',
     origem: b.origem,
     ip_address: req.ip,
     user_agent: req.headers['user-agent'] || null,

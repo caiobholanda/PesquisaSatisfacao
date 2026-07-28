@@ -444,7 +444,7 @@ Steps:
 ### feedback.js (`/api/feedback`)
 | Método | Caminho | Auth | O que faz |
 |--------|---------|------|-----------|
-| POST | `/` | rateLimit 5/10min | Insere feedback + marca survey_token + resposta_pesquisa opcional + detecta idioma background |
+| POST | `/` | rateLimit 5/10min | Insere feedback + marca survey_token + resposta_pesquisa opcional + detecta idioma background. `nome`/`email`/`tipo_cliente` opcionais (fallback ''/''/lazer) — digitação GQ de papel exige só urna+nº questionário |
 | GET | `/` | requireAuth | Lista com filtros paginados |
 | GET | `/stats` | requireAuth | Médias, distribuição, pct recomenda, metas opcionais |
 | GET | `/item/:id` | requireAuth | Detalhe + perguntas extras admin |
