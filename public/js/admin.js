@@ -598,6 +598,8 @@ async function openDrawer(id) {
           <span class="fb-sec-title">Tipo de cliente <span class="fb-sec-en">Type of guest</span></span>
         </div>
         <div class="fb-radio-list">
+          ${_fbRadio('Hóspede', 'Hotel guest', r.tipo_cliente === 'hospede')}
+          ${_fbRadio('Passante', 'Walk-in', r.tipo_cliente === 'passante')}
           ${_fbRadio('Lazer', 'Leisure', r.tipo_cliente === 'lazer')}
           ${_fbRadio('Negócios', 'Business', r.tipo_cliente === 'negocios')}
           ${_fbRadio('Evento', 'Event', r.tipo_cliente === 'evento')}

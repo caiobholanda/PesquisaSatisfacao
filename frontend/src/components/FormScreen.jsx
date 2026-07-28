@@ -203,7 +203,9 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
   const [comentarioInstalacoes, setComentarioInstalacoes] = useState('');
   const [recommend,     setRecommend]     = useState('');
   const [recommendText, setRecommendText] = useState('');
-  const [clientType,    setClientType]    = useState(prefill?.tipo_cliente || '');
+  const [clientType,    setClientType]    = useState(
+    ['lazer', 'negocios', 'evento'].includes(prefill?.tipo_cliente) ? prefill.tipo_cliente : ''
+  );
   const [errors,        setErrors]        = useState({});
   // extras: { chave_pergunta: { tipo, valor } } — para perguntas adicionadas
   // pelo admin no editor. Renderizadas dentro da secao original sem rotulo
