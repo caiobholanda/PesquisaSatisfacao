@@ -170,13 +170,28 @@ body{background:radial-gradient(1100px 560px at 12% -4%,var(--grad1),transparent
 @media(max-width:900px){
   .kpi-grid{grid-template-columns:1fr 1fr}
   .main{padding:24px 16px 60px}
-  .hdr{padding:0 16px}
-  .tabs{padding:0 16px}
+  .hdr{padding:8px 16px;height:auto;min-height:56px;flex-wrap:wrap;row-gap:6px}
+  .hdr-nav{margin-left:16px;gap:16px}
+  .hdr-right{gap:10px}
+  .tabs{padding:0 16px;overflow-x:auto;scrollbar-width:none}
+  .tab{white-space:nowrap;flex:none}
+  .sec-hdr{flex-wrap:wrap}
+  .sec-legend{flex-wrap:wrap;gap:8px 14px}
   .q-row{grid-template-columns:1fr 120px;grid-template-rows:auto auto}
   .q-bar{grid-column:1/-1;grid-row:2}
   .comment-grid{grid-template-columns:1fr}
   .tbl-head,.tbl-row{grid-template-columns:90px 1fr 90px 80px 60px}
   .tbl-email,.tbl-tipo{display:none}
+  /* Cabecalho usa <div> sem classe: esconde as mesmas colunas (3=E-mail,
+     4=Tipo) para alinhar com as linhas. */
+  .tbl-head div:nth-child(3),.tbl-head div:nth-child(4){display:none}
+}
+@media(max-width:520px){
+  .hdr-ts{display:none}
+  .kpi-hero-val{font-size:2.6rem}
+  .sec-num{font-size:2.4rem}
+  .filter-input input,.filter-input select{font-size:16px}
+  .tbl-head,.tbl-row{grid-template-columns:72px 1fr 62px 52px 44px;gap:10px;padding:11px 12px}
 }
 </style>
 </head>
