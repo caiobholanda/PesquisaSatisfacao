@@ -142,7 +142,7 @@ body {
   gap: 16px; padding: 10px 22px; flex-wrap: wrap; margin-bottom: 8px;
 }
 .scale-bar-title { color: #FFFFFF; font-weight: 500; font-size: 16px; display: flex; flex-direction: column; line-height: 1.25; }
-.scale-bar-legend { display: flex; gap: 18px; }
+.scale-bar-legend { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
 .scale-legend-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .scale-legend-label { display: flex; flex-direction: column; align-items: center; color: #FFFFFF; font-size: 11.5px; font-weight: 500; line-height: 1.2; }
 @media (max-width: 600px) { .scale-bar-legend { gap: 10px; } }
