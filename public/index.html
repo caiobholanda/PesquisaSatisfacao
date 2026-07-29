@@ -28,5 +28,9 @@
       } catch (e) {}
     })();
   </script>
+  <!-- Desativa autofill/autocomplete em todos os inputs (inclusive os criados
+       depois pelo React) — fix do commit 3482b7b, agora na FONTE do vite para
+       sobreviver a rebuilds. -->
+  <script>(function(){var off=function(){document.querySelectorAll('input,textarea,select').forEach(function(el){if(!el.dataset.acSet){el.setAttribute('autocomplete','off');el.dataset.acSet='1';}});};off();new MutationObserver(off).observe(document.documentElement,{childList:true,subtree:true});})();</script>
 </body>
 </html>
