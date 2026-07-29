@@ -31,7 +31,7 @@ export default function WelcomeScreen({ visible, onStart, tokenData, jaRespondid
         <div className="absolute pointer-events-none" style={{ inset: 28, border: '1px solid rgba(255,255,255,0.55)' }}></div>
         <div className="relative z-10 w-full flex flex-col items-center px-8 md:px-12 py-16 md:py-24">
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <GranSpaWordmark style={{ fontSize: 'clamp(38px, 6.4vw, 78px)' }} />
+            <GranSpaWordmark style={{ fontSize: 'clamp(28px, 8vw, 78px)' }} />
             <div style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--fg-warm2)', fontSize: 'clamp(20px, 2.8vw, 34px)', marginTop: 6, letterSpacing: '0.01em', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
               by L&rsquo;Occitane
             </div>
