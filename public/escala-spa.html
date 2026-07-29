@@ -525,6 +525,30 @@ body {
 .pm-day-sel      { width: 80px; font-size: 11px; padding: 5px 2px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text); font-family: var(--font); outline: none; text-align: center; cursor: pointer; transition: border-color .12s; -webkit-appearance: none; appearance: none; }
 .pm-day-sel:hover { border-color: var(--muted); }
 .pm-day-sel:focus { border-color: var(--gold); background: var(--surface); }
+
+/* ── MOBILE ─────────────────────────────────────
+   body{overflow:hidden} corta qualquer estouro: a barra de período (≈760px
+   em linha única) deixava "Limpar escala" e o indicador de salvamento
+   inacessíveis no celular. */
+@media (max-width: 900px) {
+  .periodo-bar { height: auto; min-height: 46px; flex-wrap: wrap; padding: 8px 12px; gap: 6px 10px; }
+  .pbar-group { flex-wrap: wrap; }
+  .pnav-label { min-width: 0; padding: 0 10px; }
+  .legend { flex-wrap: wrap; gap: 6px 12px; }
+  .save-ind { min-width: 0; }
+}
+@media (max-width: 700px) {
+  :root { --col-prof: 128px; --col-d: 40px; }
+  .cp-times { grid-template-columns: repeat(3, 1fr); }
+  .cp-time-input { font-size: 16px; }
+  #cell-picker { max-width: calc(100vw - 16px); }
+  #hist-pop { width: min(280px, calc(100vw - 16px)); }
+  #name-tip { max-width: min(300px, calc(100vw - 24px)); }
+  /* Padrões semanais: 1fr + 7×84px não cabem em 96vw — rola na horizontal. */
+  #padroes-lista { overflow-x: auto; }
+  .pm-head-row, .pm-data-row { grid-template-columns: minmax(120px, 1fr) repeat(7, 68px); min-width: 600px; }
+  .pm-day-sel { width: 64px; }
+}
 </style>
 </head>
 <body>
