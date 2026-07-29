@@ -59,7 +59,24 @@
     ".dropdown-item:hover { background: var(--surface2); color: var(--gold-dark, var(--gold)); }",
     ".dropdown-caret { font-size: .65rem; margin-left: .3rem; opacity: .7; }",
     ".dropdown-item.sh-active { color: var(--gold); font-weight: 600; background: rgba(156,88,67,.10); }",
-    ".dropdown-item.sh-active:hover { color: var(--gold-dark, var(--gold)); }"
+    ".dropdown-item.sh-active:hover { color: var(--gold-dark, var(--gold)); }",
+    /* Mobile: o header somava ~950px de conteudo em linha unica sem wrap,
+       cortando os botoes da direita (inclusive 'Voltar ao HUB'). */
+    "@media (max-width: 900px) {",
+    "  header { padding: 8px 1rem; height: auto; min-height: 56px; flex-wrap: wrap; row-gap: 6px; }",
+    "  header::after { left: 1rem; }",
+    "  .header-actions { flex-wrap: wrap; row-gap: 6px; }",
+    "  .header-brand small { max-width: 180px; }",
+    "}",
+    "@media (max-width: 768px) {",
+    "  #gm-datahora { display: none; }",
+    "  #sh-user-name { display: none; }",
+    "}",
+    "@media (max-width: 560px) {",
+    "  .header-brand small { display: none; }",
+    "  .header-brand .sep { display: none; }",
+    "  .header-brand .brand-logo { height: 26px; }",
+    "}"
   ].join("\n");
 
   function injectCss() {
