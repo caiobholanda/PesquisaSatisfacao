@@ -174,7 +174,8 @@ body{background:radial-gradient(1100px 560px at 12% -4%,var(--grad1),transparent
   .hdr-nav{margin-left:16px;gap:16px}
   .hdr-right{gap:10px}
   .tabs{padding:0 16px;overflow-x:auto;scrollbar-width:none}
-  .tab{white-space:nowrap;flex:none}
+  /* margin-bottom:-1px seria recortado pelo scroll container */
+  .tab{white-space:nowrap;flex:none;margin-bottom:0}
   .sec-hdr{flex-wrap:wrap}
   .sec-legend{flex-wrap:wrap;gap:8px 14px}
   .q-row{grid-template-columns:1fr 120px;grid-template-rows:auto auto}
