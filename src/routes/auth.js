@@ -46,10 +46,31 @@ router.get('/me', requireAuth, (req, res) => {
   if (sub > 0) {
     const u = buscarAdminById(sub);
     if (u) displayName = u.nome || u.username;
+  } else if (req.user.nome) {
+    // Nome real vindo do Hub via SSO (prioridade sobre o local-part do e-mail)
+    displayName = req.user.nome;
   } else if (username && username.includes('@')) {
     displayName = username.split('@')[0];
   }
   res.json({ ok: true, nome: displayName, username });
+});
+
+// GET /api/auth/me/foto — proxy same-origin da foto do Hub (CSP bloqueia img externa)
+router.get('/me/foto', requireAuth, async (req, res) => {
+  try {
+    const email = req.user?.username || '';
+    if (!email.includes('@')) return res.status(404).json({ ok: false });
+    const s2s = jwt.sign({ app: 'spa' }, process.env.SSO_SECRET, { expiresIn: '2m' });
+    const r = await fetch(`${HUB_URL}/api/foto?email=${encodeURIComponent(email)}`, {
+      headers: { Authorization: `Bearer ${s2s}` },
+    });
+    if (!r.ok) return res.status(404).json({ ok: false });
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'private, max-age=300');
+    return res.send(Buffer.from(await r.arrayBuffer()));
+  } catch {
+    return res.status(404).json({ ok: false });
+  }
 });
 
 // GET /api/auth/usuarios
