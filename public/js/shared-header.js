@@ -219,8 +219,31 @@
     } catch (_) {}
     fetch("/api/auth/me", { credentials: "include" })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.ok && d.nome) el.textContent = d.nome; })
+      .then(function (d) {
+        if (d.ok && d.nome) el.textContent = d.nome;
+        setupAvatar(d.ok ? d.nome : null);
+      })
       .catch(function () {});
+  }
+
+  function setupAvatar(nome) {
+    var span = document.getElementById("sh-user-avatar");
+    if (!span) return;
+    function iniciais() {
+      var partes = (nome || "").trim().split(/\s+/).filter(Boolean);
+      return partes.slice(0, 2).map(function (p) { return p.charAt(0); }).join("").toUpperCase();
+    }
+    var img = document.createElement("img");
+    img.src = "/api/auth/me/foto";
+    img.alt = "";
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block";
+    img.onerror = function () {
+      // Foto 404: cai para iniciais sem quebrar o layout
+      span.textContent = iniciais();
+      span.style.display = "flex";
+    };
+    span.appendChild(img);
+    span.style.display = "flex";
   }
 
   function setupDropdownToggles() {
