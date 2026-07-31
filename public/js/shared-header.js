@@ -71,6 +71,7 @@
     "@media (max-width: 768px) {",
     "  #gm-datahora { display: none; }",
     "  #sh-user-name { display: none; }",
+    /* #sh-user-avatar segue visivel no mobile (so o nome some) */
     "}",
     "@media (max-width: 560px) {",
     "  .header-brand small { display: none; }",
