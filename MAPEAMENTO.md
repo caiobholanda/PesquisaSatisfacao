@@ -140,7 +140,7 @@ app     = "pesquisa-satisfacao"
 região  = gru (São Paulo)
 máquina = 256 MB RAM, 1 vCPU shared, 1 instância
 volume  = feedback_data → /app/data (1 GB)
-health  = GET /api/health (grace 10s, interval 30s, timeout 5s)
+health  = GET /api/health (grace 3s, interval 15s, timeout 5s — reduzido 2026-07-31 p/ encurtar janela 503 em deploys)
 HTTPS   = forçado (force_https = true)
 ```
 
