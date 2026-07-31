@@ -352,7 +352,7 @@ app.get('/sso', (req, res) => {
 
     const isAdmin = role !== 'user';
     const token = jwt.sign(
-      { sub: 0, username: email, role },
+      { sub: 0, username: email, role, nome: (payload.nome || null) },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
