@@ -141,6 +141,7 @@
         "<button class=\"btn btn-outline btn-sm\" id=\"btn-theme\" title=\"Alternar modo claro/escuro\" aria-label=\"Alternar modo claro/escuro\" style=\"margin-left:.25rem;padding:.3rem .5rem;display:inline-flex;align-items:center;justify-content:center;line-height:1\">" +
           sunSvg + moonSvg +
         "</button>" +
+        (isAdmin ? "<span id=\"sh-user-avatar\" style=\"display:none;width:28px;height:28px;border-radius:50%;overflow:hidden;border:1px solid var(--border);margin-left:.5rem;flex:none;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2)\"></span>" : "") +
         (isAdmin ? "<span id=\"sh-user-name\" style=\"margin-left:.5rem;font-size:.73rem;color:var(--muted);letter-spacing:.02em;white-space:nowrap;opacity:.85\"></span>" : "") +
         "<button class=\"btn btn-outline btn-sm\" id=\"btn-sair-hub\" title=\"Sair e voltar ao Hub\" style=\"margin-left:.5rem;display:inline-flex;align-items:center;gap:6px\">" +
           sairSvg + "Voltar ao HUB" +
