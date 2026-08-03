@@ -8,7 +8,10 @@ jobs:
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
-    concurrency: deploy-group
+    if: github.repository_owner == 'Hotel-Gran-Marquise'
+    concurrency:
+      group: deploy-${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
