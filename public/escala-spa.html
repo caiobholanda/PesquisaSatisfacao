@@ -610,6 +610,9 @@ body {
   </div>
   <div class="cp-sep"></div>
   <div class="cp-section-label">Status especial</div>
+  <!-- Seed = tipos legados; loadAusencias() reconstrói a lista com os tipos
+       ATIVOS vindos do Hub (aba Ausências). Se a API falhar, fica como está. -->
+  <div id="cp-status-list">
   <button class="cp-opt" data-turno="X"><span class="sigla sig-X">X</span><span>Folga</span></button>
   <button class="cp-opt" data-turno="FE"><span class="sigla sig-FE">FÉR</span><span>Férias</span></button>
   <button class="cp-opt" data-turno="AT"><span class="sigla sig-AT">AT</span><span>Atestado</span></button>
@@ -619,6 +622,7 @@ body {
   <button class="cp-opt" data-turno="LS"><span class="sigla sig-LS">LS</span><span>Lic. Sindical</span></button>
   <button class="cp-opt" data-turno="LC"><span class="sigla sig-LC">LC</span><span>Lic. Casamento</span></button>
   <button class="cp-opt" data-turno="F"><span class="sigla sig-F">F</span><span>Falta</span></button>
+  </div>
   <div class="cp-sep"></div>
   <button class="cp-opt cp-clear" data-turno=""><span class="cp-clear-icon">✕</span><span>Limpar célula</span></button>
   <div class="cp-sep"></div>
