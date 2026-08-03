@@ -261,10 +261,11 @@ router.delete('/tipos-massagem/:id', ...podeEscreverSpa, (req, res) => {
 
 // ── Escala mensal (turnos) ──
 const VALID_TIMES  = new Set(['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','17:30','18:00','19:00','20:00','20:20','21:00','22:00','22:20']);
+// Fallback quando o Hub está fora do ar — o conjunto que sempre foi aceito.
 const VALID_STATUS = new Set(['X','FE','AT','AA','CF','CH','LS','LC','F']);
-function turnoValido(t) {
+function turnoValido(t, statusSet) {
   if (!t) return false;
-  if (VALID_STATUS.has(t)) return true;
+  if ((statusSet || VALID_STATUS).has(t)) return true;
   if (VALID_TIMES.has(t)) return true;
   const p = t.split('|');
   return p.length === 2 && VALID_TIMES.has(p[0]) && VALID_TIMES.has(p[1]);
