@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/caiobholanda/PesquisaSatisfacao.git"
+    "url": "git+https://github.com/Hotel-Gran-Marquise/hub-spa.git"
   },
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/caiobholanda/PesquisaSatisfacao/issues"
+    "url": "https://github.com/Hotel-Gran-Marquise/hub-spa/issues"
   },
-  "homepage": "https://github.com/caiobholanda/PesquisaSatisfacao#readme",
+  "homepage": "https://github.com/Hotel-Gran-Marquise/hub-spa#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",

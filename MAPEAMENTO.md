@@ -189,8 +189,7 @@ Steps:
 | `ADMIN_USER` | — | `admin` | seed admin local |
 | `ADMIN_PASS` | — | `TrocarEmProducao!` ⚠️ | fallback senha admin |
 | `HUB_URL` | — | `https://hub-granmarquise.fly.dev` | SSO e lista users |
-| `MYMEMORY_EMAIL` | — | `caiobholanda2007@gmail.com` ⚠️ hardcoded | traduzir.js |
-| `ANTHROPIC_API_KEY` | — | — | scripts/traduzir-pesquisa-satisfacao.js |
+| `MYMEMORY_EMAIL` | — | sem fallback — se ausente, API roda anônima | traduzir.js |
 
 > Faltam no `.env.example`: SSO_SECRET, CONSENT_HMAC_SECRET, HUB_URL, MYMEMORY_EMAIL, ANTHROPIC_API_KEY, CONSENT_HMAC_SECRETS_LEGACY
 

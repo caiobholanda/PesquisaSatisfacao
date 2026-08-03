@@ -8,3 +8,7 @@ data/*.db-wal
 data/*.db-shm
 *.log
 token_github.txt
+
+# Dump temporario de resposta — contem PII, nunca versionar
+tmp_resp.json
+tmp_*.json

@@ -5,7 +5,7 @@ Sistema de coleta de avaliações via QR Code / WhatsApp.
 ## Instalação local
 
 ```bash
-git clone https://github.com/caiobholanda/PesquisaSatisfacao.git
+git clone https://github.com/Hotel-Gran-Marquise/hub-spa.git
 cd PesquisaSatisfacao
 npm install
 cp .env.example .env
