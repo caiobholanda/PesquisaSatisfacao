@@ -815,6 +815,10 @@ async function loadAusencias() {
   return false;
 }
 
+// Nomes curtos que os botões estáticos sempre exibiram — tipos novos usam o
+// nome cadastrado no Hub.
+const PICKER_NOME = { X:'Folga', FE:'Férias', AT:'Atestado', AA:'Abono Aniversário', CF:'Comp. Feriado', CH:'Comp. Hora', LS:'Lic. Sindical', LC:'Lic. Casamento', F:'Falta' };
+
 // Reconstrói os botões de status do seletor com os tipos ATIVOS do Hub,
 // mantendo o mesmo markup/classes dos botões estáticos do primeiro paint.
 function renderPickerStatus() {
@@ -831,7 +835,7 @@ function renderPickerStatus() {
     sig.className = 'sigla ' + (SIG_CLS[a.sigla] || 'sig-DYN');
     sig.textContent = SIG_LABEL[a.sigla] || a.sigla;
     const nome = document.createElement('span');
-    nome.textContent = SIG_TIP[a.sigla] && SIG_TIP[a.sigla].length <= 22 ? SIG_TIP[a.sigla] : a.nome;
+    nome.textContent = PICKER_NOME[a.sigla] || a.nome;
     btn.appendChild(sig); btn.appendChild(nome);
     bindTurnoBtn(btn);
     box.appendChild(btn);
