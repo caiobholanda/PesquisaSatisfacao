@@ -314,11 +314,16 @@ router.get('/escala-spa', (req, res) => {
   res.json({ ok: true, profs, turnos, ferias });
 });
 
-router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, (req, res) => {
+router.put('/escala-spa/:mId/:data', ...podeEscreverSpa, async (req, res) => {
   const mId = parseInt(req.params.mId);
   const { data } = req.params;
   const { turno } = req.body || {};
-  if (!turnoValido(turno)) return res.status(400).json({ ok: false, error: 'turno inválido' });
+  // Siglas aceitas = tipos ATIVOS no Hub (tipo desativado sai do seletor e
+  // deixa de ser gravável; células antigas não são tocadas). Se o Hub estiver
+  // fora do ar, getSiglasAtivas cai no fallback = conjunto legado de sempre.
+  let siglasAtivas = null;
+  try { siglasAtivas = await getSiglasAtivas(); } catch {}
+  if (!turnoValido(turno, siglasAtivas)) return res.status(400).json({ ok: false, error: 'turno inválido' });
   if (!dataRealValida(data)) return res.status(400).json({ ok: false, error: 'data inválida' });
   const m = buscarMassagistaById(mId);
   if (!m) return res.status(404).json({ ok: false, error: 'Massagista não encontrada' });
