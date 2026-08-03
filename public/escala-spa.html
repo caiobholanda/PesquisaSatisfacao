@@ -776,7 +776,9 @@ const TIMES_CFG = {
   '17:00': { cls: 'sig-N', lbl: '17h' },
   '17:30': { cls: 'sig-N', lbl: '17:30' },
 };
-// Status especiais
+// Status especiais — seed legado; loadAusencias() ACRESCENTA tipos criados na
+// aba Ausências do Hub. As entradas abaixo nunca são sobrescritas: os rótulos
+// e tooltips que a equipe já conhece ficam exatamente como sempre foram.
 const SIG_LABEL = { FE:'FÉR', F:'F', X:'X', AT:'AT', CF:'CF', CH:'CH', LS:'LS', LC:'LC', AA:'AA' };
 const SIG_TIP   = {
   FE:'Férias programadas', F:'Falta (ausência injustificada)', X:'Folga',
@@ -784,6 +786,57 @@ const SIG_TIP   = {
   LS:'Licença Sindical', LC:'Licença Casamento', AA:'Abono Aniversário',
 };
 const SIG_CLS = { FE:'sig-FE', F:'sig-F', X:'sig-X', AT:'sig-AT', CF:'sig-CF', CH:'sig-CH', LS:'sig-LS', LC:'sig-LC', AA:'sig-AA' };
+
+// Tipos de ausência vindos do Hub (todos, com flag `ativo`). null até a 1ª
+// resposta — enquanto isso o seletor mostra o seed estático acima.
+let AUSENCIAS = null;
+
+// Carrega os tipos do backend (que sincroniza com o Hub). Em erro mantém o
+// estado atual — comportamento idêntico ao antigo hardcoded.
+async function loadAusencias() {
+  try {
+    const r = await apiFetch('/api/ausencias');
+    if (!r) return false;
+    const d = await r.json();
+    if (!d || !d.ok || !Array.isArray(d.ausencias) || d.ausencias.length === 0) return false;
+    const antes = JSON.stringify(AUSENCIAS);
+    AUSENCIAS = d.ausencias;
+    // Tipos novos ganham rótulo/tooltip derivados do cadastro do Hub; os
+    // legados preservam os textos de sempre (inclusive células históricas de
+    // tipos desativados, que continuam nomeadas no tooltip e no histórico).
+    for (const a of AUSENCIAS) {
+      if (!SIG_LABEL[a.sigla]) SIG_LABEL[a.sigla] = a.sigla;
+      if (!SIG_TIP[a.sigla]) SIG_TIP[a.sigla] = a.nome;
+      if (!SIG_CLS[a.sigla]) SIG_CLS[a.sigla] = 'sig-DYN';
+    }
+    if (JSON.stringify(AUSENCIAS) !== antes) { renderPickerStatus(); return true; }
+    return false;
+  } catch { /* mantém estado atual */ }
+  return false;
+}
+
+// Reconstrói os botões de status do seletor com os tipos ATIVOS do Hub,
+// mantendo o mesmo markup/classes dos botões estáticos do primeiro paint.
+function renderPickerStatus() {
+  const box = document.getElementById('cp-status-list');
+  if (!box || !Array.isArray(AUSENCIAS)) return;
+  const ativos = AUSENCIAS.filter(a => a.ativo);
+  if (ativos.length === 0) return; // nunca deixar o seletor sem opções
+  box.innerHTML = '';
+  for (const a of ativos) {
+    const btn = document.createElement('button');
+    btn.className = 'cp-opt';
+    btn.dataset.turno = a.sigla;
+    const sig = document.createElement('span');
+    sig.className = 'sigla ' + (SIG_CLS[a.sigla] || 'sig-DYN');
+    sig.textContent = SIG_LABEL[a.sigla] || a.sigla;
+    const nome = document.createElement('span');
+    nome.textContent = SIG_TIP[a.sigla] && SIG_TIP[a.sigla].length <= 22 ? SIG_TIP[a.sigla] : a.nome;
+    btn.appendChild(sig); btn.appendChild(nome);
+    bindTurnoBtn(btn);
+    box.appendChild(btn);
+  }
+}
 
 // ─── ESTADO ───────────────────────────────────────────────────────────────────
 function initPeriodo() {
