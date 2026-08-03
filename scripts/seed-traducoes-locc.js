@@ -4,8 +4,8 @@
  * todas as perguntas, seções e opções de escala da pesquisa de
  * satisfação spa-locc-v1. Idempotente (UPSERT).
  *
- * Usado em produção onde a ANTHROPIC_API_KEY não está configurada e
- * queremos garantia de tradução profissional revisada.
+ * Usado quando queremos garantia de tradução profissional revisada,
+ * em vez da tradução automática via MyMemory.
  *
  * Uso:
  *   node scripts/seed-traducoes-locc.js              # dry-run

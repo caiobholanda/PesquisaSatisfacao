@@ -2,7 +2,7 @@
 /**
  * Traduz todas as perguntas, seções e opções de escala da pesquisa de
  * satisfação (spa-locc-v1) e da anamnese (spa-anamnese-v1) para os 6
- * idiomas faltantes (pt-PT, en, es, fr, it, de), usando Claude Haiku
+ * idiomas faltantes (pt-PT, en, es, fr, it, de), usando a MyMemory API
  * via src/utils/traduzir.js. Idempotente: faz UPSERT.
  *
  * Uso:
@@ -25,11 +25,6 @@ async function main() {
   console.log('\n═══════════════════════════════════════════════════════');
   console.log(' TRADUZIR PESQUISAS — ' + (APPLY ? 'APLICANDO' : 'DRY-RUN'));
   console.log('═══════════════════════════════════════════════════════\n');
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('⚠ ANTHROPIC_API_KEY não configurada. Defina a variável e tente de novo.');
-    process.exit(1);
-  }
 
   for (const slug of SLUGS) {
     const p = db.prepare("SELECT id FROM pesquisa WHERE slug=? ORDER BY versao DESC LIMIT 1").get(slug);

@@ -8867,9 +8867,9 @@ function _wireAnamAcoes() {
   _wireDragReorder('anam');
 }
 
-// Tradução pt-BR → 6 idiomas via Anthropic. Se a chamada falhar
+// Tradução pt-BR → 6 idiomas via MyMemory. Se a chamada falhar
 // (ou se as traduções voltarem iguais ao pt-BR, indicando que o
-// backend caiu no fallback por API key invalida/saldo zerado),
+// backend caiu no fallback por erro/timeout do provedor),
 // mostra um toast warning para o admin saber.
 // Dispara traducao + PUT em background para nao bloquear UI. tipo='secao' ou 'pergunta'.
 function _traduzirEAtualizarBg(tipo, id, rotulo) {

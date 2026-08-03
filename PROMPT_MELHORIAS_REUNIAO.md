@@ -337,7 +337,7 @@ FASE 3 — Correção do banco SEM regressão: criar src/backfill-ortografia.js 
 
 FASE 4 — Demais idiomas: corrigir os 6 JSONs (itens d–h do estado atual). Estrutura de chaves e tamanho dos arrays facial_items/body_items NÃO podem mudar (validação em loadLocale, spa-profile.js ~L612).
 
-FASE 5 — Processo contínuo: no editor de anamnese (admin), marcar traduções vindas de MyMemory (POST /admin/traduzir) com flag 'automática — pendente de revisão' (nova coluna revisado INTEGER DEFAULT 0 em pergunta_traducao, additive-only) e exibir badge no editor, para que perguntas médicas novas não cheguem ao hóspede estrangeiro sem revisão humana. Opcional: trocar MyMemory por revisão via Anthropic SDK já existente em src/utils.
+FASE 5 — Processo contínuo: no editor de anamnese (admin), marcar traduções vindas de MyMemory (POST /admin/traduzir) com flag 'automática — pendente de revisão' (nova coluna revisado INTEGER DEFAULT 0 em pergunta_traducao, additive-only) e exibir badge no editor, para que perguntas médicas novas não cheguem ao hóspede estrangeiro sem revisão humana.
 
 ### Riscos de regressão (checar um a um)
 - Respostas de rotina facial/corporal são gravadas pelo TEXTO do label no idioma do formulário (spa-profile.js collectData L332-335 usa data-label): mudar o wording de facial_items/body_items quebra o casamento com respostas históricas (prefill/histórico por documento e comparações no admin). Mudanças nesses arrays exigem verificação do fluxo de prefill (setIfEmpty ~L797+).

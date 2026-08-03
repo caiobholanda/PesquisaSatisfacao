@@ -51,7 +51,7 @@ PesquisaSatisfacaoSPA/
 │   │   ├── relatorios.js         (26L)  — mensal, cruzamento sessões/pesquisa
 │   │   └── dev.js                       — seed, reset (dev only)
 │   └── utils/
-│       ├── traduzir.js                  — tradução via Anthropic SDK + MyMemory fallback
+│       ├── traduzir.js                  — tradução via MyMemory API
 │       └── detectarIdioma.js            — detecção de idioma em texto livre
 │
 ├── public/
@@ -76,7 +76,7 @@ PesquisaSatisfacaoSPA/
 │   ├── seed.js                          — 20 feedbacks fake
 │   ├── migrar-clientes.js               — popula tabela clientes a partir de spa_perfis
 │   ├── reset-completo.js                — zera 23 tabelas (preserva admin_users, massagistas)
-│   ├── traduzir-pesquisa-satisfacao.js  — UPSERT traduções 6 idiomas via Claude Haiku
+│   ├── traduzir-pesquisa-satisfacao.js  — UPSERT traduções 6 idiomas via MyMemory
 │   ├── retraduzir-perguntas.js          — retraduz via MyMemory API
 │   ├── seed-traducoes-locc.js           — UPSERT 160 traduções manuais
 │   ├── test-janela-anamnese.js          — 11 cenários de janela +10min UTC-3
@@ -113,7 +113,6 @@ PesquisaSatisfacaoSPA/
 | helmet | ^8.2.0 | CSP, HSTS, X-Frame-Options |
 | cors | ^2.8.6 | CORS (sem restrição de origem ⚠️) |
 | dotenv | ^17.4.2 | Carrega `.env` |
-| @anthropic-ai/sdk | ^0.101.0 | Tradução perguntas (Claude Haiku 4.5) |
 
 ### Frontend (Vite build)
 | Pacote | Papel |
@@ -191,7 +190,7 @@ Steps:
 | `HUB_URL` | — | `https://hub-granmarquise.fly.dev` | SSO e lista users |
 | `MYMEMORY_EMAIL` | — | sem fallback — se ausente, API roda anônima | traduzir.js |
 
-> Faltam no `.env.example`: SSO_SECRET, CONSENT_HMAC_SECRET, HUB_URL, MYMEMORY_EMAIL, ANTHROPIC_API_KEY, CONSENT_HMAC_SECRETS_LEGACY
+> Faltam no `.env.example`: SSO_SECRET, CONSENT_HMAC_SECRET, HUB_URL, MYMEMORY_EMAIL, CONSENT_HMAC_SECRETS_LEGACY
 
 ---
 
@@ -796,7 +795,7 @@ auditMiddleware intercepta POST/PUT/DELETE /api/*
 | S2 | Alta | `cors()` sem whitelist de origens | server.js:84 | `cors({origin: ['https://pesquisa-satisfacao.fly.dev', 'https://hub-granmarquise.fly.dev'], credentials: true})` |
 | S3 | Alta | Dockerfile roda como root | Dockerfile | Adicionar `USER node` antes de CMD |
 | S4 | Alta | CSP `'unsafe-inline'` em scriptSrc | server.js:71 | Migrar scripts inline para arquivos externos |
-| S5 | Alta | 6 env vars ausentes no .env.example | .env.example | Documentar SSO_SECRET, CONSENT_HMAC_SECRET, HUB_URL, MYMEMORY_EMAIL, ANTHROPIC_API_KEY, CONSENT_HMAC_SECRETS_LEGACY |
+| S5 | Alta | 5 env vars ausentes no .env.example | .env.example | Documentar SSO_SECRET, CONSENT_HMAC_SECRET, HUB_URL, MYMEMORY_EMAIL, CONSENT_HMAC_SECRETS_LEGACY |
 | S6 | Alta | Email MyMemory hardcoded | utils/traduzir.js:27 | `process.env.MYMEMORY_EMAIL` obrigatório (fail-fast) |
 | S7 | Alta | Rate limit só em /api/feedback (memória local) | feedback.js | Rate limit global + store externo para multi-instância |
 | S8 | Média | `/api/admin/salas/*` sem requireSpa + requireWrite | salas.js | Adicionar middlewares em rotas de escrita |
@@ -824,7 +823,7 @@ objectSrc: ["'none'"]    // ✅
 | `node scripts/reset-completo.js` | Dev: zera 23 tabelas | `--apply` |
 | `node scripts/repopular-anamnese.js` | Dev: reseed pesquisas | `--apply` |
 | `node scripts/repopular-tratamentos.js` | Dev: reseed tipos_massagem | `--apply` |
-| `node scripts/traduzir-pesquisa-satisfacao.js` | UPSERT 6 idiomas via Claude Haiku | `ANTHROPIC_API_KEY` |
+| `node scripts/traduzir-pesquisa-satisfacao.js` | UPSERT 6 idiomas via MyMemory | `--apply` (default dry-run) |
 | `node scripts/seed-traducoes-locc.js` | UPSERT 160 traduções manuais | `--apply` |
 | `node scripts/test-janela-anamnese.js` | 11 cenários janela +15min UTC-3 | nenhuma |
 | `node scripts/test-trava-anamnese.js` | 8 cenários race condition casal | nenhuma |
