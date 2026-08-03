@@ -1350,7 +1350,12 @@ window.addEventListener('storage', function(e) {
 setInterval(async () => {
   if (document.visibilityState !== 'visible') return;
   const mudou = await loadFeriados();
-  if (mudou) { render(); reloadCf(); }
+  // Tipo de ausencia criado/renomeado/desativado no Hub tambem reflete em ate
+  // 60s: o seletor e reconstruido dentro de loadAusencias, e o render refaz
+  // tooltips/cores das celulas.
+  const mudouAus = await loadAusencias();
+  if (mudou || mudouAus) { render(); }
+  if (mudou) { reloadCf(); }
 }, 60000);
 
 // ─── NAV ─────────────────────────────────────────────────────────────────────
