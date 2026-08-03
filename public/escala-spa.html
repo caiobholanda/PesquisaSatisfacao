@@ -896,8 +896,9 @@ function siglaHTML(tipo, isPadrao) {
     const fs = lbl.length > 3 ? ' style="font-size:9px"' : '';
     return `<div class="sigla ${cls}${padCls}"${fs}>${lbl}</div>`;
   }
-  // Status especial
-  const cls = SIG_CLS[tipo] || 'sig-X';
+  // Status especial. Sigla desconhecida cai no chip neutro (sig-DYN) — antes
+  // caía em sig-X e uma ausência qualquer se vestia de Folga.
+  const cls = SIG_CLS[tipo] || 'sig-DYN';
   const lbl = SIG_LABEL[tipo] || tipo;
   return `<div class="sigla ${cls}${padCls}">${lbl}</div>`;
 }
