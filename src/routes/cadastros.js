@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { requireAuth, requireSpa, requireWrite } from '../middleware/auth.js';
 import { getFeriados, FERIADOS_FALLBACK } from '../feriados-hub.js';
+import { getAusencias, getSiglasAtivas, AUSENCIAS_FALLBACK } from '../ausencias-hub.js';
 import {
   listarMassagistas, listarMassagistasComStats, listarMassagistasParaPadroes,
   inserirMassagista, atualizarMassagista, deletarMassagista, buscarMassagistaById,
