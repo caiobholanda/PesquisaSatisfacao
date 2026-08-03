@@ -1211,6 +1211,21 @@ const TURNO_STATUS_MOTIVO = {
   LS: 'licença sindical', LC: 'licença casamento', F: 'falta',
 };
 
+// Tipos de ausência criados no Hub também precisam vetar disponibilidade —
+// sem isto, uma sigla nova cairia no parse de horário, daria NaN e a
+// profissional apareceria DISPONÍVEL mesmo ausente (fail-open de turno
+// ilegível logo abaixo). Chamado por ausencias-hub.js a cada sync com o Hub.
+// Só ADICIONA: as siglas legadas mantêm o motivo original e tipos removidos
+// do Hub continuam vetando células históricas já gravadas.
+export function registrarMotivosAusencia(lista) {
+  if (!Array.isArray(lista)) return;
+  for (const a of lista) {
+    if (a && typeof a.sigla === 'string' && a.nome && !TURNO_STATUS_MOTIVO[a.sigla]) {
+      TURNO_STATUS_MOTIVO[a.sigla] = String(a.nome).toLowerCase();
+    }
+  }
+}
+
 // Fonte da verdade do dia real: escala mensal (turno_massagista). Fallback:
 // padrão semanal (padrao_entrada — a engrenagem "Padrões semanais" da escala
 // mensal) quando a data não tem NENHUM turno lançado. Sem padrão cadastrado →
