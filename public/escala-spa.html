@@ -826,6 +826,16 @@ function renderPickerStatus() {
   if (!box || !Array.isArray(AUSENCIAS)) return;
   const ativos = AUSENCIAS.filter(a => a.ativo);
   if (ativos.length === 0) return; // nunca deixar o seletor sem opções
+  // Ordem de sempre primeiro (a equipe decora a posição dos botões); tipos
+  // novos do Hub entram no fim, em ordem alfabética.
+  const ORDEM = ['X','FE','AT','AA','CF','CH','LS','LC','F'];
+  ativos.sort((a, b) => {
+    const ia = ORDEM.indexOf(a.sigla), ib = ORDEM.indexOf(b.sigla);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.nome.localeCompare(b.nome, 'pt-BR');
+  });
   box.innerHTML = '';
   for (const a of ativos) {
     const btn = document.createElement('button');
