@@ -19,7 +19,7 @@ const PALAVRAS = {
        'sao', 'estao', 'foram', 'ficou', 'melhorar', 'excelente'],
   es: ['muy', 'gracias', 'pero', 'usted', 'habitacion', 'desayuno', 'bueno',
        'buena', 'estuvo', 'tambien', 'fue', 'son', 'nosotros', 'ellos',
-       'limpieza', 'atencion', 'personal_es', 'todos_es'],
+       'limpieza', 'atencion', 'excelentes', 'mejorar'],
   en: ['the', 'and', 'was', 'very', 'with', 'staff', 'room', 'breakfast',
        'were', 'our', 'they', 'thank', 'good', 'great', 'have', 'stay',
        'clean', 'would', 'this', 'that'],
