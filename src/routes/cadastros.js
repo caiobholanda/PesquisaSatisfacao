@@ -289,6 +289,19 @@ router.get('/feriados', async (_req, res) => {
   }
 });
 
+// Tipos de ausência sincronizados com o Hub (aba Ausências; cache 60s +
+// fallback local em src/ausencias-hub.js). Todos os tipos, com flag `ativo` —
+// o front usa os inativos para nomear células históricas e só oferece os
+// ativos no seletor.
+router.get('/ausencias', async (_req, res) => {
+  try {
+    const { ausencias, fonte } = await getAusencias();
+    res.json({ ok: true, ausencias, fonte });
+  } catch {
+    res.json({ ok: true, ausencias: AUSENCIAS_FALLBACK, fonte: 'fallback' });
+  }
+});
+
 router.get('/escala-spa', (req, res) => {
   const ano = parseInt(req.query.ano);
   const mes = parseInt(req.query.mes);
