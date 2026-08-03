@@ -1190,8 +1190,10 @@ picker.querySelectorAll('[data-entrada]').forEach(btn => {
   });
 });
 
-// Status especial + limpar
-picker.querySelectorAll('[data-turno]').forEach(btn => {
+// Status especial + limpar. Extraído em função nomeada porque os botões de
+// status são reconstruídos por renderPickerStatus() quando o Hub responde —
+// os novos botões precisam do mesmo handler.
+function bindTurnoBtn(btn) {
   btn.addEventListener('click', async e => {
     e.stopPropagation();
     if (pickerMId === null) return;
@@ -1204,7 +1206,8 @@ picker.querySelectorAll('[data-turno]').forEach(btn => {
     render();
     await saveTurno(mId, date, turno, anterior);
   });
-});
+}
+picker.querySelectorAll('[data-turno]').forEach(bindTurnoBtn);
 
 // Event delegation on grid
 document.getElementById('grid-outer').addEventListener('click', e => {
