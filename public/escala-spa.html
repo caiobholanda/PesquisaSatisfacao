@@ -929,6 +929,7 @@ function setSaveInd(state, txt) {
 async function loadData() {
   const { ano, mes } = periodo;
   const feriadosPromise = loadFeriados(); // paralelo ao fetch da escala
+  const ausenciasPromise = loadAusencias(); // idem — tipos vindos do Hub
   const r = await apiFetch(`/api/escala-spa?ano=${ano}&mes=${mes}`);
   await feriadosPromise;
   if (!r) return;
