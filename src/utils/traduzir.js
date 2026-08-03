@@ -23,12 +23,15 @@ const IDIOMAS = {
   'de':    'de-DE',
 };
 const FONTE = 'pt-BR';
-// Email para subir o limite de 1000 -> 50000 palavras/dia.
-const DE_EMAIL = process.env.MYMEMORY_EMAIL || 'caiobholanda2007@gmail.com';
+// Email institucional sobe o limite de 1000 -> 50000 palavras/dia. Deve vir de
+// MYMEMORY_EMAIL; sem ele a API roda anonima (cota menor, mas funciona).
+// Nao use e-mail pessoal aqui: a cota fica atrelada a uma pessoa que pode sair.
+const DE_EMAIL = process.env.MYMEMORY_EMAIL || '';
 
 async function _traduzirUmTentativa(texto, alvo, timeoutMs) {
   const langpair = `${FONTE}|${IDIOMAS[alvo]}`;
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${encodeURIComponent(langpair)}&de=${encodeURIComponent(DE_EMAIL)}`;
+  const de = DE_EMAIL ? `&de=${encodeURIComponent(DE_EMAIL)}` : '';
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${encodeURIComponent(langpair)}${de}`;
   const r = await fetch(url, {
     headers: { 'User-Agent': 'PesquisaSatisfacaoSPA-GranMarquise/1.0' },
     signal: AbortSignal.timeout(timeoutMs),
