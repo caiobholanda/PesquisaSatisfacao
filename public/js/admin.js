@@ -1373,6 +1373,10 @@ let _editFeriaId = null;
   if (tokenValido()) { showApp(); }
   else { clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
 
+  // Deep-link #resposta-<id> (usado por gestao-qualidade.html → verResposta)
+  const _hashResp = location.hash.match(/^#resposta-(\d+)$/);
+  if (_hashResp && tokenValido()) setTimeout(() => openDrawer(parseInt(_hashResp[1])), 400);
+
   const hoje = new Date();
   const d30 = new Date(Date.now() - 30 * 86400000);
   document.getElementById('f-to').value = hoje.toISOString().slice(0,10);
