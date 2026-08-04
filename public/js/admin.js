@@ -6906,7 +6906,7 @@ async function _abrirModalPesquisaRespondida(respostaId) {
     ].filter(Boolean).join(' · ');
     const _hdr2 = [
       resp.fb_tratamento ? `Tratamento: ${escHtml(resp.fb_tratamento)}` : null,
-      resp.fb_data_tratamento ? `Data: ${escHtml(fmtBRT(resp.fb_data_tratamento, { br: true, soData: true }) || resp.fb_data_tratamento)}` : null,
+      resp.fb_data_tratamento ? `Data: ${escHtml(String(resp.fb_data_tratamento).slice(0, 10).split('-').reverse().join('/'))}` : null,
       resp.fb_massoterapeuta ? `Massoterapeuta: ${escHtml(resp.fb_massoterapeuta)}` : null,
     ].filter(Boolean).join(' · ');
     if (_hdr1) subtitulo += `</p><p>${_hdr1}`;
