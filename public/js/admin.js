@@ -557,6 +557,8 @@ async function openDrawer(id) {
         ${_fbField('Data', 'Date', r.data_tratamento ? new Date(r.data_tratamento + 'T12:00:00').toLocaleDateString('pt-BR') : null)}
         ${_fbField('Tratamento realizado', 'Spa treatment provided', r.tratamento_realizado)}
         ${_fbField('Nome da massoterapeuta', "Massage therapist's name", r.nome_massoterapeuta, true)}
+        ${r.controle_interno ? _fbField('Controle interno', 'Internal control', r.controle_interno) : ''}
+        ${r.inserido_por ? _fbField('Inserido por', 'Inserted by', r.inserido_por) : ''}
         ${r.idioma_detectado ? `<div class="fb-meta-full" style="margin-top:.25rem"><div class="fb-field-lbl">Idioma detectado <span class="en">/ Detected language</span></div><div style="margin-top:3px"><span class="badge ${ehIdiomaPortugues(r.idioma_detectado) ? 'badge-hospede' : ''}" style="${ehIdiomaPortugues(r.idioma_detectado) ? '' : 'background:var(--warn-dim,#FEF3CD);color:var(--warn,#C49A2D)'}">${r.idioma_detectado.toUpperCase()}</span>${!ehIdiomaPortugues(r.idioma_detectado) ? ' <span style="font-size:.75rem;color:var(--muted)">— Explicação desconsiderada para profissionais não bilíngues</span>' : ''}</div></div>` : ''}
       </div>
 
