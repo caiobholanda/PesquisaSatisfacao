@@ -6990,6 +6990,22 @@ async function _abrirModalFeedbackRaw(feedbackId) {
         <div>
           <h2>Pesquisa respondida</h2>
           <p>Pesquisa de Satisfação · ${escHtml(fmtBRT(fb.submitted_at, { br: true }))}${fb.reserva_id ? ' · reserva #' + fb.reserva_id : ''}</p>
+          ${(() => {
+            const tcL = { hospede: 'Hóspede', passante: 'Passante', lazer: 'Lazer', negocios: 'Negócios', evento: 'Evento' };
+            const l1 = [
+              fb.nome ? `<strong>${escHtml(fb.nome)}</strong>` : null,
+              fb.email ? escHtml(fb.email) : null,
+              fb.telefone ? escHtml(fb.telefone) : null,
+              fb.apto ? `Apto ${escHtml(fb.apto)}` : null,
+              fb.tipo_cliente ? escHtml(tcL[fb.tipo_cliente] || fb.tipo_cliente) : null,
+            ].filter(Boolean).join(' · ');
+            const l2 = [
+              fb.tratamento_realizado ? `Tratamento: ${escHtml(fb.tratamento_realizado)}` : null,
+              fb.data_tratamento ? `Data: ${escHtml(String(fb.data_tratamento).slice(0, 10).split('-').reverse().join('/'))}` : null,
+              fb.nome_massoterapeuta ? `Massoterapeuta: ${escHtml(fb.nome_massoterapeuta)}` : null,
+            ].filter(Boolean).join(' · ');
+            return (l1 ? `<p>${l1}</p>` : '') + (l2 ? `<p>${l2}</p>` : '');
+          })()}
         </div>
         <button class="btn btn-outline btn-sm" data-act="close" style="flex-shrink:0">✕</button>
       </div>
