@@ -1373,9 +1373,10 @@ let _editFeriaId = null;
   if (tokenValido()) { showApp(); }
   else { clearToken(); sessionStorage.removeItem('_vst'); showLogin(); }
 
-  // Deep-link #resposta-<id> (usado por gestao-qualidade.html → verResposta)
+  // Deep-link #resposta-<id> (usado por gestao-qualidade.html → verResposta).
+  // O id é resposta_pesquisa.id — abre o modal estruturado, não o openDrawer (feedback.id).
   const _hashResp = location.hash.match(/^#resposta-(\d+)$/);
-  if (_hashResp && tokenValido()) setTimeout(() => openDrawer(parseInt(_hashResp[1])), 400);
+  if (_hashResp && tokenValido()) setTimeout(() => _abrirModalPesquisaRespondida(parseInt(_hashResp[1])), 400);
 
   const hoje = new Date();
   const d30 = new Date(Date.now() - 30 * 86400000);
