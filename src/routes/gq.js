@@ -212,7 +212,7 @@ router.get('/respostas', (req, res) => {
   const q = (req.query.q || '').toString().trim();
   const tipo = (req.query.tipo || '').toString().trim();
   const origem = (req.query.origem || '').toString().trim();
-  if (q) { extra.push('(LOWER(f.nome_hospede) LIKE LOWER(?) OR LOWER(f.nome_casal) LIKE LOWER(?) OR LOWER(f.email) LIKE LOWER(?))'); ep.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (q) { extra.push('(LOWER(f.nome) LIKE LOWER(?) OR LOWER(f.email) LIKE LOWER(?))'); ep.push(`%${q}%`, `%${q}%`); }
   if (tipo) { extra.push('f.tipo_cliente = ?'); ep.push(tipo); }
   if (origem) { extra.push('f.origem = ?'); ep.push(origem); }
 
