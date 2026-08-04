@@ -6896,6 +6896,21 @@ async function _abrirModalPesquisaRespondida(respostaId) {
       `;
     titulo    = 'Pesquisa respondida';
     subtitulo = `${escHtml(_nomeAmigavelPesquisa(resp.pesquisa_slug, resp.pesquisa_titulo))} · ${escHtml(fmtBRT(resp.submitted_at, { br: true }))}${resp.reserva_id ? ' · reserva #' + resp.reserva_id : ''}`;
+    const _tcL = { hospede: 'Hóspede', passante: 'Passante', lazer: 'Lazer', negocios: 'Negócios', evento: 'Evento' };
+    const _hdr1 = [
+      resp.fb_nome ? `<strong>${escHtml(resp.fb_nome)}</strong>` : null,
+      resp.fb_email ? escHtml(resp.fb_email) : null,
+      resp.fb_telefone ? escHtml(resp.fb_telefone) : null,
+      resp.fb_apto ? `Apto ${escHtml(resp.fb_apto)}` : null,
+      resp.fb_tipo_cliente ? escHtml(_tcL[resp.fb_tipo_cliente] || resp.fb_tipo_cliente) : null,
+    ].filter(Boolean).join(' · ');
+    const _hdr2 = [
+      resp.fb_tratamento ? `Tratamento: ${escHtml(resp.fb_tratamento)}` : null,
+      resp.fb_data_tratamento ? `Data: ${escHtml(fmtBRT(resp.fb_data_tratamento, { br: true, soData: true }) || resp.fb_data_tratamento)}` : null,
+      resp.fb_massoterapeuta ? `Massoterapeuta: ${escHtml(resp.fb_massoterapeuta)}` : null,
+    ].filter(Boolean).join(' · ');
+    if (_hdr1) subtitulo += `</p><p>${_hdr1}`;
+    if (_hdr2) subtitulo += `</p><p>${_hdr2}`;
   }
 
   const ov = document.createElement('div');
