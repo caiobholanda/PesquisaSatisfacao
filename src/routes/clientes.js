@@ -429,9 +429,14 @@ router.get('/pesquisa/:respostaId', (req, res) => {
   const resposta = db.prepare(`
     SELECT rp.id, rp.pesquisa_id, rp.pesquisa_versao, rp.app_origem,
            rp.reserva_id, rp.feedback_id, rp.submitted_at,
-           p.slug AS pesquisa_slug, p.titulo AS pesquisa_titulo
+           p.slug AS pesquisa_slug, p.titulo AS pesquisa_titulo,
+           f.nome AS fb_nome, f.email AS fb_email, f.telefone AS fb_telefone,
+           f.apto AS fb_apto, f.data_tratamento AS fb_data_tratamento,
+           f.tratamento_realizado AS fb_tratamento, f.nome_massoterapeuta AS fb_massoterapeuta,
+           f.tipo_cliente AS fb_tipo_cliente
     FROM resposta_pesquisa rp
     LEFT JOIN pesquisa p ON p.id = rp.pesquisa_id
+    LEFT JOIN feedback f ON f.id = rp.feedback_id
     WHERE rp.id = ?
   `).get(id);
   if (!resposta) return res.status(404).json({ ok: false, error: 'Resposta nao encontrada' });
