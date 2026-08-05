@@ -105,10 +105,9 @@ router.post('/', rateLimit, (req, res) => {
       if (tokRow) {
         _resolvedReservaId = tokRow.reserva_id || null;
         _resolvedClienteId = tokRow.cliente_id || null;
-        // pessoa===2 indica a segunda pessoa do casal → usa massagista_nome2
-        _autoNomeMasso = (tokRow.pessoa === 2)
-          ? (tokRow.massagista_nome2 || tokRow.massagista_nome || null)
-          : (tokRow.massagista_nome || null);
+        // buscarSurveyToken já resolve massagista_nome para a pessoa correta
+        // (pessoa=2 → nome da massagista2, pessoa=1 → massagista principal)
+        _autoNomeMasso = tokRow.massagista_nome || null;
       }
     } catch {}
   }
