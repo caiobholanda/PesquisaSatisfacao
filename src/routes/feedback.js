@@ -94,33 +94,41 @@ router.post('/', rateLimit, (req, res) => {
   // — permite o modal casal abrir a pesquisa respondida via openDrawer.
   try { _markedReservaId = marcarSurveyTokenRespondido(b.survey_token || null, id); } catch {}
 
-  // Resolve cliente_id/reserva_id: token explícito tem prioridade; se ausente,
-  // usa reserva_id retornado pelo fallback de marcarSurveyTokenRespondido.
-  let _resolvedClienteId = null, _resolvedReservaId = null;
+  // Resolve cliente_id/reserva_id/nome_massoterapeuta:
+  // token explícito tem prioridade; se ausente, usa reserva_id do fallback.
+  // nome_massoterapeuta é sobrescrito pelo nome canônico da BD (ignora o
+  // que o hóspede digitou manualmente) para garantir match correto no histórico.
+  let _resolvedClienteId = null, _resolvedReservaId = null, _autoNomeMasso = null;
   if (b.survey_token) {
     try {
       const tokRow = buscarSurveyToken(b.survey_token);
       if (tokRow) {
         _resolvedReservaId = tokRow.reserva_id || null;
         _resolvedClienteId = tokRow.cliente_id || null;
+        // pessoa===2 indica a segunda pessoa do casal → usa massagista_nome2
+        _autoNomeMasso = (tokRow.pessoa === 2)
+          ? (tokRow.massagista_nome2 || tokRow.massagista_nome || null)
+          : (tokRow.massagista_nome || null);
       }
     } catch {}
   }
   if (!_resolvedReservaId && _markedReservaId) {
     _resolvedReservaId = _markedReservaId;
-    // Tenta resolver cliente_id a partir da reserva
     try {
-      const resRow = getDb().prepare('SELECT cliente_id FROM reservas WHERE id=?').get(_markedReservaId);
+      const resRow = getDb().prepare(
+        `SELECT r.cliente_id, m.nome AS massagista_nome
+         FROM reservas r LEFT JOIN massagistas m ON m.id = r.massagista_id
+         WHERE r.id = ?`
+      ).get(_markedReservaId);
       if (resRow?.cliente_id) _resolvedClienteId = resRow.cliente_id;
+      if (resRow?.massagista_nome && !_autoNomeMasso) _autoNomeMasso = resRow.massagista_nome;
     } catch {}
   }
-  // Tambem persiste cliente_id/reserva_id na tabela feedback (colunas ja
-  // existem via ALTER em db.js). Se a primary insert nao tem essas colunas,
-  // fazemos UPDATE direto.
-  if (_resolvedClienteId || _resolvedReservaId) {
+  if (_resolvedClienteId || _resolvedReservaId || _autoNomeMasso) {
     try {
-      getDb().prepare('UPDATE feedback SET cliente_id=?, reserva_id=? WHERE id=?')
-        .run(_resolvedClienteId, _resolvedReservaId, id);
+      getDb().prepare(
+        'UPDATE feedback SET cliente_id=?, reserva_id=?, nome_massoterapeuta=COALESCE(?,nome_massoterapeuta) WHERE id=?'
+      ).run(_resolvedClienteId, _resolvedReservaId, _autoNomeMasso, id);
     } catch {}
   }
 
