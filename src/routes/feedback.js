@@ -109,7 +109,7 @@ router.post('/', rateLimit, (req, res) => {
         // (pessoa=2 → nome da massagista2, pessoa=1 → massagista principal)
         _autoNomeMasso = tokRow.massagista_nome || null;
       }
-    } catch {}
+    } catch(e) { console.error('[feedback] buscarSurveyToken falhou:', e?.message); }
   }
   if (!_resolvedReservaId && _markedReservaId) {
     _resolvedReservaId = _markedReservaId;
@@ -121,14 +121,14 @@ router.post('/', rateLimit, (req, res) => {
       ).get(_markedReservaId);
       if (resRow?.cliente_id) _resolvedClienteId = resRow.cliente_id;
       if (resRow?.massagista_nome && !_autoNomeMasso) _autoNomeMasso = resRow.massagista_nome;
-    } catch {}
+    } catch(e) { console.error('[feedback] fallback reserva falhou:', e?.message); }
   }
   if (_resolvedClienteId || _resolvedReservaId || _autoNomeMasso) {
     try {
       getDb().prepare(
         'UPDATE feedback SET cliente_id=?, reserva_id=?, nome_massoterapeuta=COALESCE(?,nome_massoterapeuta) WHERE id=?'
       ).run(_resolvedClienteId, _resolvedReservaId, _autoNomeMasso, id);
-    } catch {}
+    } catch(e) { console.error('[feedback] UPDATE vinculo falhou:', e?.message); }
   }
 
   // Gravacao paralela ESTRUTURADA (Gestao da Qualidade): se o body trouxer

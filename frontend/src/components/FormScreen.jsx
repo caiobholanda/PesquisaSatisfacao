@@ -342,6 +342,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
       // Mostra resumo geral no topo via submitError (alem dos campos)
       const msgs = [];
       if (errs.nome || errs.email || errs.tel) msgs.push('Preencha seu nome e e-mail corretamente.');
+      if (errs.massoterapeuta) msgs.push(errs.massoterapeuta);
       if (errs.ratings) msgs.push(errs.ratings);
       if (errs.recommend) msgs.push(errs.recommend);
       if (errs.clientType) msgs.push(errs.clientType);
