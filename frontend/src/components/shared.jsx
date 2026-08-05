@@ -189,7 +189,7 @@ export function AutoTextarea({ id, value, onChange, placeholder, ariaRequired, a
   );
 }
 
-export function MassagistaAutocomplete({ id, value, onChange, options }) {
+export function MassagistaAutocomplete({ id, value, onChange, options, readOnly }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const inputRef = useRef(null);
@@ -239,6 +239,21 @@ export function MassagistaAutocomplete({ id, value, onChange, options }) {
         document.body
       )
     : null;
+
+  if (readOnly) {
+    return (
+      <div className="massag-wrap">
+        <input
+          id={id}
+          value={value}
+          readOnly
+          tabIndex={-1}
+          style={{ color: 'var(--fg-4)', cursor: 'default', pointerEvents: 'none' }}
+          autoComplete="off"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="massag-wrap" ref={wrapRef}>

@@ -582,6 +582,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
                 value={fields.massoterapeuta}
                 onChange={v => set('massoterapeuta', v)}
                 options={massagistasOpts}
+                readOnly={!!prefill?.massoterapeuta}
               />
               <span className="fill"></span>
             </div>
