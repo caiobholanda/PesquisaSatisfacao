@@ -254,7 +254,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
   const set = (k, v) => setFields((f) => ({ ...f, [k]: v }));
   const pick = (id, v) => setRatings((r) => ({ ...r, [id]: v }));
 
-  const refNome = useRef(null), refEmail = useRef(null), refClient = useRef(null);
+  const refNome = useRef(null), refEmail = useRef(null), refClient = useRef(null), refMassag = useRef(null);
   const secRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
   const allGreatKeys = [...SERVICES, ...FACILITIES].map((q) => q.id);
@@ -295,6 +295,12 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
     // Tipo de cliente
     if (!clientType) errs.clientType = 'Selecione o tipo de cliente.';
 
+    // Massoterapeuta: só valida quando editável (sem prefill) e lista disponível
+    if (!prefill?.massoterapeuta && fields.massoterapeuta.trim() && massagistasOpts.length > 0) {
+      const match = massagistasOpts.some(n => n.trim().toLowerCase() === fields.massoterapeuta.trim().toLowerCase());
+      if (!match) errs.massoterapeuta = 'Selecione um nome da lista de massoterapeutas.';
+    }
+
     // Valida extras obrigatorias
     const extErrs = {};
     for (const grupo of (extrasPorSecao || [])) {
@@ -321,6 +327,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
       let target = null;
       if (errs.nome) target = refNome?.current;
       else if (errs.email) target = refEmail?.current;
+      else if (errs.massoterapeuta) target = refMassag?.current;
       else if (errs.ratings) target = secRefs[0]?.current; // Secao Servicos
       else if (errs.recommend) target = secRefs[2]?.current;
       else if (errs.clientType) target = refClient?.current;
@@ -575,7 +582,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
               />
               <span className="fill"></span>
             </div>
-            <div className="field field-full">
+            <div className={'field field-full' + (errors.massoterapeuta ? ' error' : '')} ref={refMassag}>
               <FieldLabel htmlFor="f-massag" pt="Nome da massoterapeuta" en="Massage therapist's name" />
               <MassagistaAutocomplete
                 id="f-massag"
@@ -585,6 +592,7 @@ export default function FormScreen({ visible, onSubmit, prefill = null, formStar
                 readOnly={!!prefill?.massoterapeuta}
               />
               <span className="fill"></span>
+              <FieldErr msg={errors.massoterapeuta} />
             </div>
           </div>
         </section>
