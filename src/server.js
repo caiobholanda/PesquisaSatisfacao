@@ -359,7 +359,12 @@ app.get('/sso', (req, res) => {
       { expiresIn: '8h' }
     );
     if (isAdmin) setAdminCookie(res, token, 28800);
-    else setUserCookie(res, token, 28800);
+    else {
+      setUserCookie(res, token, 28800);
+      // Rebaixado no Hub: derruba o cookie admin de uma sessao anterior —
+      // sem isso a conta continuava admin por ate 8h depois de removida.
+      clearAdminCookie(res);
+    }
     // Auditoria: registra login SSO bem-sucedido
     try {
       const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim() || null;
