@@ -204,7 +204,6 @@ function showApp() {
   // FIX: view-usuarios restaurada via sessionStorage tambem precisa
   // disparar loadUsuarios. Antes ficava em 'Carregando...' eterno na F5.
   else if (view === 'view-usuarios') { loadUsuarios(); }
-  else if (view === 'view-permissoes') { loadPermissoes(); }
 }
 
 
