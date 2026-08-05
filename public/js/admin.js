@@ -131,10 +131,11 @@ function showLogin() { window.location.href = '/acesso-hub.html?next=' + encodeU
 // master ve e edita tudo. spa ve so escopo Spa. satisfacao ve so Relatorios+Historico.
 function rolePermissions(role) {
   return {
-    podeSpa:        ['master', 'admin', 'spa'].includes(role),
-    podeSatisfacao: ['master', 'admin', 'satisfacao'].includes(role),
-    podeUsuarios:   ['master', 'admin'].includes(role),
-    podeEscrever:   ['master', 'spa', 'satisfacao'].includes(role), // admin = readonly
+    podeSpa:          ['master', 'admin', 'spa'].includes(role),
+    podeSatisfacao:   ['master', 'admin', 'satisfacao'].includes(role),
+    podeUsuarios:     ['master', 'admin'].includes(role),
+    podeEscrever:     ['master', 'spa', 'satisfacao'].includes(role), // admin = readonly
+    podePermissoes:   role === 'master',
   };
 }
 function aplicarRoleNaUI(role) {
@@ -152,6 +153,8 @@ function aplicarRoleNaUI(role) {
   if (btnQL) btnQL.style.display = p.podeSatisfacao ? '' : 'none';
   const btnUsr = document.getElementById('btn-open-usuarios');
   if (btnUsr) btnUsr.style.display = p.podeUsuarios ? '' : 'none';
+  const btnPerm = document.getElementById('btn-open-permissoes');
+  if (btnPerm) btnPerm.style.display = p.podePermissoes ? '' : 'none';
   // Dropdowns inteiros: esconde se nenhum item dentro esta visivel
   const spaDrop = document.getElementById('spa-dropdown');
   if (spaDrop) spaDrop.style.display = p.podeSpa ? '' : 'none';
@@ -190,6 +193,7 @@ function showApp() {
   else if (view === 'view-clientes') { initClienteView(); }
   else if (view === 'view-auditoria') { initAuditoriaView(); }
   else if (view === 'view-salas') { loadSalas(); }
+  else if (view === 'view-permissoes') { loadPermissoes(); }
   // view-anamnese-editor e view-pesquisa-editor: ja sao carregadas
   // pelo showView(view) acima — evita fetch duplicado no boot.
   else if (view === 'view-reservas') {
@@ -200,6 +204,7 @@ function showApp() {
   // FIX: view-usuarios restaurada via sessionStorage tambem precisa
   // disparar loadUsuarios. Antes ficava em 'Carregando...' eterno na F5.
   else if (view === 'view-usuarios') { loadUsuarios(); }
+  else if (view === 'view-permissoes') { loadPermissoes(); }
 }
 
 
@@ -677,7 +682,7 @@ async function _popularSelectMassoterapeutas() {
 function showView(id) {
   if (document.getElementById('drawer')?.classList.contains('open')) closeDrawer();
   // Lista completa de views.
-  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor', 'view-salas'].forEach(v => {
+  ['view-main', 'view-massagistas', 'view-tipos', 'view-historico', 'view-reservas', 'view-historico-clientes', 'view-usuarios', 'view-qualidade', 'view-clientes', 'view-auditoria', 'view-anamnese-editor', 'view-pesquisa-editor', 'view-salas', 'view-permissoes'].forEach(v => {
     const el = document.getElementById(v);
     if (el) el.style.display = v === id ? 'block' : 'none';
   });
@@ -1391,6 +1396,79 @@ document.getElementById('btn-open-tipos').addEventListener('click', () => { show
 document.getElementById('btn-back-tipos')?.addEventListener('click', () => showView('view-main'));
 
 document.getElementById('btn-open-salas')?.addEventListener('click', () => { showView('view-salas'); loadSalas(); });
+document.getElementById('btn-open-permissoes')?.addEventListener('click', () => { showView('view-permissoes'); loadPermissoes(); });
+
+document.getElementById('btn-perm-salvar')?.addEventListener('click', async () => {
+  const email = (document.getElementById('perm-email')?.value || '').trim().toLowerCase();
+  const papel = document.getElementById('perm-papel')?.value;
+  const msg = document.getElementById('perm-form-msg');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (msg) { msg.textContent = 'E-mail inválido.'; msg.style.cssText = 'display:block;color:var(--gold)'; }
+    return;
+  }
+  try {
+    const r = await fetch('/api/permissoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, papel }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.erro || `HTTP ${r.status}`);
+    if (document.getElementById('perm-email')) document.getElementById('perm-email').value = '';
+    if (msg) { msg.textContent = d.mudou === false ? 'Já possui este papel.' : 'Permissão salva!'; msg.style.cssText = 'display:block;color:var(--green,green)'; setTimeout(() => { if (msg) msg.style.display = 'none'; }, 2200); }
+    await loadPermissoes();
+  } catch (err) {
+    if (msg) { msg.textContent = 'Erro: ' + err.message; msg.style.cssText = 'display:block;color:var(--gold)'; }
+  }
+});
+
+const PERM_PAPEL_LABEL = { master: 'Master', spa: 'SPA', satisfacao: 'Satisfação', massoterapeuta: 'Massoterapeuta', admin: 'Admin', usuario: 'Usuário' };
+
+async function loadPermissoes() {
+  const list = document.getElementById('perm-list');
+  if (list) list.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Carregando…</p>';
+  try {
+    const r = await fetch('/api/permissoes');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.erro || 'Erro ao carregar permissões');
+    const items = d.items || [];
+    if (!list) return;
+    if (!items.length) { list.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Nenhuma permissão cadastrada.</p>'; return; }
+    list.innerHTML = items.map(it => {
+      const label = PERM_PAPEL_LABEL[it.papel] || it.papel;
+      const badgeCls = it.papel === 'master' ? 'role-master' : it.papel === 'admin' ? 'role-admin' : 'role-normal';
+      const emailSafe = it.email.replace(/"/g, '&quot;');
+      const nomeSafe = (it.nome || it.email).replace(/"/g, '&quot;');
+      return `<div style="display:flex;align-items:center;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.88rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.nome ? it.nome : it.email}</div>
+          ${it.nome ? `<div style="font-size:.75rem;color:var(--muted)">${it.email}</div>` : ''}
+        </div>
+        <span class="role-badge ${badgeCls}" style="white-space:nowrap">${label}</span>
+        <button class="btn btn-outline btn-sm" onclick="permRemover('${emailSafe}','${nomeSafe}')">Remover</button>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    if (list) list.innerHTML = `<p style="color:var(--gold);font-size:.85rem">Erro: ${err.message}</p>`;
+  }
+}
+
+window.permRemover = async function(email, nome) {
+  if (!await confirmarAcao({ titulo: `Remover permissão de "${nome || email}"?`, mensagem: 'O usuário perderá o acesso especial ao Gran SPA.', btnConfirmar: 'Remover', perigoso: true })) return;
+  try {
+    const r = await fetch('/api/permissoes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.erro || 'Erro');
+    showToast('Permissão removida.');
+    await loadPermissoes();
+  } catch (err) {
+    showToast('Erro: ' + err.message);
+  }
+};
 
 // Botão "Início" no header — atalho direto pra view-main, fica visível só em subpáginas
 document.getElementById('btn-header-home')?.addEventListener('click', () => { showView('view-reservas'); loadReservas(); });
@@ -10328,7 +10406,7 @@ document.addEventListener('click', e => {
   const ALLOW = new Set([
     'btn-open-massagistas', 'btn-open-tipos', 'btn-open-relatorios',
     'btn-open-qualidade', 'btn-open-anamnese-editor', 'btn-open-pesquisa-editor',
-    'btn-open-clientes', 'btn-open-usuarios', 'btn-open-salas', 'btn-open-auditoria',
+    'btn-open-clientes', 'btn-open-usuarios', 'btn-open-salas', 'btn-open-auditoria', 'btn-open-permissoes',
   ]);
   if (!ALLOW.has(open)) return;
   if (document.getElementById('app-screen')?.style.display !== 'block') return;

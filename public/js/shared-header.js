@@ -136,6 +136,7 @@
             item("btn-open-clientes", "Clientes 360") +
             item("btn-open-usuarios", "Usuários") +
             item("btn-open-salas", "Gestão de Salas") +
+            item("btn-open-permissoes", "Permissões Hub") +
           "</div>" +
         "</div>" +
         "<span id=\"gm-datahora\" class=\"gm-datahora\" title=\"Horário de Fortaleza\" style=\"margin-left:.5rem;font-family:ui-monospace,'JetBrains Mono',Menlo,monospace;font-size:.75rem;letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500\">--/--/---- · --:--</span>" +

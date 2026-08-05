@@ -5766,6 +5766,43 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════
+     VIEW: Permissões Hub
+     ════════════════════════════════════════════════════════════ -->
+<div id="view-permissoes" class="view-page" style="display:none;padding:1.5rem 1.5rem 2.5rem;max-width:900px;margin:0 auto">
+  <div style="margin-bottom:1.5rem">
+    <h1 style="font-size:1.35rem;font-weight:600;margin:0 0 .35rem">Permissões — Gran SPA</h1>
+    <p style="font-size:.85rem;color:var(--muted);margin:0">Gerencie os papéis dos usuários no sistema (via Hub).</p>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem">
+    <h2 style="font-size:.92rem;font-weight:600;margin:0 0 .9rem;color:var(--text)">Adicionar / Alterar Permissão</h2>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:220px">
+        <label for="perm-email" style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.3rem">E-mail</label>
+        <input id="perm-email" type="email" class="input" placeholder="email@granmarquise.com.br" autocomplete="off" style="width:100%">
+      </div>
+      <div>
+        <label for="perm-papel" style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.3rem">Papel</label>
+        <select id="perm-papel" class="input" style="min-width:200px">
+          <option value="master">Master — acesso total</option>
+          <option value="spa">SPA — escala e profissionais</option>
+          <option value="satisfacao">Satisfação — relatórios</option>
+          <option value="massoterapeuta">Massoterapeuta</option>
+          <option value="admin">Admin — somente leitura</option>
+        </select>
+      </div>
+      <button id="btn-perm-salvar" class="btn btn-gold" type="button" style="white-space:nowrap;align-self:flex-end">Salvar</button>
+    </div>
+    <p id="perm-form-msg" style="margin-top:.6rem;font-size:.8rem;display:none"></p>
+  </div>
+
+  <div>
+    <h2 style="font-size:.92rem;font-weight:600;margin:0 0 .75rem;color:var(--text)">Permissões atuais</h2>
+    <div id="perm-list"><p style="color:var(--muted);font-size:.85rem">Carregando…</p></div>
+  </div>
+</div>
+
 <script src="/js/admin.js?v=110"></script>
 </body>
 </html>
