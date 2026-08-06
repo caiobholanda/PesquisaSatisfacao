@@ -1065,8 +1065,10 @@ export function atualizarMassagista(id, nome, ativo, opts = {}) {
   vals.push(id);
   return getDb().prepare(`UPDATE massagistas SET ${sets.join(', ')} WHERE id=?`).run(...vals).changes;
 }
+// Excluir virou desativar: DELETE físico deixava férias/turnos órfãos e, com o
+// sync do Hub ativo, o registro voltava com id novo e sem PIN/padrão de entrada.
 export function deletarMassagista(id) {
-  return getDb().prepare('DELETE FROM massagistas WHERE id=?').run(id).changes;
+  return getDb().prepare('UPDATE massagistas SET ativo=0, desativado_por_hub=0 WHERE id=?').run(id).changes;
 }
 
 // ── Sync Hub → SPA: profissionais (aba Liberação, papeis spa/massoterapeuta) ──
