@@ -18,11 +18,11 @@ let _inFlight = null;
 export async function syncProfissionaisHub({ force = false } = {}) {
   if (!force && Date.now() - _lastOkTs < TTL_MS) return { fonte: 'cache' };
   if (!force && Date.now() - _lastErroTs < ERRO_TTL_MS) return { fonte: 'erro-cache' };
+  const sso = process.env.SSO_SECRET;
+  if (!sso) return { fonte: 'skip' };
   if (_inFlight) return _inFlight;
   _inFlight = (async () => {
     try {
-      const sso = process.env.SSO_SECRET;
-      if (!sso) return { fonte: 'skip' };
       const r = await fetch(`${HUB_URL}/api/hub/site-admins?sistema_id=pesquisa-satisfacao`, {
         headers: { Authorization: `Bearer ${sso}` },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
