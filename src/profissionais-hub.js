@@ -32,8 +32,13 @@ export async function syncProfissionaisHub({ force = false } = {}) {
       if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('resposta invalida');
       const resumo = sincronizarProfissionaisDoHub(data.items);
       _lastOkTs = Date.now();
+      _lastErroTs = 0;
+      if (resumo.desativacaoAbortada) {
+        console.warn('[profissionais-hub] desativacao em massa abortada — Hub devolveu lista suspeita');
+      }
       return { fonte: 'hub', ...resumo };
     } catch (e) {
+      _lastErroTs = Date.now();
       return { fonte: 'erro', erro: e?.message || String(e) };
     } finally {
       _inFlight = null;
