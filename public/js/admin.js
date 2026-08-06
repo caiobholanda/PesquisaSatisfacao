@@ -1421,7 +1421,7 @@ document.getElementById('btn-perm-salvar')?.addEventListener('click', async () =
   }
 });
 
-const PERM_PAPEL_LABEL = { master: 'Master', spa: 'SPA', satisfacao: 'Satisfação', massoterapeuta: 'Massoterapeuta', admin: 'Admin', usuario: 'Usuário' };
+const PERM_PAPEL_LABEL = { master: 'Master', spa: 'Recepcionista', satisfacao: 'Satisfação', massoterapeuta: 'Massoterapeuta', admin: 'Admin', usuario: 'Usuário' };
 
 async function loadPermissoes() {
   const list = document.getElementById('perm-list');
