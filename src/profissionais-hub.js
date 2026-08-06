@@ -8,13 +8,16 @@ import { sincronizarProfissionaisDoHub } from './db.js';
 
 const HUB_URL = process.env.HUB_URL || 'https://hub-granmarquise.fly.dev';
 const TTL_MS = 60_000;
+const ERRO_TTL_MS = 30_000; // Hub fora do ar: não paga 4s de timeout a cada request
 const FETCH_TIMEOUT_MS = 4000;
 
 let _lastOkTs = 0;
+let _lastErroTs = 0;
 let _inFlight = null;
 
 export async function syncProfissionaisHub({ force = false } = {}) {
   if (!force && Date.now() - _lastOkTs < TTL_MS) return { fonte: 'cache' };
+  if (!force && Date.now() - _lastErroTs < ERRO_TTL_MS) return { fonte: 'erro-cache' };
   if (_inFlight) return _inFlight;
   _inFlight = (async () => {
     try {
