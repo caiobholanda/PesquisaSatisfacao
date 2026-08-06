@@ -293,7 +293,7 @@ app.patch('/api/hub/massagistas/:id/ativo', (req, res) => {
 
 app.use('/api', cadastrosRouter);
 
-app.get('/sso', (req, res) => {
+app.get('/sso', async (req, res) => {
   const { sso_token, next, theme } = req.query;
   if (!sso_token) return res.redirect('/acesso-hub.html');
   // Repassa ?theme=dark|light do Hub para o destino final, para que o admin.html
