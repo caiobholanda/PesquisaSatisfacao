@@ -1069,51 +1069,52 @@ export function deletarMassagista(id) {
 //  - papel 'spa' → funcao 'Recepcionista'; 'massoterapeuta' → 'Massoterapeuta';
 //  - casa por email (case-insensitive); sem match, casa por nome normalizado e
 //    faz backfill do email em registro legado; sem nenhum match → INSERT;
-//  - presente no Hub → ativo=1; removido do Hub → ativo=0 (nunca DELETE);
-//  - nome local NUNCA é sobrescrito (o JOIN de avaliações é por nome);
-//  - só desativa registro com email preenchido (legado sem email fica de fora);
-//  - lista sem nenhum papel spa/masso → não desativa nada (proteção contra
-//    volume do Hub subir vazio — ver incidente hub_data.json).
+//  - só insere com nome real do Hub (nome nunca é sobrescrito depois: é a chave
+//    do JOIN de avaliações e do JWT da terapeuta);
+//  - sai do Hub → ativo=0 (nunca DELETE); volta ao Hub → reativa SÓ se quem
+//    desativou foi o próprio sync (desativacao manual no SPA/Hub é respeitada);
+//  - RH (vínculo/bilíngue/matrícula) segue o Hub nos dois sentidos quando o
+//    Hub tem ficha; sem ficha, preserva o valor local;
+//  - salvaguardas contra apagão: lista sem nenhum spa/masso não desativa nada,
+//    e desativação de mais da metade dos ativos é abortada (ver incidente do
+//    volume do Hub subindo vazio).
 export function sincronizarProfissionaisDoHub(itens) {
   const db = getDb();
   const FUNCAO_POR_PAPEL = { spa: 'Recepcionista', massoterapeuta: 'Massoterapeuta' };
   const norm = s => String(s || '').normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').trim().toUpperCase();
   const calcEsp = (funcao, bil, vinc) => {
-    let e = funcao.toUpperCase();
+    let e = String(funcao).toUpperCase();
     if (bil) e += ' BILINGUE';
     if (vinc === 'Pleno') e += ' PL';
     else if (vinc) e += ' ' + String(vinc).trim().toUpperCase();
     return e;
   };
 
-  const desejados = (itens || []).filter(i => i && FUNCAO_POR_PAPEL[i.papel] && i.email);
-  const emailsDesejados = new Set(desejados.map(i => String(i.email).trim().toLowerCase()));
+  const desejados = (itens || []).filter(i => i && FUNCAO_POR_PAPEL[i.papel] && typeof i.email === 'string' && i.email.trim());
+  const emailsDesejados = new Set(desejados.map(i => i.email.trim().toLowerCase()));
 
-  const todas = db.prepare('SELECT id, nome, email, ativo FROM massagistas').all();
+  const todas = db.prepare(`SELECT id, nome, email, ativo, funcao, vinculo, bilingue,
+      matricula, desativado_por_hub FROM massagistas`).all();
   const porEmail = new Map(todas.filter(m => m.email).map(m => [String(m.email).toLowerCase(), m]));
   const porNome = new Map(todas.map(m => [norm(m.nome), m]));
 
   const upd = db.prepare(`UPDATE massagistas SET
-      ativo = 1,
-      funcao = ?,
-      email = COALESCE(NULLIF(email, ''), ?),
-      matricula = COALESCE(NULLIF(matricula, ''), ?),
-      vinculo = COALESCE(?, vinculo),
-      bilingue = CASE WHEN ? = 1 THEN 1 ELSE bilingue END
+      ativo = ?, desativado_por_hub = 0, funcao = ?, email = ?,
+      matricula = ?, vinculo = ?, bilingue = ?, especialidade_original = ?
     WHERE id = ?`);
   const ins = db.prepare(`INSERT INTO massagistas
-      (nome, funcao, vinculo, bilingue, matricula, especialidade_original, email, ativo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1)`);
-  const desativa = db.prepare('UPDATE massagistas SET ativo=0 WHERE id=?');
+      (nome, funcao, vinculo, bilingue, matricula, especialidade_original, email, ativo, desativado_por_hub)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0)`);
+  const desativa = db.prepare('UPDATE massagistas SET ativo=0, desativado_por_hub=1 WHERE id=?');
 
-  const resumo = { inseridos: 0, atualizados: 0, desativados: 0 };
+  const resumo = { inseridos: 0, atualizados: 0, desativados: 0, desativacaoAbortada: false };
   const tx = db.transaction(() => {
     for (const item of desejados) {
-      const email = String(item.email).trim().toLowerCase();
+      const email = item.email.trim().toLowerCase();
       const funcao = FUNCAO_POR_PAPEL[item.papel];
-      const bil = item.bilingue ? 1 : 0;
-      const vinc = item.vinculo?.trim() || null;
-      const mat = item.matricula?.trim() || null;
+      // Hub só é autoridade sobre RH quando tem ficha da pessoa no cadastro de
+      // contas; sem ficha todos os campos vêm null e o local prevalece.
+      const temFichaRh = !!(item.matricula || item.cargo || item.vinculo || item.bilingue);
       let m = porEmail.get(email);
       if (!m && item.nome) {
         const cand = porNome.get(norm(item.nome));
@@ -1121,25 +1122,37 @@ export function sincronizarProfissionaisDoHub(itens) {
       }
       try {
         if (m) {
-          upd.run(funcao, email, mat, vinc, bil, m.id);
+          const mat = (item.matricula?.trim() || null) ?? null;
+          const vinc = temFichaRh ? (item.vinculo?.trim() || null) : (m.vinculo || null);
+          const bil = temFichaRh ? (item.bilingue ? 1 : 0) : (m.bilingue ? 1 : 0);
+          // Reativa só se a desativação veio do próprio sync. Desativação manual
+          // (PATCH do Hub ou PUT do SPA) continua valendo até religarem lá.
+          const ativo = m.ativo ? 1 : (m.desativado_por_hub ? 1 : 0);
+          upd.run(
+            ativo, funcao, m.email || email,
+            mat || m.matricula || null, vinc, bil,
+            calcEsp(funcao, bil, vinc), m.id
+          );
           resumo.atualizados++;
         } else {
-          // Só insere com nome real vindo do Hub. Nome inventado a partir do
-          // email ficaria permanente (nome nunca é sobrescrito e é a chave do
-          // JOIN de avaliações e do JWT da terapeuta).
           const nome = norm(item.nome);
           if (!nome) continue;
-          ins.run(nome, funcao, vinc, bil, mat, calcEsp(funcao, bil, vinc), email);
+          const vinc = item.vinculo?.trim() || null;
+          const bil = item.bilingue ? 1 : 0;
+          ins.run(nome, funcao, vinc, bil, item.matricula?.trim() || null, calcEsp(funcao, bil, vinc), email);
           resumo.inseridos++;
         }
       } catch {}
     }
     if (desejados.length > 0) {
-      for (const m of todas) {
-        if (m.email && m.ativo && !emailsDesejados.has(String(m.email).toLowerCase())) {
-          desativa.run(m.id);
-          resumo.desativados++;
-        }
+      const aDesativar = todas.filter(m =>
+        m.email && m.ativo && !emailsDesejados.has(String(m.email).toLowerCase()));
+      const ativosComEmail = todas.filter(m => m.email && m.ativo).length;
+      if (aDesativar.length > 1 && aDesativar.length * 2 > ativosComEmail) {
+        // Sumiço em massa é sintoma de problema no Hub, não de demissão coletiva.
+        resumo.desativacaoAbortada = true;
+      } else {
+        for (const m of aDesativar) { desativa.run(m.id); resumo.desativados++; }
       }
     }
   });
