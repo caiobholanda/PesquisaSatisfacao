@@ -332,7 +332,13 @@ app.get('/sso', async (req, res) => {
 
     // Massoterapeuta: fluxo separado — cookie spa_terapeuta_sess + redirect /terapeuta
     if (role === 'massoterapeuta') {
-      const m = buscarMassagistaPorEmail(email);
+      let m = buscarMassagistaPorEmail(email);
+      // Conta recém-liberada no Hub pode ainda não ter registro local:
+      // força o sync de profissionais e tenta de novo antes de rebaixar.
+      if (!m || !m.ativo) {
+        try { await syncProfissionaisHub({ force: true }); } catch {}
+        m = buscarMassagistaPorEmail(email);
+      }
       if (m && m.ativo) {
         const terapeutaToken = jwt.sign(
           { massagista_id: m.id, nome: m.nome, role: 'terapeuta' },
