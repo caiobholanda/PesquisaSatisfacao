@@ -22,6 +22,7 @@ import salasRouter from './routes/salas.js';
 import permissoesRouter from './routes/permissoes.js';
 import { seedQualidadeSpa, seedAnamneseSpa, seedAnamneseOpcoes } from './qualidade.js';
 import { backfillTraducoesLocc } from './traducoes-locc.js';
+import { syncProfissionaisHub } from './profissionais-hub.js';
 import { auditMiddleware } from './middleware/audit.js';
 
 const SPA_ADMIN_EMAILS = [
