@@ -1153,19 +1153,29 @@ export function sincronizarProfissionaisDoHub(itens) {
           // Reativa só se a desativação veio do próprio sync. Desativação manual
           // (PATCH do Hub ou PUT do SPA) continua valendo até religarem lá.
           const ativo = m.ativo ? 1 : (m.desativado_por_hub ? 1 : 0);
+          // Nome real só sobrescreve enquanto o local for provisório; nome
+          // definitivo (seed, ou já corrigido) nunca é tocado — é a chave do
+          // histórico de avaliações.
+          const nomeHub = norm(item.nome);
+          const usaNomeHub = m.nome_provisorio && nomeHub && nomeHub !== nomeDoEmail(email);
           upd.run(
             ativo, funcao, email,
             item.matricula?.trim() || m.matricula || null, vinc, bil,
-            calcEsp(funcao, bil, vinc), m.id
+            calcEsp(funcao, bil, vinc),
+            usaNomeHub ? nomeHub : m.nome,
+            usaNomeHub ? 0 : (m.nome_provisorio ? 1 : 0),
+            m.id
           );
           tocados.add(m.id);
           resumo.atualizados++;
         } else {
-          const nome = norm(item.nome);
+          const nomeHub = norm(item.nome);
+          const provisorio = nomeHub ? 0 : 1;
+          const nome = nomeHub || nomeDoEmail(email);
           if (!nome) continue;
           const vinc = item.vinculo?.trim() || null;
           const bil = item.bilingue ? 1 : 0;
-          const novoId = ins.run(nome, funcao, vinc, bil, item.matricula?.trim() || null, calcEsp(funcao, bil, vinc), email).lastInsertRowid;
+          const novoId = ins.run(nome, funcao, vinc, bil, item.matricula?.trim() || null, calcEsp(funcao, bil, vinc), email, provisorio).lastInsertRowid;
           tocados.add(novoId);
           resumo.inseridos++;
         }
