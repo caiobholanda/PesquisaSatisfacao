@@ -1115,45 +1115,59 @@ export function sincronizarProfissionaisDoHub(itens) {
   const desativa = db.prepare('UPDATE massagistas SET ativo=0, desativado_por_hub=1 WHERE id=?');
 
   const resumo = { inseridos: 0, atualizados: 0, desativados: 0, desativacaoAbortada: false };
+  const tocados = new Set(); // ids já casados nesta rodada — evita 2 itens no mesmo registro
   const tx = db.transaction(() => {
     for (const item of desejados) {
       const email = item.email.trim().toLowerCase();
       const funcao = FUNCAO_POR_PAPEL[item.papel];
-      // Hub só é autoridade sobre RH quando tem ficha da pessoa no cadastro de
-      // contas; sem ficha todos os campos vêm null e o local prevalece.
-      const temFichaRh = !!(item.matricula || item.cargo || item.vinculo || item.bilingue);
       let m = porEmail.get(email);
+      if (m && tocados.has(m.id)) continue;
       if (!m && item.nome) {
         const cand = porNome.get(norm(item.nome));
-        if (cand && (!cand.email || String(cand.email).toLowerCase() === email)) m = cand;
+        // Casa por nome quando o registro não tem email, ou quando o email que
+        // ele tem saiu do Hub — aí é troca de email da MESMA pessoa. Sem isso,
+        // renomear o email no Hub criava uma 2ª linha e a antiga era desativada,
+        // levando junto PIN, padrão de entrada, férias e turnos (chaveados por id).
+        const emailCand = cand?.email ? String(cand.email).toLowerCase() : null;
+        const livre = cand && !tocados.has(cand.id) &&
+          (!emailCand || emailCand === email || !emailsDesejados.has(emailCand));
+        if (livre) m = cand;
       }
       try {
         if (m) {
-          const mat = (item.matricula?.trim() || null) ?? null;
-          const vinc = temFichaRh ? (item.vinculo?.trim() || null) : (m.vinculo || null);
-          const bil = temFichaRh ? (item.bilingue ? 1 : 0) : (m.bilingue ? 1 : 0);
+          // RH nunca é apagado por ausência: o Hub só sabe vínculo/bilíngue de
+          // quem tem esses campos preenchidos na ficha do sistema-chamados, e
+          // vazio lá significa "não informado", não "não é". Para limpar, mexa
+          // na ficha e no registro local.
+          const vinc = item.vinculo?.trim() || m.vinculo || null;
+          const bil = (item.bilingue || m.bilingue) ? 1 : 0;
           // Reativa só se a desativação veio do próprio sync. Desativação manual
           // (PATCH do Hub ou PUT do SPA) continua valendo até religarem lá.
           const ativo = m.ativo ? 1 : (m.desativado_por_hub ? 1 : 0);
           upd.run(
-            ativo, funcao, m.email || email,
-            mat || m.matricula || null, vinc, bil,
+            ativo, funcao, email,
+            item.matricula?.trim() || m.matricula || null, vinc, bil,
             calcEsp(funcao, bil, vinc), m.id
           );
+          tocados.add(m.id);
           resumo.atualizados++;
         } else {
           const nome = norm(item.nome);
           if (!nome) continue;
           const vinc = item.vinculo?.trim() || null;
           const bil = item.bilingue ? 1 : 0;
-          ins.run(nome, funcao, vinc, bil, item.matricula?.trim() || null, calcEsp(funcao, bil, vinc), email);
+          const novoId = ins.run(nome, funcao, vinc, bil, item.matricula?.trim() || null, calcEsp(funcao, bil, vinc), email).lastInsertRowid;
+          tocados.add(novoId);
           resumo.inseridos++;
         }
       } catch {}
     }
     if (desejados.length > 0) {
+      // Quem foi tocado acima está no Hub mesmo que o email local fosse outro
+      // (troca de email) — só desativa quem ficou de fora da rodada inteira.
       const aDesativar = todas.filter(m =>
-        m.email && m.ativo && !emailsDesejados.has(String(m.email).toLowerCase()));
+        m.email && m.ativo && !tocados.has(m.id) &&
+        !emailsDesejados.has(String(m.email).toLowerCase()));
       const ativosComEmail = todas.filter(m => m.email && m.ativo).length;
       if (aDesativar.length > 1 && aDesativar.length * 2 > ativosComEmail) {
         // Sumiço em massa é sintoma de problema no Hub, não de demissão coletiva.
