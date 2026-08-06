@@ -166,6 +166,9 @@ export function initDb() {
   // Migration: padrão de entrada por dia da semana (populado via seedPadraoEntrada)
   try { db.exec(`ALTER TABLE massagistas ADD COLUMN padrao_entrada TEXT`); } catch {}
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_massagistas_email ON massagistas(email) WHERE email IS NOT NULL AND email <> ''`); } catch {}
+  // Marca quem foi desativado pelo sync com o Hub. Desativação manual (0) nunca
+  // é revertida pelo sync; só quem ele mesmo desligou volta a ativo.
+  try { db.exec(`ALTER TABLE massagistas ADD COLUMN desativado_por_hub INTEGER NOT NULL DEFAULT 0`); } catch {}
   // Migration: tabela de férias programadas por massoterapeuta
   try { db.exec(`CREATE TABLE IF NOT EXISTS ferias_massagista (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
