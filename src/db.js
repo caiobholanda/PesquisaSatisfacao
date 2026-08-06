@@ -1103,18 +1103,24 @@ export function sincronizarProfissionaisDoHub(itens) {
   const desejados = (itens || []).filter(i => i && FUNCAO_POR_PAPEL[i.papel] && typeof i.email === 'string' && i.email.trim());
   const emailsDesejados = new Set(desejados.map(i => i.email.trim().toLowerCase()));
 
+  // Nome derivado do e-mail para conta que ainda não tem nome no Hub (não fez
+  // login nem tem ficha em Contas). Sem isso a pessoa simplesmente não aparecia
+  // na tela e não havia como saber por quê.
+  const nomeDoEmail = e => norm(e.split('@')[0].replace(/[._-]+/g, ' '));
+
   const todas = db.prepare(`SELECT id, nome, email, ativo, funcao, vinculo, bilingue,
-      matricula, desativado_por_hub FROM massagistas`).all();
+      matricula, desativado_por_hub, nome_provisorio FROM massagistas`).all();
   const porEmail = new Map(todas.filter(m => m.email).map(m => [String(m.email).toLowerCase(), m]));
   const porNome = new Map(todas.map(m => [norm(m.nome), m]));
 
   const upd = db.prepare(`UPDATE massagistas SET
       ativo = ?, desativado_por_hub = 0, funcao = ?, email = ?,
-      matricula = ?, vinculo = ?, bilingue = ?, especialidade_original = ?
+      matricula = ?, vinculo = ?, bilingue = ?, especialidade_original = ?,
+      nome = ?, nome_provisorio = ?
     WHERE id = ?`);
   const ins = db.prepare(`INSERT INTO massagistas
-      (nome, funcao, vinculo, bilingue, matricula, especialidade_original, email, ativo, desativado_por_hub)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0)`);
+      (nome, funcao, vinculo, bilingue, matricula, especialidade_original, email, ativo, desativado_por_hub, nome_provisorio)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, ?)`);
   const desativa = db.prepare('UPDATE massagistas SET ativo=0, desativado_por_hub=1 WHERE id=?');
 
   const resumo = { inseridos: 0, atualizados: 0, desativados: 0, desativacaoAbortada: false };
