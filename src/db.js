@@ -1054,7 +1054,9 @@ export function inserirMassagista(nome, opts = {}) {
   ).run(nome.trim(), matricula, especialidade_original, funcao, vinculo, bilingue ? 1 : 0).lastInsertRowid;
 }
 export function atualizarMassagista(id, nome, ativo, opts = {}) {
-  const sets = ['nome=?', 'ativo=?'];
+  // Toda escrita por aqui é decisão humana (tela do SPA ou toggle do Hub):
+  // zera a marca do sync para que ele não reverta o ativo na próxima rodada.
+  const sets = ['nome=?', 'ativo=?', 'desativado_por_hub=0'];
   const vals = [nome.trim(), ativo];
   for (const k of ['matricula', 'especialidade_original', 'funcao', 'vinculo']) {
     if (opts[k] !== undefined) { sets.push(`${k}=?`); vals.push(opts[k]); }
