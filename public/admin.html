@@ -1840,6 +1840,178 @@
       min-height: 1.125em;
     }
 
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       PROFISSIONAIS — layout redesenhado (2026-08-06)
+       Todas as regras abaixo sobrepõem as anteriores por
+       cascata. Classes globais (mgmt-list, mgmt-item, etc.)
+       continuam intactas para outras views (tipos, etc.).
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+    /* Grid de profissionais */
+    #view-massagistas .mgmt-list {
+      grid-template-columns: repeat(auto-fill, minmax(278px, 1fr));
+      gap: 1.125rem;
+      background: transparent;
+    }
+
+    /* Separador de grupo — totalmente redesenhado */
+    .mgmt-group-sep {
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      padding: 1.375rem 0 .875rem;
+      margin-top: .25rem;
+    }
+    .mgmt-group-sep:first-child { padding-top: .25rem; margin-top: 0; }
+    .mgmt-group-sep::before, .mgmt-group-sep::after { display: none; }
+
+    .mgmt-group-circle {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+    .mgmt-group-sep--recep .mgmt-group-circle { background: var(--indigo); }
+
+    .mgmt-group-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      font-style: italic;
+      color: var(--text);
+      letter-spacing: .015em;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    .mgmt-group-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .62rem;
+      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: .06rem .45rem;
+      letter-spacing: 0;
+      opacity: .85;
+    }
+    .mgmt-group-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      opacity: .6;
+    }
+
+    /* Card container — override para view-massagistas */
+    #view-massagistas .mgmt-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0;
+      position: relative;
+      overflow: visible;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
+      animation: mgmt-card-in .35s ease both;
+    }
+    /* Accent line: sempre visível, intensifica no hover */
+    #view-massagistas .mgmt-item::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--gold) 0%, transparent 72%);
+      opacity: .65;
+      transition: opacity .22s;
+      display: block;
+    }
+    #view-massagistas .mgmt-item.prof-card--recep::before {
+      background: linear-gradient(90deg, var(--indigo) 0%, transparent 72%);
+    }
+    #view-massagistas .mgmt-item:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.09); border-color: rgba(155,100,66,.35); }
+    #view-massagistas .mgmt-item.prof-card--recep:hover { border-color: rgba(21,112,90,.35); }
+    #view-massagistas .mgmt-item:hover::before { opacity: 1; }
+    #view-massagistas .mgmt-item.menu-open { position: relative; z-index: 300; }
+    #view-massagistas .mgmt-item-inativo { opacity: .5; }
+
+    /* Cabeçalho do card */
+    .prof-card-head {
+      display: flex;
+      align-items: flex-start;
+      gap: .875rem;
+      padding: 1.125rem 1.125rem .6rem;
+    }
+
+    /* Avatar — substitui .mgmt-avatar para cards de profissionais */
+    .prof-avatar {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.125rem; font-weight: 600; font-style: italic;
+      color: var(--gold-dark);
+      background: var(--gold-dim);
+      border: 1.5px solid rgba(155,100,66,.25);
+      flex-shrink: 0;
+      user-select: none;
+      letter-spacing: .03em;
+    }
+    .prof-avatar--recep {
+      color: var(--indigo);
+      background: var(--indigo-dim);
+      border-color: rgba(21,112,90,.2);
+    }
+    :root[data-theme="dark"] .prof-avatar {
+      background: rgba(153,100,66,.16);
+      border-color: rgba(153,100,66,.35);
+      color: #c09864;
+    }
+    :root[data-theme="dark"] .prof-avatar--recep {
+      background: rgba(62,132,151,.16);
+      border-color: rgba(62,132,151,.3);
+      color: #6bbacf;
+    }
+
+    /* Identidade (nome + cargo) */
+    .prof-card-ident {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: .2rem;
+    }
+    .prof-card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.08rem;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text);
+      letter-spacing: .01em;
+    }
+    .prof-card-role {
+      font-size: .6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .13em;
+      color: var(--gold);
+      margin-top: .05rem;
+    }
+    .prof-card--recep .prof-card-role { color: var(--indigo); }
+
+    /* Tags row (mat., vínculo, bilíngue) */
+    .prof-card-tags {
+      display: flex; flex-wrap: wrap; gap: .275rem;
+      padding: .1rem 1.125rem .75rem;
+    }
+
+    /* Rodapé do card */
+    .prof-card-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .5rem;
+      padding: .7rem 1.125rem .875rem;
+      border-top: 1px solid var(--border-soft);
+    }
+    .prof-stat {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .67rem;
+      color: var(--muted);
+      letter-spacing: .01em;
+    }
+    .prof-stat--empty { font-style: italic; color: #b0a898; }
+
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        HISTÓRICO MASSAGISTA
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */

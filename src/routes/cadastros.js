@@ -11,7 +11,7 @@ import {
   buscarTurno, registrarTurnoHistorico, listarTurnoHistorico,
   contextoEscalaDia, avaliarEscalaMassagista, listarReservasMassagistaData, contarLivresIntervalo,
   listarTiposMassagem, inserirTipoMassagem, atualizarTipoMassagem, deletarTipoMassagem,
-  historicoMassagista, setMassagistaPinHash,
+  historicoMassagista, setMassagistaPinHash, listarReservasCriadasPor,
   calcularComissaoPorMes,
   getComissaoConfig, setComissaoConfig,
 } from '../db.js';
@@ -99,6 +99,14 @@ router.get('/massagistas/:id/historico', (req, res) => {
   // Nunca expor pin_hash ao front (auditoria 2026-06-25).
   const { pin_hash, ...massagistaSafe } = m;
   const items = historicoMassagista(m.nome);
+  res.json({ ok: true, massagista: massagistaSafe, items });
+});
+
+router.get('/massagistas/:id/reservas-criadas', (req, res) => {
+  const m = listarMassagistas().find(m => m.id === parseInt(req.params.id));
+  if (!m) return res.status(404).json({ ok: false, error: 'Não encontrado' });
+  const { pin_hash, ...massagistaSafe } = m;
+  const items = listarReservasCriadasPor(m.nome);
   res.json({ ok: true, massagista: massagistaSafe, items });
 });
 

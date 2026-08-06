@@ -1505,8 +1505,6 @@ function renderMassagistas() {
   const el = document.getElementById('list-massagistas');
   const busca = (document.getElementById('search-massagistas').value || '').toLowerCase().trim();
 
-  // Antes da primeira carga concluir, evita exibir "Nenhuma…" (enganoso) —
-  // mostra Carregando… e dispara a carga caso ainda não tenha sido feita.
   if (!_massagistasLoaded && _massagistas.length === 0) {
     el.innerHTML = '<div class="mgmt-empty">Carregando…</div>';
     return;
@@ -1516,39 +1514,44 @@ function renderMassagistas() {
   if (busca) filtered = filtered.filter(m => m.nome.toLowerCase().includes(busca));
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : 'Nenhuma massoterapeuta ativa.'}</div>`;
+    el.innerHTML = `<div class="mgmt-empty">${busca ? 'Nenhum resultado encontrado.' : 'Nenhum profissional ativo.'}</div>`;
     return;
   }
 
   let _ci = 0;
   function renderCardItem(m) {
     const idx = _ci++;
+    const ehRecep = !!(m.funcao?.toLowerCase().includes('recep'));
     const tot = m.total_avaliacoes || 0;
     const respondentes = (m.rec_sim || 0) + (m.rec_nao || 0);
-    const pctRec = respondentes > 0 ? Math.round((m.rec_sim || 0) / respondentes * 100) : null;
+    const pctRec = !ehRecep && respondentes > 0 ? Math.round((m.rec_sim || 0) / respondentes * 100) : null;
     const ratingCls = pctRec == null ? '' : pctRec >= 75 ? 'mgmt-rating-high' : pctRec >= 50 ? 'mgmt-rating-mid' : 'mgmt-rating-low';
-    const ratingBadge = pctRec != null ? `<span class="mgmt-rating-badge ${ratingCls}">${pctRec}<small>%</small></span>` : '';
-    const statLine = tot > 0 ? `${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}` : 'Sem avaliações';
+    const ratingBadge = pctRec != null
+      ? `<span class="mgmt-rating-badge ${ratingCls}" title="Taxa de recomendação">${pctRec}<small>%</small></span>`
+      : '';
+    const statLine = ehRecep
+      ? 'Agendamentos'
+      : (tot > 0 ? `${tot} ${tot !== 1 ? 'avaliações' : 'avaliação'}` : 'Sem avaliações');
+    const statEmpty = !ehRecep && tot === 0;
     const badges = [];
-    if (m.funcao) badges.push(`<span class="mgmt-badge mgmt-badge-funcao">${escHtml(m.funcao)}</span>`);
     if (m.matricula) badges.push(`<span class="mgmt-badge mgmt-badge-mat">Mat. ${escHtml(m.matricula)}</span>`);
-    if (m.vinculo) badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
-    if (m.bilingue) badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">Bilíngue</span>`);
+    if (m.vinculo)   badges.push(`<span class="mgmt-badge mgmt-badge-vinculo">${escHtml(m.vinculo)}</span>`);
+    if (m.bilingue)  badges.push(`<span class="mgmt-badge mgmt-badge-bilingue">Bilíngue</span>`);
     const words = m.nome.trim().split(/\s+/);
     const initials = (words[0]?.[0] || '') + (words.length > 1 ? (words[words.length - 1]?.[0] || '') : '');
     return `
-      <div class="mgmt-item${m.ativo ? '' : ' mgmt-item-inativo'}" style="animation-delay:${idx * 0.04}s">
-        <div class="mgmt-card-head">
-          <div class="mgmt-avatar">${escHtml(initials.toUpperCase())}</div>
-          <div class="mgmt-card-ident">
-            <span class="mgmt-item-nome">${escHtml(m.nome)}</span>
-            ${badges.length ? `<div class="mgmt-item-badges">${badges.join('')}</div>` : ''}
+      <div class="mgmt-item prof-card ${ehRecep ? 'prof-card--recep' : 'prof-card--masso'}${m.ativo ? '' : ' mgmt-item-inativo'}" style="animation-delay:${idx * 0.04}s">
+        <div class="prof-card-head">
+          <div class="prof-avatar${ehRecep ? ' prof-avatar--recep' : ''}">${escHtml(initials.toUpperCase())}</div>
+          <div class="prof-card-ident">
+            <span class="prof-card-name">${escHtml(m.nome)}</span>
+            ${m.funcao ? `<span class="prof-card-role">${escHtml(m.funcao)}</span>` : ''}
           </div>
           ${ratingBadge ? `<div class="mgmt-card-rating">${ratingBadge}</div>` : ''}
         </div>
-        ${m.especialidade_original ? `<div class="mgmt-item-esp">${escHtml(m.especialidade_original)}</div>` : ''}
-        <div class="mgmt-card-foot">
-          <span class="mgmt-item-stat${tot === 0 ? ' sem-aval' : ''}">${statLine}</span>
+        ${badges.length ? `<div class="prof-card-tags mgmt-item-badges">${badges.join('')}</div>` : ''}
+        <div class="prof-card-foot">
+          <span class="prof-stat${statEmpty ? ' prof-stat--empty' : ''}">${statLine}</span>
           <div class="mgmt-card-acts">
             <div class="mgmt-item-more">
               <button class="mgmt-btn-more" data-action="toggle-more" title="Mais ações" aria-haspopup="menu" aria-expanded="false">···</button>
@@ -1567,14 +1570,19 @@ function renderMassagistas() {
   const receps = filtered.filter(m => m.funcao && m.funcao.toLowerCase().includes('recep'));
   const massos = filtered.filter(m => !m.funcao || !m.funcao.toLowerCase().includes('recep'));
   const grupos = [];
-  if (receps.length) grupos.push({ label: 'Recepcionistas',  profs: receps });
-  if (massos.length) grupos.push({ label: 'Massoterapeutas', profs: massos });
+  if (receps.length) grupos.push({ label: 'Recepcionistas',  profs: receps, tipo: 'recep' });
+  if (massos.length) grupos.push({ label: 'Massoterapeutas', profs: massos, tipo: 'masso' });
 
-  const sepHtml = label => count =>
-    `<div class="mgmt-group-sep"><span class="mgmt-group-label">${label}</span><span class="mgmt-group-count">&nbsp;·&nbsp;${count}</span></div>`;
+  const sepHtml = (label, tipo) => count =>
+    `<div class="mgmt-group-sep${tipo === 'recep' ? ' mgmt-group-sep--recep' : ''}">
+      <span class="mgmt-group-circle"></span>
+      <span class="mgmt-group-label">${label}</span>
+      <span class="mgmt-group-count">${count}</span>
+      <div class="mgmt-group-line"></div>
+    </div>`;
 
   el.innerHTML = '<div class="mgmt-list">' +
-    grupos.map(g => sepHtml(g.label)(g.profs.length) + g.profs.map(renderCardItem).join('')).join('') +
+    grupos.map(g => sepHtml(g.label, g.tipo)(g.profs.length) + g.profs.map(renderCardItem).join('')).join('') +
     '</div>';
 }
 
@@ -2205,6 +2213,17 @@ async function showHistoricoMassagista(id, nome) {
   document.getElementById('hist-list').innerHTML = '';
   const recEl = document.getElementById('hist-receita');
   if (recEl) recEl.innerHTML = '';
+
+  // Rota imediata para recepcionistas (cache carregado) — histórico de agendamentos.
+  const _profCache = _massagistas.find(m => m.id === id);
+  if (_profCache?.funcao?.toLowerCase().includes('recep')) {
+    await _renderHistoricoRecepcionista(id, nome);
+    return;
+  }
+  // Garante subtitle correto ao alternar entre tipos de profissional
+  const _histSubEl = document.querySelector('#view-historico .page-sub');
+  if (_histSubEl) _histSubEl.textContent = 'Pesquisas de satisfação vinculadas a esta profissional';
+
   // Carrega receita & comissao em paralelo (nao bloqueia render do historico).
   carregarReceitaMassagista(id);
 
@@ -2222,6 +2241,12 @@ async function showHistoricoMassagista(id, nome) {
   }
   if (!d.ok) {
     document.getElementById('hist-kpi-row').innerHTML = `<div class="hist-kpi"><div class="hist-kpi-label" style="color:var(--danger)">${d.error || 'Erro ao carregar histórico'}</div></div>`;
+    return;
+  }
+  // Fallback F5: _massagistas pode estar vazio no restore; checa funcao da API
+  if (d.massagista?.funcao?.toLowerCase().includes('recep')) {
+    document.getElementById('hist-receita').innerHTML = '';
+    await _renderHistoricoRecepcionista(id, nome);
     return;
   }
 
@@ -2362,6 +2387,89 @@ async function showHistoricoMassagista(id, nome) {
               <td><button class="btn btn-outline btn-sm" data-action="open-drawer" data-id="${r.id}">Ver</button></td>
             </tr>`;
           }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Histórico de Recepcionista ────────────────────────────────
+async function _renderHistoricoRecepcionista(id, nome) {
+  const subEl = document.querySelector('#view-historico .page-sub');
+  if (subEl) subEl.textContent = 'Agendamentos marcados por esta recepcionista';
+  document.getElementById('hist-receita').innerHTML = '';
+
+  let res, d;
+  try {
+    res = await api(`/api/massagistas/${id}/reservas-criadas`);
+    if (!res) {
+      document.getElementById('hist-kpi-row').innerHTML = '<div class="hist-kpi"><div class="hist-kpi-label" style="color:var(--danger)">Sessão expirada. Faça login novamente.</div></div>';
+      return;
+    }
+    d = await res.json();
+  } catch (e) {
+    document.getElementById('hist-kpi-row').innerHTML = `<div class="hist-kpi"><div class="hist-kpi-label" style="color:var(--danger)">Erro de conexão: ${e.message}</div></div>`;
+    return;
+  }
+  if (!d.ok) {
+    document.getElementById('hist-kpi-row').innerHTML = `<div class="hist-kpi"><div class="hist-kpi-label" style="color:var(--danger)">${d.error || 'Erro ao carregar'}</div></div>`;
+    return;
+  }
+
+  const items = d.items || [];
+  const total = items.length;
+  const mesPfx = new Date().toISOString().slice(0, 7);
+  const esteMes = items.filter(r => (r.data || '').startsWith(mesPfx)).length;
+  const salaMap = items.reduce((acc, r) => { if (r.sala) acc[r.sala] = (acc[r.sala] || 0) + 1; return acc; }, {});
+  const salaTop = Object.entries(salaMap).sort((a, b) => b[1] - a[1])[0];
+  const NOMES_SALA = { 1: 'Sala 1', 2: 'Sala 2', 3: 'Sala 3', 4: 'Sala 4', 5: 'Espaço Beleza' };
+
+  document.getElementById('hist-kpi-row').innerHTML = `
+    <div class="hist-kpi">
+      <div class="hist-kpi-label">Total de agendamentos</div>
+      <div class="hist-kpi-val">${total}</div>
+    </div>
+    <div class="hist-kpi">
+      <div class="hist-kpi-label">Este mês</div>
+      <div class="hist-kpi-val" style="color:var(--indigo)">${esteMes}</div>
+    </div>
+    ${salaTop ? `<div class="hist-kpi">
+      <div class="hist-kpi-label">Sala mais agendada</div>
+      <div class="hist-kpi-val">${NOMES_SALA[salaTop[0]] || 'Sala ' + salaTop[0]}</div>
+    </div>` : '<div class="hist-kpi"></div>'}`;
+
+  if (!total) {
+    document.getElementById('hist-list').innerHTML = '<div class="table-wrap"><div class="empty">Nenhum agendamento registrado para esta recepcionista.</div></div>';
+    return;
+  }
+
+  document.getElementById('hist-list').innerHTML = `
+    <div class="table-wrap" style="margin-top:1.5rem">
+      <div class="table-head">
+        <h2>Agendamentos marcados</h2>
+        <span>${total} registro${total !== 1 ? 's' : ''}</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Horário</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Sala</th>
+            <th>Massoterapeuta</th>
+            <th>Tratamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(r => `<tr>
+            <td>${fmtDate(r.data)}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:.8rem;white-space:nowrap">${escHtml(r.hora_inicio || '—')} – ${escHtml(r.hora_fim || '—')}</td>
+            <td style="font-weight:500">${escHtml(r.cliente || '—')}</td>
+            <td>${escHtml(r.tipo_cliente || '—')}</td>
+            <td>${NOMES_SALA[r.sala] || (r.sala ? 'Sala ' + r.sala : '—')}</td>
+            <td style="color:var(--muted)">${escHtml(r.massoterapeuta_nome || '—')}</td>
+            <td style="color:var(--muted)">${escHtml(r.tipo_massagem_nome || r.tratamento || '—')}</td>
+          </tr>`).join('')}
         </tbody>
       </table>
     </div>`;

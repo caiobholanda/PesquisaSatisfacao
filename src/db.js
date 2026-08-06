@@ -1833,6 +1833,20 @@ export function historicoMassagista(nome) {
     .all(nome);
 }
 
+export function listarReservasCriadasPor(nome) {
+  return getDb().prepare(`
+    SELECT r.id, r.sala, r.cliente, r.tipo_cliente, r.apto,
+           r.tratamento, r.data, r.hora_inicio, r.hora_fim, r.criado_em,
+           m.nome AS massoterapeuta_nome, t.nome AS tipo_massagem_nome
+    FROM reservas r
+    LEFT JOIN massagistas m ON m.id = r.massagista_id
+    LEFT JOIN tipos_massagem t ON t.id = r.tipo_massagem_id
+    WHERE LOWER(r.criado_por) = LOWER(?)
+    ORDER BY r.data DESC, r.hora_inicio DESC
+    LIMIT 300
+  `).all(nome);
+}
+
 // ── Reservas ──
 export function listarReservasSemana(from, to) {
   return getDb().prepare(
