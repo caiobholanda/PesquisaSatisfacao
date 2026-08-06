@@ -1124,7 +1124,11 @@ export function sincronizarProfissionaisDoHub(itens) {
           upd.run(funcao, email, mat, vinc, bil, m.id);
           resumo.atualizados++;
         } else {
-          const nome = norm(item.nome) || email.split('@')[0].replace(/[._]/g, ' ').toUpperCase();
+          // Só insere com nome real vindo do Hub. Nome inventado a partir do
+          // email ficaria permanente (nome nunca é sobrescrito e é a chave do
+          // JOIN de avaliações e do JWT da terapeuta).
+          const nome = norm(item.nome);
+          if (!nome) continue;
           ins.run(nome, funcao, vinc, bil, mat, calcEsp(funcao, bil, vinc), email);
           resumo.inseridos++;
         }
