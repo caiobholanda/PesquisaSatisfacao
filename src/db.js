@@ -1077,7 +1077,7 @@ export function deletarMassagista(id) {
 export function sincronizarProfissionaisDoHub(itens) {
   const db = getDb();
   const FUNCAO_POR_PAPEL = { spa: 'Recepcionista', massoterapeuta: 'Massoterapeuta' };
-  const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const norm = s => String(s || '').normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').trim().toUpperCase();
   const calcEsp = (funcao, bil, vinc) => {
     let e = funcao.toUpperCase();
     if (bil) e += ' BILINGUE';
