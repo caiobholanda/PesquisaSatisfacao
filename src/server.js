@@ -280,6 +280,12 @@ app.get('/api/hub/massagistas', (req, res) => {
   if (!s2sAuth(req, res)) return;
   res.json({ ok: true, items: listarMassagistas() });
 });
+// Hub avisa que a aba Liberação mudou — sincroniza na hora, sem esperar o TTL.
+app.post('/api/hub/sync-profissionais', async (req, res) => {
+  if (!s2sAuth(req, res)) return;
+  const r = await syncProfissionaisHub({ force: true });
+  res.json({ ok: r.fonte === 'hub', ...r });
+});
 app.patch('/api/hub/massagistas/:id/ativo', (req, res) => {
   if (!s2sAuth(req, res)) return;
   const id = parseInt(req.params.id, 10);
