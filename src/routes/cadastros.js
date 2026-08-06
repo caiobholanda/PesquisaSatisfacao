@@ -34,7 +34,12 @@ function _computarEsp(funcao, bilingue, vinculo) {
 }
 
 // ── Massagistas ──
-router.get('/massagistas', (_req, res) => res.json({ ok: true, items: listarMassagistasComStats() }));
+// Antes de listar, sincroniza com a aba Liberação do Hub (TTL 60s, timeout 4s;
+// falha do Hub é silenciosa e a lista local segue valendo).
+router.get('/massagistas', async (_req, res) => {
+  try { await syncProfissionaisHub(); } catch {}
+  res.json({ ok: true, items: listarMassagistasComStats() });
+});
 
 // Padrões semanais — leitura (qualquer autenticado do SPA)
 router.get('/massagistas/padroes', requireSpa, (req, res) => {
