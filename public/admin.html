@@ -1874,13 +1874,12 @@
     .mgmt-group-sep--recep .mgmt-group-circle { background: var(--indigo); }
 
     .mgmt-group-label {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.15rem;
-      font-weight: 500;
-      font-style: italic;
-      color: var(--text);
-      letter-spacing: .015em;
-      text-transform: none;
+      font-family: var(--font);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
       white-space: nowrap;
     }
     .mgmt-group-count {
@@ -1912,21 +1911,9 @@
       transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
       animation: mgmt-card-in .35s ease both;
     }
-    /* Accent line: sempre visível, intensifica no hover */
-    #view-massagistas .mgmt-item::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--gold) 0%, transparent 72%);
-      opacity: .65;
-      transition: opacity .22s;
-      display: block;
-    }
-    #view-massagistas .mgmt-item.prof-card--recep::before {
-      background: linear-gradient(90deg, var(--indigo) 0%, transparent 72%);
-    }
-    #view-massagistas .mgmt-item:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.09); border-color: rgba(155,100,66,.35); }
-    #view-massagistas .mgmt-item.prof-card--recep:hover { border-color: rgba(21,112,90,.35); }
-    #view-massagistas .mgmt-item:hover::before { opacity: 1; }
+    /* Sem linha colorida no topo */
+    #view-massagistas .mgmt-item::before { display: none; }
+    #view-massagistas .mgmt-item:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(0,0,0,.14); border-color: var(--border); }
     #view-massagistas .mgmt-item.menu-open { position: relative; z-index: 300; }
     #view-massagistas .mgmt-item-inativo { opacity: .5; }
 
@@ -1960,10 +1947,10 @@
       display: flex; flex-direction: column; gap: .2rem;
     }
     .prof-card-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.08rem;
+      font-family: var(--font);
+      font-size: .9375rem;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.25;
       color: var(--text);
       letter-spacing: .01em;
     }
