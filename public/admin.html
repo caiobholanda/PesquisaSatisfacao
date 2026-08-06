@@ -1943,30 +1943,16 @@
       width: 50px; height: 50px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.125rem; font-weight: 600; font-style: italic;
-      color: var(--gold-dark);
-      background: var(--gold-dim);
-      border: 1.5px solid rgba(155,100,66,.25);
+      font-family: var(--font);
+      font-size: 1rem; font-weight: 600;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
       flex-shrink: 0;
       user-select: none;
-      letter-spacing: .03em;
+      letter-spacing: .01em;
     }
-    .prof-avatar--recep {
-      color: var(--indigo);
-      background: var(--indigo-dim);
-      border-color: rgba(21,112,90,.2);
-    }
-    :root[data-theme="dark"] .prof-avatar {
-      background: rgba(153,100,66,.16);
-      border-color: rgba(153,100,66,.35);
-      color: #c09864;
-    }
-    :root[data-theme="dark"] .prof-avatar--recep {
-      background: rgba(62,132,151,.16);
-      border-color: rgba(62,132,151,.3);
-      color: #6bbacf;
-    }
+    .prof-avatar--recep { /* sem diferenciação de cor — mesma identidade visual */ }
 
     /* Identidade (nome + cargo) */
     .prof-card-ident {
