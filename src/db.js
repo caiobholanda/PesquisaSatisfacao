@@ -655,6 +655,23 @@ export function initDb() {
   seedMassoterapeutasGranSpa();
   seedQuartosGranMarquise();
   seedPadraoEntrada();
+  // Migration: vincula massoterapeutas seed aos emails das contas do Hub.
+  // Match por matricula (id estável); só preenche onde email está vazio.
+  // Sem isso o sync Hub→SPA de profissionais duplicaria as 6 já existentes.
+  try {
+    const _emailPorMatricula = {
+      '0010001614': 'antonia.cristina@granmarquise.com.br',
+      '0010001573': 'germana.silva@granmarquise.com.br',
+      '0010002052': 'isadora.menezes@granmarquise.com.br',
+      '0010001711': 'karoline.freitas@granmarquise.com.br',
+      '0010001881': 'mayara.dias@granmarquise.com.br',
+      '0010001981': 'valderlania.bezerra@granmarquise.com.br',
+    };
+    const _updEmail = db.prepare(`UPDATE massagistas SET email=? WHERE matricula=? AND (email IS NULL OR email='')`);
+    for (const [mat, em] of Object.entries(_emailPorMatricula)) {
+      try { _updEmail.run(em, mat); } catch {}
+    }
+  } catch {}
   // Modulo Qualidade: seed e' chamado em server.js apos initDb() (ESM).
 
   const adminUser = process.env.ADMIN_USER || 'admin';
