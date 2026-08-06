@@ -1064,6 +1064,85 @@ export function deletarMassagista(id) {
   return getDb().prepare('DELETE FROM massagistas WHERE id=?').run(id).changes;
 }
 
+// ── Sync Hub → SPA: profissionais (aba Liberação, papeis spa/massoterapeuta) ──
+// Recebe os items de GET /api/hub/site-admins do Hub. Regras:
+//  - papel 'spa' → funcao 'Recepcionista'; 'massoterapeuta' → 'Massoterapeuta';
+//  - casa por email (case-insensitive); sem match, casa por nome normalizado e
+//    faz backfill do email em registro legado; sem nenhum match → INSERT;
+//  - presente no Hub → ativo=1; removido do Hub → ativo=0 (nunca DELETE);
+//  - nome local NUNCA é sobrescrito (o JOIN de avaliações é por nome);
+//  - só desativa registro com email preenchido (legado sem email fica de fora);
+//  - lista sem nenhum papel spa/masso → não desativa nada (proteção contra
+//    volume do Hub subir vazio — ver incidente hub_data.json).
+export function sincronizarProfissionaisDoHub(itens) {
+  const db = getDb();
+  const FUNCAO_POR_PAPEL = { spa: 'Recepcionista', massoterapeuta: 'Massoterapeuta' };
+  const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const calcEsp = (funcao, bil, vinc) => {
+    let e = funcao.toUpperCase();
+    if (bil) e += ' BILINGUE';
+    if (vinc === 'Pleno') e += ' PL';
+    else if (vinc) e += ' ' + String(vinc).trim().toUpperCase();
+    return e;
+  };
+
+  const desejados = (itens || []).filter(i => i && FUNCAO_POR_PAPEL[i.papel] && i.email);
+  const emailsDesejados = new Set(desejados.map(i => String(i.email).trim().toLowerCase()));
+
+  const todas = db.prepare('SELECT id, nome, email, ativo FROM massagistas').all();
+  const porEmail = new Map(todas.filter(m => m.email).map(m => [String(m.email).toLowerCase(), m]));
+  const porNome = new Map(todas.map(m => [norm(m.nome), m]));
+
+  const upd = db.prepare(`UPDATE massagistas SET
+      ativo = 1,
+      funcao = ?,
+      email = COALESCE(NULLIF(email, ''), ?),
+      matricula = COALESCE(NULLIF(matricula, ''), ?),
+      vinculo = COALESCE(?, vinculo),
+      bilingue = CASE WHEN ? = 1 THEN 1 ELSE bilingue END
+    WHERE id = ?`);
+  const ins = db.prepare(`INSERT INTO massagistas
+      (nome, funcao, vinculo, bilingue, matricula, especialidade_original, email, ativo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1)`);
+  const desativa = db.prepare('UPDATE massagistas SET ativo=0 WHERE id=?');
+
+  const resumo = { inseridos: 0, atualizados: 0, desativados: 0 };
+  const tx = db.transaction(() => {
+    for (const item of desejados) {
+      const email = String(item.email).trim().toLowerCase();
+      const funcao = FUNCAO_POR_PAPEL[item.papel];
+      const bil = item.bilingue ? 1 : 0;
+      const vinc = item.vinculo?.trim() || null;
+      const mat = item.matricula?.trim() || null;
+      let m = porEmail.get(email);
+      if (!m && item.nome) {
+        const cand = porNome.get(norm(item.nome));
+        if (cand && (!cand.email || String(cand.email).toLowerCase() === email)) m = cand;
+      }
+      try {
+        if (m) {
+          upd.run(funcao, email, mat, vinc, bil, m.id);
+          resumo.atualizados++;
+        } else {
+          const nome = norm(item.nome) || email.split('@')[0].replace(/[._]/g, ' ').toUpperCase();
+          ins.run(nome, funcao, vinc, bil, mat, calcEsp(funcao, bil, vinc), email);
+          resumo.inseridos++;
+        }
+      } catch {}
+    }
+    if (desejados.length > 0) {
+      for (const m of todas) {
+        if (m.email && m.ativo && !emailsDesejados.has(String(m.email).toLowerCase())) {
+          desativa.run(m.id);
+          resumo.desativados++;
+        }
+      }
+    }
+  });
+  tx();
+  return resumo;
+}
+
 // ── Férias massagista ──
 export function listarFeriasMassagista(massagista_id) {
   return getDb().prepare('SELECT * FROM ferias_massagista WHERE massagista_id=? ORDER BY data_inicio ASC').all(massagista_id);
