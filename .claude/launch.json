@@ -20,6 +20,12 @@
       "port": 3400
     },
     {
+      "name": "hubia",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\estagio.ti\\AppData\\Local\\Temp\\claude\\C--Users-estagio-ti-Desktop-ClaudeCode-PesquisaSatisfacaoSPA\\81b9cd4f-19bf-464c-bb7e-10ff0c2bf633\\scratchpad\\hubia-start.js"],
+      "port": 3310
+    },
+    {
       "name": "hubtest",
       "runtimeExecutable": "node",
       "runtimeArgs": ["C:\\Users\\estagio.ti\\AppData\\Local\\Temp\\claude\\C--Users-estagio-ti-Desktop-ClaudeCode-PesquisaSatisfacaoSPA\\9ad9cab5-4989-4529-b758-57fc8c4026f7\\scratchpad\\hubtest\\start.js"],
